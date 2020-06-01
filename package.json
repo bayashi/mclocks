@@ -1,0 +1,56 @@
+{
+  "name": "mclocks",
+  "version": "0.1.0",
+  "main": "src/main.js",
+  "description": "Multiple timezone clocks🕒🌍🕕",
+  "keywords": [
+    "clock",
+    "date",
+    "time",
+    "timezone"
+  ],
+  "license": "Artistic-2.0",
+  "scripts": {
+    "start": "electron src"
+  },
+  "env": {
+      "NODE_ENV": "DEBUG"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:bayashi/mclocks.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bayashi/mclocks/issues"
+  },
+  "dependencies": {
+    "electron-store": "^5.1.1",
+    "electron-window-state": "^5.0.3",
+    "moment-timezone": "^0.5.31"
+  },
+  "devDependencies": {
+    "electron": "^9.0.0",
+    "electron-builder": "^22.7.0"
+  },
+  "build": {
+    "appId": "net.bayashi.mclock",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/*",
+      "package.json",
+      "package-lock.json",
+      "assets"
+    ],
+    "win": {
+      "icon": "assets/favicon.ico",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "author": "Dai Okabayashi <bayashi@cpan.org> (https://github.com/bayashi)"
+}

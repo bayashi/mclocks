@@ -1,0 +1,155 @@
+const isDebug = process.argv.includes('--debug');
+
+const Electron       = require('electron');
+const App            = Electron.app;
+const BrowserWindow  = Electron.BrowserWindow;
+const IpcMain        = Electron.ipcMain;
+const Path           = require('path');
+const FS             = require('fs');
+const WState         = require('electron-window-state');
+const Store          = require('electron-store');
+
+const AppPath = function (filePath) { return Path.join(__dirname, filePath); }
+const AppDataDirPath = Path.join(App.getPath('appData'), 'mclocks' + (isDebug ? '.dev' : ''));
+
+const ClockWidth  = 205;
+const ClockHeight = 25;
+
+const config = new Store({
+  cwd: AppDataDirPath,
+  name: 'config',
+  defaults: {
+    clocks: [
+      { name: "Tokyo", timezone: "Asia/Tokyo" },
+      { name: "UTC",   timezone: "UTC" },
+    ],
+    dateDelimiter: "-",
+    opacity: 1.0,
+    fontColor: '#fff',
+    bgColor: '#161',
+    alwaysOnTop: false,
+  },
+  // https://github.com/sindresorhus/electron-store#schema
+  schema: {
+    clocks: {
+      type: "array",
+      minItems: 1,
+      maxItems: 10,
+      items: {
+        type: "object",
+        minProperties: 2,
+        maxProperties: 2,
+        properties: {
+          name: {
+            type: "string",
+            minLength: 1,
+            maxLength: 10,
+            regexp: '/^[a-z0-9\-]+$/',
+          },
+          // https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+          timezone: {
+            type: "string",
+            minLength: 1,
+            maxLength: 27,
+            regexp: '/^[a-z0-9\/\_]+$/',
+          },
+        },
+      }
+    },
+    dateDelimiter: {
+      type: "string",
+      minLength: 1,
+      maxLength: 1,
+      enum: ["-", "/"],
+    },
+    opacity: {
+      type: "number",
+      minimum: 0.1,
+      mazimum: 1.0,
+    },
+    fontColor: {
+      type: "string",
+      regexp: '/^#[a-fA-F0-9]+$/',
+      maxLength: 7,
+    },
+    bgColor: {
+      type: "string",
+      regexp: '/^#[a-fA-F0-9]+$/',
+      maxLength: 7,
+    },
+    alwaysOnTop: {
+      type: "boolean",
+    },
+  },
+});
+
+const clocks = config.get("clocks");
+IpcMain.on("getClock", (event, arg) => {
+  event.returnValue = {
+    isDebug: isDebug,
+    clocks: clocks,
+    dateDelimiter: config.get("dateDelimiter"),
+    fontColor: config.get("fontColor"),
+    bgColor: config.get("bgColor"),
+  };
+});
+
+const opacity = config.get("opacity");
+const alwaysOnTop = config.get("alwaysOnTop");
+
+let w;
+
+function createWindow() {
+  FS.existsSync(AppDataDirPath) || FS.mkdirSync(AppDataDirPath);
+
+  let ws = WState({
+    defaultWidth: ClockWidth,
+    defaultHeight: ClockHeight,
+    path: AppDataDirPath,
+    file: 'window-state.json',
+  });
+
+  w = new BrowserWindow({
+    x: ws.x,
+    y: ws.y,
+    width: ClockWidth * clocks.length,
+    height: ws.height,
+    frame: false,
+    transparent: true,
+    opacity: opacity,
+    resizable: false,
+    hasShadow: false,
+    alwaysOnTop: alwaysOnTop,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: AppPath('preload.js'),
+    },
+    icon: AppPath('../assets/favicon.png'),
+  });
+  if (isDebug) {
+    w.webContents.openDevTools();
+  }
+  w.setMenu(null);
+  w.loadURL(`file://${__dirname}/index.html`);
+  w.on('closed', () => {
+    win = null;
+  });
+  ws.manage(w);
+}
+
+App.on('ready', () => {
+  createWindow();
+});
+
+App.on('window-all-closed', () => {
+  if (process.platform != 'darwin') {
+    App.quit();
+  }
+});
+
+App.on('activate', () => {
+  if (w === null) {
+    createWindow();
+  }
+});

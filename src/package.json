@@ -1,0 +1,6 @@
+{
+  "name": "mclocks",
+  "main": "main.js",
+  "license": "Artistic-2.0",
+  "author": "Dai Okabayashi <bayashi@cpan.org> (https://github.com/bayashi)"
+}
