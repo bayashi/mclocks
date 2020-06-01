@@ -2,6 +2,8 @@
 
 Multiple timezone clocks🕒🌍🕕
 
+![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/master/screenshot/mclocks-screenshot-0.1.0.png)
+
 ## config.json
 
 You can set configuration file as `config.json` to show clocks you prefer.
