@@ -1,6 +1,14 @@
 {
   "name": "mclocks",
-  "main": "main.js",
+  "description": "Multiple timezone clocks🕒🌍🕕",
+  "version": "0.1.0",
+  "author": "Dai Okabayashi <bayashi@cpan.org> (https://github.com/bayashi)",
   "license": "Artistic-2.0",
-  "author": "Dai Okabayashi <bayashi@cpan.org> (https://github.com/bayashi)"
+  "keywords": [
+    "clock",
+    "date",
+    "time",
+    "timezone"
+  ],
+  "main": "main.js"
 }

@@ -1,15 +1,16 @@
 {
   "name": "mclocks",
-  "version": "0.1.0",
-  "main": "src/main.js",
   "description": "Multiple timezone clocks🕒🌍🕕",
+  "version": "0.1.0",
+  "author": "Dai Okabayashi <bayashi@cpan.org> (https://github.com/bayashi)",
+  "license": "Artistic-2.0",
   "keywords": [
     "clock",
     "date",
     "time",
     "timezone"
   ],
-  "license": "Artistic-2.0",
+  "main": "src/main.js",
   "scripts": {
     "start": "electron src"
   },
@@ -51,6 +52,5 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }
-  },
-  "author": "Dai Okabayashi <bayashi@cpan.org> (https://github.com/bayashi)"
+  }
 }
