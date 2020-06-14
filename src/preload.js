@@ -11,6 +11,9 @@ process.once('loaded', () => {
         const tz = Timezone.tz(timezone);
         return tz.toArray().concat(tz.day());
       },
+      fixWidth: (width, height) => {
+        return ipcRenderer.sendSync("fixWidth", width, height);
+      },
     },
   );
 });
