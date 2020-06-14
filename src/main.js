@@ -76,6 +76,7 @@ const config = new Store({
     fontColor: {
       type: "string",
       regexp: '/^#[a-fA-F0-9]+$/',
+      minLength: 4,
       maxLength: 7,
     },
     fontSize: {
@@ -86,6 +87,7 @@ const config = new Store({
     bgColor: {
       type: "string",
       regexp: '/^#[a-fA-F0-9]+$/',
+      minLength: 4,
       maxLength: 7,
     },
     alwaysOnTop: {
