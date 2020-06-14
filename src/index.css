@@ -12,11 +12,6 @@ html {
   font-family: 'Courier New', Courier, monospace;
 }
 
-#vclocks {
-  visibility: hidden;
-  white-space: nowrap;
-}
-
 #mclocks {
   padding: 5px;
   height: 100%;
@@ -24,6 +19,7 @@ html {
   background-color: #151;
   border: 1px solid #151;
   border-radius: 6px;
+  white-space: nowrap;
 }
 
 ul {
