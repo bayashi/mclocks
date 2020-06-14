@@ -33,6 +33,7 @@ function buildDateTimeHTML(name, timezone) {
         + " " + d2(month + 1) + Clock.dateDelimiter + d2(date)
         + " " + Week[day]
         + " " + d2(hour) + ":" + d2(minute)
+        + (Clock.showSeconds ? ":" + d2(second) : '')
         + "</li>"
         ;
 }
