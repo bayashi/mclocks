@@ -1,6 +1,8 @@
 'use strict';
 
 const Week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const elementClocks = document.getElementById('clocks');
 const Clock = initClocks(window.mclocks.getClock());
 
 const AppStyle = document.getElementById('mclocks').style;
@@ -8,34 +10,30 @@ AppStyle.color = Clock.fontColor;
 AppStyle.fontSize = Clock.fontSize + 'px';
 AppStyle.backgroundColor = Clock.bgColor;
 
-adjustWindowSize();
+tock();
+
+window.mclocks.fixWidth(elementClocks.offsetWidth, elementClocks.offsetHeight);
 
 tick();
 
 function tick() {
-  document.getElementById('clocks').innerHTML = tock();
+  tock();
   setTimeout(tick, 1000 - Date.now() % 1000);
 }
 
 function tock() {
-  let html = '';
   Clock.clocks.map(function(clock) {
-    html = html + buildDateTimeHTML(clock);
+    document.getElementById(clock.id).innerHTML = buildDateTimeHTML(clock);
   });
-
-  return html;
 }
 
 function buildDateTimeHTML(clock) {
   let year, month, date, hour, minute, second, msecond, day;
   [year, month, date, hour, minute, second, msecond, day] = window.mclocks.Moment(clock.timezone);
-  return "<li id='" + clock.nameForAttr + "'>"
-        + clock.nameForView
-        + " " + d2(month + 1) + Clock.dateDelimiter + d2(date)
+  return " " + d2(month + 1) + Clock.dateDelimiter + d2(date)
         + " " + Week[day]
         + " " + d2(hour) + ":" + d2(minute)
         + (Clock.showSeconds ? ":" + d2(second) : '')
-        + "</li>"
         ;
 }
 
@@ -58,18 +56,20 @@ function d2(number) {
   return ("0" + (number)).slice(-2);
 }
 
-function adjustWindowSize() {
-  const vclocks = document.getElementById('vclocks');
-  vclocks.innerHTML = tock();
-  window.mclocks.fixWidth(vclocks.offsetWidth, vclocks.offsetHeight);
-  document.getElementById('mclocks').removeChild(vclocks);
+function initClocks(Clock) {
+  let html = '';
+  Clock.clocks.map(function(clock) {
+    clock.id = clock.name.toLowerCase().replace(/[^a-z\d]/g, '-');
+    html = html + clockBox(clock);
+  });
+  elementClocks.innerHTML = html;
+  return Clock;
 }
 
-function initClocks(Clock) {
-  Clock.clocks.map(function(clock) {
-    clock.nameForAttr = clock.name.toLowerCase().replace(/[^a-z\d]/g, '-');
-    clock.nameForView = escapeHTML(clock.name);
-  });
-
-  return Clock;
+function clockBox(clock) {
+  return "<li>"
+        + escapeHTML(clock.name)
+        + "<span id='" + clock.id + "'></span>"
+        + "</li>"
+        ;
 }
