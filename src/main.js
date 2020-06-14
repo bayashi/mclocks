@@ -23,6 +23,7 @@ const config = new Store({
     dateDelimiter: "-",
     opacity: 1.0,
     fontColor: '#fff',
+    fontSize: 14,
     bgColor: '#161',
     alwaysOnTop: false,
     showSeconds: false,
@@ -70,6 +71,11 @@ const config = new Store({
       regexp: '/^#[a-fA-F0-9]+$/',
       maxLength: 7,
     },
+    fontSize: {
+      type: "number",
+      minimum: 8,
+      maximum: 36,
+    },
     bgColor: {
       type: "string",
       regexp: '/^#[a-fA-F0-9]+$/',
@@ -91,6 +97,7 @@ IpcMain.on("getClock", (event, arg) => {
     clocks: clocks,
     dateDelimiter: config.get("dateDelimiter"),
     fontColor: config.get("fontColor"),
+    fontSize: config.get("fontSize"),
     bgColor: config.get("bgColor"),
     showSeconds: config.get("showSeconds"),
   };
