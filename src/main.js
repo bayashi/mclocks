@@ -103,7 +103,7 @@ IpcMain.on("getClock", (event, arg) => {
   };
 });
 IpcMain.on("fixWidth", (event, width, height) => {
-  w.setSize(width + 16, height + 6);
+  w.setSize(width + (config.get("fontSize") * 2), height + 6);
   event.returnValue = true;
 });
 
