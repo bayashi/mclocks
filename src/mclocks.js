@@ -5,6 +5,7 @@ const Clock = window.mclocks.getClock();
 
 const AppStyle = document.getElementById('mclocks').style;
 AppStyle.color = Clock.fontColor;
+AppStyle.fontSize = Clock.fontSize + 'px';
 AppStyle.backgroundColor = Clock.bgColor;
 
 adjustWindowSize();
