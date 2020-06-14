@@ -12,9 +12,6 @@ const Store          = require('electron-store');
 const AppPath = function (filePath) { return Path.join(__dirname, filePath); }
 const AppDataDirPath = Path.join(App.getPath('appData'), 'mclocks' + (isDebug ? '.dev' : ''));
 
-const ClockWidth  = 205;
-const ClockHeight = 25;
-
 const config = new Store({
   cwd: AppDataDirPath,
   name: 'config',
@@ -93,6 +90,10 @@ IpcMain.on("getClock", (event, arg) => {
     bgColor: config.get("bgColor"),
   };
 });
+IpcMain.on("fixWidth", (event, width, height) => {
+  w.setSize(width + 16, height + 6);
+  event.returnValue = true;
+});
 
 const opacity = config.get("opacity");
 const alwaysOnTop = config.get("alwaysOnTop");
@@ -103,8 +104,8 @@ function createWindow() {
   FS.existsSync(AppDataDirPath) || FS.mkdirSync(AppDataDirPath);
 
   let ws = WState({
-    defaultWidth: ClockWidth,
-    defaultHeight: ClockHeight,
+    defaultWidth: 1,
+    defaultHeight: 1,
     path: AppDataDirPath,
     file: 'window-state.json',
   });
@@ -112,8 +113,9 @@ function createWindow() {
   w = new BrowserWindow({
     x: ws.x,
     y: ws.y,
-    width: ClockWidth * clocks.length,
-    height: ws.height,
+    width: 1,
+    height: 1,
+    useContentSize: true,
     frame: false,
     transparent: true,
     opacity: opacity,
