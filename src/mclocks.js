@@ -63,6 +63,11 @@ function initClocks(Clock) {
     html = html + clockBox(clock);
   });
   elementClocks.innerHTML = html;
+  Clock.clocks.map(function(clock, index) {
+    if (index !== Clock.clocks.length - 1) {
+      document.getElementById(clock.id).style.paddingRight = '1.65em';
+    }
+  });
   return Clock;
 }
 

@@ -25,10 +25,9 @@ html {
 ul {
   display: inline;
   margin: 0;
-  padding: 3px 0 0 8px;
+  padding-top: 3px;
 }
 
 li {
-  padding: 0 8px 0 0;
   display: inline;
 }
