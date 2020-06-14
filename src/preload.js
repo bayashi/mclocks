@@ -7,9 +7,8 @@ process.once('loaded', () => {
       getClock: () => {
         return ipcRenderer.sendSync("getClock");
       },
-      Moment: (timezone) => {
-        const tz = Timezone.tz(timezone);
-        return tz.toArray().concat(tz.day());
+      Moment: (timezone, locale, format) => {
+        return Timezone.tz(timezone).locale(locale).format(format);
       },
       fixWidth: (width, height) => {
         return ipcRenderer.sendSync("fixWidth", width, height);

@@ -1,19 +1,10 @@
 'use strict';
 
-const Week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 const elementClocks = document.getElementById('clocks');
-const Clock = initClocks(window.mclocks.getClock());
+const Clock = initClocks(window.mclocks.getClock(), elementClocks);
 
-const AppStyle = document.getElementById('mclocks').style;
-AppStyle.color = Clock.fontColor;
-AppStyle.fontSize = Clock.fontSize + 'px';
-AppStyle.backgroundColor = Clock.bgColor;
-
-tock();
-
-window.mclocks.fixWidth(elementClocks.offsetWidth, elementClocks.offsetHeight);
-
+initStyles();
+initScreen(elementClocks);
 tick();
 
 function tick() {
@@ -23,18 +14,9 @@ function tick() {
 
 function tock() {
   Clock.clocks.map(function(clock) {
-    document.getElementById(clock.id).innerHTML = buildDateTimeHTML(clock);
+    document.getElementById(clock.id).innerHTML
+         = escapeHTML(window.mclocks.Moment(clock.timezone, Clock.localeDateTime, Clock.formatDateTime));
   });
-}
-
-function buildDateTimeHTML(clock) {
-  let year, month, date, hour, minute, second, msecond, day;
-  [year, month, date, hour, minute, second, msecond, day] = window.mclocks.Moment(clock.timezone);
-  return " " + d2(month + 1) + Clock.dateDelimiter + d2(date)
-        + " " + Week[day]
-        + " " + d2(hour) + ":" + d2(minute)
-        + (Clock.showSeconds ? ":" + d2(second) : '')
-        ;
 }
 
 const escapeTarget = {
@@ -52,11 +34,7 @@ function escapeHTML (string) {
   });
 }
 
-function d2(number) {
-  return ("0" + (number)).slice(-2);
-}
-
-function initClocks(Clock) {
+function initClocks(Clock, elementClocks) {
   let html = '';
   Clock.clocks.map(function(clock) {
     clock.id = clock.name.toLowerCase().replace(/[^a-z\d]/g, '-');
@@ -74,7 +52,19 @@ function initClocks(Clock) {
 function clockBox(clock) {
   return "<li>"
         + escapeHTML(clock.name)
-        + "<span id='" + clock.id + "'></span>"
+        + " <span id='" + clock.id + "'></span>"
         + "</li>"
         ;
+}
+
+function initScreen(elementClocks) {
+  tock();
+  window.mclocks.fixWidth(elementClocks.offsetWidth, elementClocks.offsetHeight);
+}
+
+function initStyles() {
+  const AppStyle = document.getElementById('mclocks').style;
+  AppStyle.color = Clock.fontColor;
+  AppStyle.fontSize = Clock.fontSize + 'px';
+  AppStyle.backgroundColor = Clock.bgColor;
 }

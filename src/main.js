@@ -20,13 +20,13 @@ const config = new Store({
       { name: "Tokyo", timezone: "Asia/Tokyo" },
       { name: "UTC",   timezone: "UTC" },
     ],
-    dateDelimiter: "-",
+    formatDateTime: "MM-DD ddd HH:mm",
+    localeDateTime: "en",
     opacity: 1.0,
     fontColor: '#fff',
     fontSize: 14,
     bgColor: '#161',
     alwaysOnTop: false,
-    showSeconds: false,
   },
   // https://github.com/sindresorhus/electron-store#schema
   schema: {
@@ -55,11 +55,18 @@ const config = new Store({
         },
       }
     },
-    dateDelimiter: {
+    // https://momentjs.com/docs/#/parsing/string-format/
+    formatDateTime: {
       type: "string",
       minLength: 1,
-      maxLength: 1,
-      enum: ["-", "/"],
+      maxLength: 50,
+    },
+    // https://github.com/moment/moment/tree/develop/locale
+    localeDateTime: {
+      type: "string",
+      regexp: '/[a-z]+(-[a-z]+)?/',
+      minLength: 2,
+      maxLength: 8,
     },
     opacity: {
       type: "number",
@@ -84,9 +91,6 @@ const config = new Store({
     alwaysOnTop: {
       type: "boolean",
     },
-    showSeconds: {
-      type: "boolean",
-    },
   },
 });
 
@@ -95,11 +99,11 @@ IpcMain.on("getClock", (event, arg) => {
   event.returnValue = {
     isDebug: isDebug,
     clocks: clocks,
-    dateDelimiter: config.get("dateDelimiter"),
+    formatDateTime: config.get("formatDateTime"),
+    localeDateTime: config.get("localeDateTime"),
     fontColor: config.get("fontColor"),
     fontSize: config.get("fontSize"),
     bgColor: config.get("bgColor"),
-    showSeconds: config.get("showSeconds"),
   };
 });
 IpcMain.on("fixWidth", (event, width, height) => {
