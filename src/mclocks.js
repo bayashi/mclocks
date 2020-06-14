@@ -1,7 +1,7 @@
 'use strict';
 
 const Week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const Clock = window.mclocks.getClock();
+const Clock = initClocks(window.mclocks.getClock());
 
 const AppStyle = document.getElementById('mclocks').style;
 AppStyle.color = Clock.fontColor;
@@ -20,17 +20,17 @@ function tick() {
 function tock() {
   let html = '';
   Clock.clocks.map(function(clock) {
-    html = html + buildDateTimeHTML(clock.name, clock.timezone);
+    html = html + buildDateTimeHTML(clock);
   });
 
   return html;
 }
 
-function buildDateTimeHTML(name, timezone) {
+function buildDateTimeHTML(clock) {
   let year, month, date, hour, minute, second, msecond, day;
-  [year, month, date, hour, minute, second, msecond, day] = window.mclocks.Moment(timezone);
-  return "<li id='" + name.toLowerCase().replace(/[^a-z\d]/g, '-') + "'>"
-        + escapeHTML(name)
+  [year, month, date, hour, minute, second, msecond, day] = window.mclocks.Moment(clock.timezone);
+  return "<li id='" + clock.nameForAttr + "'>"
+        + clock.nameForView
         + " " + d2(month + 1) + Clock.dateDelimiter + d2(date)
         + " " + Week[day]
         + " " + d2(hour) + ":" + d2(minute)
@@ -63,4 +63,13 @@ function adjustWindowSize() {
   vclocks.innerHTML = tock();
   window.mclocks.fixWidth(vclocks.offsetWidth, vclocks.offsetHeight);
   document.getElementById('mclocks').removeChild(vclocks);
+}
+
+function initClocks(Clock) {
+  Clock.clocks.map(function(clock) {
+    clock.nameForAttr = clock.name.toLowerCase().replace(/[^a-z\d]/g, '-');
+    clock.nameForView = escapeHTML(clock.name);
+  });
+
+  return Clock;
 }
