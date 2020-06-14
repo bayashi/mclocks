@@ -12,6 +12,11 @@ html {
   font-family: 'Courier New', Courier, monospace;
 }
 
+#vclocks {
+  visibility: hidden;
+  white-space: nowrap;
+}
+
 #mclocks {
   padding: 5px;
   height: 100%;
@@ -23,9 +28,11 @@ html {
 
 ul {
   display: inline;
+  margin: 0;
+  padding: 3px 0 0 8px;
 }
 
 li {
-  padding: 0 0.25em 0 1em;
+  padding: 0 8px 0 0;
   display: inline;
 }

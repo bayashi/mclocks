@@ -12,9 +12,6 @@ const Store          = require('electron-store');
 const AppPath = function (filePath) { return Path.join(__dirname, filePath); }
 const AppDataDirPath = Path.join(App.getPath('appData'), 'mclocks' + (isDebug ? '.dev' : ''));
 
-const ClockWidth  = 205;
-const ClockHeight = 25;
-
 const config = new Store({
   cwd: AppDataDirPath,
   name: 'config',
@@ -26,8 +23,10 @@ const config = new Store({
     dateDelimiter: "-",
     opacity: 1.0,
     fontColor: '#fff',
+    fontSize: 14,
     bgColor: '#161',
     alwaysOnTop: false,
+    showSeconds: false,
   },
   // https://github.com/sindresorhus/electron-store#schema
   schema: {
@@ -72,12 +71,20 @@ const config = new Store({
       regexp: '/^#[a-fA-F0-9]+$/',
       maxLength: 7,
     },
+    fontSize: {
+      type: "number",
+      minimum: 8,
+      maximum: 36,
+    },
     bgColor: {
       type: "string",
       regexp: '/^#[a-fA-F0-9]+$/',
       maxLength: 7,
     },
     alwaysOnTop: {
+      type: "boolean",
+    },
+    showSeconds: {
       type: "boolean",
     },
   },
@@ -90,8 +97,14 @@ IpcMain.on("getClock", (event, arg) => {
     clocks: clocks,
     dateDelimiter: config.get("dateDelimiter"),
     fontColor: config.get("fontColor"),
+    fontSize: config.get("fontSize"),
     bgColor: config.get("bgColor"),
+    showSeconds: config.get("showSeconds"),
   };
+});
+IpcMain.on("fixWidth", (event, width, height) => {
+  w.setSize(width + 16, height + 6);
+  event.returnValue = true;
 });
 
 const opacity = config.get("opacity");
@@ -103,8 +116,8 @@ function createWindow() {
   FS.existsSync(AppDataDirPath) || FS.mkdirSync(AppDataDirPath);
 
   let ws = WState({
-    defaultWidth: ClockWidth,
-    defaultHeight: ClockHeight,
+    defaultWidth: 1,
+    defaultHeight: 1,
     path: AppDataDirPath,
     file: 'window-state.json',
   });
@@ -112,8 +125,9 @@ function createWindow() {
   w = new BrowserWindow({
     x: ws.x,
     y: ws.y,
-    width: ClockWidth * clocks.length,
-    height: ws.height,
+    width: 1,
+    height: 1,
+    useContentSize: true,
     frame: false,
     transparent: true,
     opacity: opacity,
