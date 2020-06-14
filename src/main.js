@@ -25,6 +25,7 @@ const config = new Store({
     fontColor: '#fff',
     bgColor: '#161',
     alwaysOnTop: false,
+    showSeconds: false,
   },
   // https://github.com/sindresorhus/electron-store#schema
   schema: {
@@ -77,6 +78,9 @@ const config = new Store({
     alwaysOnTop: {
       type: "boolean",
     },
+    showSeconds: {
+      type: "boolean",
+    },
   },
 });
 
@@ -88,6 +92,7 @@ IpcMain.on("getClock", (event, arg) => {
     dateDelimiter: config.get("dateDelimiter"),
     fontColor: config.get("fontColor"),
     bgColor: config.get("bgColor"),
+    showSeconds: config.get("showSeconds"),
   };
 });
 IpcMain.on("fixWidth", (event, width, height) => {
