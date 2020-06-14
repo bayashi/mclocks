@@ -64,7 +64,7 @@ const config = new Store({
     opacity: {
       type: "number",
       minimum: 0.1,
-      mazimum: 1.0,
+      maximum: 1.0,
     },
     fontColor: {
       type: "string",
