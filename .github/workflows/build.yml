@@ -21,6 +21,8 @@ jobs:
       run: npm install
     - name: build app
       run: node_modules/.bin/electron-builder --win
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
