@@ -1,0 +1,32 @@
+name: build_win
+
+on:
+  push:
+    branches-ignore:
+      - '*'
+    tags:
+      - '*.*.*'
+
+jobs:
+  perl:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Nodejs
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12.x
+    - name: npm install
+      run: npm install
+    - name: build app
+      run: electron-builder --win
+    - name: release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        draft: true
+        files: |
+          dist/*.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
