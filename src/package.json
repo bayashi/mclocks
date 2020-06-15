@@ -1,7 +1,7 @@
 {
   "name": "mclocks",
   "description": "Multiple timezone clocks🕒🌍🕕",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "author": "Dai Okabayashi <bayashi@cpan.org> (https://github.com/bayashi)",
   "license": "Artistic-2.0",
   "keywords": [
