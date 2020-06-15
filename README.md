@@ -4,9 +4,19 @@ Multiple timezone clocks🕒🌍🕕
 
 ![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/master/screenshot/mclocks-screenshot-0.1.0.png)
 
+## Download
+
+https://github.com/bayashi/mclocks/releases
+
+For Windows, from above URL, you can get installer `mclocks.Setup.X.X.X.exe`.
+
+For Mac, not yet.
+
+For Linux, not yet.
+
 ## config.json
 
-You can set configuration file as `config.json` to show clocks you prefer.
+You can set configuration file as `config.json` to configure clocks you prefer.
 
 ### Location of config.json
 
