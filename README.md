@@ -22,13 +22,13 @@ It should be JSON file like below.
         { "name": "UTC",   "timezone": "UTC" },
         { "name": "PA",   "timezone": "America/Los_Angeles" }
       ],
-      "dateDelimiter": "/",
+      "formatDateTime": "MM-DD ddd HH:mm",
+      "localeDateTime": "en",
       "opacity": 1,
       "fontColor": "#fff",
       "fontSize": 14,
       "bgColor": "#151",
       "alwaysOnTop": false,
-      "showSeconds": true
     }
 
 ## Window state file
