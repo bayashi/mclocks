@@ -4,6 +4,9 @@ process.once('loaded', () => {
 
   contextBridge.exposeInMainWorld(
     "mclocks", {
+      isDebug: () => {
+        return ipcRenderer.sendSync("isDebug");
+      },
       getClock: () => {
         return ipcRenderer.sendSync("getClock");
       },
