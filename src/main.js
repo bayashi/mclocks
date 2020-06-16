@@ -70,7 +70,7 @@ function createWindow() {
     icon: mPath.get(__dirname, '../assets/favicon.png'),
   });
   if (isDebug) {
-    w.webContents.openDevTools();
+    w.webContents.openDevTools({ mode: 'undocked' });
   }
   w.setMenu(null);
   w.loadURL(`file://${__dirname}/index.html`);
