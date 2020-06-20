@@ -3,13 +3,16 @@
 }
 
 html {
+  background: rgba(0, 0, 0, 0);
   -webkit-app-region: drag;
   -webkit-user-select: none;
-  height: 100%;
-  width:  100%;
   font-size:14px;
   text-align:center;
   font-family: 'Courier New', Courier, monospace;
+}
+
+body {
+  background: rgba(0, 0, 0, 0);
 }
 
 #mclocks {
