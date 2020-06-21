@@ -2,7 +2,7 @@
 
 Multiple timezone clocks🕒🌍🕕
 
-![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.5.png)
+![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.6.png)
 
 ## Download
 
@@ -37,6 +37,7 @@ It should be JSON file like below.
       "fontColor": "#fff",
       "fontSize": 14,
       "bgColor": "#151",
+      "onlyText": false,
       "alwaysOnTop": false,
     }
 
