@@ -1,7 +1,7 @@
 const isDebug = process.argv.includes('--debug');
 
-const mConfig    = require('./lib/config');
-const mPath      = require('./lib/path');
+const mConfig = require('./lib/config');
+const mPath   = require('./lib/path');
 
 const Electron       = require('electron');
 const App            = Electron.app;
