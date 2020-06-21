@@ -1,7 +1,7 @@
 const defaultConfig = {
   clocks: [
-    { name: "Tokyo", timezone: "Asia/Tokyo" },
-    { name: "UTC",   timezone: "UTC" },
+    { name: "NY", timezone: "America/New_York" },
+    { name: "London",   timezone: "Europe/London" },
   ],
   formatDateTime: "MM-DD ddd HH:mm",
   localeDateTime: "en",
