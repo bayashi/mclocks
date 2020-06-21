@@ -59,7 +59,7 @@ function clockBox(clock) {
 
 function initScreen(elementClocks) {
   tock();
-  window.mclocks.fixWidth(elementClocks.offsetWidth, elementClocks.offsetHeight);
+  window.mclocks.fixSize(elementClocks.offsetWidth, elementClocks.offsetHeight);
 }
 
 function initStyles() {

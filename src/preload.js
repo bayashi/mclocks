@@ -13,8 +13,8 @@ process.once('loaded', () => {
       Moment: (timezone, locale, format) => {
         return Timezone.tz(timezone).locale(locale).format(format);
       },
-      fixWidth: (width, height) => {
-        return ipcRenderer.sendSync("fixWidth", width, height);
+      fixSize: (width, height) => {
+        return ipcRenderer.sendSync("fixSize", width, height);
       },
     },
   );

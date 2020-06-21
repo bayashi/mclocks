@@ -30,8 +30,13 @@ IpcMain.on("getClock", (event, arg) => {
     bgColor: config.get("bgColor"),
   };
 });
-IpcMain.on("fixWidth", (event, width, height) => {
-  w.setSize(width + (config.get("fontSize") * 2), height + 6);
+
+let AppWidth = 0;
+let AppHeight = 0;
+IpcMain.on("fixSize", (event, width, height) => {
+  AppWidth = width + (config.get("fontSize") * 2);
+  AppHeight = height + 6;
+  w.setSize(AppWidth, AppHeight);
   event.returnValue = true;
 });
 
@@ -74,6 +79,9 @@ function createWindow() {
   }
   w.setMenu(null);
   w.loadURL(`file://${__dirname}/index.html`);
+  w.on('move', () => {
+    adjustAppSize();
+  });
   w.on('closed', () => {
     win = null;
   });
@@ -90,8 +98,18 @@ App.on('window-all-closed', () => {
   }
 });
 
+App.on('browser-window-focus', () => {
+  adjustAppSize();
+});
+
 App.on('activate', () => {
   if (w === null) {
     createWindow();
   }
 });
+
+function adjustAppSize() {
+  if (AppWidth && AppHeight) {
+    w.setSize(AppWidth, AppHeight);
+  }
+}
