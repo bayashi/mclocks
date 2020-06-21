@@ -28,6 +28,7 @@ IpcMain.on("getClock", (event, arg) => {
     fontColor: config.get("fontColor"),
     fontSize: config.get("fontSize"),
     bgColor: config.get("bgColor"),
+    onlyText: config.get("onlyText"),
   };
 });
 

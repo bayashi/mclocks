@@ -9,6 +9,7 @@ const defaultConfig = {
   fontColor: '#fff',
   fontSize: 14,
   bgColor: '#161',
+  onlyText: true,
   alwaysOnTop: false,
 };
 
@@ -74,6 +75,9 @@ const optionsSchema = {
     regexp: '/^#[a-fA-F0-9]+$/',
     minLength: 4,
     maxLength: 7,
+  },
+  onlyText: {
+    type: "boolean",
   },
   alwaysOnTop: {
     type: "boolean",

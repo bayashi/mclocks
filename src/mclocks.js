@@ -66,5 +66,11 @@ function initStyles() {
   const AppStyle = document.getElementById('mclocks').style;
   AppStyle.color = Clock.fontColor;
   AppStyle.fontSize = Clock.fontSize + 'px';
-  AppStyle.backgroundColor = Clock.bgColor;
+  if (Clock.onlyText) {
+    AppStyle.backgroundColor = 'rgba(0, 0, 0, 0)';
+    AppStyle.border = 'none';
+  } else {
+    AppStyle.backgroundColor = Clock.bgColor;
+    AppStyle.border = '1px solid ' + Clock.bgColor;
+  }
 }
