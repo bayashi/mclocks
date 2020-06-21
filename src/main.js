@@ -79,9 +79,6 @@ function createWindow() {
   }
   w.setMenu(null);
   w.loadURL(`file://${__dirname}/index.html`);
-  w.on('move', () => {
-    adjustAppSize();
-  });
   w.on('closed', () => {
     win = null;
   });
