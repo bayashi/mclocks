@@ -42,8 +42,8 @@ It should be JSON file like below.
 
 Please refer to:
 
-* <https://momentjs.com/docs/#/parsing/string-format/> for the date time format
 * <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for the timezone
+* <https://momentjs.com/docs/#/parsing/string-format/> for the date time format
 
 ## Window state file
 
