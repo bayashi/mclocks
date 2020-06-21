@@ -3,7 +3,7 @@ const defaultConfig = {
     { name: "NY", timezone: "America/New_York" },
     { name: "London",   timezone: "Europe/London" },
   ],
-  formatDateTime: "MM-DD ddd HH:mm",
+  formatDateTime: "MM-DD HH:mm",
   localeDateTime: "en",
   opacity: 1.0,
   fontColor: '#fff',
