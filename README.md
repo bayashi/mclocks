@@ -28,9 +28,8 @@ It should be JSON file like below.
 
     {
       "clocks": [
-        { "name": "Tokyo", "timezone": "Asia/Tokyo" },
-        { "name": "UTC",   "timezone": "UTC" },
-        { "name": "PA",   "timezone": "America/Los_Angeles" }
+        { "name": "NY", "timezone": "America/New_York" },
+        { "name": "London",   "timezone": "Europe/London" },
       ],
       "formatDateTime": "MM-DD ddd HH:mm",
       "localeDateTime": "en",
@@ -40,6 +39,11 @@ It should be JSON file like below.
       "bgColor": "#151",
       "alwaysOnTop": false,
     }
+
+Please refer to:
+
+* <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for the timezone
+* <https://momentjs.com/docs/#/parsing/string-format/> for the date time format
 
 ## Window state file
 
