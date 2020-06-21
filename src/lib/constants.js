@@ -9,7 +9,7 @@ const defaultConfig = {
   fontColor: '#fff',
   fontSize: 14,
   bgColor: '#161',
-  onlyText: true,
+  onlyText: false,
   alwaysOnTop: false,
 };
 
