@@ -6,11 +6,11 @@ Multiple timezone clocks🕒🌍🕕
 
 ## Download
 
-https://github.com/bayashi/mclocks/releases
+From https://github.com/bayashi/mclocks/releases
 
-For Windows, from above URL, you can get installer `mclocks.Setup.X.X.X.exe`.
+For Windows, you can get `.exe` installer `mclocks.Setup.X.X.X.exe`.
 
-For Mac, not yet.
+For Mac, you can get `.dmg` file `mclocks-X.X.X.dmg` (Perhaps, you need Security setting to install .dmg from github.)
 
 For Linux, not yet.
 
@@ -20,7 +20,8 @@ You can set configuration file as `config.json` to configure clocks you prefer.
 
 ### Location of config.json
 
-* Windows `C:\Users\user\AppData\Roaming\mclocks`
+* Windows `C:\Users\{USER}\AppData\Roaming\mclocks`
+* Mac `/Users/{USER}/Library/Application Support/mclocks`
 
 ### Example of config.json
 
@@ -29,7 +30,7 @@ It should be JSON file like below.
     {
       "clocks": [
         { "name": "NY", "timezone": "America/New_York" },
-        { "name": "London",   "timezone": "Europe/London" },
+        { "name": "London",   "timezone": "Europe/London" }
       ],
       "formatDateTime": "MM-DD ddd HH:mm",
       "localeDateTime": "en",
@@ -38,7 +39,7 @@ It should be JSON file like below.
       "fontSize": 14,
       "bgColor": "#151",
       "onlyText": false,
-      "alwaysOnTop": false,
+      "alwaysOnTop": false
     }
 
 Please refer to:
@@ -56,3 +57,7 @@ Windows
 
 * Right click, then select `close`
 * Alt + F4
+
+Mac
+
+* Select `Quit` from Dock
