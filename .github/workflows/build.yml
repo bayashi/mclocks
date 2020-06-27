@@ -29,6 +29,7 @@ jobs:
         files: |
           dist/*.exe
           LICENSE
+          CHANGES
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -53,5 +54,6 @@ jobs:
         files: |
           dist/*.dmg
           LICENSE
+          CHANGES
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
