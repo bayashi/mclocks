@@ -11,6 +11,22 @@ const Path           = require('path');
 const FS             = require('fs');
 const WState         = require('electron-window-state');
 
+let w;
+
+const ProcessLock = App.requestSingleInstanceLock();
+if (!ProcessLock) {
+  App.quit();
+} else {
+  App.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (w) {
+      if (w.isMinimized()) {
+        w.restore();
+      }
+      w.focus();
+    }
+  });
+}
+
 const AppDataDirPath = Path.join(App.getPath('appData'), 'mclocks' + (isDebug ? '.dev' : ''));
 
 const config = mConfig.instance(AppDataDirPath);
@@ -43,8 +59,6 @@ IpcMain.on("fixSize", (event, width, height) => {
 
 const opacity = config.get("opacity");
 const alwaysOnTop = config.get("alwaysOnTop");
-
-let w;
 
 function createWindow() {
   FS.existsSync(AppDataDirPath) || FS.mkdirSync(AppDataDirPath);
