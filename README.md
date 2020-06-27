@@ -18,6 +18,8 @@ For Linux, not yet.
 
 You can set configuration file as `config.json` to configure clocks you prefer.
 
+![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png)
+
 ### Location of config.json
 
 * Windows `C:\Users\{USER}\AppData\Roaming\mclocks`
