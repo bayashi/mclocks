@@ -72,5 +72,6 @@ function initStyles() {
   } else {
     AppStyle.backgroundColor = Clock.bgColor;
     AppStyle.border = '1px solid ' + Clock.bgColor;
+    AppStyle.borderRadius = Math.round(Clock.fontSize / 3) + 'px';
   }
 }
