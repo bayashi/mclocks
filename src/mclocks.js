@@ -68,7 +68,7 @@ function initStyles() {
   AppStyle.fontSize = Clock.fontSize + 'px';
   if (Clock.onlyText) {
     AppStyle.backgroundColor = 'rgba(0, 0, 0, 0)';
-    AppStyle.border = 'none';
+    AppStyle.border = '0';
   } else {
     AppStyle.backgroundColor = Clock.bgColor;
     AppStyle.border = '1px solid ' + Clock.bgColor;

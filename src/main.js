@@ -78,6 +78,7 @@ function createWindow() {
     useContentSize: true,
     frame: false,
     transparent: true,
+    backgroundColor: '#00000000',
     opacity: opacity,
     resizable: false,
     hasShadow: false,
