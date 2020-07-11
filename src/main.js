@@ -78,10 +78,8 @@ function createWindow() {
     useContentSize: true,
     frame: false,
     transparent: true,
-    backgroundColor: '#00000000',
     opacity: opacity,
     resizable: false,
-    hasShadow: false,
     alwaysOnTop: alwaysOnTop,
     webPreferences: {
       nodeIntegration: false,
@@ -92,6 +90,9 @@ function createWindow() {
   });
   if (isDebug) {
     w.webContents.openDevTools({ mode: 'undocked' });
+  }
+  if (process.platform === 'darwin') {
+    w.setHasShadow(false);
   }
   w.setMenu(null);
   w.loadURL(`file://${__dirname}/index.html`);
