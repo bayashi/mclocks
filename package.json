@@ -15,7 +15,7 @@
     "start": "electron src"
   },
   "env": {
-      "NODE_ENV": "DEBUG"
+    "NODE_ENV": "DEBUG"
   },
   "repository": {
     "type": "git",
@@ -25,13 +25,14 @@
     "url": "https://github.com/bayashi/mclocks/issues"
   },
   "dependencies": {
-    "electron-store": "^5.1.1",
+    "electron-store": "^5.2.0",
     "electron-window-state": "^5.0.3",
-    "moment-timezone": "^0.5.31"
+    "moment-timezone": "^0.5.34"
   },
   "devDependencies": {
+    "ansi-regex": ">=5.0.1",
     "electron": "^11.5.0",
-    "electron-builder": "^22.7.0"
+    "electron-builder": "^22.14.5"
   },
   "build": {
     "appId": "net.bayashi.mclock",
