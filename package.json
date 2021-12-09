@@ -32,7 +32,7 @@
   "devDependencies": {
     "ansi-regex": ">=5.0.1",
     "electron": "^11.5.0",
-    "electron-builder": "^22.14.5"
+    "electron-builder": "^22.13.1"
   },
   "build": {
     "appId": "net.bayashi.mclock",
