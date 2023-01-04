@@ -15,7 +15,7 @@ function tick() {
 function tock() {
   Clock.clocks.map(function(clock) {
     document.getElementById(clock.id).innerHTML
-         = escapeHTML(window.mclocks.Moment(clock.timezone, Clock.localeDateTime, Clock.formatDateTime));
+         = escapeHTML(window.mclocks.DT(clock.timezone, Clock.localeDateTime, Clock.formatDateTime));
   });
 }
 
