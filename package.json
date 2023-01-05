@@ -27,7 +27,7 @@
   "dependencies": {
     "electron-store": "^5.2.0",
     "electron-window-state": "^5.0.3",
-    "moment-timezone": "^0.5.35"
+    "cdate": "0.0.4"
   },
   "devDependencies": {
     "ansi-regex": ">=5.0.1",

@@ -1,6 +1,6 @@
 process.once('loaded', () => {
   const {contextBridge, ipcRenderer} = require('electron');
-  const Timezone = require('moment-timezone');
+  const {cdate} = require('cdate');
 
   contextBridge.exposeInMainWorld(
     "mclocks", {
@@ -10,8 +10,8 @@ process.once('loaded', () => {
       getClock: () => {
         return ipcRenderer.sendSync("getClock");
       },
-      Moment: (timezone, locale, format) => {
-        return Timezone.tz(timezone).locale(locale).format(format);
+      DT: (timezone, locale, format) => {
+        return cdate().tz(timezone).locale(locale).format(format);
       },
       fixSize: (width, height) => {
         return ipcRenderer.sendSync("fixSize", width, height);
