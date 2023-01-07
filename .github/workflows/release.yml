@@ -1,4 +1,4 @@
-name: build
+name: release
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
     - name: Nodejs
       uses: actions/setup-node@v1
       with:
-        node-version: 14.x
+        node-version: 18.x
     - name: npm install
       run: npm install
     - name: build app
@@ -41,7 +41,7 @@ jobs:
     - name: Nodejs
       uses: actions/setup-node@v1
       with:
-        node-version: 14.x
+        node-version: 18.x
     - name: npm install
       run: npm install
     - name: build app
