@@ -1,6 +1,6 @@
 # mclocks
 
-Multiple timezone clocks🕒🌍🕕
+Free desktop clock for multiple time zones🕒🌍🕕
 
 ![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.6.png)
 
