@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "ansi-regex": ">=5.0.1",
-    "electron": "^19.1.9",
+    "electron": "^22.3.25",
     "electron-builder": "23.6.0"
   },
   "build": {
