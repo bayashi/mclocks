@@ -27,14 +27,12 @@ const clocksSchema = {
         type: "string",
         minLength: 1,
         maxLength: 10,
-        regexp: '/^[a-z0-9\-]+$/',
       },
       // https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
       timezone: {
         type: "string",
         minLength: 1,
         maxLength: 27,
-        regexp: '/^[a-z0-9\/\_]+$/',
       },
     },
   },
@@ -50,7 +48,6 @@ const optionsSchema = {
   // https://github.com/moment/moment/tree/develop/locale
   localeDateTime: {
     type: "string",
-    regexp: '/[a-z]+(-[a-z]+)?/',
     minLength: 2,
     maxLength: 8,
   },
@@ -61,7 +58,6 @@ const optionsSchema = {
   },
   fontColor: {
     type: "string",
-    regexp: '/^#[a-fA-F0-9]+$/',
     minLength: 4,
     maxLength: 7,
   },
@@ -72,7 +68,6 @@ const optionsSchema = {
   },
   bgColor: {
     type: "string",
-    regexp: '/^#[a-fA-F0-9]+$/',
     minLength: 4,
     maxLength: 7,
   },

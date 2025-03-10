@@ -25,13 +25,13 @@
     "url": "https://github.com/bayashi/mclocks/issues"
   },
   "dependencies": {
-    "electron-store": "^5.2.0",
+    "electron-store": "8.2.0",
     "electron-window-state": "^5.0.3",
-    "cdate": "0.0.4"
+    "cdate": "0.0.7"
   },
   "devDependencies": {
-    "ansi-regex": ">=5.0.1",
-    "electron": "^19.1.9",
+    "ansi-regex": "6.1.0",
+    "electron": "^35.0.1",
     "electron-builder": "25.1.8"
   },
   "build": {
