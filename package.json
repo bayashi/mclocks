@@ -1,7 +1,7 @@
 {
   "name": "mclocks",
   "description": "Free desktop clock for multiple time zones🕒🌍🕕",
-  "version": "0.1.20",
+  "version": "0.1.21",
   "author": "Dai Okabayashi <bayashi@cpan.org> (https://github.com/bayashi)",
   "license": "Artistic-2.0",
   "keywords": [
