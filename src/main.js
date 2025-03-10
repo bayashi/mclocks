@@ -82,7 +82,7 @@ function createWindow() {
     resizable: false,
     alwaysOnTop: alwaysOnTop,
     webPreferences: {
-      nodeIntegration: false,
+      nodeIntegration: true,
       contextIsolation: true,
       preload: mPath.get(__dirname, 'preload.js'),
     },
