@@ -50,6 +50,10 @@ jobs:
           npm install -g pnpm
           pnpm install
 
+      - name: display version info
+        run: |
+          pnpm tauri info
+
       - uses: tauri-apps/tauri-action@v0.5.20
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
