@@ -1,0 +1,20 @@
+::-webkit-scrollbar {
+  display: none;
+}
+
+:root {
+  background: transparent;
+  -webkit-app-region: drag;
+  -webkit-user-select: none;
+  user-select: none;
+  font: 14px Courier, monospace;
+  color: #fff;
+}
+
+#mclocks {
+  white-space: nowrap;
+}
+
+ul, li {
+  display: inline;
+}
