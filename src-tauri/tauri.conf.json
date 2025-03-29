@@ -15,6 +15,7 @@
         "title": "mclocks",
         "hiddenTitle": true,
         "resizable": false,
+        "minimizable": false,
         "maximizable": false,
         "width": 800,
         "height": 20,

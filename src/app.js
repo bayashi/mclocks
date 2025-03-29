@@ -89,3 +89,9 @@ async function setAlwaysOnTop() {
     elClocks.textContent = "Err: " + e;
   }
 }
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'd' && event.metaKey) { // Windows + D
+    event.preventDefault();
+  }
+});
