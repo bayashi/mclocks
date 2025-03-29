@@ -1,0 +1,28 @@
+name: build-test
+
+on:
+  push:
+    branches:
+      - '*'
+    tags-ignore:
+      - '*'
+    paths-ignore:
+      - '**/*.md'
+      - '**/.gitignore'
+
+jobs:
+  build-on-windows:
+    runs-on: "windows-latest"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: install frontend dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+          pnpm tauri build

@@ -1,0 +1,30 @@
+[package]
+name = "mclocks"
+version = "0.2.0"
+description = "The desktop clock application for multiple time zones🕒🌍🕕"
+authors = ["bayashi"]
+license = "Artistic-2.0"
+edition = "2024"
+
+[lib]
+name = "mclocks_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dev-dependencies]
+tauri = { version = "2", features = [
+    "devtools",
+] }
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = [
+    "derive",
+] }
+serde_json = "1"
+directories = "6.0.0"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
