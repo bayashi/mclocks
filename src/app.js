@@ -36,12 +36,13 @@ function initStyles() {
 }
 
 function initClocks() {
-  let html = '';
+  let clocksHtml = '';
   Config.clocks.map(function (clock) {
     clock.id = "mclk-" + clock.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-');
-    html = html + renderClockHTML(clock);
+    clocksHtml = clocksHtml + renderClockHTML(clock);
+    clock.fn = cdate().locale(Config.locale).tz(clock.timezone).cdateFn();
   });
-  elClocks.innerHTML = "<ul>" + html + "</ul>";
+  elClocks.innerHTML = "<ul>" + clocksHtml + "</ul>";
   Config.clocks.map(function (clock, index) {
     if (index !== Config.clocks.length - 1) {
       document.getElementById(clock.id).style.paddingRight = Config.margin;
@@ -60,8 +61,7 @@ function tick() {
 
 function tock() {
   Config.clocks.map(function (clock) {
-    document.getElementById(clock.id).innerHTML
-      = escapeHTML(cdate().tz(clock.timezone).locale(Config.locale).format(Config.format));
+    document.getElementById(clock.id).innerHTML = escapeHTML(clock.fn().format(Config.format));
   });
 }
 
