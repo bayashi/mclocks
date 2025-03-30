@@ -40,6 +40,7 @@ function initClocks() {
   Config.clocks.map(function (clock) {
     clock.id = "mclk-" + clock.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-');
     html = html + renderClockHTML(clock);
+    clock.fn = cdate().locale(Config.locale).tz(clock.timezone).cdateFn();
   });
   elClocks.innerHTML = "<ul>" + html + "</ul>";
   Config.clocks.map(function (clock, index) {
@@ -60,8 +61,7 @@ function tick() {
 
 function tock() {
   Config.clocks.map(function (clock) {
-    document.getElementById(clock.id).innerHTML
-      = escapeHTML(cdate().tz(clock.timezone).locale(Config.locale).format(Config.format));
+    document.getElementById(clock.id).innerHTML = escapeHTML(clock.fn().format(Config.format));
   });
 }
 
