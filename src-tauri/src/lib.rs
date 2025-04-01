@@ -128,11 +128,14 @@ fn load_config() -> Result<Config, String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            let _ = app
-                .get_webview_window("main")
-                .expect("execute only main window")
-                .set_focus();
+        .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {
+            #[cfg(not(debug_assertions))]
+            {
+                let _ = _app
+                    .get_webview_window("main")
+                    .expect("execute only main window")
+                    .set_focus();
+            }
         }))
         .setup(|app| {
             let _window = app.get_webview_window("main").unwrap();
