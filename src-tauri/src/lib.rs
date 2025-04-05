@@ -7,8 +7,13 @@ const IS_DEV: bool = tauri::is_dev();
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Clock {
+    #[serde(default)]
     name: String,
     timezone: String,
+    #[serde(default)]
+    countdown: String,
+    #[serde(default)]
+    target: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -65,6 +70,8 @@ fn merge_configs(old: OldConfig, new: Config) -> Config {
             vec![Clock {
                 name: String::from("UTC"),
                 timezone: String::from("UTC"),
+                countdown: String::from(""),
+                target: String::from(""),
             }]
         },
         font: if new.font != "" {

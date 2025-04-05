@@ -12,3 +12,11 @@ export function escapeHTML(str) {
     return escapeTarget[match]
   });
 }
+
+export function pad(n) {
+  if (n >= 0 && n < 10) {
+    return "0" + n
+  }
+
+  return n
+}
