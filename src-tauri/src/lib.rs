@@ -128,7 +128,15 @@ fn load_config() -> Result<Config, String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut tbr = tauri::Builder::default();
-    if !IS_DEV {
+    if IS_DEV {
+        tbr = tbr.setup(|app| {
+            let _window = app.get_webview_window("main").unwrap();
+            {
+                _window.open_devtools();
+            }
+            Ok(())
+        })
+    } else {
         tbr = tbr.plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {
             let _ = _app
                 .get_webview_window("main")
@@ -136,15 +144,8 @@ pub fn run() {
                 .set_focus();
         }))
     }
-    tbr.setup(|app| {
-        let _window = app.get_webview_window("main").unwrap();
-        #[cfg(debug_assertions)]
-        {
-            _window.open_devtools();
-        }
-        Ok(())
-    })
-    .invoke_handler(tauri::generate_handler![load_config,])
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+
+    tbr.invoke_handler(tauri::generate_handler![load_config,])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }
