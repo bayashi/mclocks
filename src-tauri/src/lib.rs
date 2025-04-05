@@ -131,6 +131,7 @@ pub fn run() {
     if IS_DEV {
         tbr = tbr.setup(|app| {
             let _window = app.get_webview_window("main").unwrap();
+            #[cfg(debug_assertions)]
             {
                 _window.open_devtools();
             }
