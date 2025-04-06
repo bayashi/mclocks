@@ -12,7 +12,7 @@ importers:
         specifier: 2.4.0
         version: 2.4.0
       '@tauri-apps/plugin-window-state':
-        specifier: ~2.2.2
+        specifier: 2.2.2
         version: 2.2.2
       cdate:
         specifier: 0.0.7
