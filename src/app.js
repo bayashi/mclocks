@@ -1,11 +1,13 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window'
+import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
 import { cdate } from 'cdate';
 
 import { escapeHTML, pad } from './util.js';
 
 let elClocks = document.querySelector("#mclocks");
 let Config;
+let ignoreOnMoved = false
 
 window.addEventListener("DOMContentLoaded", () => {
   main()
@@ -24,6 +26,17 @@ async function main() {
   initClocks();
   adjustWindowSize()
   setAlwaysOnTop()
+
+  const unlisten = await getCurrentWindow().onMoved(() => {
+    if (ignoreOnMoved) {
+      return
+    }
+    ignoreOnMoved = true
+    setTimeout(function () {
+      saveWindowState(StateFlags.ALL);
+      ignoreOnMoved = false;
+    }, 5000);
+  });
 
   tick(); // loop
 }
