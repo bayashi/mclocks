@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window'
+import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
 import { cdate } from 'cdate';
 
@@ -100,7 +100,7 @@ async function adjustWindowSize() {
 
   try {
     await getCurrentWindow().setSize(new LogicalSize(w, elClocks.offsetHeight + 4))
-  } catch(e) {
+  } catch (e) {
     console.log("err setSize", e);
     elClocks.textContent = "Err: " + e;
   }
@@ -109,7 +109,7 @@ async function adjustWindowSize() {
 async function setAlwaysOnTop() {
   try {
     await getCurrentWindow().setAlwaysOnTop(Config.forefront)
-  } catch(e) {
+  } catch (e) {
     console.log("err setAlwaysOnTop", e);
     elClocks.textContent = "Err: " + e;
   }
