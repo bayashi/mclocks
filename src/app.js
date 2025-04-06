@@ -27,7 +27,7 @@ async function main() {
   adjustWindowSize()
   setAlwaysOnTop()
 
-  const unlisten = await getCurrentWindow().onMoved(() => {
+  await getCurrentWindow().onMoved(() => {
     if (ignoreOnMoved) {
       return
     }
