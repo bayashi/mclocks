@@ -38,7 +38,9 @@ async function main() {
     }, 5000);
   });
 
-  tick(); // loop
+  Config.clocks.map(function (clock) {
+    tick(clock);
+  });
 }
 
 function initStyles() {
@@ -75,26 +77,23 @@ function renderClockHTML(clock) {
   }
 }
 
-function tick() {
-  tock()
-  setTimeout(tick, 1000 - Date.now() % 1000);
+function tick(clock) {
+  tock(clock)
+  setTimeout(function(){ tick(clock) }, 1000 - Date.now() % 1000);
 }
 
-function tock() {
-  Config.clocks.map(function (clock) {
-    if (clock.target) {
-      clock.el.innerHTML = escapeHTML(buildCountdown(clock.target, clock.timezone, clock.countdown));
-    } else {
-      clock.el.innerHTML = escapeHTML(clock.fn().format(Config.format));
-    }
-  });
+function tock(clock) {
+  if (clock.target) {
+    clock.el.innerHTML = escapeHTML(buildCountdown(clock.target, clock.timezone, clock.countdown));
+  } else {
+    clock.el.innerHTML = escapeHTML(clock.fn().format(Config.format));
+  }
 }
 
 async function adjustWindowSize() {
-  tock()
-
   let w = 0;
   Config.clocks.map(function (clock) {
+    tock(clock)
     w += clock.el.parentElement.offsetWidth;
   });
 
