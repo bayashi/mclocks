@@ -134,8 +134,7 @@ fn load_config() -> Result<Config, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut tbr =
-        tauri::Builder::default();
+    let mut tbr = tauri::Builder::default();
     if IS_DEV {
         tbr = tbr.setup(|app| {
             let _window = app.get_webview_window("main").unwrap();
