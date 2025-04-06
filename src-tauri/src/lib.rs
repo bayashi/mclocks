@@ -134,7 +134,8 @@ fn load_config() -> Result<Config, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut tbr = tauri::Builder::default();
+    let mut tbr =
+        tauri::Builder::default();
     if IS_DEV {
         tbr = tbr.setup(|app| {
             let _window = app.get_webview_window("main").unwrap();
@@ -153,7 +154,8 @@ pub fn run() {
         }))
     }
 
-    tbr.invoke_handler(tauri::generate_handler![load_config,])
+    tbr.plugin(tauri_plugin_window_state::Builder::new().build())
+        .invoke_handler(tauri::generate_handler![load_config,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
