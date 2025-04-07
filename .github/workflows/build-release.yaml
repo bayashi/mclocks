@@ -12,19 +12,12 @@ jobs:
     runs-on: "ubuntu-22.04"
     steps:
       - uses: actions/checkout@v4
-
-      - name: tag version
-        run: |
-          VERSION=$(echo "${GITHUB_REF_NAME}" | sed 's/^v//')
-          echo "MCLOCKS_TAG_VERSION=$VERSION" >> $GITHUB_ENV
-      - name: package.json version
-        run: |
-          VERSION=$(jq -r .version < package.json)
-          echo "MCLOCKS_PACKAGE_VER=$VERSION" >> $GITHUB_ENV
       - name: verify versions
         run: |
-          if [ "$MCLOCKS_TAG_VERSION" != "$MCLOCKS_PACKAGE_VER" ]; then
-            echo "❌ MCLOCKS_TAG_VERSION and MCLOCKS_PACKAGE_VER are wrong!"
+          MCLOCKS_TAG_VER=$(echo "${GITHUB_REF_NAME}" | sed 's/^v//')
+          MCLOCKS_PACKAGE_VER=$(jq -r .version < package.json)
+          if [ "$MCLOCKS_TAG_VER" != "$MCLOCKS_PACKAGE_VER" ]; then
+            echo "❌ MCLOCKS_TAG_VER:$MCLOCKS_TAG_VER and MCLOCKS_PACKAGE_VER:$MCLOCKS_PACKAGE_VER are wrong!"
             exit 1
           fi
 
