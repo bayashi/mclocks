@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "2.4.0",
+    "@tauri-apps/plugin-os": "2.2.1",
     "@tauri-apps/plugin-window-state": "2.2.2",
     "cdate": "0.0.7"
   },
