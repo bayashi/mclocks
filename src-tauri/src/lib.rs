@@ -153,7 +153,8 @@ pub fn run() {
         }))
     }
 
-    tbr.plugin(tauri_plugin_window_state::Builder::new().build())
+    tbr.plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_window_state::Builder::new().build())
         .invoke_handler(tauri::generate_handler![load_config,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

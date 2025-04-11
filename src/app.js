@@ -1,15 +1,35 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
+import { platform } from '@tauri-apps/plugin-os';
 import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
 import { cdate } from 'cdate';
 
 import { escapeHTML, pad } from './util.js';
 
+const currentPlatform = platform();
 let elClocks = document.querySelector("#mclocks");
 let Config;
 let ignoreOnMoved = false
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+  elClocks.addEventListener("mousedown", async () => {
+    await getCurrentWindow().startDragging();
+  })
+
+  await getCurrentWindow().onMoved(() => {
+    // Not support to save window-state onMoved for macOS.
+    // Just save window-state on quit mclocks for macOS.
+    // Because `saveWindowState(StateFlags.ALL)` doesn't work somehow on macOS (at least Mac OS 15.4.0 arm64 X64)
+    if (ignoreOnMoved || currentPlatform === 'macos') {
+      return
+    }
+    ignoreOnMoved = true
+    setTimeout(async function () {
+      await saveWindowState(StateFlags.ALL);
+      ignoreOnMoved = false;
+    }, 5000);
+  });
+
   main()
 });
 
@@ -26,17 +46,6 @@ async function main() {
   initClocks();
   adjustWindowSize()
   setAlwaysOnTop()
-
-  await getCurrentWindow().onMoved(() => {
-    if (ignoreOnMoved) {
-      return
-    }
-    ignoreOnMoved = true
-    setTimeout(function () {
-      saveWindowState(StateFlags.ALL);
-      ignoreOnMoved = false;
-    }, 5000);
-  });
 
   Config.clocks.map(function (clock) {
     tick(clock);
