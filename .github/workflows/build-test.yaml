@@ -9,10 +9,11 @@ on:
     paths-ignore:
       - '**/*.md'
       - '**/.gitignore'
+      - '**/dependabot.yml'
 
 jobs:
-  build-on-linux-ubuntu-22:
-    runs-on: "ubuntu-22.04"
+  build-on-macOS:
+    runs-on: "macos-latest"
     steps:
       - uses: actions/checkout@v4
 
@@ -21,13 +22,18 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: install frontend dependencies
         run: |
           npm install -g pnpm
           pnpm install
+
+      - name: display version info
+        run: |
+          pnpm tauri info
+
+      - name: try to build
+        run: |
           pnpm tauri build
