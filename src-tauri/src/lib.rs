@@ -153,8 +153,14 @@ pub fn run() {
         }))
     }
 
-    tbr.plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_window_state::Builder::new().build())
+    let mut ws = tauri_plugin_window_state::Builder::new();
+    if IS_DEV {
+        let filename = format!("{}{}", ".dev", tauri_plugin_window_state::DEFAULT_FILENAME);
+        ws = tauri_plugin_window_state::Builder::with_filename(ws, filename);
+    }
+
+    tbr.plugin(ws.build())
+        .plugin(tauri_plugin_os::init())
         .invoke_handler(tauri::generate_handler![load_config,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
