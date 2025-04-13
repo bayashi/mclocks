@@ -63,10 +63,10 @@ fn get_config_file() -> String {
     }
 }
 
-const OLD_CONFIG_DIR: String = if IS_DEV { "mclocks.dev".to_string() } else { "mclocks".to_string() };
+const OLD_CONFIG_DIR: &str = if IS_DEV { "mclocks.dev" } else { "mclocks" };
 
 fn get_old_config_app_path() -> String {
-    vec![OLD_CONFIG_DIR, get_config_file()].join("/")
+    vec![OLD_CONFIG_DIR, &get_config_file()].join("/")
 }
 
 fn get_config_app_path() -> String {
