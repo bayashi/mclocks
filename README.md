@@ -24,13 +24,19 @@ For Linux, you can get `.deb`, `.rpm` or `.AppImage`.
 
 The `config.json` file allows you to configure the clocks according to your preferences.
 
+There is no GUI(Graphical User Interface) for editing the `config.json` file in `com.bayashi.mclocks`. You will need to manually create and open and edit it using your text editor.
+
 The `config.json` file should be located in the following directories:
 
-* Windows: `C:\Users\{USER}\AppData\Roaming\mclocks\`
-* Mac: `/Users/{USER}/Library/Application Support/mclocks/`
-* Linux: `/home/{USER}/.config/mclocks/`
+* Windows: `C:\Users\{USER}\AppData\Roaming\com.bayashi.mclocks\`
+* Mac: `/Users/{USER}/Library/Application Support/com.bayashi.mclocks/`
+* Linux: `/home/{USER}/.config/com.bayashi.mclocks/`
 
-There is no GUI(Graphical User Interface) for editing the `config.json` file in `mclocks`. You will need to open and edit it directly using your text editor.
+### Backwards Compatibility Notes
+
+The directory of the `config.json` file has been changed to `com.bayashi.mclocks` from just `mclocks` after version 0.2.9. Please create and move your old `mclocks/config.json` to new directory `com.bayashi.mclocks/config.json` if necessary.
+
+(Actually, the `mclocks` can load old config path so far though)
 
 ### Example of config.json
 

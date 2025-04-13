@@ -2,6 +2,7 @@ use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::Manager;
+use tauri::Config;
 
 const IS_DEV: bool = tauri::is_dev();
 
@@ -17,7 +18,7 @@ struct Clock {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Config {
+struct AppConfig {
     #[serde(default)]
     clocks: Vec<Clock>,
     #[serde(default)]
@@ -38,7 +39,7 @@ struct Config {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct OldConfig {
+struct OldAppConfig {
     #[serde(default)]
     clocks: Vec<Clock>,
     #[serde(default)]
@@ -53,15 +54,34 @@ struct OldConfig {
     always_on_top: bool,
 }
 
-const CONFIG_DIR: &str = if IS_DEV { "mclocks.dev" } else { "mclocks" };
-const CONFIG_FILE: &str = "config.json";
-
-fn get_config_app_path() -> String {
-    vec![CONFIG_DIR, CONFIG_FILE].join("/")
+fn get_config_file() -> String {
+    let config_file = "config.json";
+    if IS_DEV {
+        format!("dev.{}", config_file)
+    } else {
+        config_file.to_string()
+    }
 }
 
-fn merge_configs(old: OldConfig, new: Config) -> Config {
-    Config {
+const OLD_CONFIG_DIR: String = if IS_DEV { "mclocks.dev".to_string() } else { "mclocks".to_string() };
+
+fn get_old_config_app_path() -> String {
+    vec![OLD_CONFIG_DIR, get_config_file()].join("/")
+}
+
+fn get_config_app_path() -> String {
+    vec![get_app_identifier().as_str(), get_config_file().as_str()].join("/")
+}
+
+fn get_app_identifier() -> String {
+    let context: tauri::Context<tauri::Wry> = tauri::generate_context!();
+    let config: &Config = context.config();
+
+    config.identifier.clone()
+}
+
+fn merge_configs(old: OldAppConfig, new: AppConfig) -> AppConfig {
+    AppConfig {
         clocks: if new.clocks.len() > 0 {
             new.clocks
         } else if old.clocks.len() > 0 {
@@ -117,17 +137,21 @@ fn merge_configs(old: OldConfig, new: Config) -> Config {
 }
 
 #[tauri::command]
-fn load_config() -> Result<Config, String> {
+fn load_config() -> Result<AppConfig, String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
-    let config_path = base_dir.config_dir().join(get_config_app_path());
+    let mut config_path = base_dir.config_dir().join(get_config_app_path());
 
     if !config_path.exists() {
-        return Err(format!("Config file `{}` not found", config_path.display()));
+        let old_config_path = base_dir.config_dir().join(get_old_config_app_path());
+        if !old_config_path.exists() {
+            return Err(format!("Config file `{}` not found", config_path.display()));
+        }
+        config_path = old_config_path;
     }
 
     let json = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
-    let old_config: OldConfig = serde_json::from_str(&json).map_err(|e| e.to_string())?;
-    let new_config: Config = serde_json::from_str(&json).map_err(|e| e.to_string())?;
+    let old_config: OldAppConfig = serde_json::from_str(&json).map_err(|e| e.to_string())?;
+    let new_config: AppConfig = serde_json::from_str(&json).map_err(|e| e.to_string())?;
 
     Ok(merge_configs(old_config, new_config))
 }
