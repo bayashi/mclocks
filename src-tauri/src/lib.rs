@@ -6,6 +6,8 @@ use tauri::Config;
 
 const IS_DEV: bool = tauri::is_dev();
 
+const WINDOW_NAME: &str = "main";
+
 #[derive(Serialize, Deserialize, Debug)]
 struct Clock {
     #[serde(default)]
@@ -161,7 +163,7 @@ pub fn run() {
     let mut tbr = tauri::Builder::default();
     if IS_DEV {
         tbr = tbr.setup(|app| {
-            let _window = app.get_webview_window("main").unwrap();
+            let _window = app.get_webview_window(WINDOW_NAME).unwrap();
             #[cfg(debug_assertions)]
             {
                 _window.open_devtools();
@@ -171,8 +173,8 @@ pub fn run() {
     } else {
         tbr = tbr.plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {
             let _ = _app
-                .get_webview_window("main")
-                .expect("execute only main window")
+                .get_webview_window(WINDOW_NAME)
+                .expect(&format!("execute only {} window", WINDOW_NAME))
                 .set_focus();
         }))
     }
