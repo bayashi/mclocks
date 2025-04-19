@@ -111,6 +111,10 @@ The countdown clock hasn't been tested enough though. Probably work if your conf
 
 The `format` field is a date-time format string used to display the clock. To create a custom date-time format, please refer to [this formatting guide](https://momentjs.com/docs/#/parsing/string-format/).
 
+#### format2
+
+The `format2` field is same as `format`. These are switched each other by clicking the mclocks. The `format2` is optional field.
+
 #### locale
 
 The `locale` field determines the language settings for displaying the date-time. You can find [a list of supported locales here](https://github.com/kawanet/cdate-locale/blob/main/locales.yml).
