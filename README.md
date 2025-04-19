@@ -55,6 +55,8 @@ The `config.json` file should be formatted as JSON, as shown below.
       "forefront": false
     }
 
+## The fields of config.json
+
 #### clocks
 
 The `clocks` field is an array of objects, each containing `name` and `timezone` properties. Both should be String.
@@ -73,39 +75,6 @@ Here is an example of a `clocks` array for three time zones.
       "format": "MM-DD ddd HH:mm",
       ...snip...
     }
-
-##### Countdown clock (slightly experimental)
-
-By setting up the config as shown below for the `clock`, it will be displayed as a countdown clock to a given date-time.
-
-	"clocks": [
-		{
-			"countdown": "WAC Tokyo D-%D %h:%m:%s",
-			"target": "2025-09-13",
-			"timezone": "Asia/Tokyo"
-		}
-	],
-
-Above countdown `clock` will be displayed like below:
-
-    WAC Tokyo D-159 12:34:56
-
-Indicating 159 days, 12 hours, 34 minutes, and 56 seconds left until September 13, 2025.
-
-###### Countdown format verbs
-
-The countdown text accepts template verbs below:
-
-* `%TG`: Target date-time string
-* `%D`: Remaining day count to target date-time
-* `%H`: Remaining time as hour to target date-time
-* `%h`: An hour(hh) of remaining time (hh:mm:ss)
-* `%M`: Remaining time as minute to target date-time
-* `%m`: A minute(mm) of remaining time (hh:mm:ss)
-* `%S`: Remaining time as second to target date-time
-* `%m`: A second(ss) of remaining time (hh:mm:ss)
-
-The countdown clock hasn't been tested enough though. Probably work if your configs are lucky :P
 
 #### format
 
@@ -138,6 +107,39 @@ The `margin` field determines the space between clocks
 #### forefront
 
 If the `forefront` field is set to `true`, the mclocks application will always be displayed on top of other application windows. 
+
+### Countdown clock
+
+By setting up the config as shown below for the `clock`, it will be displayed as a countdown clock to a given date-time.
+
+	"clocks": [
+		{
+			"countdown": "WAC Tokyo D-%D %h:%m:%s",
+			"target": "2025-09-13",
+			"timezone": "Asia/Tokyo"
+		}
+	],
+
+Above countdown `clock` will be displayed like below:
+
+    WAC Tokyo D-159 12:34:56
+
+Indicating 159 days, 12 hours, 34 minutes, and 56 seconds left until September 13, 2025.
+
+###### Countdown format verbs
+
+The countdown text accepts template verbs below:
+
+* `%TG`: Target date-time string
+* `%D`: Remaining day count to target date-time
+* `%H`: Remaining time as hour to target date-time
+* `%h`: An hour(hh) of remaining time (hh:mm:ss)
+* `%M`: Remaining time as minute to target date-time
+* `%m`: A minute(mm) of remaining time (hh:mm:ss)
+* `%S`: Remaining time as second to target date-time
+* `%m`: A second(ss) of remaining time (hh:mm:ss)
+
+----------
 
 ## License
 
