@@ -10,10 +10,19 @@ const currentPlatform = platform();
 let elClocks = document.querySelector("#mclocks");
 let Config;
 let ignoreOnMoved = false
+let switchFormat = false
 
 window.addEventListener("DOMContentLoaded", async () => {
   elClocks.addEventListener("mousedown", async () => {
     await getCurrentWindow().startDragging();
+  })
+
+  elClocks.addEventListener("click", async () => {
+    if (!Config || !Config.format2) {
+      return
+    }
+    switchFormat = !switchFormat
+    adjustWindowSize()
   })
 
   await getCurrentWindow().onMoved(() => {
@@ -95,7 +104,11 @@ function tock(clock) {
   if (clock.target) {
     clock.el.innerHTML = escapeHTML(buildCountdown(clock.target, clock.timezone, clock.countdown));
   } else {
-    clock.el.innerHTML = escapeHTML(clock.fn().format(Config.format));
+    let format = Config.format
+    if (switchFormat) {
+      format = Config.format2
+    }
+    clock.el.innerHTML = escapeHTML(clock.fn().format(format));
   }
 }
 

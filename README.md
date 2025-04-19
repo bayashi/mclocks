@@ -55,6 +55,8 @@ The `config.json` file should be formatted as JSON, as shown below.
       "forefront": false
     }
 
+## The fields of config.json
+
 #### clocks
 
 The `clocks` field is an array of objects, each containing `name` and `timezone` properties. Both should be String.
@@ -74,7 +76,39 @@ Here is an example of a `clocks` array for three time zones.
       ...snip...
     }
 
-##### Countdown clock (slightly experimental)
+#### format
+
+The `format` field is a date-time format string used to display the clock. To create a custom date-time format, please refer to [this formatting guide](https://momentjs.com/docs/#/parsing/string-format/).
+
+#### format2
+
+The `format2` field is same as `format`. These are switched each other by clicking the mclocks. The `format2` is optional field.
+
+#### locale
+
+The `locale` field determines the language settings for displaying the date-time. You can find [a list of supported locales here](https://github.com/kawanet/cdate-locale/blob/main/locales.yml).
+
+#### color
+
+The `color` field defines the color of the date-time text. You can use named colors, RGB hex values, RGB values (e.g., RGB(255, 0, 0)), or any valid CSS color value.
+
+#### font
+
+The `font` is a font name to display date-time. It should be monospaced font. If you would set non-fixed-width font, then your mclocks may have an undesirable wobbling effect.
+
+#### size
+
+The `size` is a size of charactor for date-time, in pixel.
+
+#### margin
+
+The `margin` field determines the space between clocks
+
+#### forefront
+
+If the `forefront` field is set to `true`, the mclocks application will always be displayed on top of other application windows. 
+
+### Countdown clock
 
 By setting up the config as shown below for the `clock`, it will be displayed as a countdown clock to a given date-time.
 
@@ -105,35 +139,7 @@ The countdown text accepts template verbs below:
 * `%S`: Remaining time as second to target date-time
 * `%m`: A second(ss) of remaining time (hh:mm:ss)
 
-The countdown clock hasn't been tested enough though. Probably work if your configs are lucky :P
-
-#### format
-
-The `format` field is a date-time format string used to display the clock. To create a custom date-time format, please refer to [this formatting guide](https://momentjs.com/docs/#/parsing/string-format/).
-
-#### locale
-
-The `locale` field determines the language settings for displaying the date-time. You can find [a list of supported locales here](https://github.com/kawanet/cdate-locale/blob/main/locales.yml).
-
-#### color
-
-The `color` field defines the color of the date-time text. You can use named colors, RGB hex values, RGB values (e.g., RGB(255, 0, 0)), or any valid CSS color value.
-
-#### font
-
-The `font` is a font name to display date-time. It should be monospaced font. If you would set non-fixed-width font, then your mclocks may have an undesirable wobbling effect.
-
-#### size
-
-The `size` is a size of charactor for date-time, in pixel.
-
-#### margin
-
-The `margin` field determines the space between clocks
-
-#### forefront
-
-If the `forefront` field is set to `true`, the mclocks application will always be displayed on top of other application windows. 
+----------
 
 ## License
 
