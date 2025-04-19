@@ -32,6 +32,8 @@ struct AppConfig {
     #[serde(default)]
     format: String,
     #[serde(default)]
+    format2: String,
+    #[serde(default)]
     locale: String,
     #[serde(default)]
     forefront: bool,
@@ -122,6 +124,7 @@ fn merge_configs(old: OldAppConfig, new: AppConfig) -> AppConfig {
         } else {
             "MM-DD ddd HH:mm".to_string()
         },
+        format2: new.format2,
         locale: if new.locale != "" {
             new.locale
         } else if old.locale_date_time != "" {
