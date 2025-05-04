@@ -1,8 +1,8 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use tauri::Manager;
 use tauri::Config;
+use tauri::Manager;
 
 const IS_DEV: bool = tauri::is_dev();
 
@@ -20,6 +20,7 @@ struct Clock {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct AppConfig {
     #[serde(default)]
     clocks: Vec<Clock>,
@@ -39,6 +40,14 @@ struct AppConfig {
     forefront: bool,
     #[serde(default)]
     margin: String,
+    #[serde(default)]
+    timer_icon: String,
+    #[serde(default)]
+    without_notification: bool,
+    #[serde(default)]
+    max_timer_clock_number: i32,
+    #[serde(default)]
+    epoch_clock_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -138,6 +147,22 @@ fn merge_configs(old: OldAppConfig, new: AppConfig) -> AppConfig {
         } else {
             "1.65em".to_string()
         },
+        timer_icon: if new.timer_icon != "" {
+            new.timer_icon
+        } else {
+            "⧖ ".to_string()
+        },
+        without_notification: new.without_notification,
+        max_timer_clock_number: if new.max_timer_clock_number > 0 {
+            new.max_timer_clock_number
+        } else {
+            5
+        },
+        epoch_clock_name: if new.epoch_clock_name != "" {
+            new.epoch_clock_name
+        } else {
+            "Epoch".to_string()
+        },
     }
 }
 
@@ -190,6 +215,9 @@ pub fn run() {
 
     tbr.plugin(ws.build())
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![load_config,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
