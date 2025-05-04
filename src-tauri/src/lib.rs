@@ -1,8 +1,9 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use tauri::Config;
+use std::sync::Arc;
 use tauri::Manager;
+use tauri::State;
 
 const IS_DEV: bool = tauri::is_dev();
 
@@ -82,15 +83,12 @@ fn get_old_config_app_path() -> String {
     vec![OLD_CONFIG_DIR, &get_config_file()].join("/")
 }
 
-fn get_config_app_path() -> String {
-    vec![get_app_identifier().as_str(), get_config_file().as_str()].join("/")
+fn get_config_app_path(context_config: &ContextConfig) -> String {
+    vec![get_app_identifier(context_config).as_str(), get_config_file().as_str()].join("/")
 }
 
-fn get_app_identifier() -> String {
-    let context: tauri::Context<tauri::Wry> = tauri::generate_context!();
-    let config: &Config = context.config();
-
-    config.identifier.clone()
+fn get_app_identifier(context_config: &ContextConfig) -> String {
+    context_config.app_identifier.clone()
 }
 
 fn merge_configs(old: OldAppConfig, new: AppConfig) -> AppConfig {
@@ -167,9 +165,9 @@ fn merge_configs(old: OldAppConfig, new: AppConfig) -> AppConfig {
 }
 
 #[tauri::command]
-fn load_config() -> Result<AppConfig, String> {
+fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
-    let mut config_path = base_dir.config_dir().join(get_config_app_path());
+    let mut config_path = base_dir.config_dir().join(get_config_app_path(&state));
 
     if !config_path.exists() {
         let old_config_path = base_dir.config_dir().join(get_old_config_app_path());
@@ -186,9 +184,21 @@ fn load_config() -> Result<AppConfig, String> {
     Ok(merge_configs(old_config, new_config))
 }
 
+struct ContextConfig {
+    app_identifier: String,
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut tbr = tauri::Builder::default();
+
+    let context: tauri::Context<tauri::Wry> = tauri::generate_context!();
+    let identifier: String = context.config().identifier.clone();
+    let context_config_clone = Arc::new(ContextConfig {
+        app_identifier: identifier,
+    });
+    tbr = tbr.manage(context_config_clone);
+
     if IS_DEV {
         tbr = tbr.setup(|app| {
             let _window = app.get_webview_window(WINDOW_NAME).unwrap();
@@ -219,6 +229,6 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![load_config,])
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running tauri application");
 }
