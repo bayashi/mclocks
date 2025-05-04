@@ -82,7 +82,7 @@ The `format` field is a date-time format string used to display the clock. To cr
 
 #### format2
 
-The `format2` field is same as `format`. These are switched each other by clicking the mclocks. The `format2` is optional field.
+The `format2` field is same as `format`. These are switched each other by `Ctrl + f` key. The `format2` is optional field.
 
 #### locale
 
@@ -108,7 +108,7 @@ The `margin` field determines the space between clocks
 
 If the `forefront` field is set to `true`, the mclocks application will always be displayed on top of other application windows. 
 
-### Countdown clock
+## Countdown clock
 
 By setting up the config as shown below for the `clock`, it will be displayed as a countdown clock to a given date-time.
 
@@ -126,7 +126,7 @@ Above countdown `clock` will be displayed like below:
 
 Indicating 159 days, 12 hours, 34 minutes, and 56 seconds left until September 13, 2025.
 
-###### Countdown format verbs
+### Countdown format verbs
 
 The countdown text accepts template verbs below:
 
@@ -138,6 +138,24 @@ The countdown text accepts template verbs below:
 * `%m`: A minute(mm) of remaining time (hh:mm:ss)
 * `%S`: Remaining time as second to target date-time
 * `%m`: A second(ss) of remaining time (hh:mm:ss)
+
+## Simple Timer
+
+Click `mclocks` app window, then push `Ctrl + 1` key, then start 1-minute timer. Push `Ctrl + Alt + 1` key, start 10-minute timer. Other number keys work as well. Starting timers up to 5.
+
+`Ctrl + p` to pause / re-start the timers.
+
+`Ctrl + 0` to delete the oldest timer. `Ctrl + Alt + 0` to delete the newest timer.
+
+NOTE: Countdown clock and simple timer will send notification by default when the timer is complete. If you don't need notifications, set `withoutNotification: true` in `config.json`.
+
+## Display Epoch time
+
+Click `mclocks` app window, then push `Ctrl + e` key, then toggle to display Epoch time.
+
+## Convert between date-time and Epoch time
+
+Click `mclocks` app window, then paste a date-time or Epoch time, then a dialog appears to display conversion results. And it's able to copy the results to the clipboard. If you don't want to copy, then press `[No]` to just close the dialog.
 
 ----------
 
