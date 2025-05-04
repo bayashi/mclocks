@@ -1,0 +1,130 @@
+import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
+
+import { cdate } from 'cdate';
+
+import { escapeHTML, pad, enqueueNotification } from './util.js';
+
+export function initClocks(ctx, cfg, clocks) {
+  let clocksHtml = '';
+  clocks.getAllClocks().map((clock, index) => {
+    clock.id = "mclk-" + index;
+    clocksHtml = clocksHtml + renderClockHTML(ctx, clock);
+    if (!clock.countdown) {
+      clock.fn = cdate().locale(cfg.locale).tz(clock.timezone).cdateFn();
+    }
+  });
+  ctx.mainElement().innerHTML = "<ul>" + clocksHtml + "</ul>";
+  clocks.getAllClocks().map((clock) => {
+    clock.el = document.getElementById(clock.id);
+    clock.el.style.paddingRight = cfg.margin;
+    if (clock.countdown) {
+      clock.el.title = clock.timerName ?? "Until " + cdate(clock.target).tz(clock.timezone).format("YYYY-MM-DD HH:mm:ssZ");
+    } else if (clock.isEpoch) {
+      clock.el.title = "elapsed since 1970-01-01T00:00:00Z";
+      clock.el.parentElement.hidden = !ctx.displayEpoch();
+      clock.el.parentElement.style.display = ctx.displayEpoch() ? "inline" : "none";
+    } else {
+      clock.el.title = clock.timezone + " " + clock.fn().format("Z");
+    }
+  });
+
+  function renderClockHTML(ctx, clock) {
+    if (clock.countdown) {
+      return "<li><span id='" + clock.id + "'>" + escapeHTML(buildCountdown(ctx, clock)) + "</span></li>";
+    } else {
+      return "<li>" + escapeHTML(clock.name) + " <span id='" + clock.id + "'></span></li>";
+    }
+  }
+}
+
+export async function adjustWindowSize(ctx, clocks) {
+  let w = 0;
+  clocks.getAllClocks().map((clock) => {
+    tock(ctx, clock);
+    w += clock.el.parentElement.offsetWidth;
+  });
+
+  try {
+    await getCurrentWindow().setSize(new LogicalSize(w, ctx.mainElement().offsetHeight))
+  } catch (e) {
+    ctx.mainElement().textContent = "Err: " + e;
+    throw new Error(e);
+  }
+}
+
+export function startClocks(ctx, clocks) {
+  clocks.getAllClocks().map((clock) => {
+    tick(ctx, clock);
+  });
+}
+
+export function addTimerClock(ctx, cfg, clocks, timerInSec) {
+  clocks.pushTimerClock({
+    countdown: ctx.timerIcon() + "%M:%s", // The timer clock is just an alternative countdown timer
+    target: ctx.cdateUTC().add(timerInSec, "s").text(),
+    timezone: "UTC",
+    id: "mclk-" + (clocks.getAllClocks().length - 1),
+    timerName: (timerInSec / 60) + "-minute timer",
+    pauseStart: null,
+  });
+  initClocks(ctx, cfg, clocks);
+  adjustWindowSize(ctx, clocks);
+  startClocks(ctx, clocks);
+}
+
+export function buildCountdown(ctx, clock) {
+  let diffSec = 0, diffMin = 0, diffHour = 0, diffDay = 0;
+
+  if (!clock.isFinishCountDown) {
+    let diffMS;
+    if (clock.timerName) {
+      diffMS = ctx.cdateUTC(clock.target).t - ctx.cdateUTC(clock.pauseStart).t;
+    } else {
+      // diffMS = targetMS - nowMS - offsetMS
+      diffMS = cdate(clock.target).t - cdate().t - (cdate().tz(clock.timezone).utcOffset() * 60 * 1000);
+    }
+
+    diffMS = diffMS > 0 ? diffMS : 0;
+
+    if (diffMS > 0) {
+      diffSec = Math.floor(diffMS / 1000) + 1;
+      diffMin = Math.floor(diffSec / 60);
+      diffHour = Math.floor(diffMin / 60);
+      diffDay = Math.floor(diffHour / 24);
+    }
+
+    if (diffMS === 0) {
+      clock.isFinishCountDown = true;
+      if (!ctx.withoutNotification()) {
+        enqueueNotification("mclocks", "Beep! " + clock.timerName);
+      }
+    }
+  }
+
+  return clock.countdown
+    .replace("%TG", cdate(clock.target).format("YYYY-MM-DD HH:mm:ssZ"))
+    .replace("%D", diffDay)
+    .replace("%H", pad(diffHour))
+    .replace("%h", pad(diffHour % 24))
+    .replace("%M", pad(diffMin))
+    .replace("%m", pad(diffMin % 60))
+    .replace("%S", pad(diffSec))
+    .replace("%s", pad(diffSec % 60));
+}
+
+async function tick(ctx, clock) {
+  tock(ctx, clock);
+  clock.timeoutId = setTimeout(() => { tick(ctx, clock) }, 1000 - Date.now() % 1000);
+}
+
+async function tock(ctx, clock) {
+  if (clock.countdown) {
+    clock.el.innerHTML = escapeHTML(buildCountdown(ctx, clock));
+  } else {
+    if (clock.isEpoch) {
+      clock.el.innerHTML = "" + Math.trunc(clock.fn().t / 1000);
+    } else {
+      clock.el.innerHTML = escapeHTML(clock.fn().format(ctx.format()));
+    }
+  }
+}

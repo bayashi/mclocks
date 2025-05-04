@@ -24,13 +24,19 @@ For Linux, you can get `.deb`, `.rpm` or `.AppImage`.
 
 The `config.json` file allows you to configure the clocks according to your preferences.
 
+There is no GUI(Graphical User Interface) for editing the `config.json` file in `com.bayashi.mclocks`. You will need to manually create and open and edit it using your text editor.
+
 The `config.json` file should be located in the following directories:
 
-* Windows: `C:\Users\{USER}\AppData\Roaming\mclocks\`
-* Mac: `/Users/{USER}/Library/Application Support/mclocks/`
-* Linux: `/home/{USER}/.config/mclocks/`
+* Windows: `C:\Users\{USER}\AppData\Roaming\com.bayashi.mclocks\`
+* Mac: `/Users/{USER}/Library/Application Support/com.bayashi.mclocks/`
+* Linux: `/home/{USER}/.config/com.bayashi.mclocks/`
 
-There is no GUI(Graphical User Interface) for editing the `config.json` file in `mclocks`. You will need to open and edit it directly using your text editor.
+### Backwards Compatibility Notes
+
+The directory of the `config.json` file has been changed to `com.bayashi.mclocks` from just `mclocks` after version 0.2.9. Please create and move your old `mclocks/config.json` to new directory `com.bayashi.mclocks/config.json` if necessary.
+
+(Actually, the `mclocks` can load old config path so far though)
 
 ### Example of config.json
 
@@ -48,6 +54,8 @@ The `config.json` file should be formatted as JSON, as shown below.
       "margin": "1.65em",
       "forefront": false
     }
+
+## The fields of config.json
 
 #### clocks
 
@@ -68,42 +76,13 @@ Here is an example of a `clocks` array for three time zones.
       ...snip...
     }
 
-##### Countdown clock (slightly experimental)
-
-By setting up the config as shown below for the `clock`, it will be displayed as a countdown clock to a given date-time.
-
-	"clocks": [
-		{
-			"countdown": "WAC Tokyo D-%D %h:%m:%s",
-			"target": "2025-09-13",
-			"timezone": "Asia/Tokyo"
-		}
-	],
-
-Above countdown `clock` will be displayed like below:
-
-    WAC Tokyo D-159 12:34:56
-
-Indicating 159 days, 12 hours, 34 minutes, and 56 seconds left until September 13, 2025.
-
-###### Countdown format verbs
-
-The countdown text accepts template verbs below:
-
-* `%TG`: Target date-time string
-* `%D`: Remaining day count to target date-time
-* `%H`: Remaining time as hour to target date-time
-* `%h`: An hour(hh) of remaining time (hh:mm:ss)
-* `%M`: Remaining time as minute to target date-time
-* `%m`: A minute(mm) of remaining time (hh:mm:ss)
-* `%S`: Remaining time as second to target date-time
-* `%m`: A second(ss) of remaining time (hh:mm:ss)
-
-The countdown clock hasn't been tested enough though. Probably work if your configs are lucky :P
-
 #### format
 
 The `format` field is a date-time format string used to display the clock. To create a custom date-time format, please refer to [this formatting guide](https://momentjs.com/docs/#/parsing/string-format/).
+
+#### format2
+
+The `format2` field is same as `format`. These are switched each other by `Ctrl + f` key. The `format2` is optional field.
 
 #### locale
 
@@ -128,6 +107,57 @@ The `margin` field determines the space between clocks
 #### forefront
 
 If the `forefront` field is set to `true`, the mclocks application will always be displayed on top of other application windows. 
+
+## Countdown clock
+
+By setting up the config as shown below for the `clock`, it will be displayed as a countdown clock to a given date-time.
+
+	"clocks": [
+		{
+			"countdown": "WAC Tokyo D-%D %h:%m:%s",
+			"target": "2025-09-13",
+			"timezone": "Asia/Tokyo"
+		}
+	],
+
+Above countdown `clock` will be displayed like below:
+
+    WAC Tokyo D-159 12:34:56
+
+Indicating 159 days, 12 hours, 34 minutes, and 56 seconds left until September 13, 2025.
+
+### Countdown format verbs
+
+The countdown text accepts template verbs below:
+
+* `%TG`: Target date-time string
+* `%D`: Remaining day count to target date-time
+* `%H`: Remaining time as hour to target date-time
+* `%h`: An hour(hh) of remaining time (hh:mm:ss)
+* `%M`: Remaining time as minute to target date-time
+* `%m`: A minute(mm) of remaining time (hh:mm:ss)
+* `%S`: Remaining time as second to target date-time
+* `%m`: A second(ss) of remaining time (hh:mm:ss)
+
+## Simple Timer
+
+Click `mclocks` app window, then push `Ctrl + 1` key, then start 1-minute timer. Push `Ctrl + Alt + 1` key, start 10-minute timer. Other number keys work as well. Starting timers up to 5.
+
+`Ctrl + p` to pause / re-start the timers.
+
+`Ctrl + 0` to delete the oldest timer. `Ctrl + Alt + 0` to delete the newest timer.
+
+NOTE: Countdown clock and simple timer will send notification by default when the timer is complete. If you don't need notifications, set `withoutNotification: true` in `config.json`.
+
+## Display Epoch time
+
+Click `mclocks` app window, then push `Ctrl + e` key, then toggle to display Epoch time.
+
+## Convert between date-time and Epoch time
+
+Click `mclocks` app window, then paste a date-time or Epoch time, then a dialog appears to display conversion results. And it's able to copy the results to the clipboard. If you don't want to copy, then press `[No]` to just close the dialog.
+
+----------
 
 ## License
 
