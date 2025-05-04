@@ -14,7 +14,9 @@ export class Ctx {
     this._displayEpoch = false;
   }
 
-  static isMacOS = platform() === 'macOS';
+  isMacOS() {
+    return platform().toLowerCase() === 'macos';
+  }
 
   cdateUTC(cdt) {
     return this._cdateUTC(cdt);
