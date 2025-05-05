@@ -23,6 +23,13 @@ fn df_name() -> String { "UTC".to_string() }
 fn df_timezone() -> String { "UTC".to_string() }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+enum InFontSize {
+    Int(i32),
+    Str(String),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct AppConfig {
     #[serde(default)]
@@ -31,7 +38,7 @@ struct AppConfig {
     font: String,
     #[serde(default = "df_size")]
     #[serde(alias = "font_size")]
-    size: i32,
+    size: InFontSize,
     #[serde(default = "df_color")]
     #[serde(alias = "font_color")]
     color: String,
@@ -59,7 +66,7 @@ struct AppConfig {
 }
 
 fn df_font() -> String { "Courier, monospace".to_string() }
-fn df_size() -> i32 { 14 }
+fn df_size() -> InFontSize { InFontSize::Int(14) }
 fn df_color() -> String { "#fff".to_string() }
 fn df_format() -> String { "MM-DD ddd HH:mm".to_string() }
 fn df_locale() -> String { "en".to_string() }

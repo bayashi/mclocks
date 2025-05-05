@@ -112,9 +112,9 @@ The `font` is a font name to display date-time. It should be monospaced font. If
 
 #### size
 
-Number: 14
+number | string: 14
 
-The `size` is a size of charactor for date-time, in pixel.
+The `size` is a size of charactor for date-time, in pixel. It can also be specified as a string that includes a unit (e.g., `"125%"`, `"1.5em"`).
 
 #### margin
 
