@@ -37,21 +37,21 @@ struct AppConfig {
     #[serde(default = "df_font")]
     font: String,
     #[serde(default = "df_size")]
-    #[serde(alias = "font_size")]
+    #[serde(alias = "fontSize")]
     size: InFontSize,
     #[serde(default = "df_color")]
-    #[serde(alias = "font_color")]
+    #[serde(alias = "fontColor")]
     color: String,
     #[serde(default = "df_format")]
-    #[serde(alias = "format_date_time")]
+    #[serde(alias = "formatDateTime")]
     format: String,
     #[serde(default)]
     format2: Option<String>,
     #[serde(default = "df_locale")]
-    #[serde(alias = "locale_date_time")]
+    #[serde(alias = "localeDateTime")]
     locale: String,
     #[serde(default)]
-    #[serde(alias = "always_on_top")]
+    #[serde(alias = "alwaysOnTop")]
     forefront: bool,
     #[serde(default = "df_margin")]
     margin: String,
