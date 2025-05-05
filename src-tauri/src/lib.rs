@@ -1,9 +1,7 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::sync::Arc;
-use tauri::Manager;
-use tauri::State;
+use std::{fs, sync::Arc};
+use tauri::{Manager, State};
 
 const IS_DEV: bool = tauri::is_dev();
 
