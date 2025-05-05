@@ -8,17 +8,21 @@ The desktop clock application for multiple time zones🕒🌍🕕
 
 From https://github.com/bayashi/mclocks/releases
 
+NOTE: Since macOS binary and Linux binary occasionally don't work properly. Please feel free to open an issue.
+
 ### Windows
 
-For Windows, you can get `.msi` or `.exe` installer.
+For Windows, you can get the installer `.msi` file, or `.exe` the executable file.
 
 ### macOS
 
-For macOS, you can get `.dmg` to install.
+For macOS, you can get `.dmg` file to install.
+
+(The shortcut keys in this document are for Windows OS. If you are using macOS, please interpret them accordingly, replacing keys such as `Ctrl` with `Ctrl + Command` and `Alt` with `Option` where appropriate.)
 
 ### Linux
 
-For Linux, you can get `.deb`, `.rpm` or `.AppImage`.
+For Linux, you can get `.deb`, `.rpm` or `.AppImage` file to install.
 
 ## config.json
 
