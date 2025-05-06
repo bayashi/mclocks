@@ -1,9 +1,7 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::sync::Arc;
-use tauri::Manager;
-use tauri::State;
+use std::{fs, sync::Arc};
+use tauri::{Manager, State};
 
 const IS_DEV: bool = tauri::is_dev();
 
@@ -11,13 +9,22 @@ const WINDOW_NAME: &str = "main";
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Clock {
-    #[serde(default)]
+    #[serde(default = "df_name")]
     name: String,
+    #[serde(default = "df_timezone")]
     timezone: String,
-    #[serde(default)]
-    countdown: String,
-    #[serde(default)]
-    target: String,
+    countdown: Option<String>,
+    target: Option<String>,
+}
+
+fn df_name() -> String { "UTC".to_string() }
+fn df_timezone() -> String { "UTC".to_string() }
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+enum InFontSize {
+    Int(i32),
+    Str(String),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -25,48 +32,46 @@ struct Clock {
 struct AppConfig {
     #[serde(default)]
     clocks: Vec<Clock>,
-    #[serde(default)]
+    #[serde(default = "df_font")]
     font: String,
-    #[serde(default)]
-    size: i32,
-    #[serde(default)]
+    #[serde(default = "df_size")]
+    #[serde(alias = "fontSize")]
+    size: InFontSize,
+    #[serde(default = "df_color")]
+    #[serde(alias = "fontColor")]
     color: String,
-    #[serde(default)]
+    #[serde(default = "df_format")]
+    #[serde(alias = "formatDateTime")]
     format: String,
     #[serde(default)]
-    format2: String,
-    #[serde(default)]
+    format2: Option<String>,
+    #[serde(default = "df_locale")]
+    #[serde(alias = "localeDateTime")]
     locale: String,
     #[serde(default)]
+    #[serde(alias = "alwaysOnTop")]
     forefront: bool,
-    #[serde(default)]
+    #[serde(default = "df_margin")]
     margin: String,
-    #[serde(default)]
+    #[serde(default = "df_timer_icon")]
     timer_icon: String,
     #[serde(default)]
     without_notification: bool,
-    #[serde(default)]
+    #[serde(default = "df_max_timer_clock_number")]
     max_timer_clock_number: i32,
-    #[serde(default)]
+    #[serde(default = "df_epoch_clock_name")]
     epoch_clock_name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct OldAppConfig {
-    #[serde(default)]
-    clocks: Vec<Clock>,
-    #[serde(default)]
-    font_size: i32,
-    #[serde(default)]
-    font_color: String,
-    #[serde(default)]
-    format_date_time: String,
-    #[serde(default)]
-    locale_date_time: String,
-    #[serde(default)]
-    always_on_top: bool,
-}
+fn df_font() -> String { "Courier, monospace".to_string() }
+fn df_size() -> InFontSize { InFontSize::Int(14) }
+fn df_color() -> String { "#fff".to_string() }
+fn df_format() -> String { "MM-DD ddd HH:mm".to_string() }
+fn df_locale() -> String { "en".to_string() }
+fn df_margin() -> String { "1.65em".to_string() }
+fn df_timer_icon() -> String { "⧖ ".to_string() }
+fn df_max_timer_clock_number() -> i32 { 5 }
+fn df_epoch_clock_name() -> String { "Epoch".to_string() }
 
 fn get_config_file() -> String {
     let config_file = "config.json";
@@ -91,79 +96,6 @@ fn get_app_identifier(context_config: &ContextConfig) -> String {
     context_config.app_identifier.clone()
 }
 
-fn merge_configs(old: OldAppConfig, new: AppConfig) -> AppConfig {
-    AppConfig {
-        clocks: if new.clocks.len() > 0 {
-            new.clocks
-        } else if old.clocks.len() > 0 {
-            old.clocks
-        } else {
-            vec![Clock {
-                name: String::from("UTC"),
-                timezone: String::from("UTC"),
-                countdown: String::from(""),
-                target: String::from(""),
-            }]
-        },
-        font: if new.font != "" {
-            new.font
-        } else {
-            "Courier, monospace".to_string()
-        },
-        size: if new.size != 0 {
-            new.size
-        } else if old.font_size != 0 {
-            old.font_size
-        } else {
-            14
-        },
-        color: if new.color != "" {
-            new.color
-        } else if old.font_color != "" {
-            old.font_color
-        } else {
-            "#fff".to_string()
-        },
-        format: if new.format != "" {
-            new.format
-        } else if old.format_date_time != "" {
-            old.format_date_time
-        } else {
-            "MM-DD ddd HH:mm".to_string()
-        },
-        format2: new.format2,
-        locale: if new.locale != "" {
-            new.locale
-        } else if old.locale_date_time != "" {
-            old.locale_date_time
-        } else {
-            "en".to_string()
-        },
-        forefront: new.forefront | old.always_on_top,
-        margin: if new.margin != "" {
-            new.margin
-        } else {
-            "1.65em".to_string()
-        },
-        timer_icon: if new.timer_icon != "" {
-            new.timer_icon
-        } else {
-            "⧖ ".to_string()
-        },
-        without_notification: new.without_notification,
-        max_timer_clock_number: if new.max_timer_clock_number > 0 {
-            new.max_timer_clock_number
-        } else {
-            5
-        },
-        epoch_clock_name: if new.epoch_clock_name != "" {
-            new.epoch_clock_name
-        } else {
-            "Epoch".to_string()
-        },
-    }
-}
-
 #[tauri::command]
 fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
@@ -178,10 +110,8 @@ fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String
     }
 
     let json = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
-    let old_config: OldAppConfig = serde_json::from_str(&json).map_err(|e| e.to_string())?;
-    let new_config: AppConfig = serde_json::from_str(&json).map_err(|e| e.to_string())?;
 
-    Ok(merge_configs(old_config, new_config))
+    Ok(serde_json::from_str(&json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))?)
 }
 
 struct ContextConfig {
