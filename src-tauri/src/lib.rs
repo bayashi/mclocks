@@ -27,10 +27,17 @@ enum InFontSize {
     Str(String),
 }
 
+fn df_clocks() -> Vec<Clock> {
+    let mut cls: Vec<Clock> = Vec::new();
+    cls.push(Clock {name: df_name(), timezone: df_timezone(), countdown: None, target: None});
+
+    cls
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct AppConfig {
-    #[serde(default)]
+    #[serde(default = "df_clocks")]
     clocks: Vec<Clock>,
     #[serde(default = "df_font")]
     font: String,
@@ -98,20 +105,19 @@ fn get_app_identifier(context_config: &ContextConfig) -> String {
 
 #[tauri::command]
 fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
+    let mut config_json = "{}".to_string();
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
     let mut config_path = base_dir.config_dir().join(get_config_app_path(&state));
-
-    if !config_path.exists() {
-        let old_config_path = base_dir.config_dir().join(get_old_config_app_path());
-        if !old_config_path.exists() {
-            return Err(format!("Config file `{}` not found", config_path.display()));
-        }
-        config_path = old_config_path;
+    config_path = if config_path.exists() {
+        config_path
+    } else {
+        base_dir.config_dir().join(get_old_config_app_path())
+    };
+    if config_path.exists() {
+        config_json = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
     }
 
-    let json = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
-
-    Ok(serde_json::from_str(&json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))?)
+    Ok(serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))?)
 }
 
 struct ContextConfig {
