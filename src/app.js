@@ -18,7 +18,7 @@ async function globalInit(ctx) {
     // Not support to save window-state onMoved for macOS.
     // Just save window-state on quit mclocks for macOS.
     // Because `saveWindowState(StateFlags.ALL)` doesn't work somehow on macOS (at least Mac OS 15.4.0 arm64 X64)
-    if (ctx.ignoreOnMoved() || ctx.isMacOS) {
+    if (ctx.ignoreOnMoved() || ctx.isMacOS()) {
       return
     }
     ctx.setIgnoreOnMoved(true);
@@ -29,7 +29,7 @@ async function globalInit(ctx) {
   });
 
   ctx.mainElement().addEventListener("mousedown", async () => {
-    if (ctx.isMacOS) {
+    if (ctx.isMacOS()) {
       await getCurrentWindow().startDragging();
     }
   });
