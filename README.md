@@ -4,6 +4,12 @@ The desktop clock application for multiple time zones🕒🌍🕕
 
 ![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png)
 
+In addition, it also includes features:
+
+* Timer
+* Countdown timer
+* Epoch time and date-time convertor
+
 ## Download
 
 From https://github.com/bayashi/mclocks/releases
@@ -44,7 +50,7 @@ The directory of the `config.json` file has been changed to `com.bayashi.mclocks
 
 ### Example of config.json
 
-The `config.json` file should be formatted as JSON, as shown below.
+The `config.json` file should be formatted as JSON, as shown like below.
 
     {
       "clocks": [
@@ -63,7 +69,7 @@ The `config.json` file should be formatted as JSON, as shown below.
 
 #### clocks
 
-The `clocks` field is an array of objects, each containing `name` and `timezone` properties. Both should be String.
+The `clocks` field is an array of objects, each containing `name` and `timezone` properties. Both should be String. By default, both are `UTC`.
 
 * `name` is a label that will be displayed for the clock.
 * For selecting time zones, please refer to this [list of time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
@@ -82,39 +88,55 @@ Here is an example of a `clocks` array for three time zones.
 
 #### format
 
+string: `MM-DD ddd HH:mm`
+
 The `format` field is a date-time format string used to display the clock. To create a custom date-time format, please refer to [this formatting guide](https://momentjs.com/docs/#/parsing/string-format/).
 
 #### format2
+
+string: `""`
 
 The `format2` field is same as `format`. These are switched each other by `Ctrl + f` key. The `format2` is optional field.
 
 #### locale
 
+string: `en`
+
 The `locale` field determines the language settings for displaying the date-time. You can find [a list of supported locales here](https://github.com/kawanet/cdate-locale/blob/main/locales.yml).
 
 #### color
 
-The `color` field defines the color of the date-time text. You can use named colors, RGB hex values, RGB values (e.g., RGB(255, 0, 0)), or any valid CSS color value.
+string: `#fff`
+
+The `color` field defines the color of the date-time text. You can use named colors, RGB hex values, RGB values (e.g., `RGB(255, 0, 0)`), or any valid CSS color value.
 
 #### font
+
+string: `Courier, monospace`
 
 The `font` is a font name to display date-time. It should be monospaced font. If you would set non-fixed-width font, then your mclocks may have an undesirable wobbling effect.
 
 #### size
 
-The `size` is a size of charactor for date-time, in pixel.
+number | string: 14
+
+The `size` is a size of charactor for date-time, in pixel. It can also be specified as a string that includes a unit (e.g., `"125%"`, `"1.5em"`).
 
 #### margin
+
+string: `1.65em`
 
 The `margin` field determines the space between clocks
 
 #### forefront
 
+bool: `false`
+
 If the `forefront` field is set to `true`, the mclocks application will always be displayed on top of other application windows. 
 
 ## Countdown clock
 
-By setting up the config as shown below for the `clock`, it will be displayed as a countdown clock to a given date-time.
+By setting up the config as shown below for the `clock`, it will be displayed as a countdown clock to a given `target` date-time.
 
 	"clocks": [
 		{
@@ -132,7 +154,7 @@ Indicating 159 days, 12 hours, 34 minutes, and 56 seconds left until September 1
 
 ### Countdown format verbs
 
-The countdown text accepts template verbs below:
+The `countdown` fieled text accepts below template verbs:
 
 * `%TG`: Target date-time string
 * `%D`: Remaining day count to target date-time
