@@ -111,7 +111,7 @@ fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String
 
     let json = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
 
-    Ok(serde_json::from_str(&json).map_err(|e| e.to_string())?)
+    Ok(serde_json::from_str(&json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))?)
 }
 
 struct ContextConfig {
