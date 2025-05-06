@@ -4,6 +4,12 @@ The desktop clock application for multiple time zones🕒🌍🕕
 
 ![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png)
 
+In addition, it also includes features:
+
+* Timer
+* Countdown timer
+* Epoch time and date-time convertor
+
 ## Download
 
 From https://github.com/bayashi/mclocks/releases
@@ -102,7 +108,7 @@ The `locale` field determines the language settings for displaying the date-time
 
 string: `#fff`
 
-The `color` field defines the color of the date-time text. You can use named colors, RGB hex values, RGB values (e.g., RGB(255, 0, 0)), or any valid CSS color value.
+The `color` field defines the color of the date-time text. You can use named colors, RGB hex values, RGB values (e.g., `RGB(255, 0, 0)`), or any valid CSS color value.
 
 #### font
 
