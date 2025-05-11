@@ -42,11 +42,13 @@ The `config.json` file should be located in the following directories:
 * Mac: `/Users/{USER}/Library/Application Support/com.bayashi.mclocks/`
 * Linux: `/home/{USER}/.config/com.bayashi.mclocks/`
 
+When you start `mclocks`, then press `Ctrl + o` to edit your `config.json` file.
+
 ### Backwards Compatibility Notes
 
-The directory of the `config.json` file has been changed to `com.bayashi.mclocks` from just `mclocks` after version 0.2.9. Please create and move your old `mclocks/config.json` to new directory `com.bayashi.mclocks/config.json` if necessary.
+The directory of the `config.json` file has been changed to `com.bayashi.mclocks` from just `mclocks` after version 0.2.9.
 
-(Actually, the `mclocks` can load old config path so far though)
+And after version 0.2.13, old `config.json` file is automatically migrated into new directory if the new config file doesn't exist.
 
 ### Example of config.json
 
