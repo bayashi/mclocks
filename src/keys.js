@@ -1,3 +1,6 @@
+import { invoke } from '@tauri-apps/api/core';
+import { openPath } from '@tauri-apps/plugin-opener'
+
 import { cdate } from 'cdate';
 
 import { adjustWindowSize, addTimerClock } from './matter.js';
@@ -23,6 +26,19 @@ async function withCtrl(e, ctx, cfg, clocks) {
     e.preventDefault();
     ctx.setFormat(ctx.format() === cfg.format && cfg.format2 ? cfg.format2 : cfg.format);
     adjustWindowSize(ctx, clocks);
+    return;
+  }
+
+  if (e.key === "o") {
+    e.preventDefault();
+    try {
+      await openMessageDialog("Please restart mclocks after editing the config.json");
+      const config_path = await invoke("get_config_path");
+      await openPath(config_path);
+    } catch (e) {
+      ctx.mainElement().textContent = "Err: " + e;
+      throw new Error(e);
+    }
     return;
   }
 

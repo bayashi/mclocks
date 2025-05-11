@@ -18,6 +18,17 @@
     "clipboard-manager:allow-write-text",
     "clipboard-manager:allow-read-text",
     "dialog:allow-ask",
-    "dialog:allow-message"
+    "dialog:allow-message",
+    {
+        "identifier": "opener:allow-open-path",
+        "allow": [
+            {
+                "path": "$APPDATA/config.json"
+            },
+            {
+                "path": "$APPDATA/dev.config.json"
+            }
+        ]
+    }
   ]
 }
