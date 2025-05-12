@@ -10,6 +10,8 @@ In addition, it also includes features:
 * Countdown timer
 * Epoch time and date-time convertor
 
+`mclocks` doesn't need an internet connection — everything runs 100% locally.
+
 ## Download
 
 From https://github.com/bayashi/mclocks/releases
@@ -33,8 +35,6 @@ For Linux, you can get `.deb`, `.rpm` or `.AppImage` file to install.
 ## config.json
 
 The `config.json` file allows you to configure the clocks according to your preferences.
-
-There is no GUI(Graphical User Interface) for editing the `config.json` file in `com.bayashi.mclocks`. You will need to manually create and open and edit it using your text editor.
 
 The `config.json` file should be located in the following directories:
 
@@ -165,7 +165,7 @@ The `countdown` fieled text accepts below template verbs:
 * `%M`: Remaining time as minute to target date-time
 * `%m`: A minute(mm) of remaining time (hh:mm:ss)
 * `%S`: Remaining time as second to target date-time
-* `%m`: A second(ss) of remaining time (hh:mm:ss)
+* `%s`: A second(ss) of remaining time (hh:mm:ss)
 
 ## Simple Timer
 
