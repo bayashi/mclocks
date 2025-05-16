@@ -134,7 +134,7 @@ async function conversionHandler(e, ctx, clocks) {
   let origClipboardText = trim(await readClipboardText());
   let src = origClipboardText;
   let isDateTimeText = true;
-  if (src.match(/^[0-9.]+$/)) {
+  if (src.match(/^-?[0-9.]+$/)) {
     // Ctrl + v       --> convert epoch in sec
     // Ctrl + Alt + v --> convert epoch in ms
     src = e.altKey ? Number(src) : Number(src) * 1000;
@@ -151,7 +151,15 @@ async function conversionHandler(e, ctx, clocks) {
 
   let results = [];
   uniqueTimezones(clocks).map((tz) => {
-    results.push(cdate(src).tz(tz).text() + " in " + tz);
+    let result;
+    try {
+      // somehow, tz(timezoneName) doesn't work as expected for large negative value
+      const offset = cdate().tz(tz).utcOffset();
+      result = cdate(src).utcOffset(offset).text() + " in " + tz;
+    } catch (e) {
+      result = e + " in " + tz;
+    }
+    results.push(result);
   });
   if (isDateTimeText) {
     results.push((cdate(src).t / 1000) + " Epoch in seconds" )
