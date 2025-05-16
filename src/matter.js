@@ -45,7 +45,7 @@ export async function adjustWindowSize(ctx, clocks) {
   });
 
   try {
-    await getCurrentWindow().setSize(new LogicalSize(w, ctx.mainElement().offsetHeight))
+    await getCurrentWindow().setSize(new LogicalSize(w + 16, ctx.mainElement().offsetHeight + 16))
   } catch (e) {
     ctx.mainElement().textContent = "Err: " + e;
     throw new Error(e);
