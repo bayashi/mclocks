@@ -6,7 +6,7 @@ import { cdate } from 'cdate';
 import { adjustWindowSize, addTimerClock } from './matter.js';
 import { trim, uniqueTimezones, writeClipboardText, readClipboardText, openAskDialog, openMessageDialog } from './util.js';
 
-export function operationKeysHandler(e, ctx, cfg, clocks) {
+export function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
   if (e.metaKey) {
     if (e.key === "d") {
       e.preventDefault(); // ignore "Windows + D" to keep displaying mclocks
@@ -15,12 +15,12 @@ export function operationKeysHandler(e, ctx, cfg, clocks) {
   }
 
   if (e.ctrlKey) {
-    withCtrl(e, ctx, cfg, clocks);
+    withCtrl(e, pressedKeys, ctx, cfg, clocks);
   }
 }
 
 // operations to be pressed together with Ctrl key
-async function withCtrl(e, ctx, cfg, clocks) {
+async function withCtrl(e, pressedKeys, ctx, cfg, clocks) {
   // switch date-time format if format2 would be defined
   if (e.key === "f") {
     e.preventDefault();
@@ -124,28 +124,48 @@ async function withCtrl(e, ctx, cfg, clocks) {
   }
 
   // convert between epoch time and date-time to paste from the clipboard
-  if (e.key === "v") {
+  if (e.key === "v" || e.key === "V") {
     e.preventDefault();
-    conversionHandler(e, ctx, clocks);
+    conversionHandler(e, pressedKeys, clocks);
   }
 }
 
-async function conversionHandler(e, ctx, clocks) {
+async function conversionHandler(e, pressedKeys, clocks) {
   let origClipboardText = trim(await readClipboardText());
   let src = origClipboardText;
   let isDateTimeText = true;
-  if (src.match(/^-?[0-9.]+$/)) {
-    // Ctrl + v       --> convert epoch in sec
-    // Ctrl + Alt + v --> convert epoch in ms
-    src = e.altKey ? Number(src) : Number(src) * 1000;
+  if (src.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
+    // KEYs                           convert in
+    // Ctrl + v                   --> sec
+    // Ctrl + Alt + v             --> millisec
+    // Ctrl + Alt + Shift + V     --> microsec
+    // Ctrl + Alt + Shift + N + V --> nanosec
+
+    // sec:      -62167219200
+    // millisec: -62167219200000
+    // microsec: -62167219200000000
+    // nanosec:  -62167219200000000000
+    // These are converted into "0000-01-01T00:00:00.000+00:00"
+
+    // normalize as millisec
+    src = e.altKey && e.shiftKey && pressedKeys["N"] ? Number(src) / 1000 / 1000
+      : e.altKey && e.shiftKey ? Number(src) / 1000
+      : e.altKey ? Number(src)
+      : Number(src) * 1000;
     isDateTimeText = false;
   }
-  let unit = " in " + (e.altKey ? "milliseconds" : "seconds");
+  let unit = " in " + (
+      e.altKey && e.shiftKey && pressedKeys["N"] ? "nanosoconds"
+    : e.altKey && e.shiftKey ? "microseconds"
+    : e.altKey ? "milliseconds"
+    : "seconds"
+  );
 
   try {
     cdate(src).tz("UTC").get("year");
   } catch (e) {
-    await openMessageDialog("Could not convert the clipboard text.\n\n" + e, "mclocks Error", "error");
+    const msg = "Could not convert the clipboard text " + (isDateTimeText ? "" : origClipboardText + " ") + unit + ".\n\n" + e;
+    await openMessageDialog(msg, "mclocks Error", "error");
     return;
   }
 
@@ -162,7 +182,7 @@ async function conversionHandler(e, ctx, clocks) {
     results.push(result);
   });
   if (isDateTimeText) {
-    results.push((cdate(src).t / 1000) + " Epoch in seconds" )
+    results.push((cdate(src).t / 1000) + " Epoch in seconds")
     results.push(cdate(src).t + " Epoch in milliseconds")
   }
 
