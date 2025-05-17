@@ -62,8 +62,17 @@ async function main(ctx) {
 
   startClocks(ctx, clocks);
 
+  let pressedKeys = {};
+
   window.addEventListener('keydown', (e) => {
-    operationKeysHandler(e, ctx, cfg, clocks);
+    pressedKeys[e.key] = true;
+    operationKeysHandler(e, pressedKeys, ctx, cfg, clocks);
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (pressedKeys.length > 0) {
+      pressedKeys = {};
+    }
   });
 
   async function initStyles(ctx, cfg) {
