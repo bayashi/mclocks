@@ -1,6 +1,7 @@
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
 import { ask, message } from '@tauri-apps/plugin-dialog';
+import { platform } from '@tauri-apps/plugin-os';
 
 const escapeTarget = {
   '&': '&amp;',
@@ -84,4 +85,15 @@ export async function openMessageDialog(body, title, kind) {
   });
 
   return ret;
+}
+
+const isWin = platform().toLowerCase() === 'windows'
+const isMac = platform().toLowerCase() === 'macos'
+
+export function isMacOS() {
+  return isMac;
+}
+
+export function isWindowsOS() {
+  return isWin;
 }

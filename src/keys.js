@@ -1,55 +1,52 @@
-import { invoke } from '@tauri-apps/api/core';
-import { openPath } from '@tauri-apps/plugin-opener'
-
 import { cdate } from 'cdate';
 
-import { adjustWindowSize, addTimerClock } from './matter.js';
-import { trim, uniqueTimezones, writeClipboardText, readClipboardText, openAskDialog, openMessageDialog } from './util.js';
+import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, addTimerClock } from './matter.js';
+import { trim, uniqueTimezones, writeClipboardText, readClipboardText, openAskDialog, openMessageDialog, isMacOS, isWindowsOS } from './util.js';
+
+// Win   ---> Ctrl
+// macOS ---> Command
+function pressingBaseKey(e) {
+  return isMacOS() ? e.metaKey : e.ctrlKey;
+}
+
+// Win   ---> Alt
+// macOS ---> Control
+function pressingAltKey(e) {
+  return isMacOS()? e.ctrlKey : e.altKey;
+}
 
 export function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
-  if (e.metaKey) {
-    if (e.key === "d") {
+  if (isWindowsOS()) {
+    if (e.metaKey && e.key === "d") {
       e.preventDefault(); // ignore "Windows + D" to keep displaying mclocks
       return;
     }
   }
 
-  if (e.ctrlKey) {
-    withCtrl(e, pressedKeys, ctx, cfg, clocks);
+  if (pressingBaseKey(e)) {
+    withBaseKey(e, pressedKeys, ctx, cfg, clocks);
   }
 }
 
 // operations to be pressed together with Ctrl key
-async function withCtrl(e, pressedKeys, ctx, cfg, clocks) {
+async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   // switch date-time format if format2 would be defined
   if (e.key === "f") {
     e.preventDefault();
-    ctx.setFormat(ctx.format() === cfg.format && cfg.format2 ? cfg.format2 : cfg.format);
-    adjustWindowSize(ctx, clocks);
+    switchFormat(ctx, cfg, clocks);
     return;
   }
 
   if (e.key === "o") {
     e.preventDefault();
-    try {
-      await openMessageDialog("Please restart mclocks after editing the config.json");
-      const config_path = await invoke("get_config_path");
-      await openPath(config_path);
-    } catch (e) {
-      ctx.mainElement().textContent = "Err: " + e;
-      throw new Error(e);
-    }
+    openToEditConfigFile(ctx);
     return;
   }
 
   // toggle to display Epoch time
   if (e.key === "e" || e.key === "u") {
     e.preventDefault();
-    ctx.setDisplayEpoch(!ctx.displayEpoch());
-    const epochClock = clocks.getClocks().at(-1);
-    epochClock.el.parentElement.hidden = !ctx.displayEpoch();
-    epochClock.el.parentElement.style.display = ctx.displayEpoch() ? "inline" : "none";
-    adjustWindowSize(ctx, clocks);
+    toggleEpochTime(ctx, clocks);
     return;
   }
 
@@ -60,7 +57,7 @@ async function withCtrl(e, pressedKeys, ctx, cfg, clocks) {
       e.preventDefault();
       // Ctrl + 1       --> start 1 min timer
       // Ctrl + Alt + 1 --> start 10 mins timer
-      const coef = e.altKey ? 600 : 60;
+      const coef = pressingAltKey(e) ? 600 : 60;
       if (clocks.getTimerClocks().length < ctx.maxTimerClockNumber()) {
         addTimerClock(ctx, cfg, clocks, input * coef);
       }
@@ -70,7 +67,7 @@ async function withCtrl(e, pressedKeys, ctx, cfg, clocks) {
     // remove timer-clock
     if (input === 0 && clocks.getTimerClocks().length > 0) {
       e.preventDefault();
-      if (e.altKey) {
+      if (pressingAltKey(e)) {
         // Ctrl + Alt + 0 --> remove newest timer (remove the clock on the far right)
         clocks.removeTimerRight();
       } else {
@@ -148,16 +145,16 @@ async function conversionHandler(e, pressedKeys, clocks) {
     // These are converted into "0000-01-01T00:00:00.000+00:00"
 
     // normalize as millisec
-    src = e.altKey && e.shiftKey && pressedKeys["N"] ? Number(src) / 1000 / 1000
-      : e.altKey && e.shiftKey ? Number(src) / 1000
-      : e.altKey ? Number(src)
+    src = pressingAltKey(e) && e.shiftKey && pressedKeys["N"] ? Number(src) / 1000 / 1000
+      : pressingAltKey(e) && e.shiftKey ? Number(src) / 1000
+      : pressingAltKey(e) ? Number(src)
       : Number(src) * 1000;
     isDateTimeText = false;
   }
   let unit = " in " + (
-      e.altKey && e.shiftKey && pressedKeys["N"] ? "nanosoconds"
-    : e.altKey && e.shiftKey ? "microseconds"
-    : e.altKey ? "milliseconds"
+      pressingAltKey(e) && e.shiftKey && pressedKeys["N"] ? "nanosoconds"
+    : pressingAltKey(e) && e.shiftKey ? "microseconds"
+    : pressingAltKey(e) ? "milliseconds"
     : "seconds"
   );
 
