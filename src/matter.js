@@ -1,8 +1,10 @@
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
+import { openPath } from '@tauri-apps/plugin-opener'
 
 import { cdate } from 'cdate';
 
-import { escapeHTML, pad, enqueueNotification } from './util.js';
+import { escapeHTML, pad, enqueueNotification, openMessageDialog } from './util.js';
 
 export function initClocks(ctx, cfg, clocks) {
   let clocksHtml = '';
@@ -56,20 +58,6 @@ export function startClocks(ctx, clocks) {
   clocks.getAllClocks().map((clock) => {
     tick(ctx, clock);
   });
-}
-
-export function addTimerClock(ctx, cfg, clocks, timerInSec) {
-  clocks.pushTimerClock({
-    countdown: ctx.timerIcon() + "%M:%s", // The timer clock is just an alternative countdown timer
-    target: ctx.cdateUTC().add(timerInSec, "s").text(),
-    timezone: "UTC",
-    id: "mclk-" + (clocks.getAllClocks().length - 1),
-    timerName: (timerInSec / 60) + "-minute timer",
-    pauseStart: null,
-  });
-  initClocks(ctx, cfg, clocks);
-  adjustWindowSize(ctx, clocks);
-  startClocks(ctx, clocks);
 }
 
 export function buildCountdown(ctx, clock) {
@@ -127,4 +115,42 @@ async function tock(ctx, clock) {
       clock.el.innerHTML = escapeHTML(clock.fn().format(ctx.format()));
     }
   }
+}
+
+export function switchFormat(ctx, cfg, clocks) {
+    ctx.setFormat(ctx.format() === cfg.format && cfg.format2 ? cfg.format2 : cfg.format);
+    adjustWindowSize(ctx, clocks);
+}
+
+export async function openToEditConfigFile(ctx) {
+    try {
+      await openMessageDialog("Please restart mclocks after editing the config.json");
+      const config_path = await invoke("get_config_path");
+      await openPath(config_path);
+    } catch (e) {
+      ctx.mainElement().textContent = "Err: " + e;
+      throw new Error(e);
+    }
+}
+
+export function toggleEpochTime(ctx, clocks) {
+    ctx.setDisplayEpoch(!ctx.displayEpoch());
+    const epochClock = clocks.getClocks().at(-1);
+    epochClock.el.parentElement.hidden = !ctx.displayEpoch();
+    epochClock.el.parentElement.style.display = ctx.displayEpoch() ? "inline" : "none";
+    adjustWindowSize(ctx, clocks);
+}
+
+export function addTimerClock(ctx, cfg, clocks, timerInSec) {
+  clocks.pushTimerClock({
+    countdown: ctx.timerIcon() + "%M:%s", // The timer clock is just an alternative countdown timer
+    target: ctx.cdateUTC().add(timerInSec, "s").text(),
+    timezone: "UTC",
+    id: "mclk-" + (clocks.getAllClocks().length - 1),
+    timerName: (timerInSec / 60) + "-minute timer",
+    pauseStart: null,
+  });
+  initClocks(ctx, cfg, clocks);
+  adjustWindowSize(ctx, clocks);
+  startClocks(ctx, clocks);
 }
