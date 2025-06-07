@@ -169,6 +169,8 @@ The `countdown` fieled text accepts below template verbs:
 
 ## Simple Timer
 
+![simple timer](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-timer.png)
+
 Click `mclocks` app window, then push `Ctrl + 1` key, then start 1-minute timer. Push `Ctrl + Alt + 1` key, start 10-minute timer. Other number keys work as well. Starting timers up to 5.
 
 `Ctrl + p` to pause / re-start the timers.
@@ -179,6 +181,8 @@ NOTE: Countdown clock and simple timer will send notification by default when th
 
 ## Display Epoch time
 
+![epoch-time](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-epoch-time.png)
+
 Click `mclocks` app window, then push `Ctrl + e` key, then toggle to display Epoch time.
 
 ## Convert between date-time and Epoch time
@@ -186,6 +190,10 @@ Click `mclocks` app window, then push `Ctrl + e` key, then toggle to display Epo
 Click `mclocks` app window, then paste a date-time or Epoch time, then a dialog appears to display conversion results. And it's able to copy the results to the clipboard. If you don't want to copy, then press `[No]` to just close the dialog.
 
 When pasting with `Ctrl + v`, the value (Epoch time) is treated as seconds. If you use `Ctrl + Alt + v`, it's treated as milliseconds, and with `Ctrl + Alt + Shift + V`, it's treated as microseconds, and with `Ctrl + Alt + Shift + N + V`, it's treated as nanoseconds and converted accordingly.
+
+![convert-from-epoch-to-datetime](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-converter-epoch.png)
+
+![convert-from-datetime-to-epoch](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-converter-date.png)
 
 ----------
 
