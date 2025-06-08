@@ -5,15 +5,11 @@ import { trim, uniqueTimezones, writeClipboardText, readClipboardText, openAskDi
 
 // Win   ---> Ctrl
 // macOS ---> Command
-function pressingBaseKey(e) {
-  return isMacOS() ? e.metaKey : e.ctrlKey;
-}
+const pressingBaseKey = (e) => isMacOS() ? e.metaKey : e.ctrlKey;
 
 // Win   ---> Alt
 // macOS ---> Control
-function pressingAltKey(e) {
-  return isMacOS()? e.ctrlKey : e.altKey;
-}
+const pressingAltKey = (e) => isMacOS() ? e.ctrlKey : e.altKey;
 
 export function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
   if (isWindowsOS()) {
@@ -84,11 +80,12 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
     e.preventDefault();
     if (clocks.getTimerClocks().length > 0) {
       if (ctx.lockKeyP()) {
-        return
+        return;
       }
       ctx.setLockKeyP(true);
       ctx.setPauseTimer(!ctx.pauseTimer());
-      clocks.getTimerClocks().map((clock) => {
+
+      for (const clock of clocks.getTimerClocks()) {
         if (ctx.pauseTimer()) {
           // pause
           if (!clock.pauseStart) {
@@ -96,11 +93,12 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
           }
         } else {
           // re-start
-          const pauseDiffMS = ctx.cdateUTC().t - ctx.cdateUTC(clock.pauseStart).t
+          const pauseDiffMS = ctx.cdateUTC().t - ctx.cdateUTC(clock.pauseStart).t;
           clock.target = ctx.cdateUTC(clock.target).add(pauseDiffMS, "ms").text();
           clock.pauseStart = null;
         }
-      });
+      }
+
       ctx.setLockKeyP(false);
       return;
     }
@@ -109,13 +107,15 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   // send current clocks to clipboard
   if (e.key === "c") {
     e.preventDefault();
-    let cls = [];
-    clocks.getAllClocks().map((clock) => {
+    const cls = [];
+
+    for (const clock of clocks.getAllClocks()) {
       if (clock.isEpoch && !ctx.displayEpoch()) {
-        return;
+        continue;
       }
       cls.push(clock.el.parentElement.innerText);
-    })
+    }
+
     writeClipboardText(cls.join("  "));
     return;
   }
@@ -128,9 +128,10 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
 }
 
 async function conversionHandler(e, pressedKeys, clocks) {
-  let origClipboardText = trim(await readClipboardText());
+  const origClipboardText = trim(await readClipboardText());
   let src = origClipboardText;
   let isDateTimeText = true;
+
   if (src.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
     // KEYs                           convert in
     // Ctrl + v                   --> sec
@@ -147,46 +148,48 @@ async function conversionHandler(e, pressedKeys, clocks) {
     // normalize as millisec
     src = pressingAltKey(e) && e.shiftKey && pressedKeys["N"] ? Number(src) / 1000 / 1000
       : pressingAltKey(e) && e.shiftKey ? Number(src) / 1000
-      : pressingAltKey(e) ? Number(src)
-      : Number(src) * 1000;
+        : pressingAltKey(e) ? Number(src)
+          : Number(src) * 1000;
     isDateTimeText = false;
   }
-  let unit = " in " + (
-      pressingAltKey(e) && e.shiftKey && pressedKeys["N"] ? "nanosoconds"
-    : pressingAltKey(e) && e.shiftKey ? "microseconds"
-    : pressingAltKey(e) ? "milliseconds"
-    : "seconds"
+
+  const unit = " in " + (
+    pressingAltKey(e) && e.shiftKey && pressedKeys["N"] ? "nanosoconds"
+      : pressingAltKey(e) && e.shiftKey ? "microseconds"
+        : pressingAltKey(e) ? "milliseconds"
+          : "seconds"
   );
 
   try {
     cdate(src).tz("UTC").get("year");
-  } catch (e) {
-    const msg = "Could not convert the clipboard text " + (isDateTimeText ? "" : origClipboardText + " ") + unit + ".\n\n" + e;
+  } catch (error) {
+    const msg = `Could not convert the clipboard text ${isDateTimeText ? "" : origClipboardText + " "}${unit}.\n\n${error}`;
     await openMessageDialog(msg, "mclocks Error", "error");
     return;
   }
 
-  let results = [];
-  uniqueTimezones(clocks).map((tz) => {
+  const results = [];
+
+  for (const tz of uniqueTimezones(clocks)) {
     let result;
     try {
       // somehow, tz(timezoneName) doesn't work as expected for large negative value
       const offset = cdate().tz(tz).utcOffset();
-      result = cdate(src).utcOffset(offset).text() + " in " + tz;
-    } catch (e) {
-      result = e + " in " + tz;
+      result = `${cdate(src).utcOffset(offset).text()} in ${tz}`;
+    } catch (error) {
+      result = `${error} in ${tz}`;
     }
     results.push(result);
-  });
-  if (isDateTimeText) {
-    results.push((cdate(src).t / 1000) + " Epoch in seconds")
-    results.push(cdate(src).t + " Epoch in milliseconds")
   }
 
-  const body = origClipboardText + (isDateTimeText ? "" : unit) + "\n\n" + results.join("\n") + "\n";
-  if (await openAskDialog(body + "\nPress [Y] to copy the result.", "mclocks converter")) {
+  if (isDateTimeText) {
+    results.push(`${cdate(src).t / 1000} Epoch in seconds`);
+    results.push(`${cdate(src).t} Epoch in milliseconds`);
+  }
+
+  const body = `${origClipboardText}${isDateTimeText ? "" : unit}\n\n${results.join("\n")}\n`;
+
+  if (await openAskDialog(`${body}\nPress [Y] to copy the result.`, "mclocks converter")) {
     writeClipboardText(body);
   }
-
-  return;
 }
