@@ -16,8 +16,6 @@ In addition, it also includes features:
 
 From https://github.com/bayashi/mclocks/releases
 
-NOTE: Since macOS binary and Linux binary occasionally don't work properly. Please feel free to open an issue.
-
 ### Windows
 
 For Windows, you can get the installer `.msi` file, or `.exe` the executable file.
