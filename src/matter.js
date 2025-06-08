@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
-import { openPath } from '@tauri-apps/plugin-opener'
+import { openPath } from '@tauri-apps/plugin-opener';
 
 import { cdate } from 'cdate';
 
@@ -8,56 +8,61 @@ import { escapeHTML, pad, enqueueNotification, openMessageDialog } from './util.
 
 export function initClocks(ctx, cfg, clocks) {
   let clocksHtml = '';
-  clocks.getAllClocks().map((clock, index) => {
-    clock.id = "mclk-" + index;
-    clocksHtml = clocksHtml + renderClockHTML(ctx, clock);
+
+  for (const [index, clock] of clocks.getAllClocks().entries()) {
+    clock.id = `mclk-${index}`;
+    clocksHtml += renderClockHTML(ctx, clock);
     if (!clock.countdown) {
       clock.fn = cdate().locale(cfg.locale).tz(clock.timezone).cdateFn();
     }
-  });
-  ctx.mainElement().innerHTML = "<ul>" + clocksHtml + "</ul>";
-  clocks.getAllClocks().map((clock) => {
+  }
+
+  ctx.mainElement().innerHTML = `<ul>${clocksHtml}</ul>`;
+
+  for (const clock of clocks.getAllClocks()) {
     clock.el = document.getElementById(clock.id);
     clock.el.style.paddingRight = cfg.margin;
+
     if (clock.countdown) {
-      clock.el.title = clock.timerName ?? "Until " + cdate(clock.target).tz(clock.timezone).format("YYYY-MM-DD HH:mm:ssZ");
+      clock.el.title = clock.timerName ?? `Until ${cdate(clock.target).tz(clock.timezone).format("YYYY-MM-DD HH:mm:ssZ")}`;
     } else if (clock.isEpoch) {
       clock.el.title = "elapsed since 1970-01-01T00:00:00Z";
       clock.el.parentElement.hidden = !ctx.displayEpoch();
       clock.el.parentElement.style.display = ctx.displayEpoch() ? "inline" : "none";
     } else {
-      clock.el.title = clock.timezone + " " + clock.fn().format("Z");
+      clock.el.title = `${clock.timezone} ${clock.fn().format("Z")}`;
     }
-  });
+  }
 
   function renderClockHTML(ctx, clock) {
     if (clock.countdown) {
-      return "<li><span id='" + clock.id + "'>" + escapeHTML(buildCountdown(ctx, clock)) + "</span></li>";
+      return `<li><span id='${clock.id}'>${escapeHTML(buildCountdown(ctx, clock))}</span></li>`;
     } else {
-      return "<li>" + escapeHTML(clock.name) + " <span id='" + clock.id + "'></span></li>";
+      return `<li>${escapeHTML(clock.name)} <span id='${clock.id}'></span></li>`;
     }
   }
 }
 
 export async function adjustWindowSize(ctx, clocks) {
   let w = 0;
-  clocks.getAllClocks().map((clock) => {
+
+  for (const clock of clocks.getAllClocks()) {
     tock(ctx, clock);
     w += clock.el.parentElement.offsetWidth;
-  });
+  }
 
   try {
-    await getCurrentWindow().setSize(new LogicalSize(w + 16, ctx.mainElement().offsetHeight + 16))
+    await getCurrentWindow().setSize(new LogicalSize(w + 16, ctx.mainElement().offsetHeight + 16));
   } catch (e) {
-    ctx.mainElement().textContent = "Err: " + e;
+    ctx.mainElement().textContent = `Err: ${e}`;
     throw new Error(e);
   }
 }
 
 export function startClocks(ctx, clocks) {
-  clocks.getAllClocks().map((clock) => {
+  for (const clock of clocks.getAllClocks()) {
     tick(ctx, clock);
-  });
+  }
 }
 
 export function buildCountdown(ctx, clock) {
@@ -84,7 +89,7 @@ export function buildCountdown(ctx, clock) {
     if (diffMS === 0) {
       clock.isFinishCountDown = true;
       if (!ctx.withoutNotification()) {
-        enqueueNotification("mclocks", "Beep! " + clock.timerName);
+        enqueueNotification("mclocks", `Beep! ${clock.timerName}`);
       }
     }
   }
@@ -102,7 +107,7 @@ export function buildCountdown(ctx, clock) {
 
 async function tick(ctx, clock) {
   tock(ctx, clock);
-  clock.timeoutId = setTimeout(() => { tick(ctx, clock) }, 1000 - Date.now() % 1000);
+  clock.timeoutId = setTimeout(() => { tick(ctx, clock); }, 1000 - Date.now() % 1000);
 }
 
 async function tock(ctx, clock) {
@@ -110,7 +115,7 @@ async function tock(ctx, clock) {
     clock.el.innerHTML = escapeHTML(buildCountdown(ctx, clock));
   } else {
     if (clock.isEpoch) {
-      clock.el.innerHTML = "" + Math.trunc(clock.fn().t / 1000);
+      clock.el.innerHTML = `${Math.trunc(clock.fn().t / 1000)}`;
     } else {
       clock.el.innerHTML = escapeHTML(clock.fn().format(ctx.format()));
     }
@@ -118,36 +123,36 @@ async function tock(ctx, clock) {
 }
 
 export function switchFormat(ctx, cfg, clocks) {
-    ctx.setFormat(ctx.format() === cfg.format && cfg.format2 ? cfg.format2 : cfg.format);
-    adjustWindowSize(ctx, clocks);
+  ctx.setFormat(ctx.format() === cfg.format && cfg.format2 ? cfg.format2 : cfg.format);
+  adjustWindowSize(ctx, clocks);
 }
 
 export async function openToEditConfigFile(ctx) {
-    try {
-      await openMessageDialog("Please restart mclocks after editing the config.json");
-      const config_path = await invoke("get_config_path");
-      await openPath(config_path);
-    } catch (e) {
-      ctx.mainElement().textContent = "Err: " + e;
-      throw new Error(e);
-    }
+  try {
+    await openMessageDialog("Please restart mclocks after editing the config.json");
+    const config_path = await invoke("get_config_path");
+    await openPath(config_path);
+  } catch (e) {
+    ctx.mainElement().textContent = `Err: ${e}`;
+    throw new Error(e);
+  }
 }
 
 export function toggleEpochTime(ctx, clocks) {
-    ctx.setDisplayEpoch(!ctx.displayEpoch());
-    const epochClock = clocks.getClocks().at(-1);
-    epochClock.el.parentElement.hidden = !ctx.displayEpoch();
-    epochClock.el.parentElement.style.display = ctx.displayEpoch() ? "inline" : "none";
-    adjustWindowSize(ctx, clocks);
+  ctx.setDisplayEpoch(!ctx.displayEpoch());
+  const epochClock = clocks.getClocks().at(-1);
+  epochClock.el.parentElement.hidden = !ctx.displayEpoch();
+  epochClock.el.parentElement.style.display = ctx.displayEpoch() ? "inline" : "none";
+  adjustWindowSize(ctx, clocks);
 }
 
 export function addTimerClock(ctx, cfg, clocks, timerInSec) {
   clocks.pushTimerClock({
-    countdown: ctx.timerIcon() + "%M:%s", // The timer clock is just an alternative countdown timer
+    countdown: `${ctx.timerIcon()}%M:%s`, // The timer clock is just an alternative countdown timer
     target: ctx.cdateUTC().add(timerInSec, "s").text(),
     timezone: "UTC",
-    id: "mclk-" + (clocks.getAllClocks().length - 1),
-    timerName: (timerInSec / 60) + "-minute timer",
+    id: `mclk-${clocks.getAllClocks().length - 1}`,
+    timerName: `${timerInSec / 60}-minute timer`,
     pauseStart: null,
   });
   initClocks(ctx, cfg, clocks);
