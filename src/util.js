@@ -3,97 +3,136 @@ import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
 import { ask, message } from '@tauri-apps/plugin-dialog';
 import { platform } from '@tauri-apps/plugin-os';
 
-const escapeTarget = {
-  '&': '&amp;',
-  "'": '&#x27;',
-  '`': '&#x60;',
-  '"': '&quot;',
-  '<': '&lt;',
-  '>': '&gt;',
+const ESCAPE_MAP = new Map([
+  ['&', '&amp;'],
+  ["'", '&#x27;'],
+  ['`', '&#x60;'],
+  ['"', '&quot;'],
+  ['<', '&lt;'],
+  ['>', '&gt;']
+]);
+
+/**
+ * Escapes HTML special characters in a string
+ * @param {string} str - The string to escape
+ * @returns {string} The escaped string
+ */
+export const escapeHTML = (str) => {
+  return (str ?? '').replace(/[&'`"<>]/g, (match) => ESCAPE_MAP.get(match));
 };
 
-export function escapeHTML(str) {
-  return (str || '').replace(/[&'`"<>]/g, function (match) {
-    return escapeTarget[match]
-  });
-}
+/**
+ * Pads a number with leading zero if less than 10
+ * @param {number} n - The number to pad
+ * @returns {string|number} The padded number or original if >= 10
+ */
+export const pad = (n) => (n >= 0 && n < 10 ? `0${n}` : n);
 
-export function pad(n) {
-  if (n >= 0 && n < 10) {
-    return "0" + n
-  }
+/**
+ * Trims whitespace and removes line breaks from a string
+ * @param {string} str - The string to trim
+ * @returns {string} The trimmed string
+ */
+export const trim = (str) =>
+  str.replace(/^[\s\t]+/, '')
+    .replace(/[\s\t]+$/, '')
+    .replace(/\r?\n/g, '');
 
-  return n
-}
+/**
+ * Returns unique timezones from clocks with no duplication
+ * @param {Object} clocks - The clocks object with getAllClocks method
+ * @returns {string[]} Array of unique timezone strings
+ */
+export const uniqueTimezones = (clocks) => {
+  const timezoneSet = new Set();
 
-export function trim(str) {
-  str = str.replace(/^[\s\t]+/, '');
-  str = str.replace(/[\s\t]+$/, '');
-  return str.replace(/\r?\n/g, '');
-}
-
-// return the list of timezones of clocks with no duplication
-export function uniqueTimezones(clocks) {
-  let flag = {};
-  let list = [];
-  clocks.getAllClocks().map((clock) => {
-    if (clock.timezone && clock.timezone !== "" && !flag[clock.timezone]) {
-      flag[clock.timezone] = true;
-      list.push(clock.timezone);
+  clocks.getAllClocks().forEach((clock) => {
+    if (clock.timezone?.length > 0) {
+      timezoneSet.add(clock.timezone);
     }
   });
 
-  return list;
-}
+  return Array.from(timezoneSet);
+};
 
-
-async function checkPermission() {
+/**
+ * Checks if notification permission is granted
+ * @returns {Promise<boolean>} True if permission is granted
+ */
+const checkPermission = async () => {
   if (!(await isPermissionGranted())) {
-    return (await requestPermission()) === 'granted'
+    return (await requestPermission()) === 'granted';
   }
-  return true
-}
+  return true;
+};
 
-export async function enqueueNotification(title, body) {
+/**
+ * Enqueues a notification if permission is granted
+ * @param {string} title - The notification title
+ * @param {string} body - The notification body
+ * @returns {Promise<void>}
+ */
+export const enqueueNotification = async (title, body) => {
   if (!(await checkPermission())) {
-    return
+    return;
   }
-  sendNotification({ title, body })
-}
+  sendNotification({ title, body });
+};
 
-export async function writeClipboardText(text) {
+/**
+ * Writes text to clipboard
+ * @param {string} text - The text to write
+ * @returns {Promise<void>}
+ */
+export const writeClipboardText = async (text) => {
   await writeText(text);
-}
+};
 
-export async function readClipboardText() {
-  return await readText()
-}
+/**
+ * Reads text from clipboard
+ * @returns {Promise<string>} The clipboard text
+ */
+export const readClipboardText = async () => {
+  return await readText();
+};
 
-export async function openAskDialog(body, title, kind) {
-  const answer = await ask(body, {
-    title: title ?? "mclocks",
-    kind: kind ?? "info",
-  });
-
+/**
+ * Opens an ask dialog
+ * @param {string} body - The dialog body text
+ * @param {string} [title='mclocks'] - The dialog title
+ * @param {string} [kind='info'] - The dialog kind
+ * @returns {Promise<boolean>} The user's answer
+ */
+export const openAskDialog = async (body, title = 'mclocks', kind = 'info') => {
+  const answer = await ask(body, { title, kind });
   return answer;
-}
+};
 
-export async function openMessageDialog(body, title, kind) {
-  const ret = await message(body, {
-    title: title ?? "mclocks",
-    kind: kind ?? "info",
-  });
-
+/**
+ * Opens a message dialog
+ * @param {string} body - The dialog body text
+ * @param {string} [title='mclocks'] - The dialog title
+ * @param {string} [kind='info'] - The dialog kind
+ * @returns {Promise<void>}
+ */
+export const openMessageDialog = async (body, title = 'mclocks', kind = 'info') => {
+  const ret = await message(body, { title, kind });
   return ret;
-}
+};
 
-const isWin = platform().toLowerCase() === 'windows'
-const isMac = platform().toLowerCase() === 'macos'
+// Platform detection with memoization
+const currentPlatform = platform().toLowerCase();
+const isMac = currentPlatform === 'macos';
+const isWin = currentPlatform === 'windows';
 
-export function isMacOS() {
-  return isMac;
-}
+/**
+ * Checks if the current platform is macOS
+ * @returns {boolean} True if running on macOS
+ */
+export const isMacOS = () => isMac;
 
-export function isWindowsOS() {
-  return isWin;
-}
+/**
+ * Checks if the current platform is Windows
+ * @returns {boolean} True if running on Windows
+ */
+export const isWindowsOS = () => isWin;

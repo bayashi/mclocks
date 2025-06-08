@@ -1,17 +1,21 @@
 import { platform } from '@tauri-apps/plugin-os';
-
 import { cdate } from 'cdate';
 
 export class Ctx {
+  #mainElement;
+  #cdateUTC;
+  #ignoreOnMoved = false;
+  #pauseTimer = false;
+  #lockKeyP = false;
+  #displayEpoch = false;
+  #format;
+  #timerIcon;
+  #withoutNotification;
+  #maxTimerClockNumber;
+
   constructor(mainElement) {
-    this._mainElement = mainElement;
-
-    this._cdateUTC = cdate().tz("UTC").cdateFn();
-
-    this._ignoreOnMoved = false;
-    this._pauseTimer = false;
-    this._lockKeyP = false;
-    this._displayEpoch = false;
+    this.#mainElement = mainElement;
+    this.#cdateUTC = cdate().tz("UTC").cdateFn();
   }
 
   isMacOS() {
@@ -19,74 +23,74 @@ export class Ctx {
   }
 
   cdateUTC(cdt) {
-    return this._cdateUTC(cdt);
+    return this.#cdateUTC(cdt);
   }
 
   mainElement() {
-    return this._mainElement;
+    return this.#mainElement;
   }
 
   ignoreOnMoved() {
-    return this._ignoreOnMoved;
+    return this.#ignoreOnMoved;
   }
   setIgnoreOnMoved(ignoreOnMoved) {
-    this._ignoreOnMoved = ignoreOnMoved;
+    this.#ignoreOnMoved = ignoreOnMoved;
     return this;
   }
 
   format() {
-    return this._format;
+    return this.#format;
   }
   setFormat(format) {
-    this._format = format;
+    this.#format = format;
     return this;
   }
 
   pauseTimer() {
-    return this._pauseTimer;
+    return this.#pauseTimer;
   }
   setPauseTimer(pauseTimer) {
-    this._pauseTimer = pauseTimer;
+    this.#pauseTimer = pauseTimer;
     return this;
   }
 
   lockKeyP() {
-    return this._lockKeyP;
+    return this.#lockKeyP;
   }
   setLockKeyP(lockKeyP) {
-    this._lockKeyP = lockKeyP;
+    this.#lockKeyP = lockKeyP;
     return this;
   }
 
   timerIcon() {
-    return this._timerIcon;
+    return this.#timerIcon;
   }
   setTimerIcon(timerIcon) {
-    this._timerIcon = timerIcon;
+    this.#timerIcon = timerIcon;
     return this;
   }
 
   withoutNotification() {
-    return this._withoutNotification;
+    return this.#withoutNotification;
   }
   setWithoutNotification(withoutNotification) {
-    this._withoutNotification = withoutNotification;
+    this.#withoutNotification = withoutNotification;
     return this;
   }
 
   maxTimerClockNumber() {
-    return this._maxTimerClockNumber;
+    return this.#maxTimerClockNumber;
   }
   setMaxTimerClockNumber(maxTimerClockNumber) {
-    this._maxTimerClockNumber = maxTimerClockNumber;
+    this.#maxTimerClockNumber = maxTimerClockNumber;
     return this;
   }
 
   displayEpoch() {
-    return this._displayEpoch;
+    return this.#displayEpoch;
   }
   setDisplayEpoch(displayEpoch) {
-    this._displayEpoch = displayEpoch;
+    this.#displayEpoch = displayEpoch;
     return this;
   }
 }

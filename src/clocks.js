@@ -1,44 +1,51 @@
 export class Clocks {
+  #clocks = [];
+  #timerClocks = [];
+
   constructor(clocks, epochClockName) {
-    clocks.push({
+    const epochClock = {
       name: epochClockName ?? "Epoch",
       timezone: "UTC",
       isEpoch: true,
-    });
+    };
 
-    this._clocks = clocks;
-    this._timerClocks = [];
+    this.#clocks = [...clocks, epochClock];
   }
 
   pushTimerClock(timerClock) {
-    this._timerClocks.push(timerClock);
-
+    this.#timerClocks.push(timerClock);
     return this;
   }
 
   getClocks() {
-    return this._clocks;
+    return this.#clocks;
   }
 
   getAllClocks() {
-    return [...this._clocks, ...this._timerClocks];
+    return [...this.#clocks, ...this.#timerClocks];
   }
 
   getTimerClocks() {
-    return this._timerClocks;
+    return this.#timerClocks;
   }
 
   removeTimerRight() {
-    const timerClock = this._timerClocks.pop();
-    clearTimeout(timerClock.timeoutId);
-    document.getElementById(timerClock.id).remove();
+    const timerClock = this.#timerClocks.pop();
+    this.#cleanupTimer(timerClock);
     return this;
   }
 
   removeTimerLeft() {
-    const timerClock = this._timerClocks.shift();
+    const timerClock = this.#timerClocks.shift();
+    this.#cleanupTimer(timerClock);
+    return this;
+  }
+
+  /**
+   * @param {Object} timerClock - Timer clock to cleanup
+   */
+  #cleanupTimer(timerClock) {
     clearTimeout(timerClock.timeoutId);
     document.getElementById(timerClock.id).remove();
-    return this;
   }
 }
