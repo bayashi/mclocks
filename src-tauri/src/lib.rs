@@ -68,6 +68,8 @@ struct AppConfig {
     max_timer_clock_number: i32,
     #[serde(default = "df_epoch_clock_name")]
     epoch_clock_name: String,
+    #[serde(default)]
+    usetz: bool,
 }
 
 fn df_font() -> String { "Courier, monospace".to_string() }

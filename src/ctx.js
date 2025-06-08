@@ -12,6 +12,7 @@ export class Ctx {
   #timerIcon;
   #withoutNotification;
   #maxTimerClockNumber;
+  #usetz = false; // If true, use TZ to convert epoch time instead of utcOffset
 
   constructor(mainElement) {
     this.#mainElement = mainElement;
@@ -91,6 +92,14 @@ export class Ctx {
   }
   setDisplayEpoch(displayEpoch) {
     this.#displayEpoch = displayEpoch;
+    return this;
+  }
+
+  useTZ() {
+    return this.#usetz;
+  }
+  setUseTZ(usetz) {
+    this.#usetz = usetz;
     return this;
   }
 }

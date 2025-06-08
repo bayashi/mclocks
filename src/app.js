@@ -71,6 +71,7 @@ const initConfig = async (ctx) => {
     ctx.setTimerIcon(config.timerIcon);
     ctx.setWithoutNotification(config.withoutNotification);
     ctx.setMaxTimerClockNumber(config.maxTimerClockNumber);
+    ctx.setUseTZ(config.usetz);
 
     return config;
   } catch (error) {
