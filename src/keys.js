@@ -160,12 +160,15 @@ async function conversionHandler(e, pressedKeys, clocks, usetz, convtz) {
           : "seconds"
   );
 
-  try {
-    cdate(src).tz("UTC").get("year");
-  } catch (error) {
-    const msg = `Could not convert the clipboard text ${isDateTimeText ? "" : origClipboardText + " "}${unit}.\n\n${error}`;
-    await openMessageDialog(msg, "mclocks Error", "error");
-    return;
+  if (isDateTimeText) {
+    src = normalizeDT(src);
+    try {
+      new Date(src);
+    } catch (error) {
+      const msg = `Could not convert the clipboard text ${isDateTimeText ? "" : origClipboardText + " "}${unit}.\n\n${error}`;
+      await openMessageDialog(msg, "mclocks Error", "error");
+      return;
+    }
   }
 
   let cdt;
@@ -206,4 +209,17 @@ async function conversionHandler(e, pressedKeys, clocks, usetz, convtz) {
   if (await openAskDialog(`${body}\nPress [Y] to copy the result.`, "mclocks converter")) {
     writeClipboardText(body);
   }
+}
+
+// Some datetime strings that represent common use cases may fail to parse in certain environments,
+// so they need to be converted to generally parseable datetime strings.
+function normalizeDT(src) {
+  let m;
+
+  // BQ datetime format
+  if (m = src.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+) UTC$/)) {
+    return m[1] + "Z";
+  }
+
+  return src;
 }
