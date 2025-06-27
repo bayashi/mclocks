@@ -70,6 +70,8 @@ struct AppConfig {
     epoch_clock_name: String,
     #[serde(default)]
     usetz: bool,
+    #[serde(default)]
+    convtz: String,
 }
 
 fn df_font() -> String { "Courier, monospace".to_string() }

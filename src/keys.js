@@ -123,11 +123,11 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   // convert between epoch time and date-time to paste from the clipboard
   if (e.key === "v" || e.key === "V") {
     e.preventDefault();
-    conversionHandler(e, pressedKeys, clocks, ctx.useTZ());
+    conversionHandler(e, pressedKeys, clocks, ctx.useTZ(), ctx.convTZ());
   }
 }
 
-async function conversionHandler(e, pressedKeys, clocks, usetz) {
+async function conversionHandler(e, pressedKeys, clocks, usetz, convtz) {
   const origClipboardText = trim(await readClipboardText());
   let src = origClipboardText;
   let isDateTimeText = true;
@@ -168,6 +168,13 @@ async function conversionHandler(e, pressedKeys, clocks, usetz) {
     return;
   }
 
+  let cdt;
+  if (isDateTimeText && convtz) {
+    cdt = cdate().tz(convtz).cdateFn();
+  } else {
+    cdt = cdate().cdateFn();
+  }
+
   const results = [];
 
   for (const tz of uniqueTimezones(clocks)) {
@@ -176,11 +183,11 @@ async function conversionHandler(e, pressedKeys, clocks, usetz) {
       if (usetz) {
         // Use strict timezon conversion by `usetz:true` option in config.
         // For example, before 1888/1/1 00:00:00 in JST, its utcOffset is 09:18, historically.
-        result = cdate(src).tz(tz).text()
+        result = cdt(src).tz(tz).text()
       } else {
         // Use utcOffset for any date-time.
-        const offset = cdate().tz(tz).utcOffset();
-        result = cdate(src).utcOffset(offset).text();
+        const offset = cdt().tz(tz).utcOffset();
+        result = cdt(src).utcOffset(offset).text();
       }
       result = `${result} in ${tz}`;
     } catch (error) {
@@ -190,8 +197,8 @@ async function conversionHandler(e, pressedKeys, clocks, usetz) {
   }
 
   if (isDateTimeText) {
-    results.push(`${cdate(src).t / 1000} Epoch in seconds`);
-    results.push(`${cdate(src).t} Epoch in milliseconds`);
+    results.push(`${cdt(src).t / 1000} Epoch in seconds`);
+    results.push(`${cdt(src).t} Epoch in milliseconds`);
   }
 
   const body = `${origClipboardText}${isDateTimeText ? "" : unit}\n\n${results.join("\n")}\n`;

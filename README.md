@@ -193,6 +193,10 @@ When pasting with `Ctrl + v`, the value (Epoch time) is treated as seconds. If y
 
 ![convert-from-datetime-to-epoch](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-converter-date.png)
 
+When pasted date-time values do not include timezone information, they are treated as local timezone by default. To handle them as a specific timezone, set the timezone in the convtz option.
+
+    "convtz": "UTC"
+
 ----------
 
 ## License
