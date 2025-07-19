@@ -14,6 +14,7 @@ export class Ctx {
   #maxTimerClockNumber;
   #usetz = false; // If true, use TZ to convert epoch time instead of utcOffset
   #convtz;
+  #disableHover;
 
   constructor(mainElement) {
     this.#mainElement = mainElement;
@@ -109,6 +110,14 @@ export class Ctx {
   }
   setConvTZ(convtz) {
     this.#convtz = convtz;
+    return this;
+  }
+
+  disableHover() {
+    return this.#disableHover;
+  }
+  setDisableHover(disableHover) {
+    this.#disableHover = disableHover;
     return this;
   }
 }

@@ -73,6 +73,7 @@ const initConfig = async (ctx) => {
     ctx.setMaxTimerClockNumber(config.maxTimerClockNumber);
     ctx.setUseTZ(config.usetz);
     ctx.setConvTZ(config.convtz);
+    ctx.setDisableHover(config.disableHover);
 
     return config;
   } catch (error) {

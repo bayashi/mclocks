@@ -72,6 +72,8 @@ struct AppConfig {
     usetz: bool,
     #[serde(default)]
     convtz: String,
+    #[serde(default = "df_disable_hover")]
+    disable_hover: bool,
 }
 
 fn df_font() -> String { "Courier, monospace".to_string() }
@@ -83,6 +85,7 @@ fn df_margin() -> String { "1.65em".to_string() }
 fn df_timer_icon() -> String { "⧖ ".to_string() }
 fn df_max_timer_clock_number() -> i32 { 5 }
 fn df_epoch_clock_name() -> String { "Epoch".to_string() }
+fn df_disable_hover() -> bool { true }
 
 fn get_config_file() -> String {
     let config_file = "config.json";
