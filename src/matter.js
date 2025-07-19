@@ -24,13 +24,19 @@ export function initClocks(ctx, cfg, clocks) {
     clock.el.style.paddingRight = cfg.margin;
 
     if (clock.countdown) {
-      clock.el.title = clock.timerName ?? `Until ${cdate(clock.target).tz(clock.timezone).format("YYYY-MM-DD HH:mm:ssZ")}`;
+      if (!ctx.disableHover()) {
+        clock.el.title = clock.timerName ?? `Until ${cdate(clock.target).tz(clock.timezone).format("YYYY-MM-DD HH:mm:ssZ")}`;
+      }
     } else if (clock.isEpoch) {
-      clock.el.title = "elapsed since 1970-01-01T00:00:00Z";
+      if (!ctx.disableHover()) {
+        clock.el.title = "elapsed since 1970-01-01T00:00:00Z";
+      }
       clock.el.parentElement.hidden = !ctx.displayEpoch();
       clock.el.parentElement.style.display = ctx.displayEpoch() ? "inline" : "none";
     } else {
-      clock.el.title = `${clock.timezone} ${clock.fn().format("Z")}`;
+      if (!ctx.disableHover()) {
+        clock.el.title = `${clock.timezone} ${clock.fn().format("Z")}`;
+      }
     }
   }
 
