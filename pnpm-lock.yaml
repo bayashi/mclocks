@@ -27,8 +27,8 @@ importers:
         specifier: 2.3.0
         version: 2.3.0
       '@tauri-apps/plugin-window-state':
-        specifier: 2.2.2
-        version: 2.2.2
+        specifier: 2.3.0
+        version: 2.3.0
       cdate:
         specifier: 0.0.7
         version: 0.0.7
@@ -384,8 +384,8 @@ packages:
   '@tauri-apps/plugin-os@2.3.0':
     resolution: {integrity: sha512-dm3bDsMuUngpIQdJ1jaMkMfyQpHyDcaTIKTFaAMHoKeUd+Is3UHO2uzhElr6ZZkfytIIyQtSVnCWdW2Kc58f3g==}
 
-  '@tauri-apps/plugin-window-state@2.2.2':
-    resolution: {integrity: sha512-7pFwmMtGhhhE/WgmM7PUrj0BSSWVAQMfDdYbRalphIqqF1tWBvxtlxclx8bTutpXHLJTQoCpIeWtBEIXsoAlGw==}
+  '@tauri-apps/plugin-window-state@2.3.0':
+    resolution: {integrity: sha512-BfhM0gm6jsF+VyYeOZ3eNqDfRJ2YPMh0a5qesD8AizVGv7wVB3cGLqh6EaeMpGl7y6kP9lvEMYkDRHuqKbcsgw==}
 
   '@types/estree@1.0.7':
     resolution: {integrity: sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==}
@@ -688,9 +688,9 @@ snapshots:
     dependencies:
       '@tauri-apps/api': 2.6.0
 
-  '@tauri-apps/plugin-window-state@2.2.2':
+  '@tauri-apps/plugin-window-state@2.3.0':
     dependencies:
-      '@tauri-apps/api': 2.5.0
+      '@tauri-apps/api': 2.6.0
 
   '@types/estree@1.0.7': {}
 
