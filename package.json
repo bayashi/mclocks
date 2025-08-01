@@ -20,7 +20,7 @@
     "cdate": "0.0.7"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "2.5.0",
+    "@tauri-apps/cli": "2.7.1",
     "vite": "7.0.5"
   },
   "pnpm": {
