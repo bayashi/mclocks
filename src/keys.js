@@ -1,4 +1,5 @@
 import { cdate } from 'cdate';
+import { invoke } from '@tauri-apps/api/core';
 
 import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, addTimerClock } from './matter.js';
 import { trim, uniqueTimezones, writeClipboardText, readClipboardText, openAskDialog, openMessageDialog, isMacOS, isWindowsOS } from './util.js';
@@ -120,6 +121,18 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
     return;
   }
 
+  // Ctrl + Q: Quote clipboard text with double quotes and open in editor
+  // Ctrl + Shift + Q: Quote clipboard text with single quotes and open in editor
+  if (e.key === "q" || e.key === "Q") {
+    e.preventDefault();
+    if (e.shiftKey) {
+      quoteClipboardHandler("'");
+    } else {
+      quoteClipboardHandler('"');
+    }
+    return;
+  }
+
   // convert between epoch time and date-time to paste from the clipboard
   if (e.key === "v" || e.key === "V") {
     e.preventDefault();
@@ -222,4 +235,35 @@ function normalizeDT(src) {
   }
 
   return src;
+}
+
+/**
+ * Handles Ctrl + Q / Ctrl + Shift + Q: Quotes each line of clipboard text and opens in editor
+ * @param {string} quoteChar - The quote character to use (' or ")
+ */
+async function quoteClipboardHandler(quoteChar) {
+  try {
+    const clipboardText = await readClipboardText();
+    if (!clipboardText) {
+      await openMessageDialog("Clipboard is empty", "mclocks", "info");
+      return;
+    }
+
+    // Split by lines and quote each line
+    const lines = clipboardText.split(/\r?\n/);
+    const quotedLines = lines.map(line => {
+      // Skip empty lines
+      if (line.trim() === '') {
+        return '';
+      }
+      // Remove leading whitespace (indentation) and quote
+      return `${quoteChar}${line.trimStart()}${quoteChar}`;
+    });
+    const quotedText = quotedLines.join('\n');
+
+    // Open in editor
+    await invoke('open_text_in_editor', { text: quotedText });
+  } catch (error) {
+    await openMessageDialog(`Failed to open editor: ${error}`, "mclocks Error", "error");
+  }
 }

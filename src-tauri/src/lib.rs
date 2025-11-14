@@ -1,6 +1,6 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, io::Write, sync::Arc};
+use std::{fs, io::Write, sync::Arc, env, process::Command};
 use tauri::{Manager, State};
 
 const IS_DEV: bool = tauri::is_dev();
@@ -116,6 +116,44 @@ fn get_config_path(state: State<'_, Arc<ContextConfig>>) -> Result<String, Strin
 }
 
 #[tauri::command]
+fn open_text_in_editor(text: String) -> Result<(), String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let temp_dir = base_dir.cache_dir();
+
+    // Create a temporary file
+    let temp_file = temp_dir.join(format!("mclocks_quote_{}.txt",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()));
+
+    fs::write(&temp_file, text).map_err(|e| format!("Failed to write temp file: {}", e))?;
+
+    let editor = env::var("EDITOR").unwrap_or_else(|_| {
+        if cfg!(target_os = "windows") {
+            "notepad.exe".to_string()
+        } else if cfg!(target_os = "macos") {
+            "open".to_string()
+        } else {
+            "xdg-open".to_string()
+        }
+    });
+
+    let mut cmd = Command::new(&editor);
+
+    if cfg!(target_os = "macos") && editor == "open" {
+        cmd = Command::new("open");
+        cmd.arg("-e").arg(&temp_file);
+    } else {
+        cmd.arg(&temp_file);
+    }
+
+    cmd.spawn().map_err(|e| format!("Failed to open editor: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
 fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
     let mut config_json = "{\n  \n}\n".to_string();
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
@@ -184,6 +222,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             load_config,
             get_config_path,
+            open_text_in_editor,
         ])
         .run(context)
         .expect("error while running tauri application");
