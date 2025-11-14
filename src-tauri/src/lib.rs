@@ -120,7 +120,7 @@ fn open_text_in_editor(text: String) -> Result<(), String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
     let temp_dir = base_dir.cache_dir();
 
-    // Create a temporary file
+    // Create a temporary text file
     let temp_file = temp_dir.join(format!("mclocks_quote_{}.txt",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -129,26 +129,22 @@ fn open_text_in_editor(text: String) -> Result<(), String> {
 
     fs::write(&temp_file, text).map_err(|e| format!("Failed to write temp file: {}", e))?;
 
-    let editor = env::var("EDITOR").unwrap_or_else(|_| {
-        if cfg!(target_os = "windows") {
-            "notepad.exe".to_string()
-        } else if cfg!(target_os = "macos") {
-            "open".to_string()
-        } else {
-            "xdg-open".to_string()
-        }
-    });
-
-    let mut cmd = Command::new(&editor);
-
-    if cfg!(target_os = "macos") && editor == "open" {
-        cmd = Command::new("open");
-        cmd.arg("-e").arg(&temp_file);
+    if cfg!(target_os = "windows") {
+        Command::new("cmd")
+            .args(&["/C", "start", "", temp_file.to_string_lossy().as_ref()])
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
+    } else if cfg!(target_os = "macos") {
+        Command::new("open")
+            .arg(&temp_file)
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
     } else {
-        cmd.arg(&temp_file);
+        Command::new("xdg-open")
+            .arg(&temp_file)
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
     }
-
-    cmd.spawn().map_err(|e| format!("Failed to open editor: {}", e))?;
 
     Ok(())
 }
