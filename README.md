@@ -197,6 +197,18 @@ When pasted date-time values do not include timezone information, they are treat
 
     "convtz": "UTC"
 
+## Convert Text Feature
+
+Click `mclocks` app window, then use the following keyboard shortcuts to process clipboard text and open it in an editor:
+
+* `Ctrl + Q`: Quotes each line of clipboard text with double quotes
+* `Ctrl + Shift + Q`: Quotes each line of clipboard text with single quotes
+* `Ctrl + ,`: Appends a comma to the end of each line of clipboard text
+
+Empty lines are preserved as-is in all operations.
+
+(This Convert Text Feature has nothing to do with clocks or time, but software developers might find it handy! 😊)
+
 ----------
 
 ## License
