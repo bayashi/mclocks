@@ -1,6 +1,6 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, io::Write, sync::Arc};
+use std::{fs, io::Write, sync::Arc, env, process::Command};
 use tauri::{Manager, State};
 
 const IS_DEV: bool = tauri::is_dev();
@@ -116,6 +116,40 @@ fn get_config_path(state: State<'_, Arc<ContextConfig>>) -> Result<String, Strin
 }
 
 #[tauri::command]
+fn open_text_in_editor(text: String) -> Result<(), String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let temp_dir = base_dir.cache_dir();
+
+    // Create a temporary text file
+    let temp_file = temp_dir.join(format!("mclocks_quote_{}.txt",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()));
+
+    fs::write(&temp_file, text).map_err(|e| format!("Failed to write temp file: {}", e))?;
+
+    if cfg!(target_os = "windows") {
+        Command::new("cmd")
+            .args(&["/C", "start", "", temp_file.to_string_lossy().as_ref()])
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
+    } else if cfg!(target_os = "macos") {
+        Command::new("open")
+            .arg(&temp_file)
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
+    } else {
+        Command::new("xdg-open")
+            .arg(&temp_file)
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
     let mut config_json = "{\n  \n}\n".to_string();
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
@@ -184,6 +218,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             load_config,
             get_config_path,
+            open_text_in_editor,
         ])
         .run(context)
         .expect("error while running tauri application");
