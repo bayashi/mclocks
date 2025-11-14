@@ -1,6 +1,6 @@
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
-import { ask, message } from '@tauri-apps/plugin-dialog';
+import { message } from '@tauri-apps/plugin-dialog';
 import { platform } from '@tauri-apps/plugin-os';
 
 const ESCAPE_MAP = new Map([
@@ -94,18 +94,6 @@ export const writeClipboardText = async (text) => {
  */
 export const readClipboardText = async () => {
   return await readText();
-};
-
-/**
- * Opens an ask dialog
- * @param {string} body - The dialog body text
- * @param {string} [title='mclocks'] - The dialog title
- * @param {string} [kind='info'] - The dialog kind
- * @returns {Promise<boolean>} The user's answer
- */
-export const openAskDialog = async (body, title = 'mclocks', kind = 'info') => {
-  const answer = await ask(body, { title, kind });
-  return answer;
 };
 
 /**

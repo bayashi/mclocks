@@ -2,7 +2,7 @@ import { cdate } from 'cdate';
 import { invoke } from '@tauri-apps/api/core';
 
 import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, addTimerClock } from './matter.js';
-import { trim, uniqueTimezones, writeClipboardText, readClipboardText, openAskDialog, openMessageDialog, isMacOS, isWindowsOS } from './util.js';
+import { trim, uniqueTimezones, writeClipboardText, readClipboardText, openMessageDialog, isMacOS, isWindowsOS } from './util.js';
 
 // Win   ---> Ctrl
 // macOS ---> Command
@@ -226,8 +226,10 @@ async function conversionHandler(e, pressedKeys, clocks, usetz, convtz) {
 
   const body = `${origClipboardText}${isDateTimeText ? "" : unit}\n\n${results.join("\n")}\n`;
 
-  if (await openAskDialog(`${body}\nPress [Y] to copy the result.`, "mclocks converter")) {
-    writeClipboardText(body);
+  try {
+    await invoke('open_text_in_editor', { text: body });
+  } catch (error) {
+    await openMessageDialog(`Failed to open editor: ${error}`, "mclocks Error", "error");
   }
 }
 
