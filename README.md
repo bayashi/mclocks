@@ -209,6 +209,44 @@ Empty lines are preserved as-is in all operations.
 
 (This Convert Text Feature has nothing to do with clocks or time, but software developers might find it handy! 😊)
 
+## Keyboard Shortcuts
+
+### Configuration, Display Formats
+
+| Shortcut | Description |
+|----------|-------------|
+| `Ctrl + o` | Open `config.json` file in editor |
+| `Ctrl + f` | Switch between `format` and `format2` (if `format2` is defined in `config.json`) |
+| `Ctrl + e` or `Ctrl + u` | Toggle to display Epoch time |
+
+### Timer
+
+| Shortcut | Description |
+|----------|-------------|
+| `Ctrl + 1` to `Ctrl + 9` | Start timer (1 minute × number key) |
+| `Ctrl + Alt + 1` to `Ctrl + Alt + 9` | Start timer (10 minutes × number key) |
+| `Ctrl + p` | Pause / resume all timers |
+| `Ctrl + 0` | Delete the oldest timer (leftmost) |
+| `Ctrl + Alt + 0` | Delete the newest timer (rightmost) |
+
+### Clipboard datetime Operations
+
+| Shortcut | Description |
+|----------|-------------|
+| `Ctrl + c` | Copy current mclocks text to clipboard |
+| `Ctrl + v` | Convert clipboard content (Epoch time as seconds, or date-time) |
+| `Ctrl + Alt + v` | Convert clipboard content (Epoch time as milliseconds) |
+| `Ctrl + Alt + Shift + V` | Convert clipboard content (Epoch time as microseconds) |
+| `Ctrl + Alt + Shift + N + V` | Convert clipboard content (Epoch time as nanoseconds) |
+
+### Text Conversion
+
+| Shortcut | Description |
+|----------|-------------|
+| `Ctrl + Q` | Quote each line of clipboard text with double quotes and open in editor |
+| `Ctrl + Shift + Q` | Quote each line of clipboard text with single quotes and open in editor |
+| `Ctrl + ,` | Append comma to the end of each line of clipboard text and open in editor |
+
 ----------
 
 ## License
