@@ -77,6 +77,7 @@ export function buildCountdown(ctx, clock) {
   if (!clock.isFinishCountDown) {
     let diffMS;
     if (clock.timerName) {
+      // clock.pauseStart is null when not paused, so null is treated as current datetime
       diffMS = ctx.cdateUTC(clock.target).t - ctx.cdateUTC(clock.pauseStart).t;
     } else {
       // diffMS = targetMS - nowMS - offsetMS
