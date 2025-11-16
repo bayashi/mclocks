@@ -174,7 +174,7 @@ async function conversionHandler(e, pressedKeys, clocks, usetz, convtz) {
   }
 
   const unit = " in " + (
-    pressingAltKey(e) && e.shiftKey && pressedKeys["N"] ? "nanosoconds"
+    pressingAltKey(e) && e.shiftKey && pressedKeys["N"] ? "nanoseconds"
       : pressingAltKey(e) && e.shiftKey ? "microseconds"
         : pressingAltKey(e) ? "milliseconds"
           : "seconds"
