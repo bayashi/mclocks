@@ -141,9 +141,14 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   }
 
   // Ctrl + i: Quote clipboard text with double quotes and append comma to the end of each line and open in editor
+  // Ctrl + Shift + i: Quote clipboard text with single quotes and append comma to the end of each line and open in editor
   if (e.key === "i" || e.key === "I") {
     e.preventDefault();
-    quoteAndAppendCommaClipboardHandler();
+    if (e.shiftKey) {
+      quoteAndAppendCommaClipboardHandler("'");
+    } else {
+      quoteAndAppendCommaClipboardHandler('"');
+    }
     return;
   }
 
@@ -306,9 +311,10 @@ async function appendCommaToClipboardHandler() {
 }
 
 /**
- * Handles Ctrl + i: Quotes each line of clipboard text with double quotes, appends comma to the end (except the last line), and opens in editor
+ * Handles Ctrl + i / Ctrl + Shift + i: Quotes each line of clipboard text with quotes, appends comma to the end (except the last line), and opens in editor
+ * @param {string} quoteChar - The quote character to use (' or ")
  */
-async function quoteAndAppendCommaClipboardHandler() {
+async function quoteAndAppendCommaClipboardHandler(quoteChar) {
   try {
     const clipboardText = await readClipboardText();
     if (!clipboardText) {
@@ -331,7 +337,7 @@ async function quoteAndAppendCommaClipboardHandler() {
       if (line.trim() === '') {
         return '';
       }
-      const quoted = `"${line.trimStart()}"`;
+      const quoted = `${quoteChar}${line.trimStart()}${quoteChar}`;
       return index === lastNonEmptyIndex ? quoted : `${quoted},`;
     });
     const transformedText = transformedLines.join('\n');
