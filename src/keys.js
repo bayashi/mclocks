@@ -140,6 +140,13 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
     return;
   }
 
+  // Ctrl + i: Quote clipboard text with double quotes and append comma to the end of each line and open in editor
+  if (e.key === "i" || e.key === "I") {
+    e.preventDefault();
+    quoteAndAppendCommaClipboardHandler();
+    return;
+  }
+
   // convert between epoch time and date-time to paste from the clipboard
   if (e.key === "v" || e.key === "V") {
     e.preventDefault();
@@ -296,4 +303,41 @@ async function appendCommaToClipboardHandler() {
     // Append comma to the end of each line
     return line + ',';
   });
+}
+
+/**
+ * Handles Ctrl + i: Quotes each line of clipboard text with double quotes, appends comma to the end (except the last line), and opens in editor
+ */
+async function quoteAndAppendCommaClipboardHandler() {
+  try {
+    const clipboardText = await readClipboardText();
+    if (!clipboardText) {
+      await openMessageDialog("Clipboard is empty", "mclocks", "info");
+      return;
+    }
+
+    const lines = clipboardText.split(/\r?\n/);
+
+    // Find the index of the last non-empty line
+    let lastNonEmptyIndex = -1;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i].trim() !== '') {
+        lastNonEmptyIndex = i;
+        break;
+      }
+    }
+
+    const transformedLines = lines.map((line, index) => {
+      if (line.trim() === '') {
+        return '';
+      }
+      const quoted = `"${line.trimStart()}"`;
+      return index === lastNonEmptyIndex ? quoted : `${quoted},`;
+    });
+    const transformedText = transformedLines.join('\n');
+
+    await invoke('open_text_in_editor', { text: transformedText });
+  } catch (error) {
+    await openMessageDialog(`Failed to open editor: ${error}`, "mclocks Error", "error");
+  }
 }

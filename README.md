@@ -204,6 +204,7 @@ Click `mclocks` app window, then use the following keyboard shortcuts to process
 * `Ctrl + Q`: Quotes each line of clipboard text with double quotes
 * `Ctrl + Shift + Q`: Quotes each line of clipboard text with single quotes
 * `Ctrl + ,`: Appends a comma to the end of each line of clipboard text
+* `Ctrl + i`: Quotes each line of clipboard text with double quotes and appends a comma to the end
 
 Empty lines are preserved as-is in all operations.
 
@@ -246,6 +247,7 @@ Empty lines are preserved as-is in all operations.
 | `Ctrl + Q` | Quote each line of clipboard text with double quotes and open in editor |
 | `Ctrl + Shift + Q` | Quote each line of clipboard text with single quotes and open in editor |
 | `Ctrl + ,` | Append comma to the end of each line of clipboard text and open in editor |
+| `Ctrl + i` | Quote each line of clipboard text with double quotes, append comma to the end, and open in editor |
 
 ----------
 
