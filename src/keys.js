@@ -121,25 +121,6 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
     return;
   }
 
-  // Ctrl + Q: Quote clipboard text with double quotes and open in editor
-  // Ctrl + Shift + Q: Quote clipboard text with single quotes and open in editor
-  if (e.key === "q" || e.key === "Q") {
-    e.preventDefault();
-    if (e.shiftKey) {
-      quoteClipboardHandler("'");
-    } else {
-      quoteClipboardHandler('"');
-    }
-    return;
-  }
-
-  // Ctrl + ,: Append comma to the end of each line of clipboard text and open in editor
-  if (e.key === ",") {
-    e.preventDefault();
-    appendCommaToClipboardHandler();
-    return;
-  }
-
   // Ctrl + i: Quote clipboard text with double quotes and append comma to the end of each line and open in editor
   // Ctrl + Shift + i: Quote clipboard text with single quotes and append comma to the end of each line and open in editor
   if (e.key === "i" || e.key === "I") {
@@ -256,58 +237,6 @@ function normalizeDT(src) {
   }
 
   return src;
-}
-
-/**
- * Common handler for processing clipboard text line by line and opening in editor
- * @param {function(string): string} lineTransform - Function to transform each line
- */
-async function processClipboardLinesHandler(lineTransform) {
-  try {
-    const clipboardText = await readClipboardText();
-    if (!clipboardText) {
-      await openMessageDialog("Clipboard is empty", "mclocks", "info");
-      return;
-    }
-
-    // Split by lines and transform each line
-    const lines = clipboardText.split(/\r?\n/);
-    const transformedLines = lines.map(line => {
-      // Skip empty lines
-      if (line.trim() === '') {
-        return '';
-      }
-      // Transform the line using the provided function
-      return lineTransform(line);
-    });
-    const transformedText = transformedLines.join('\n');
-
-    // Open in editor
-    await invoke('open_text_in_editor', { text: transformedText });
-  } catch (error) {
-    await openMessageDialog(`Failed to open editor: ${error}`, "mclocks Error", "error");
-  }
-}
-
-/**
- * Handles Ctrl + Q / Ctrl + Shift + Q: Quotes each line of clipboard text and opens in editor
- * @param {string} quoteChar - The quote character to use (' or ")
- */
-async function quoteClipboardHandler(quoteChar) {
-  await processClipboardLinesHandler(line => {
-    // Remove leading whitespace (indentation) and quote
-    return `${quoteChar}${line.trimStart()}${quoteChar}`;
-  });
-}
-
-/**
- * Handles Ctrl + ,: Appends comma to the end of each line of clipboard text and opens in editor
- */
-async function appendCommaToClipboardHandler() {
-  await processClipboardLinesHandler(line => {
-    // Append comma to the end of each line
-    return line + ',';
-  });
 }
 
 /**
