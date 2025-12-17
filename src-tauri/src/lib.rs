@@ -181,7 +181,7 @@ fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String
 
 fn start_web_server(root: String, port: u16) {
     thread::spawn(move || {
-        let server = match Server::http(format!("0.0.0.0:{}", port)) {
+        let server = match Server::http(format!("127.0.0.1:{}", port)) {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("Failed to start web server on port {}: {}", port, e);
