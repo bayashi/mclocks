@@ -234,6 +234,7 @@ fn get_content_type(path: &PathBuf) -> String {
         Some("css") => "text/css",
         Some("js") => "application/javascript",
         Some("json") => "application/json",
+        Some("md") => "text/markdown",
         Some("png") => "image/png",
         Some("jpg") | Some("jpeg") => "image/jpeg",
         Some("gif") => "image/gif",
