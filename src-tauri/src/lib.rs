@@ -38,6 +38,7 @@ fn df_clocks() -> Vec<Clock> {
 #[derive(Serialize, Deserialize, Debug)]
 struct WebConfig {
     root: String,
+    #[serde(default = "df_web_port")]
     port: u16,
 }
 
@@ -95,6 +96,7 @@ fn df_timer_icon() -> String { "⧖ ".to_string() }
 fn df_max_timer_clock_number() -> i32 { 5 }
 fn df_epoch_clock_name() -> String { "Epoch".to_string() }
 fn df_disable_hover() -> bool { true }
+fn df_web_port() -> u16 { 3030 }
 
 fn get_config_file() -> String {
     let config_file = "config.json";
