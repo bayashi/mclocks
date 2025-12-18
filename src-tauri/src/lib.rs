@@ -1,6 +1,7 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, io::Write, sync::Arc, env, process::Command};
+use std::{fs, io::Write, sync::Arc, env, process::Command, path::PathBuf, thread};
+use tiny_http::{Server, Response, StatusCode, Header};
 use tauri::{Manager, State};
 
 const IS_DEV: bool = tauri::is_dev();
@@ -32,6 +33,13 @@ fn df_clocks() -> Vec<Clock> {
     cls.push(Clock {name: df_name(), timezone: df_timezone(), countdown: None, target: None});
 
     cls
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct WebConfig {
+    root: String,
+    #[serde(default = "df_web_port")]
+    port: u16,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -74,6 +82,8 @@ struct AppConfig {
     convtz: String,
     #[serde(default = "df_disable_hover")]
     disable_hover: bool,
+    #[serde(default)]
+    web: Option<WebConfig>,
 }
 
 fn df_font() -> String { "Courier, monospace".to_string() }
@@ -86,6 +96,7 @@ fn df_timer_icon() -> String { "⧖ ".to_string() }
 fn df_max_timer_clock_number() -> i32 { 5 }
 fn df_epoch_clock_name() -> String { "Epoch".to_string() }
 fn df_disable_hover() -> bool { true }
+fn df_web_port() -> u16 { 3030 }
 
 fn get_config_file() -> String {
     let config_file = "config.json";
@@ -170,6 +181,72 @@ fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String
     Ok(serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))?)
 }
 
+fn start_web_server(root: String, port: u16) {
+    thread::spawn(move || {
+        let server = match Server::http(format!("127.0.0.1:{}", port)) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("Failed to start web server on port {}: {}", port, e);
+                return;
+            }
+        };
+
+        let root_path = PathBuf::from(root);
+        if !root_path.exists() {
+            eprintln!("Web root path does not exist: {}", root_path.display());
+            return;
+        }
+
+        println!("Web server started on http://localhost:{}", port);
+
+        for request in server.incoming_requests() {
+            let path = request.url();
+            let file_path = if path == "/" {
+                root_path.join("index.html")
+            } else {
+                root_path.join(path.trim_start_matches('/'))
+            };
+
+            let response = if file_path.exists() && file_path.starts_with(&root_path) {
+                match fs::read(&file_path) {
+                    Ok(content) => {
+                        let content_type = get_content_type(&file_path);
+                        if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
+                            Response::from_data(content).with_header(header).with_status_code(StatusCode(200))
+                        } else {
+                            Response::from_data(content).with_status_code(StatusCode(200))
+                        }
+                    }
+                    Err(_) => Response::from_string("Internal Server Error").with_status_code(StatusCode(500))
+                }
+            } else {
+                Response::from_string("Not Found").with_status_code(StatusCode(404))
+            };
+
+            if let Err(e) = request.respond(response) {
+                eprintln!("Failed to send response: {}", e);
+            }
+        }
+    });
+}
+
+fn get_content_type(path: &PathBuf) -> String {
+    match path.extension().and_then(|s| s.to_str()) {
+        Some("html") => "text/html",
+        Some("css") => "text/css",
+        Some("js") => "application/javascript",
+        Some("json") => "application/json",
+        Some("md") => "text/markdown",
+        Some("png") => "image/png",
+        Some("jpg") | Some("jpeg") => "image/jpeg",
+        Some("gif") => "image/gif",
+        Some("svg") => "image/svg+xml",
+        Some("ico") => "image/x-icon",
+        Some("txt") => "text/plain",
+        _ => "application/octet-stream",
+    }.to_string()
+}
+
 struct ContextConfig {
     app_identifier: String,
 }
@@ -181,7 +258,7 @@ pub fn run() {
     let context: tauri::Context<tauri::Wry> = tauri::generate_context!();
     let identifier: String = context.config().identifier.clone();
     let context_config_clone = Arc::new(ContextConfig {
-        app_identifier: identifier,
+        app_identifier: identifier.clone(),
     });
     tbr = tbr.manage(context_config_clone);
 
@@ -207,6 +284,20 @@ pub fn run() {
     if IS_DEV {
         let filename = format!("{}{}", ".dev", tauri_plugin_window_state::DEFAULT_FILENAME);
         ws = tauri_plugin_window_state::Builder::with_filename(ws, filename);
+    }
+
+    // Start web server if configured
+    if let Some(base_dir) = BaseDirs::new() {
+        let config_path = base_dir.config_dir().join(get_config_app_path(&identifier));
+        if config_path.exists() {
+            if let Ok(config_json) = fs::read_to_string(&config_path) {
+                if let Ok(config) = serde_json::from_str::<AppConfig>(&config_json) {
+                    if let Some(web_config) = config.web {
+                        start_web_server(web_config.root, web_config.port);
+                    }
+                }
+            }
+        }
     }
 
     tbr.plugin(ws.build())

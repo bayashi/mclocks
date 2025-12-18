@@ -245,6 +245,28 @@ Empty lines are preserved as-is in all operations.
 | `Ctrl + i` | Quote each line of clipboard text with double quotes, append comma to the end (except the last line), and open in editor |
 | `Ctrl + Shift + i` | Quote each line of clipboard text with single quotes, append comma to the end (except the last line), and open in editor |
 
+## Web Server
+
+`mclocks` can serve static files via a built-in web server. This feature allows you to easily view your code snippets in a browser. Add a `web` field to your `config.json`:
+
+    {
+      "web": {
+        "root": "/path/to/your/webroot"
+      }
+    }
+
+* `root`: Path to the directory containing files to serve (required)
+* `port`: Port number to listen on (default: 3030)
+
+If the `web` field is configured in your `config.json`, the web server starts automatically when `mclocks` launches. Access files at `http://127.0.0.1:3030`. The web server only listens on `127.0.0.1` (localhost), so it is only accessible from your local machine.
+
+### Supported file types
+
+The web server supports the following file types:
+
+* Text: `html`, `css`, `js`, `json`, `md`, `txt`
+* Images: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+
 ----------
 
 ## License
