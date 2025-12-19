@@ -210,6 +210,10 @@ Empty lines are preserved as-is in all operations.
 
 ## Keyboard Shortcuts
 
+### Show Help
+
+`F1` (Windows) or `Cmd + Shift + /` (macOS) to open help page (this README) in browser
+
 ### Configuration, Display Formats
 
 | Shortcut | Description |

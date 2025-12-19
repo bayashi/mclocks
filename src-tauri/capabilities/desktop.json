@@ -29,6 +29,14 @@
                 "path": "$APPDATA/dev.config.json"
             }
         ]
+    },
+    {
+        "identifier": "opener:allow-open-url",
+        "allow": [
+            {
+                "url": "https://github.com/bayashi/mclocks*"
+            }
+        ]
     }
   ]
 }
