@@ -322,61 +322,40 @@ pub fn run() {
         None
     };
 
-    if IS_DEV {
-        let error_msg = web_error.clone();
-        let port_to_open = browser_open_error;
-        tbr = tbr.setup(move |app| {
+    let error_msg = web_error.clone();
+    let port_to_open = browser_open_error;
+    tbr = tbr.setup(move |app| {
+        if IS_DEV {
             let _window = app.get_webview_window(WINDOW_NAME).unwrap();
             #[cfg(debug_assertions)]
             {
                 _window.open_devtools();
             }
+        }
 
-            if let Some(err) = error_msg {
+        if let Some(err) = error_msg {
+            app.dialog()
+                .message(&err)
+                .kind(MessageDialogKind::Error)
+                .title("Web Server Error")
+                .blocking_show();
+        }
+
+        if let Some(port) = port_to_open {
+            thread::sleep(std::time::Duration::from_millis(1000)); // Wait a bit for the server to start
+            let url = format!("http://localhost:{}", port);
+            if let Err(e) = open_url_in_browser(&url) {
                 app.dialog()
-                    .message(&err)
+                    .message(&format!("Failed to open browser: {}", e))
                     .kind(MessageDialogKind::Error)
                     .title("Web Server Error")
                     .blocking_show();
             }
+        }
+        Ok(())
+    });
 
-            if let Some(port) = port_to_open {
-                thread::sleep(std::time::Duration::from_millis(1000)); // Wait a bit for the server to start
-                let url = format!("http://localhost:{}", port);
-                if let Err(e) = open_url_in_browser(&url) {
-                    app.dialog()
-                        .message(&format!("Failed to open browser: {}", e))
-                        .kind(MessageDialogKind::Error)
-                        .title("Web Server Error")
-                        .blocking_show();
-                }
-            }
-            Ok(())
-        })
-    } else {
-        let error_msg = web_error.clone();
-        let port_to_open = browser_open_error;
-        tbr = tbr.setup(move |app| {
-            if let Some(err) = error_msg {
-                app.dialog()
-                    .message(&err)
-                    .kind(MessageDialogKind::Error)
-                    .title("Web Server Error")
-                    .blocking_show();
-            }
-            if let Some(port) = port_to_open {
-                thread::sleep(std::time::Duration::from_millis(1000)); // Wait a bit for the server to start
-                let url = format!("http://localhost:{}", port);
-                if let Err(e) = open_url_in_browser(&url) {
-                    app.dialog()
-                        .message(&format!("Failed to open browser: {}", e))
-                        .kind(MessageDialogKind::Error)
-                        .title("Web Server Error")
-                        .blocking_show();
-                }
-            }
-            Ok(())
-        });
+    if !IS_DEV {
         tbr = tbr.plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {
             let _ = _app
                 .get_webview_window(WINDOW_NAME)
