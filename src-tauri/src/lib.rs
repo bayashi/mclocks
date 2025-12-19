@@ -287,29 +287,26 @@ pub fn run() {
     });
     tbr = tbr.manage(context_config_clone);
 
-    let mut web_error: Option<String> = None;
-    let mut web_config_for_startup: Option<(String, u16, bool)> = None;
-    if let Some(base_dir) = BaseDirs::new() {
-        let config_path = base_dir.config_dir().join(get_config_app_path(&identifier));
-        if config_path.exists() {
-            if let Ok(config_json) = fs::read_to_string(&config_path) {
-                if let Ok(config) = serde_json::from_str::<AppConfig>(&config_json) {
-                    if let Some(web_config) = config.web {
-                        let root_path = PathBuf::from(&web_config.root);
-                        if root_path.exists() {
-                            web_config_for_startup = Some((
-                                web_config.root,
-                                web_config.port,
-                                web_config.open_browser_at_start,
-                            ));
-                        } else {
-                            web_error = Some(format!("web.root not exists: {}", root_path.display()));
-                        }
-                    }
-                }
+    let (web_error, web_config_for_startup) = BaseDirs::new()
+        .and_then(|base_dir| {
+            let config_path = base_dir.config_dir().join(get_config_app_path(&identifier));
+            config_path.exists().then_some(config_path)
+        })
+        .and_then(|config_path| fs::read_to_string(&config_path).ok())
+        .and_then(|config_json| serde_json::from_str::<AppConfig>(&config_json).ok())
+        .and_then(|config| config.web)
+        .map_or((None, None), |web_config| {
+            let root_path = PathBuf::from(&web_config.root);
+            if root_path.exists() {
+                (None, Some((
+                    web_config.root,
+                    web_config.port,
+                    web_config.open_browser_at_start,
+                )))
+            } else {
+                (Some(format!("web.root not exists: {}", root_path.display())), None)
             }
-        }
-    }
+        });
 
     let browser_open_error = web_config_for_startup.and_then(|(root, port, open_browser_at_start)| {
         start_web_server(root, port);
