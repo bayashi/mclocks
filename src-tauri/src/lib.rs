@@ -205,16 +205,62 @@ fn start_web_server(root: String, port: u16) {
 
         for request in server.incoming_requests() {
             let path = request.url();
+            // Parse URL to get path component (remove query string and fragment)
+            let path = match path.split('?').next() {
+                Some(p) => p.split('#').next().unwrap_or(p),
+                None => "/",
+            };
+
+            // Security: Check for directory traversal attempts
+            if path.contains("..") || path.contains("//") {
+                let response = Response::from_string("Bad Request").with_status_code(StatusCode(400));
+                if let Err(e) = request.respond(response) {
+                    eprintln!("Failed to send response: {}", e);
+                }
+                continue;
+            }
+
             let file_path = if path == "/" {
                 root_path.join("index.html")
             } else {
-                root_path.join(path.trim_start_matches('/'))
+                // Remove leading slash and join with root_path
+                let relative_path = path.trim_start_matches('/');
+                // Additional check: ensure no absolute path components
+                if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
+                    let response = Response::from_string("Bad Request").with_status_code(StatusCode(400));
+                    if let Err(e) = request.respond(response) {
+                        eprintln!("Failed to send response: {}", e);
+                    }
+                    continue;
+                }
+                root_path.join(relative_path)
             };
 
-            let response = if file_path.exists() && file_path.starts_with(&root_path) {
-                match fs::read(&file_path) {
+            // Normalize the path to resolve any symlinks and ensure it's within root_path
+            let normalized_path = match file_path.canonicalize() {
+                Ok(p) => p,
+                Err(_) => {
+                    if file_path.exists() && file_path.starts_with(&root_path) {
+                        file_path
+                    } else {
+                        let response = Response::from_string("Not Found").with_status_code(StatusCode(404));
+                        if let Err(e) = request.respond(response) {
+                            eprintln!("Failed to send response: {}", e);
+                        }
+                        continue;
+                    }
+                }
+            };
+
+            let normalized_root = match root_path.canonicalize() {
+                Ok(p) => p,
+                Err(_) => root_path.clone(),
+            };
+
+            let response = if normalized_path.starts_with(&normalized_root) {
+                match fs::read(&normalized_path) {
                     Ok(content) => {
-                        let content_type = get_content_type(&file_path);
+                        let content_type = get_content_type(&normalized_path);
                         if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
                             Response::from_data(content).with_header(header).with_status_code(StatusCode(200))
                         } else {
