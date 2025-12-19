@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs, io::Write, sync::Arc, env, process::Command, path::PathBuf, thread};
 use tiny_http::{Server, Response, StatusCode, Header};
 use tauri::{Manager, State};
+use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
 const IS_DEV: bool = tauri::is_dev();
 
@@ -40,6 +41,8 @@ struct WebConfig {
     root: String,
     #[serde(default = "df_web_port")]
     port: u16,
+    #[serde(default = "df_open_browser_at_start")]
+    open_browser_at_start: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -97,6 +100,7 @@ fn df_max_timer_clock_number() -> i32 { 5 }
 fn df_epoch_clock_name() -> String { "Epoch".to_string() }
 fn df_disable_hover() -> bool { true }
 fn df_web_port() -> u16 { 3030 }
+fn df_open_browser_at_start() -> bool { false }
 
 fn get_config_file() -> String {
     let config_file = "config.json";
@@ -247,6 +251,27 @@ fn get_content_type(path: &PathBuf) -> String {
     }.to_string()
 }
 
+fn open_url_in_browser(url: &str) -> Result<(), String> {
+    if cfg!(target_os = "windows") {
+        Command::new("cmd")
+            .args(&["/C", "start", "", url])
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
+    } else if cfg!(target_os = "macos") {
+        Command::new("open")
+            .arg(url)
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
+    } else {
+        Command::new("xdg-open")
+            .arg(url)
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {}", e))?;
+    }
+
+    Ok(())
+}
+
 struct ContextConfig {
     app_identifier: String,
 }
@@ -262,16 +287,96 @@ pub fn run() {
     });
     tbr = tbr.manage(context_config_clone);
 
+    let mut web_error: Option<String> = None;
+    let mut web_config_for_startup: Option<(String, u16, bool)> = None;
+    if let Some(base_dir) = BaseDirs::new() {
+        let config_path = base_dir.config_dir().join(get_config_app_path(&identifier));
+        if config_path.exists() {
+            if let Ok(config_json) = fs::read_to_string(&config_path) {
+                if let Ok(config) = serde_json::from_str::<AppConfig>(&config_json) {
+                    if let Some(web_config) = config.web {
+                        let root_path = PathBuf::from(&web_config.root);
+                        if root_path.exists() {
+                            web_config_for_startup = Some((
+                                web_config.root,
+                                web_config.port,
+                                web_config.open_browser_at_start,
+                            ));
+                        } else {
+                            web_error = Some(format!("web.root not exists: {}", root_path.display()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let browser_open_error = if let Some((root, port, open_browser_at_start)) = web_config_for_startup {
+        start_web_server(root, port);
+        if open_browser_at_start {
+            Some(port)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     if IS_DEV {
-        tbr = tbr.setup(|app| {
+        let error_msg = web_error.clone();
+        let port_to_open = browser_open_error;
+        tbr = tbr.setup(move |app| {
             let _window = app.get_webview_window(WINDOW_NAME).unwrap();
             #[cfg(debug_assertions)]
             {
                 _window.open_devtools();
             }
+
+            if let Some(err) = error_msg {
+                app.dialog()
+                    .message(&err)
+                    .kind(MessageDialogKind::Error)
+                    .title("Web Server Error")
+                    .blocking_show();
+            }
+
+            if let Some(port) = port_to_open {
+                thread::sleep(std::time::Duration::from_millis(1000)); // Wait a bit for the server to start
+                let url = format!("http://localhost:{}", port);
+                if let Err(e) = open_url_in_browser(&url) {
+                    app.dialog()
+                        .message(&format!("Failed to open browser: {}", e))
+                        .kind(MessageDialogKind::Error)
+                        .title("Web Server Error")
+                        .blocking_show();
+                }
+            }
             Ok(())
         })
     } else {
+        let error_msg = web_error.clone();
+        let port_to_open = browser_open_error;
+        tbr = tbr.setup(move |app| {
+            if let Some(err) = error_msg {
+                app.dialog()
+                    .message(&err)
+                    .kind(MessageDialogKind::Error)
+                    .title("Web Server Error")
+                    .blocking_show();
+            }
+            if let Some(port) = port_to_open {
+                thread::sleep(std::time::Duration::from_millis(1000)); // Wait a bit for the server to start
+                let url = format!("http://localhost:{}", port);
+                if let Err(e) = open_url_in_browser(&url) {
+                    app.dialog()
+                        .message(&format!("Failed to open browser: {}", e))
+                        .kind(MessageDialogKind::Error)
+                        .title("Web Server Error")
+                        .blocking_show();
+                }
+            }
+            Ok(())
+        });
         tbr = tbr.plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {
             let _ = _app
                 .get_webview_window(WINDOW_NAME)
@@ -284,20 +389,6 @@ pub fn run() {
     if IS_DEV {
         let filename = format!("{}{}", ".dev", tauri_plugin_window_state::DEFAULT_FILENAME);
         ws = tauri_plugin_window_state::Builder::with_filename(ws, filename);
-    }
-
-    // Start web server if configured
-    if let Some(base_dir) = BaseDirs::new() {
-        let config_path = base_dir.config_dir().join(get_config_app_path(&identifier));
-        if config_path.exists() {
-            if let Ok(config_json) = fs::read_to_string(&config_path) {
-                if let Ok(config) = serde_json::from_str::<AppConfig>(&config_json) {
-                    if let Some(web_config) = config.web {
-                        start_web_server(web_config.root, web_config.port);
-                    }
-                }
-            }
-        }
     }
 
     tbr.plugin(ws.build())
