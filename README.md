@@ -257,6 +257,7 @@ Empty lines are preserved as-is in all operations.
 
 * `root`: Path to the directory containing files to serve (required)
 * `port`: Port number to listen on (default: 3030)
+* `open_browser_at_start`: If set to `true`, automatically opens the web server URL in the default browser when `mclocks` starts (default: `false`)
 
 If the `web` field is configured in your `config.json`, the web server starts automatically when `mclocks` launches. Access files at `http://127.0.0.1:3030`. The web server only listens on `127.0.0.1` (localhost), so it is only accessible from your local machine.
 
