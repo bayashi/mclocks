@@ -311,16 +311,10 @@ pub fn run() {
         }
     }
 
-    let browser_open_error = if let Some((root, port, open_browser_at_start)) = web_config_for_startup {
+    let browser_open_error = web_config_for_startup.and_then(|(root, port, open_browser_at_start)| {
         start_web_server(root, port);
-        if open_browser_at_start {
-            Some(port)
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+        open_browser_at_start.then_some(port)
+    });
 
     let error_msg = web_error.clone();
     let port_to_open = browser_open_error;
