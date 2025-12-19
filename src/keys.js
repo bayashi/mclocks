@@ -1,5 +1,6 @@
 import { cdate } from 'cdate';
 import { invoke } from '@tauri-apps/api/core';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, addTimerClock } from './matter.js';
 import { trim, uniqueTimezones, writeClipboardText, readClipboardText, openMessageDialog, isMacOS, isWindowsOS } from './util.js';
@@ -12,10 +13,35 @@ const pressingBaseKey = (e) => isMacOS() ? e.metaKey : e.ctrlKey;
 // macOS ---> Control
 const pressingAltKey = (e) => isMacOS() ? e.ctrlKey : e.altKey;
 
+/**
+ * Opens the help page in the default browser
+ */
+async function openHelpPage() {
+  try {
+    await openUrl("https://github.com/bayashi/mclocks?tab=readme-ov-file#keyboard-shortcuts");
+  } catch (error) {
+    await openMessageDialog(`Failed to open help page: ${error}`, "mclocks Error", "error");
+  }
+}
+
 export function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
   if (isWindowsOS()) {
     if (e.metaKey && e.key === "d") {
       e.preventDefault(); // ignore "Windows + D" to keep displaying mclocks
+      return;
+    }
+
+    if (e.key === "F1") {
+      e.preventDefault();
+      openHelpPage();
+      return;
+    }
+  }
+
+  if (isMacOS()) {
+    if (e.metaKey && e.shiftKey && e.key === "/") {
+      e.preventDefault();
+      openHelpPage();
       return;
     }
   }
