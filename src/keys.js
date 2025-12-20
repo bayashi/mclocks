@@ -167,6 +167,32 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
 }
 
 /**
+ * Converts a date-time value to a specific timezone
+ * @param {Function} cdt - The cdate function instance
+ * @param {string|number} src - The source date-time value
+ * @param {string} tz - The target timezone
+ * @param {boolean} usetz - Whether to use strict timezone conversion
+ * @returns {string} The converted date-time string in the format "result in tz" or "error in tz"
+ */
+function convertToTimezone(cdt, src, tz, usetz) {
+  try {
+    let result;
+    if (usetz) {
+      // Use strict timezone conversion by `usetz:true` option in config.
+      // For example, before 1888/1/1 00:00:00 in JST, its utcOffset is 09:18, historically.
+      result = cdt(src).tz(tz).text();
+    } else {
+      // Use utcOffset for any date-time.
+      const offset = cdt().tz(tz).utcOffset();
+      result = cdt(src).utcOffset(offset).text();
+    }
+    return `${result} in ${tz}`;
+  } catch (error) {
+    return `${error} in ${tz}`;
+  }
+}
+
+/**
  * Determines the epoch time unit and multiplier based on keyboard modifiers
  * @param {KeyboardEvent} e - The keyboard event
  * @param {Object} pressedKeys - Object containing pressed key states
@@ -231,21 +257,7 @@ async function conversionHandler(e, pressedKeys, clocks, usetz, convtz) {
   const results = [];
 
   for (const tz of uniqueTimezones(clocks)) {
-    let result;
-    try {
-      if (usetz) {
-        // Use strict timezon conversion by `usetz:true` option in config.
-        // For example, before 1888/1/1 00:00:00 in JST, its utcOffset is 09:18, historically.
-        result = cdt(src).tz(tz).text()
-      } else {
-        // Use utcOffset for any date-time.
-        const offset = cdt().tz(tz).utcOffset();
-        result = cdt(src).utcOffset(offset).text();
-      }
-      result = `${result} in ${tz}`;
-    } catch (error) {
-      result = `${error} in ${tz}`;
-    }
+    const result = convertToTimezone(cdt, src, tz, usetz);
     results.push(result);
   }
 
