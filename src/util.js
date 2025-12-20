@@ -92,8 +92,8 @@ export const writeClipboardText = async (text) => {
  * Reads text from clipboard
  * @returns {Promise<string>} The clipboard text
  */
-export const readClipboardText = async () => {
-  return await readText();
+export const readClipboardText = () => {
+  return readText();
 };
 
 /**

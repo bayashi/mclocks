@@ -1,5 +1,5 @@
 import { cdate } from 'cdate';
-import { trim, uniqueTimezones, openMessageDialog, isMacOS } from './util.js';
+import { trim, uniqueTimezones, openMessageDialog, isMacOS, readClipboardText } from './util.js';
 import { openTextInEditor } from './editor.js';
 
 // Win   ---> Alt
@@ -65,10 +65,9 @@ function determineEpochUnit(e, pressedKeys) {
 // Some datetime strings that represent common use cases may fail to parse in certain environments,
 // so they need to be converted to generally parseable datetime strings.
 function normalizeDT(src) {
-  let m;
-
   // BQ datetime format
-  if (m = src.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+) UTC$/)) {
+  const m = src.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+) UTC$/);
+  if (m) {
     return m[1] + "Z";
   }
 

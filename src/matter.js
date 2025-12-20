@@ -112,12 +112,12 @@ export function buildCountdown(ctx, clock) {
     .replace("%s", pad(diffSec % 60));
 }
 
-async function tick(ctx, clock) {
+function tick(ctx, clock) {
   tock(ctx, clock);
   clock.timeoutId = setTimeout(() => { tick(ctx, clock); }, 1000 - Date.now() % 1000);
 }
 
-async function tock(ctx, clock) {
+function tock(ctx, clock) {
   if (clock.countdown) {
     clock.el.innerHTML = escapeHTML(buildCountdown(ctx, clock));
   } else {
