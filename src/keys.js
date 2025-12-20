@@ -143,7 +143,7 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
       cls.push(clock.el.parentElement.innerText);
     }
 
-    writeClipboardText(cls.join("  "));
+    await writeClipboardText(cls.join("  "));
     return;
   }
 
