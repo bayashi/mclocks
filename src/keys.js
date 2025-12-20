@@ -24,7 +24,7 @@ async function openHelpPage() {
   }
 }
 
-export function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
+export async function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
   if (isWindowsOS()) {
     if (e.metaKey && e.key === "d") {
       e.preventDefault(); // ignore "Windows + D" to keep displaying mclocks
@@ -33,7 +33,7 @@ export function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
 
     if (e.key === "F1") {
       e.preventDefault();
-      openHelpPage();
+      await openHelpPage();
       return;
     }
   }
@@ -41,13 +41,13 @@ export function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
   if (isMacOS()) {
     if (e.metaKey && e.shiftKey && e.key === "/") {
       e.preventDefault();
-      openHelpPage();
+      await openHelpPage();
       return;
     }
   }
 
   if (pressingBaseKey(e)) {
-    withBaseKey(e, pressedKeys, ctx, cfg, clocks);
+    await withBaseKey(e, pressedKeys, ctx, cfg, clocks);
   }
 }
 

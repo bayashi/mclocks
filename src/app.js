@@ -109,9 +109,9 @@ const initStyles = (ctx, cfg) => {
 const initKeyboardHandlers = (ctx, cfg, clocks) => {
   const pressedKeys = new Set();
 
-  const keydownHandler = (event) => {
+  const keydownHandler = async (event) => {
     pressedKeys.add(event.key);
-    operationKeysHandler(event, pressedKeys, ctx, cfg, clocks);
+    await operationKeysHandler(event, pressedKeys, ctx, cfg, clocks);
   };
 
   const keyupHandler = (event) => {

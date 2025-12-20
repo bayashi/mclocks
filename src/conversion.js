@@ -1,5 +1,5 @@
 import { cdate } from 'cdate';
-import { trim, uniqueTimezones, openMessageDialog, isMacOS } from './util.js';
+import { trim, uniqueTimezones, openMessageDialog, isMacOS, readClipboardText } from './util.js';
 import { openTextInEditor } from './editor.js';
 
 // Win   ---> Alt
