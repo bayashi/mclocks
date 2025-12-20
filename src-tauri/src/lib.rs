@@ -175,25 +175,35 @@ fn open_text_in_editor(text: String) -> Result<(), String> {
     open_with_system_command(&temp_file_str, "Failed to open file in editor")
 }
 
+fn read_config_file(config_path: &PathBuf, old_config_path: &PathBuf) -> Result<String, String> {
+    if config_path.exists() {
+        fs::read_to_string(config_path).map_err(|e| e.to_string())
+    } else if old_config_path.exists() {
+        fs::read_to_string(old_config_path).map_err(|e| e.to_string())
+    } else {
+        Ok("{\n  \n}\n".to_string())
+    }
+}
+
+fn ensure_config_file_exists(config_path: &PathBuf, config_json: &str) -> Result<(), String> {
+    fs::create_dir_all(config_path.parent().ok_or("Invalid config path")?)
+        .map_err(|e| e.to_string())?;
+    let mut config_file = fs::File::create(config_path).map_err(|e| e.to_string())?;
+    config_file.write_all(config_json.as_bytes()).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
 fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
-    let mut config_json = "{\n  \n}\n".to_string();
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
     let config_path = base_dir.config_dir().join(get_config_app_path(&state.app_identifier));
     let old_config_path = base_dir.config_dir().join(get_old_config_app_path());
-    if config_path.exists() {
-        config_json = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
-    } else {
-        if old_config_path.exists() {
-            config_json = fs::read_to_string(old_config_path).map_err(|e| e.to_string())?;
-        }
-        // just create config_path
-        fs::create_dir_all(config_path.parent().unwrap()).map_err(|e| e.to_string())?;
-        let mut config_file = fs::File::create(config_path).map_err(|e| e.to_string())?;
-        config_file.write_all(config_json.as_bytes()).map_err(|e| e.to_string())?;
+    let config_json = read_config_file(&config_path, &old_config_path)?;
+    if !config_path.exists() {
+        ensure_config_file_exists(&config_path, &config_json)?;
     }
 
-    Ok(serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))?)
+    serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
 }
 
 fn create_error_response(status_code: StatusCode, message: &str) -> Response<std::io::Cursor<Vec<u8>>> {
