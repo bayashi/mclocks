@@ -45,6 +45,12 @@ struct WebConfig {
     open_browser_at_start: bool,
 }
 
+struct WebServerConfig {
+    root: String,
+    port: u16,
+    open_browser_at_start: bool,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct AppConfig {
@@ -130,6 +136,27 @@ fn get_config_path(state: State<'_, Arc<ContextConfig>>) -> Result<String, Strin
     Ok(config_path.to_string_lossy().to_string())
 }
 
+fn open_with_system_command(path_or_url: &str, error_context: &str) -> Result<(), String> {
+    if cfg!(target_os = "windows") {
+        Command::new("cmd")
+            .args(&["/C", "start", "", path_or_url])
+            .spawn()
+            .map_err(|e| format!("{}: {}", error_context, e))?;
+    } else if cfg!(target_os = "macos") {
+        Command::new("open")
+            .arg(path_or_url)
+            .spawn()
+            .map_err(|e| format!("{}: {}", error_context, e))?;
+    } else {
+        Command::new("xdg-open")
+            .arg(path_or_url)
+            .spawn()
+            .map_err(|e| format!("{}: {}", error_context, e))?;
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 fn open_text_in_editor(text: String) -> Result<(), String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
@@ -144,45 +171,119 @@ fn open_text_in_editor(text: String) -> Result<(), String> {
 
     fs::write(&temp_file, text).map_err(|e| format!("Failed to write temp file: {}", e))?;
 
-    if cfg!(target_os = "windows") {
-        Command::new("cmd")
-            .args(&["/C", "start", "", temp_file.to_string_lossy().as_ref()])
-            .spawn()
-            .map_err(|e| format!("Failed to open browser: {}", e))?;
-    } else if cfg!(target_os = "macos") {
-        Command::new("open")
-            .arg(&temp_file)
-            .spawn()
-            .map_err(|e| format!("Failed to open browser: {}", e))?;
-    } else {
-        Command::new("xdg-open")
-            .arg(&temp_file)
-            .spawn()
-            .map_err(|e| format!("Failed to open browser: {}", e))?;
-    }
+    let temp_file_str = temp_file.to_string_lossy().to_string();
+    open_with_system_command(&temp_file_str, "Failed to open file in editor")
+}
 
+fn read_config_file(config_path: &PathBuf, old_config_path: &PathBuf) -> Result<String, String> {
+    if config_path.exists() {
+        fs::read_to_string(config_path).map_err(|e| e.to_string())
+    } else if old_config_path.exists() {
+        fs::read_to_string(old_config_path).map_err(|e| e.to_string())
+    } else {
+        Ok("{\n  \n}\n".to_string())
+    }
+}
+
+fn ensure_config_file_exists(config_path: &PathBuf, config_json: &str) -> Result<(), String> {
+    fs::create_dir_all(config_path.parent().ok_or("Invalid config path")?)
+        .map_err(|e| e.to_string())?;
+    let mut config_file = fs::File::create(config_path).map_err(|e| e.to_string())?;
+    config_file.write_all(config_json.as_bytes()).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
 fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
-    let mut config_json = "{\n  \n}\n".to_string();
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
     let config_path = base_dir.config_dir().join(get_config_app_path(&state.app_identifier));
     let old_config_path = base_dir.config_dir().join(get_old_config_app_path());
-    if config_path.exists() {
-        config_json = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
-    } else {
-        if old_config_path.exists() {
-            config_json = fs::read_to_string(old_config_path).map_err(|e| e.to_string())?;
-        }
-        // just create config_path
-        fs::create_dir_all(config_path.parent().unwrap()).map_err(|e| e.to_string())?;
-        let mut config_file = fs::File::create(config_path).map_err(|e| e.to_string())?;
-        config_file.write_all(config_json.as_bytes()).map_err(|e| e.to_string())?;
+    let config_json = read_config_file(&config_path, &old_config_path)?;
+    if !config_path.exists() {
+        ensure_config_file_exists(&config_path, &config_json)?;
     }
 
-    Ok(serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))?)
+    serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
+}
+
+fn create_error_response(status_code: StatusCode, message: &str) -> Response<std::io::Cursor<Vec<u8>>> {
+    Response::from_string(message).with_status_code(status_code)
+}
+
+fn parse_and_validate_path(url: &str, root_path: &PathBuf) -> Result<PathBuf, StatusCode> {
+    // Parse URL to get path component (remove query string and fragment)
+    let path = match url.split('?').next() {
+        Some(p) => p.split('#').next().unwrap_or(p),
+        None => "/",
+    };
+
+    // Security: Check for directory traversal attempts
+    if path.contains("..") || path.contains("//") {
+        return Err(StatusCode(400));
+    }
+
+    let file_path = if path == "/" {
+        root_path.join("index.html")
+    } else {
+        // Remove leading slash and join with root_path
+        let relative_path = path.trim_start_matches('/');
+        // Additional check: ensure no absolute path components
+        if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
+            return Err(StatusCode(400));
+        }
+        root_path.join(relative_path)
+    };
+
+    // Normalize the path to resolve any symlinks and ensure it's within root_path
+    let normalized_path = match file_path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => {
+            if file_path.exists() && file_path.starts_with(root_path) {
+                file_path
+            } else {
+                return Err(StatusCode(404));
+            }
+        }
+    };
+
+    let normalized_root = match root_path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => root_path.clone(),
+    };
+
+    if normalized_path.starts_with(&normalized_root) {
+        Ok(normalized_path)
+    } else {
+        Err(StatusCode(404))
+    }
+}
+
+fn create_file_response(file_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>>> {
+    match fs::read(file_path) {
+        Ok(content) => {
+            let content_type = get_content_type(file_path);
+            if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
+                Response::from_data(content).with_header(header).with_status_code(StatusCode(200))
+            } else {
+                Response::from_data(content).with_status_code(StatusCode(200))
+            }
+        }
+        Err(_) => create_error_response(StatusCode(500), "Internal Server Error")
+    }
+}
+
+fn handle_web_request(request: &tiny_http::Request, root_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>>> {
+    match parse_and_validate_path(request.url(), root_path) {
+        Ok(file_path) => create_file_response(&file_path),
+        Err(status_code) => {
+            let message = match status_code {
+                StatusCode(400) => "Bad Request",
+                StatusCode(404) => "Not Found",
+                _ => "Internal Server Error",
+            };
+            create_error_response(status_code, message)
+        },
+    }
 }
 
 fn start_web_server(root: String, port: u16) {
@@ -204,75 +305,7 @@ fn start_web_server(root: String, port: u16) {
         println!("Web server started on http://localhost:{}", port);
 
         for request in server.incoming_requests() {
-            let path = request.url();
-            // Parse URL to get path component (remove query string and fragment)
-            let path = match path.split('?').next() {
-                Some(p) => p.split('#').next().unwrap_or(p),
-                None => "/",
-            };
-
-            // Security: Check for directory traversal attempts
-            if path.contains("..") || path.contains("//") {
-                let response = Response::from_string("Bad Request").with_status_code(StatusCode(400));
-                if let Err(e) = request.respond(response) {
-                    eprintln!("Failed to send response: {}", e);
-                }
-                continue;
-            }
-
-            let file_path = if path == "/" {
-                root_path.join("index.html")
-            } else {
-                // Remove leading slash and join with root_path
-                let relative_path = path.trim_start_matches('/');
-                // Additional check: ensure no absolute path components
-                if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
-                    let response = Response::from_string("Bad Request").with_status_code(StatusCode(400));
-                    if let Err(e) = request.respond(response) {
-                        eprintln!("Failed to send response: {}", e);
-                    }
-                    continue;
-                }
-                root_path.join(relative_path)
-            };
-
-            // Normalize the path to resolve any symlinks and ensure it's within root_path
-            let normalized_path = match file_path.canonicalize() {
-                Ok(p) => p,
-                Err(_) => {
-                    if file_path.exists() && file_path.starts_with(&root_path) {
-                        file_path
-                    } else {
-                        let response = Response::from_string("Not Found").with_status_code(StatusCode(404));
-                        if let Err(e) = request.respond(response) {
-                            eprintln!("Failed to send response: {}", e);
-                        }
-                        continue;
-                    }
-                }
-            };
-
-            let normalized_root = match root_path.canonicalize() {
-                Ok(p) => p,
-                Err(_) => root_path.clone(),
-            };
-
-            let response = if normalized_path.starts_with(&normalized_root) {
-                match fs::read(&normalized_path) {
-                    Ok(content) => {
-                        let content_type = get_content_type(&normalized_path);
-                        if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
-                            Response::from_data(content).with_header(header).with_status_code(StatusCode(200))
-                        } else {
-                            Response::from_data(content).with_status_code(StatusCode(200))
-                        }
-                    }
-                    Err(_) => Response::from_string("Internal Server Error").with_status_code(StatusCode(500))
-                }
-            } else {
-                Response::from_string("Not Found").with_status_code(StatusCode(404))
-            };
-
+            let response = handle_web_request(&request, &root_path);
             if let Err(e) = request.respond(response) {
                 eprintln!("Failed to send response: {}", e);
             }
@@ -298,28 +331,40 @@ fn get_content_type(path: &PathBuf) -> String {
 }
 
 fn open_url_in_browser(url: &str) -> Result<(), String> {
-    if cfg!(target_os = "windows") {
-        Command::new("cmd")
-            .args(&["/C", "start", "", url])
-            .spawn()
-            .map_err(|e| format!("Failed to open browser: {}", e))?;
-    } else if cfg!(target_os = "macos") {
-        Command::new("open")
-            .arg(url)
-            .spawn()
-            .map_err(|e| format!("Failed to open browser: {}", e))?;
-    } else {
-        Command::new("xdg-open")
-            .arg(url)
-            .spawn()
-            .map_err(|e| format!("Failed to open browser: {}", e))?;
-    }
-
-    Ok(())
+    open_with_system_command(url, "Failed to open URL in browser")
 }
 
 struct ContextConfig {
     app_identifier: String,
+}
+
+fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let config_path = base_dir.config_dir().join(get_config_app_path(identifier));
+
+    if !config_path.exists() {
+        return Ok(None);
+    }
+
+    let config_json = fs::read_to_string(&config_path).map_err(|e| format!("Failed to read config: {}", e))?;
+    let config: AppConfig = serde_json::from_str(&config_json)
+        .map_err(|e| format!("Failed to parse config: {}", e))?;
+
+    let web_config = match config.web {
+        Some(wc) => wc,
+        None => return Ok(None),
+    };
+
+    let root_path = PathBuf::from(&web_config.root);
+    if !root_path.exists() {
+        return Err(format!("web.root not exists: {}", root_path.display()));
+    }
+
+    Ok(Some(WebServerConfig {
+        root: web_config.root,
+        port: web_config.port,
+        open_browser_at_start: web_config.open_browser_at_start,
+    }))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -333,34 +378,22 @@ pub fn run() {
     });
     tbr = tbr.manage(context_config_clone);
 
-    let (web_error, web_config_for_startup) = BaseDirs::new()
-        .and_then(|base_dir| {
-            let config_path = base_dir.config_dir().join(get_config_app_path(&identifier));
-            config_path.exists().then_some(config_path)
-        })
-        .and_then(|config_path| fs::read_to_string(&config_path).ok())
-        .and_then(|config_json| serde_json::from_str::<AppConfig>(&config_json).ok())
-        .and_then(|config| config.web)
-        .map_or((None, None), |web_config| {
-            let root_path = PathBuf::from(&web_config.root);
-            if root_path.exists() {
-                (None, Some((
-                    web_config.root,
-                    web_config.port,
-                    web_config.open_browser_at_start,
-                )))
-            } else {
-                (Some(format!("web.root not exists: {}", root_path.display())), None)
-            }
-        });
+    let (web_error, web_config_for_startup) = match load_web_config(&identifier) {
+        Ok(Some(config)) => (None, Some(config)),
+        Ok(None) => (None, None),
+        Err(e) => (Some(e), None),
+    };
 
-    let browser_open_error = web_config_for_startup.and_then(|(root, port, open_browser_at_start)| {
-        start_web_server(root, port);
-        open_browser_at_start.then_some(port)
-    });
+    let port_to_open = web_config_for_startup.as_ref().map(|config| {
+        start_web_server(config.root.clone(), config.port);
+        if config.open_browser_at_start {
+            Some(config.port)
+        } else {
+            None
+        }
+    }).flatten();
 
     let error_msg = web_error.clone();
-    let port_to_open = browser_open_error;
     tbr = tbr.setup(move |app| {
         if IS_DEV {
             let _window = app.get_webview_window(WINDOW_NAME).unwrap();
