@@ -166,38 +166,49 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   }
 }
 
+/**
+ * Determines the epoch time unit and multiplier based on keyboard modifiers
+ * @param {KeyboardEvent} e - The keyboard event
+ * @param {Object} pressedKeys - Object containing pressed key states
+ * @returns {{name: string, multiplier: number}} Object with unit name and multiplier to convert to milliseconds
+ */
+function determineEpochUnit(e, pressedKeys) {
+  // KEYs                           convert in
+  // Ctrl + v                   --> sec
+  // Ctrl + Alt + v             --> millisec
+  // Ctrl + Alt + Shift + V     --> microsec
+  // Ctrl + Alt + Shift + N + V --> nanosec
+
+  // sec:      -62167219200
+  // millisec: -62167219200000
+  // microsec: -62167219200000000
+  // nanosec:  -62167219200000000000
+  // These are converted into "0000-01-01T00:00:00.000+00:00"
+
+  if (pressingAltKey(e) && e.shiftKey && pressedKeys["N"]) {
+    return { name: "nanoseconds", multiplier: 1 / 1000 / 1000 };
+  } else if (pressingAltKey(e) && e.shiftKey) {
+    return { name: "microseconds", multiplier: 1 / 1000 };
+  } else if (pressingAltKey(e)) {
+    return { name: "milliseconds", multiplier: 1 };
+  } else {
+    return { name: "seconds", multiplier: 1000 };
+  }
+}
+
 async function conversionHandler(e, pressedKeys, clocks, usetz, convtz) {
   const origClipboardText = trim(await readClipboardText());
   let src = origClipboardText;
   let isDateTimeText = true;
 
+  const epochUnit = determineEpochUnit(e, pressedKeys);
+  const unit = " in " + epochUnit.name;
+
   if (src.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
-    // KEYs                           convert in
-    // Ctrl + v                   --> sec
-    // Ctrl + Alt + v             --> millisec
-    // Ctrl + Alt + Shift + V     --> microsec
-    // Ctrl + Alt + Shift + N + V --> nanosec
-
-    // sec:      -62167219200
-    // millisec: -62167219200000
-    // microsec: -62167219200000000
-    // nanosec:  -62167219200000000000
-    // These are converted into "0000-01-01T00:00:00.000+00:00"
-
     // normalize as millisec
-    src = pressingAltKey(e) && e.shiftKey && pressedKeys["N"] ? Number(src) / 1000 / 1000
-      : pressingAltKey(e) && e.shiftKey ? Number(src) / 1000
-        : pressingAltKey(e) ? Number(src)
-          : Number(src) * 1000;
+    src = Number(src) * epochUnit.multiplier;
     isDateTimeText = false;
   }
-
-  const unit = " in " + (
-    pressingAltKey(e) && e.shiftKey && pressedKeys["N"] ? "nanoseconds"
-      : pressingAltKey(e) && e.shiftKey ? "microseconds"
-        : pressingAltKey(e) ? "milliseconds"
-          : "seconds"
-  );
 
   if (isDateTimeText) {
     src = normalizeDT(src);
