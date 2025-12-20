@@ -256,11 +256,7 @@ async function conversionHandler(e, pressedKeys, clocks, usetz, convtz) {
 
   const body = `${origClipboardText}${isDateTimeText ? "" : unit}\n\n${results.join("\n")}\n`;
 
-  try {
-    await invoke('open_text_in_editor', { text: body });
-  } catch (error) {
-    await openMessageDialog(`Failed to open editor: ${error}`, "mclocks Error", "error");
-  }
+  await openTextInEditor(body, "open editor");
 }
 
 // Some datetime strings that represent common use cases may fail to parse in certain environments,
@@ -277,10 +273,26 @@ function normalizeDT(src) {
 }
 
 /**
- * Handles Ctrl + i / Ctrl + Shift + i: Quotes each line of clipboard text with quotes, appends comma to the end (except the last line), and opens in editor
- * @param {string} quoteChar - The quote character to use (' or ")
+ * Opens text in editor with error handling
+ * @param {string} text - The text to open in editor
+ * @param {string} errorContext - Error context message for error dialog (e.g., "open editor")
+ * @returns {Promise<void>}
  */
-async function quoteAndAppendCommaClipboardHandler(quoteChar) {
+async function openTextInEditor(text, errorContext = "open editor") {
+  try {
+    await invoke('open_text_in_editor', { text });
+  } catch (error) {
+    await openMessageDialog(`Failed to ${errorContext}: ${error}`, "mclocks Error", "error");
+  }
+}
+
+/**
+ * Common helper function to process clipboard text, transform it, and open in editor
+ * @param {Function} transformFn - Function that takes clipboard text and returns transformed text
+ * @param {string} errorContext - Error context message for error dialog (e.g., "open editor")
+ * @returns {Promise<void>}
+ */
+async function processClipboardAndOpenEditor(transformFn, errorContext = "open editor") {
   try {
     const clipboardText = await readClipboardText();
     if (!clipboardText) {
@@ -288,6 +300,19 @@ async function quoteAndAppendCommaClipboardHandler(quoteChar) {
       return;
     }
 
+    const transformedText = transformFn(clipboardText);
+    await openTextInEditor(transformedText, errorContext);
+  } catch (error) {
+    await openMessageDialog(`Failed to ${errorContext}: ${error}`, "mclocks Error", "error");
+  }
+}
+
+/**
+ * Handles Ctrl + i / Ctrl + Shift + i: Quotes each line of clipboard text with quotes, appends comma to the end (except the last line), and opens in editor
+ * @param {string} quoteChar - The quote character to use (' or ")
+ */
+async function quoteAndAppendCommaClipboardHandler(quoteChar) {
+  await processClipboardAndOpenEditor((clipboardText) => {
     const lines = clipboardText.split(/\r?\n/);
 
     // Find the index of the last non-empty line
@@ -306,10 +331,6 @@ async function quoteAndAppendCommaClipboardHandler(quoteChar) {
       const quoted = `${quoteChar}${line.trimStart()}${quoteChar}`;
       return index === lastNonEmptyIndex ? quoted : `${quoted},`;
     });
-    const transformedText = transformedLines.join('\n');
-
-    await invoke('open_text_in_editor', { text: transformedText });
-  } catch (error) {
-    await openMessageDialog(`Failed to open editor: ${error}`, "mclocks Error", "error");
-  }
+    return transformedLines.join('\n');
+  }, "open editor");
 }
