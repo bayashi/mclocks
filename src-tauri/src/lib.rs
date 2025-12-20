@@ -190,6 +190,86 @@ fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String
     Ok(serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))?)
 }
 
+fn create_error_response(status_code: StatusCode, message: &str) -> Response<std::io::Cursor<Vec<u8>>> {
+    Response::from_string(message).with_status_code(status_code)
+}
+
+fn parse_and_validate_path(url: &str, root_path: &PathBuf) -> Result<PathBuf, StatusCode> {
+    // Parse URL to get path component (remove query string and fragment)
+    let path = match url.split('?').next() {
+        Some(p) => p.split('#').next().unwrap_or(p),
+        None => "/",
+    };
+
+    // Security: Check for directory traversal attempts
+    if path.contains("..") || path.contains("//") {
+        return Err(StatusCode(400));
+    }
+
+    let file_path = if path == "/" {
+        root_path.join("index.html")
+    } else {
+        // Remove leading slash and join with root_path
+        let relative_path = path.trim_start_matches('/');
+        // Additional check: ensure no absolute path components
+        if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
+            return Err(StatusCode(400));
+        }
+        root_path.join(relative_path)
+    };
+
+    // Normalize the path to resolve any symlinks and ensure it's within root_path
+    let normalized_path = match file_path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => {
+            if file_path.exists() && file_path.starts_with(root_path) {
+                file_path
+            } else {
+                return Err(StatusCode(404));
+            }
+        }
+    };
+
+    let normalized_root = match root_path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => root_path.clone(),
+    };
+
+    if normalized_path.starts_with(&normalized_root) {
+        Ok(normalized_path)
+    } else {
+        Err(StatusCode(404))
+    }
+}
+
+fn create_file_response(file_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>>> {
+    match fs::read(file_path) {
+        Ok(content) => {
+            let content_type = get_content_type(file_path);
+            if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
+                Response::from_data(content).with_header(header).with_status_code(StatusCode(200))
+            } else {
+                Response::from_data(content).with_status_code(StatusCode(200))
+            }
+        }
+        Err(_) => create_error_response(StatusCode(500), "Internal Server Error")
+    }
+}
+
+fn handle_web_request(request: &tiny_http::Request, root_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>>> {
+    match parse_and_validate_path(request.url(), root_path) {
+        Ok(file_path) => create_file_response(&file_path),
+        Err(status_code) => {
+            let message = match status_code {
+                StatusCode(400) => "Bad Request",
+                StatusCode(404) => "Not Found",
+                _ => "Internal Server Error",
+            };
+            create_error_response(status_code, message)
+        },
+    }
+}
+
 fn start_web_server(root: String, port: u16) {
     thread::spawn(move || {
         let server = match Server::http(format!("127.0.0.1:{}", port)) {
@@ -209,75 +289,7 @@ fn start_web_server(root: String, port: u16) {
         println!("Web server started on http://localhost:{}", port);
 
         for request in server.incoming_requests() {
-            let path = request.url();
-            // Parse URL to get path component (remove query string and fragment)
-            let path = match path.split('?').next() {
-                Some(p) => p.split('#').next().unwrap_or(p),
-                None => "/",
-            };
-
-            // Security: Check for directory traversal attempts
-            if path.contains("..") || path.contains("//") {
-                let response = Response::from_string("Bad Request").with_status_code(StatusCode(400));
-                if let Err(e) = request.respond(response) {
-                    eprintln!("Failed to send response: {}", e);
-                }
-                continue;
-            }
-
-            let file_path = if path == "/" {
-                root_path.join("index.html")
-            } else {
-                // Remove leading slash and join with root_path
-                let relative_path = path.trim_start_matches('/');
-                // Additional check: ensure no absolute path components
-                if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
-                    let response = Response::from_string("Bad Request").with_status_code(StatusCode(400));
-                    if let Err(e) = request.respond(response) {
-                        eprintln!("Failed to send response: {}", e);
-                    }
-                    continue;
-                }
-                root_path.join(relative_path)
-            };
-
-            // Normalize the path to resolve any symlinks and ensure it's within root_path
-            let normalized_path = match file_path.canonicalize() {
-                Ok(p) => p,
-                Err(_) => {
-                    if file_path.exists() && file_path.starts_with(&root_path) {
-                        file_path
-                    } else {
-                        let response = Response::from_string("Not Found").with_status_code(StatusCode(404));
-                        if let Err(e) = request.respond(response) {
-                            eprintln!("Failed to send response: {}", e);
-                        }
-                        continue;
-                    }
-                }
-            };
-
-            let normalized_root = match root_path.canonicalize() {
-                Ok(p) => p,
-                Err(_) => root_path.clone(),
-            };
-
-            let response = if normalized_path.starts_with(&normalized_root) {
-                match fs::read(&normalized_path) {
-                    Ok(content) => {
-                        let content_type = get_content_type(&normalized_path);
-                        if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
-                            Response::from_data(content).with_header(header).with_status_code(StatusCode(200))
-                        } else {
-                            Response::from_data(content).with_status_code(StatusCode(200))
-                        }
-                    }
-                    Err(_) => Response::from_string("Internal Server Error").with_status_code(StatusCode(500))
-                }
-            } else {
-                Response::from_string("Not Found").with_status_code(StatusCode(404))
-            };
-
+            let response = handle_web_request(&request, &root_path);
             if let Err(e) = request.respond(response) {
                 eprintln!("Failed to send response: {}", e);
             }
