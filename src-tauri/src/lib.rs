@@ -45,6 +45,12 @@ struct WebConfig {
     open_browser_at_start: bool,
 }
 
+struct WebServerConfig {
+    root: String,
+    port: u16,
+    open_browser_at_start: bool,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct AppConfig {
@@ -322,6 +328,35 @@ struct ContextConfig {
     app_identifier: String,
 }
 
+fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let config_path = base_dir.config_dir().join(get_config_app_path(identifier));
+
+    if !config_path.exists() {
+        return Ok(None);
+    }
+
+    let config_json = fs::read_to_string(&config_path).map_err(|e| format!("Failed to read config: {}", e))?;
+    let config: AppConfig = serde_json::from_str(&config_json)
+        .map_err(|e| format!("Failed to parse config: {}", e))?;
+
+    let web_config = match config.web {
+        Some(wc) => wc,
+        None => return Ok(None),
+    };
+
+    let root_path = PathBuf::from(&web_config.root);
+    if !root_path.exists() {
+        return Err(format!("web.root not exists: {}", root_path.display()));
+    }
+
+    Ok(Some(WebServerConfig {
+        root: web_config.root,
+        port: web_config.port,
+        open_browser_at_start: web_config.open_browser_at_start,
+    }))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut tbr = tauri::Builder::default();
@@ -333,34 +368,22 @@ pub fn run() {
     });
     tbr = tbr.manage(context_config_clone);
 
-    let (web_error, web_config_for_startup) = BaseDirs::new()
-        .and_then(|base_dir| {
-            let config_path = base_dir.config_dir().join(get_config_app_path(&identifier));
-            config_path.exists().then_some(config_path)
-        })
-        .and_then(|config_path| fs::read_to_string(&config_path).ok())
-        .and_then(|config_json| serde_json::from_str::<AppConfig>(&config_json).ok())
-        .and_then(|config| config.web)
-        .map_or((None, None), |web_config| {
-            let root_path = PathBuf::from(&web_config.root);
-            if root_path.exists() {
-                (None, Some((
-                    web_config.root,
-                    web_config.port,
-                    web_config.open_browser_at_start,
-                )))
-            } else {
-                (Some(format!("web.root not exists: {}", root_path.display())), None)
-            }
-        });
+    let (web_error, web_config_for_startup) = match load_web_config(&identifier) {
+        Ok(Some(config)) => (None, Some(config)),
+        Ok(None) => (None, None),
+        Err(e) => (Some(e), None),
+    };
 
-    let browser_open_error = web_config_for_startup.and_then(|(root, port, open_browser_at_start)| {
-        start_web_server(root, port);
-        open_browser_at_start.then_some(port)
-    });
+    let port_to_open = web_config_for_startup.as_ref().map(|config| {
+        start_web_server(config.root.clone(), config.port);
+        if config.open_browser_at_start {
+            Some(config.port)
+        } else {
+            None
+        }
+    }).flatten();
 
     let error_msg = web_error.clone();
-    let port_to_open = browser_open_error;
     tbr = tbr.setup(move |app| {
         if IS_DEV {
             let _window = app.get_webview_window(WINDOW_NAME).unwrap();
