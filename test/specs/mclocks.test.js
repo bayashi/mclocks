@@ -103,5 +103,95 @@ describe('mclocks Application Launch Test', () => {
         
         console.log('mclocks application is ready and initialized')
     })
+    
+    it('should render clocks and verify they are updating', async () => {
+        // Connect to the application URL
+        console.log('Connecting to http://localhost:1420...')
+        await browser.url('/')
+        
+        // Wait for the application to initialize
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+        
+        // Wait for clock elements to be rendered
+        await browser.waitUntil(
+            async () => {
+                const clockElements = await browser.execute(() => {
+                    return Array.from(document.querySelectorAll('[id^="mclk-"]'))
+                        .map(el => ({
+                            id: el.id,
+                            textContent: el.textContent.trim(),
+                            hasContent: el.textContent.trim().length > 0
+                        }))
+                })
+                return clockElements.length > 0 && clockElements.every(clock => clock.hasContent)
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+        
+        // Get initial clock values
+        const initialClocks = await browser.execute(() => {
+            return Array.from(document.querySelectorAll('[id^="mclk-"]'))
+                .map(el => ({
+                    id: el.id,
+                    textContent: el.textContent.trim()
+                }))
+        })
+        
+        console.log('Initial clock values:', JSON.stringify(initialClocks, null, 2))
+        
+        // Verify that at least one clock is rendered
+        expect(initialClocks.length).toBeGreaterThan(0, 'At least one clock should be rendered')
+        
+        // Verify that clocks have content
+        initialClocks.forEach(clock => {
+            expect(clock.textContent.length).toBeGreaterThan(0, `Clock ${clock.id} should have content`)
+        })
+        
+        // Wait for clocks to update (at least 2 seconds to ensure update)
+        console.log('Waiting for clocks to update...')
+        await browser.pause(2500)
+        
+        // Get updated clock values
+        const updatedClocks = await browser.execute(() => {
+            return Array.from(document.querySelectorAll('[id^="mclk-"]'))
+                .map(el => ({
+                    id: el.id,
+                    textContent: el.textContent.trim()
+                }))
+        })
+        
+        console.log('Updated clock values:', JSON.stringify(updatedClocks, null, 2))
+        
+        // Verify that clocks have been updated
+        // For time clocks, the time should have changed
+        // For countdown clocks, the countdown should have decreased
+        let clocksUpdated = false
+        
+        for (let i = 0; i < initialClocks.length; i++) {
+            const initial = initialClocks[i]
+            const updated = updatedClocks.find(c => c.id === initial.id)
+            
+            if (updated && updated.textContent !== initial.textContent) {
+                clocksUpdated = true
+                console.log(`Clock ${initial.id} updated: "${initial.textContent}" -> "${updated.textContent}"`)
+                break
+            }
+        }
+        
+        // At least one clock should have updated
+        expect(clocksUpdated).toBe(true, 'At least one clock should have updated after waiting')
+        
+        // Verify that all clocks still have content after update
+        updatedClocks.forEach(clock => {
+            expect(clock.textContent.length).toBeGreaterThan(0, `Clock ${clock.id} should still have content after update`)
+        })
+        
+        console.log('Clocks are rendering and updating correctly')
+    })
 })
 
