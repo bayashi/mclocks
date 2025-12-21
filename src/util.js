@@ -109,9 +109,19 @@ export const openMessageDialog = async (body, title = 'mclocks', kind = 'info') 
 };
 
 // Platform detection with memoization
-const currentPlatform = platform().toLowerCase();
-const isMac = currentPlatform === 'macos';
-const isWin = currentPlatform === 'windows';
+// Fallback for testing environment where Tauri APIs are not available
+let currentPlatform, isMac, isWin;
+try {
+    currentPlatform = platform().toLowerCase();
+    isMac = currentPlatform === 'macos';
+    isWin = currentPlatform === 'windows';
+} catch (error) {
+    // Fallback for testing environment
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : '';
+    currentPlatform = ua.includes('mac') ? 'macos' : ua.includes('win') ? 'windows' : 'linux';
+    isMac = currentPlatform === 'macos';
+    isWin = currentPlatform === 'windows';
+}
 
 /**
  * Checks if the current platform is macOS
