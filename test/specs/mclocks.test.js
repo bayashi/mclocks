@@ -1166,11 +1166,11 @@ describe('mclocks Application Launch Test', () => {
         }
 
         const expectedClipboardContent = await getDisplayedContent()
-        
+
         // Debug: Log what we got
         console.log(`Expected clipboard content length: ${expectedClipboardContent.length}`)
         console.log(`Expected clipboard content: "${expectedClipboardContent}"`)
-        
+
         // If content is empty, get debug info and fail the test
         if (expectedClipboardContent.length === 0) {
             const debugInfo = await browser.execute(() => {
@@ -1191,7 +1191,7 @@ describe('mclocks Application Launch Test', () => {
             console.log('Debug info:', JSON.stringify(debugInfo, null, 2))
             throw new Error('Failed to get displayed content. Displayed content should not be empty.')
         }
-        
+
         expect(expectedClipboardContent.length).toBeGreaterThan(0, 'Displayed content should not be empty')
 
         // Clear clipboard first (if possible)
@@ -1230,7 +1230,7 @@ describe('mclocks Application Launch Test', () => {
             // Check if clipboard contains expected content (allowing for time updates)
             // The format should match: "UTC HH:mm:ss  JST HH:mm:ss" (with two spaces)
             expect(clipboardContent).toMatch(/UTC.*JST/, 'Clipboard should contain UTC and JST clocks')
-            
+
             // If we got expected content, verify it matches (allowing for time updates)
             if (expectedClipboardContent.length > 0) {
                 // The content should be similar (time might have changed slightly)
@@ -1242,15 +1242,15 @@ describe('mclocks Application Launch Test', () => {
             // If clipboard API is not available, verify that the operation didn't cause errors
             // by checking that the application is still running and clocks are updating
             console.log('Clipboard API not available in test environment, verifying application still works')
-            
+
             // Wait a bit and verify clocks are still updating
             await browser.pause(1000)
-            
+
             const clocksStillWorking = await browser.execute(() => {
                 const clocks = Array.from(document.querySelectorAll('[id^="mclk-"]'))
                 return clocks.length >= 3 && clocks.every(clock => clock.textContent.trim().length > 0)
             })
-            
+
             expect(clocksStillWorking).toBe(true, 'Application should still work after Ctrl+c even if clipboard API is unavailable')
         }
 
@@ -1271,5 +1271,396 @@ describe('mclocks Application Launch Test', () => {
         }
 
         console.log('Successfully verified: Ctrl+c copies displayed content to clipboard')
+    })
+
+    it('should convert datetime string from clipboard with Ctrl+v and open result in editor', async () => {
+        // Connect to the application URL
+        console.log('Connecting to http://localhost:1420...')
+        await browser.url('/')
+
+        // Wait for the application to initialize
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        // Wait for clock elements to be rendered
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3 // UTC, JST, Epoch
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Set up mock for openTextInEditor and clipboard
+        // Initialize tracking variables
+        await browser.execute(() => {
+            window.__editorText = null
+            window.__editorCalled = false
+            window.__clipboardText = null
+
+            // Mock Tauri's invoke function by intercepting it
+            // Tauri's invoke uses window.__TAURI_INTERNALS__.invoke internally
+            // We need to intercept both editor open and clipboard read
+            const createInvokeWrapper = (originalInvoke) => {
+                return async function(cmd, args) {
+                    console.log('Invoke called:', cmd, args)
+
+                    // Handle clipboard read - Tauri clipboard plugin uses invoke
+                    // The command might be something like 'plugin:clipboard-manager|read_text'
+                    if (cmd && (typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read')))) {
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.readText) {
+                                const text = await navigator.clipboard.readText()
+                                console.log('Mock clipboard readText: returning', text)
+                                return text || ''
+                            }
+                            return window.__clipboardText || ''
+                        } catch (error) {
+                            console.warn('Error reading clipboard in mock:', error)
+                            return window.__clipboardText || ''
+                        }
+                    }
+
+                    // Handle editor open
+                    if (cmd === 'open_text_in_editor') {
+                        window.__editorText = args.text
+                        window.__editorCalled = true
+                        console.log('Mock: open_text_in_editor called with text:', args.text)
+                        return Promise.resolve()
+                    }
+
+                    // For other commands, try original invoke or return a mock response
+                    if (originalInvoke) {
+                        try {
+                            return await originalInvoke.call(this, cmd, args)
+                        } catch (error) {
+                            // In test environment, Tauri APIs might not be available
+                            console.warn('Tauri invoke failed (expected in test):', cmd, error)
+                            return Promise.resolve(null)
+                        }
+                    }
+                    return Promise.resolve(null)
+                }
+            }
+
+            if (window.__TAURI_INTERNALS__) {
+                const originalInvoke = window.__TAURI_INTERNALS__.invoke
+                window.__TAURI_INTERNALS__.invoke = createInvokeWrapper(originalInvoke)
+            } else {
+                // If __TAURI_INTERNALS__ doesn't exist, create it
+                window.__TAURI_INTERNALS__ = {
+                    invoke: createInvokeWrapper(null)
+                }
+            }
+        })
+
+        // Set clipboard content to a datetime string
+        const datetimeString = '2024-01-01 12:00:00'
+        console.log(`Setting clipboard to: "${datetimeString}"`)
+        const clipboardSet = await browser.execute(async (text) => {
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text)
+                    // Verify it was set by reading it back
+                    const readBack = await navigator.clipboard.readText()
+                    console.log('Clipboard set, read back:', readBack)
+                    return readBack === text
+                }
+                return false
+            } catch (error) {
+                console.error('Error setting clipboard:', error)
+                return false
+            }
+        }, datetimeString)
+
+        expect(clipboardSet).toBe(true, 'Clipboard should be set successfully')
+
+        // Wait a bit for clipboard to be set
+        await browser.pause(500)
+
+        // Verify clipboard content before pressing Ctrl+v
+        const clipboardContent = await browser.execute(async () => {
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    return await navigator.clipboard.readText()
+                }
+                return null
+            } catch (error) {
+                console.error('Error reading clipboard:', error)
+                return null
+            }
+        })
+
+        console.log(`Clipboard content before Ctrl+v: "${clipboardContent}"`)
+        expect(clipboardContent).toBe(datetimeString, 'Clipboard should contain the datetime string')
+
+        // Verify mock is set up correctly
+        const mockStatus = await browser.execute(() => {
+            return {
+                hasTauriInternals: !!window.__TAURI_INTERNALS__,
+                hasInvoke: !!(window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke),
+                editorCalled: window.__editorCalled || false,
+                editorText: window.__editorText || null
+            }
+        })
+        console.log('Mock status before Ctrl+v:', JSON.stringify(mockStatus, null, 2))
+
+        // Press Ctrl+v to convert clipboard content
+        console.log('Pressing Ctrl+v to convert clipboard content...')
+        await browser.keys(['Control', 'v'])
+
+        // Wait for conversion and editor to open
+        await browser.pause(2000)
+
+        // Check if editor was called and get the text
+        // Also check invoke call log to see if invoke was called at all
+        const editorResult = await browser.execute(() => {
+            return {
+                called: window.__editorCalled || false,
+                text: window.__editorText || null,
+                hasTauriInternals: !!window.__TAURI_INTERNALS__,
+                hasInvoke: !!(window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke),
+                invokeType: window.__TAURI_INTERNALS__?.invoke ? typeof window.__TAURI_INTERNALS__.invoke : 'undefined',
+                invokeCallLog: window.__invokeCallLog || []
+            }
+        })
+
+        console.log(`Editor called: ${editorResult.called}`)
+        console.log(`Has Tauri internals: ${editorResult.hasTauriInternals}`)
+        console.log(`Has invoke: ${editorResult.hasInvoke}`)
+        console.log(`Invoke type: ${editorResult.invokeType}`)
+        console.log(`Invoke call log: ${JSON.stringify(editorResult.invokeCallLog, null, 2)}`)
+        if (editorResult.text) {
+            console.log(`Editor text length: ${editorResult.text.length}`)
+            console.log(`Editor text (first 200 chars): ${editorResult.text.substring(0, 200)}`)
+        } else {
+            console.log('Editor text is null')
+        }
+
+        // If invoke was never called, the conversionHandler might not have run
+        if (editorResult.invokeCallLog && editorResult.invokeCallLog.length === 0) {
+            console.log('WARNING: No invoke calls were logged. This suggests conversionHandler might not have run or invoke is not being intercepted.')
+        }
+
+        // If editor was not called, check if there was an error dialog instead
+        // This might indicate that invoke failed and error dialog was shown
+        if (!editorResult.called) {
+            console.log('Editor was not called. Checking for error dialogs or other issues...')
+            // Check if there are any error messages in the DOM
+            const errorCheck = await browser.execute(() => {
+                // Check for error dialogs or messages
+                const errorElements = document.querySelectorAll('[class*="error"], [id*="error"], [class*="dialog"]')
+                return Array.from(errorElements).map(el => ({
+                    tag: el.tagName,
+                    text: el.textContent?.substring(0, 100) || '',
+                    visible: window.getComputedStyle(el).display !== 'none'
+                }))
+            })
+            console.log('Error elements found:', JSON.stringify(errorCheck, null, 2))
+        }
+
+        // Verify that editor was called
+        // Note: If invoke is not being intercepted, we might need to check for error dialogs instead
+        expect(editorResult.called).toBe(true, 'Editor should be opened with conversion result. If this fails, invoke might not be intercepted correctly.')
+
+        // Verify that editor text contains the original datetime string
+        expect(editorResult.text).not.toBe(null, 'Editor text should not be null')
+        expect(editorResult.text).toContain(datetimeString, 'Editor text should contain original datetime string')
+
+        // Verify that editor text contains conversion results
+        // It should contain timezone conversions (UTC, JST, etc.)
+        expect(editorResult.text).toMatch(/UTC|JST/, 'Editor text should contain timezone conversions')
+
+        // Verify that editor text contains epoch time conversions
+        expect(editorResult.text).toMatch(/Epoch in seconds/, 'Editor text should contain epoch time in seconds')
+        expect(editorResult.text).toMatch(/Epoch in milliseconds/, 'Editor text should contain epoch time in milliseconds')
+
+        console.log('Successfully verified: Ctrl+v converts datetime string from clipboard and opens result in editor')
+    })
+
+    it('should convert epoch time from clipboard with Ctrl+v and open result in editor', async () => {
+        // Connect to the application URL
+        console.log('Connecting to http://localhost:1420...')
+        await browser.url('/')
+
+        // Wait for the application to initialize
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        // Wait for clock elements to be rendered
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3 // UTC, JST, Epoch
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Set up mock for openTextInEditor and clipboard
+        // Initialize tracking variables
+        await browser.execute(() => {
+            window.__editorText = null
+            window.__editorCalled = false
+            window.__clipboardText = null
+
+            // Mock Tauri's invoke function by intercepting it
+            // Tauri's invoke uses window.__TAURI_INTERNALS__.invoke internally
+            // We need to intercept both editor open and clipboard read
+            const createInvokeWrapper = (originalInvoke) => {
+                return async function(cmd, args) {
+                    console.log('Invoke called:', cmd, args)
+
+                    // Handle clipboard read - Tauri clipboard plugin uses invoke
+                    // The command might be something like 'plugin:clipboard-manager|read_text'
+                    if (cmd && (typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read')))) {
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.readText) {
+                                const text = await navigator.clipboard.readText()
+                                console.log('Mock clipboard readText: returning', text)
+                                return text || ''
+                            }
+                            return window.__clipboardText || ''
+                        } catch (error) {
+                            console.warn('Error reading clipboard in mock:', error)
+                            return window.__clipboardText || ''
+                        }
+                    }
+
+                    // Handle editor open
+                    if (cmd === 'open_text_in_editor') {
+                        window.__editorText = args.text
+                        window.__editorCalled = true
+                        console.log('Mock: open_text_in_editor called with text:', args.text)
+                        return Promise.resolve()
+                    }
+
+                    // For other commands, try original invoke or return a mock response
+                    if (originalInvoke) {
+                        try {
+                            return await originalInvoke.call(this, cmd, args)
+                        } catch (error) {
+                            // In test environment, Tauri APIs might not be available
+                            console.warn('Tauri invoke failed (expected in test):', cmd, error)
+                            return Promise.resolve(null)
+                        }
+                    }
+                    return Promise.resolve(null)
+                }
+            }
+
+            if (window.__TAURI_INTERNALS__) {
+                const originalInvoke = window.__TAURI_INTERNALS__.invoke
+                window.__TAURI_INTERNALS__.invoke = createInvokeWrapper(originalInvoke)
+            } else {
+                // If __TAURI_INTERNALS__ doesn't exist, create it
+                window.__TAURI_INTERNALS__ = {
+                    invoke: createInvokeWrapper(null)
+                }
+            }
+        })
+
+        // Set clipboard content to an epoch time (seconds)
+        // Using a known epoch time: 1704067200 = 2024-01-01 00:00:00 UTC
+        const epochTime = '1704067200'
+        console.log(`Setting clipboard to epoch time: "${epochTime}"`)
+        const clipboardSet = await browser.execute(async (text) => {
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text)
+                    // Verify it was set by reading it back
+                    const readBack = await navigator.clipboard.readText()
+                    console.log('Clipboard set, read back:', readBack)
+                    return readBack === text
+                }
+                return false
+            } catch (error) {
+                console.error('Error setting clipboard:', error)
+                return false
+            }
+        }, epochTime)
+
+        expect(clipboardSet).toBe(true, 'Clipboard should be set successfully')
+
+        // Wait a bit for clipboard to be set
+        await browser.pause(500)
+
+        // Verify clipboard content before pressing Ctrl+v
+        const clipboardContent = await browser.execute(async () => {
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    return await navigator.clipboard.readText()
+                }
+                return null
+            } catch (error) {
+                console.error('Error reading clipboard:', error)
+                return null
+            }
+        })
+
+        console.log(`Clipboard content before Ctrl+v: "${clipboardContent}"`)
+        expect(clipboardContent).toBe(epochTime, 'Clipboard should contain the epoch time')
+
+        // Verify mock is set up correctly
+        const mockStatus = await browser.execute(() => {
+            return {
+                hasTauriInternals: !!window.__TAURI_INTERNALS__,
+                hasInvoke: !!(window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke),
+                editorCalled: window.__editorCalled || false,
+                editorText: window.__editorText || null
+            }
+        })
+        console.log('Mock status before Ctrl+v:', JSON.stringify(mockStatus, null, 2))
+
+        // Press Ctrl+v to convert clipboard content
+        console.log('Pressing Ctrl+v to convert epoch time from clipboard...')
+        await browser.keys(['Control', 'v'])
+
+        // Wait for conversion and editor to open
+        await browser.pause(2000)
+
+        // Check if editor was called and get the text
+        const editorResult = await browser.execute(() => {
+            return {
+                called: window.__editorCalled || false,
+                text: window.__editorText || null,
+                hasTauriInternals: !!window.__TAURI_INTERNALS__,
+                hasInvoke: !!(window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke)
+            }
+        })
+
+        console.log(`Editor called: ${editorResult.called}`)
+        console.log(`Has Tauri internals: ${editorResult.hasTauriInternals}`)
+        console.log(`Has invoke: ${editorResult.hasInvoke}`)
+        if (editorResult.text) {
+            console.log(`Editor text length: ${editorResult.text.length}`)
+            console.log(`Editor text (first 200 chars): ${editorResult.text.substring(0, 200)}`)
+        }
+
+        // Verify that editor was called
+        expect(editorResult.called).toBe(true, 'Editor should be opened with conversion result')
+
+        // Verify that editor text contains the original epoch time
+        expect(editorResult.text).not.toBe(null, 'Editor text should not be null')
+        expect(editorResult.text).toContain(epochTime, 'Editor text should contain original epoch time')
+
+        // Verify that editor text contains timezone conversions
+        expect(editorResult.text).toMatch(/UTC|JST/, 'Editor text should contain timezone conversions')
+
+        // Verify that editor text contains "in seconds" (since we used Ctrl+v, not Ctrl+Alt+v)
+        expect(editorResult.text).toMatch(/in seconds/, 'Editor text should indicate epoch time is in seconds')
+
+        console.log('Successfully verified: Ctrl+v converts epoch time from clipboard and opens result in editor')
     })
 })

@@ -33,10 +33,14 @@ export const pad = (n) => (n >= 0 && n < 10 ? `0${n}` : n);
  * @param {string} str - The string to trim
  * @returns {string} The trimmed string
  */
-export const trim = (str) =>
-  str.replace(/^[\s\t]+/, '')
+export const trim = (str) => {
+  if (str == null) {
+    return '';
+  }
+  return str.replace(/^[\s\t]+/, '')
     .replace(/[\s\t]+$/, '')
     .replace(/\r?\n/g, '');
+};
 
 /**
  * Returns unique timezones from clocks with no duplication
