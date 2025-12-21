@@ -103,9 +103,10 @@ const initConfig = async (ctx) => {
     console.warn('Could not load config from Tauri, using defaults:', error);
     const defaultConfig = {
       clocks: [
-        { name: 'UTC', timezone: 'UTC' }
+        { name: 'UTC', timezone: 'UTC' },
+        { name: 'JST', timezone: 'Asia/Tokyo' }
       ],
-      epochClockName: null,
+      epochClockName: 'Epoch',
       format: 'HH:mm:ss',
       timerIcon: '⏱',
       withoutNotification: false,

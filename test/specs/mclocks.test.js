@@ -3,7 +3,7 @@ describe('mclocks Application Launch Test', () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
         await browser.url('/')
-        
+
         // Wait for the page to load
         console.log('Waiting for page to load...')
         await browser.waitUntil(
@@ -18,12 +18,12 @@ describe('mclocks Application Launch Test', () => {
                 interval: 1000
             }
         )
-        
+
         // Verify that the main element exists
         console.log('Waiting for #mclocks element...')
         const mainElement = await $('#mclocks')
         await mainElement.waitForExist({ timeout: 30000 })
-        
+
         // Debug: Check current DOM state
         const debugInfo = await browser.execute(() => {
             const mainEl = document.querySelector('#mclocks')
@@ -35,7 +35,7 @@ describe('mclocks Application Launch Test', () => {
             }
         })
         console.log('Debug info:', JSON.stringify(debugInfo, null, 2))
-        
+
         // Wait for the application to initialize and add ul element
         // Also verify that no error message is displayed
         console.log('Waiting for application initialization...')
@@ -46,32 +46,32 @@ describe('mclocks Application Launch Test', () => {
                     if (!mainEl) {
                         return { initialized: false, reason: 'mainEl is null' }
                     }
-                    
+
                     // Check if an error message is displayed
                     const textContent = mainEl.textContent || ''
                     if (textContent.startsWith('Err:')) {
                         return { initialized: false, reason: 'Error detected', error: textContent }
                     }
-                    
+
                     const ul = mainEl.querySelector('ul')
                     if (!ul) {
-                        return { 
-                            initialized: false, 
-                            reason: 'ul not found', 
+                        return {
+                            initialized: false,
+                            reason: 'ul not found',
                             innerHTML: mainEl.innerHTML.substring(0, 200),
                             textContent: textContent.substring(0, 100)
                         }
                     }
-                    
+
                     // Check if clock elements exist within ul element
                     const clockElements = ul.querySelectorAll('[id^="mclk-"]')
-                    return { 
-                        initialized: true, 
-                        ulExists: true, 
-                        clockCount: clockElements.length 
+                    return {
+                        initialized: true,
+                        ulExists: true,
+                        clockCount: clockElements.length
                     }
                 })
-                
+
                 if (!result.initialized) {
                     console.log(`Not initialized yet: ${result.reason || 'unknown'}`)
                     if (result.innerHTML) {
@@ -86,7 +86,7 @@ describe('mclocks Application Launch Test', () => {
                 } else {
                     console.log(`Application initialized successfully with ${result.clockCount} clock(s)`)
                 }
-                
+
                 return result.initialized === true
             },
             {
@@ -95,24 +95,24 @@ describe('mclocks Application Launch Test', () => {
                 interval: 1000
             }
         )
-        
+
         // Verify that clock elements exist (e.g., mclk-0)
         console.log('Waiting for clock elements...')
         const clockElement = await $('[id^="mclk-"]')
         await clockElement.waitForExist({ timeout: 10000 })
-        
+
         console.log('mclocks application is ready and initialized')
     })
-    
+
     it('should render clocks and verify they are updating', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
         await browser.url('/')
-        
+
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
         await mainElement.waitForExist({ timeout: 30000 })
-        
+
         // Wait for clock elements to be rendered
         await browser.waitUntil(
             async () => {
@@ -132,7 +132,7 @@ describe('mclocks Application Launch Test', () => {
                 interval: 1000
             }
         )
-        
+
         // Get initial clock values
         const initialClocks = await browser.execute(() => {
             return Array.from(document.querySelectorAll('[id^="mclk-"]'))
@@ -141,21 +141,21 @@ describe('mclocks Application Launch Test', () => {
                     textContent: el.textContent.trim()
                 }))
         })
-        
+
         console.log('Initial clock values:', JSON.stringify(initialClocks, null, 2))
-        
+
         // Verify that at least one clock is rendered
         expect(initialClocks.length).toBeGreaterThan(0, 'At least one clock should be rendered')
-        
+
         // Verify that clocks have content
         initialClocks.forEach(clock => {
             expect(clock.textContent.length).toBeGreaterThan(0, `Clock ${clock.id} should have content`)
         })
-        
+
         // Wait for clocks to update (at least 2 seconds to ensure update)
         console.log('Waiting for clocks to update...')
         await browser.pause(2500)
-        
+
         // Get updated clock values
         const updatedClocks = await browser.execute(() => {
             return Array.from(document.querySelectorAll('[id^="mclk-"]'))
@@ -164,34 +164,142 @@ describe('mclocks Application Launch Test', () => {
                     textContent: el.textContent.trim()
                 }))
         })
-        
+
         console.log('Updated clock values:', JSON.stringify(updatedClocks, null, 2))
-        
+
         // Verify that clocks have been updated
         // For time clocks, the time should have changed
         // For countdown clocks, the countdown should have decreased
         let clocksUpdated = false
-        
+
         for (let i = 0; i < initialClocks.length; i++) {
             const initial = initialClocks[i]
             const updated = updatedClocks.find(c => c.id === initial.id)
-            
+
             if (updated && updated.textContent !== initial.textContent) {
                 clocksUpdated = true
                 console.log(`Clock ${initial.id} updated: "${initial.textContent}" -> "${updated.textContent}"`)
                 break
             }
         }
-        
+
         // At least one clock should have updated
         expect(clocksUpdated).toBe(true, 'At least one clock should have updated after waiting')
-        
+
         // Verify that all clocks still have content after update
         updatedClocks.forEach(clock => {
             expect(clock.textContent.length).toBeGreaterThan(0, `Clock ${clock.id} should still have content after update`)
         })
-        
+
         console.log('Clocks are rendering and updating correctly')
     })
-})
 
+    it('should render multiple clocks with UTC, JST visible and Epoch hidden', async () => {
+        // Connect to the application URL
+        console.log('Connecting to http://localhost:1420...')
+        await browser.url('/')
+
+        // Wait for the application to initialize
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        // Wait for clock elements to be rendered
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3 // UTC, JST, Epoch
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Get all clock elements with visibility information
+        const clockInfo = await browser.execute(() => {
+            const clocks = Array.from(document.querySelectorAll('[id^="mclk-"]'))
+            const ul = document.querySelector('#mclocks ul')
+            const listItems = ul ? Array.from(ul.querySelectorAll('li')) : []
+
+            return {
+                clockCount: clocks.length,
+                clocks: clocks.map((el, index) => {
+                    const li = el.closest('li')
+                    // Clock name is the text node before the span element
+                    // Get it from li's childNodes (first text node)
+                    let clockName = null
+                    if (li) {
+                        // Find the first text node before the span
+                        for (let i = 0; i < li.childNodes.length; i++) {
+                            const node = li.childNodes[i]
+                            if (node.nodeType === Node.TEXT_NODE) {
+                                clockName = node.textContent.trim()
+                                break
+                            }
+                            if (node === el) {
+                                // If we reach the span before finding a text node,
+                                // this might be a countdown clock or Epoch clock
+                                break
+                            }
+                        }
+                        // Fallback: if no text node found, check if it's Epoch clock
+                        if (!clockName && index === 2) {
+                            clockName = 'Epoch'
+                        }
+                    }
+
+                    return {
+                        id: el.id,
+                        textContent: el.textContent.trim(),
+                        hasContent: el.textContent.trim().length > 0,
+                        name: clockName,
+                        isVisible: li ? window.getComputedStyle(li).display !== 'none' : true,
+                        parentDisplay: li ? window.getComputedStyle(li).display : 'unknown',
+                        parentHidden: li ? li.hidden : false
+                    }
+                }),
+                listItemCount: listItems.length
+            }
+        })
+
+        console.log('Clock information:', JSON.stringify(clockInfo, null, 2))
+
+        // Verify that exactly 3 clocks are rendered (UTC, JST, Epoch)
+        expect(clockInfo.clockCount).toBe(3, 'Exactly 3 clocks should be rendered (UTC, JST, Epoch)')
+
+        // Verify clock IDs follow the expected pattern (mclk-0, mclk-1, mclk-2)
+        clockInfo.clocks.forEach((clock, index) => {
+            expect(clock.id).toBe(`mclk-${index}`, `Clock ID should follow pattern mclk-${index}`)
+        })
+
+        // Verify UTC clock (mclk-0) is visible
+        const utcClock = clockInfo.clocks[0]
+        expect(utcClock.isVisible).toBe(true, 'UTC clock should be visible')
+        expect(utcClock.hasContent).toBe(true, 'UTC clock should have content')
+        expect(utcClock.name).toBe('UTC', 'First clock should be UTC')
+
+        // Verify JST clock (mclk-1) is visible
+        const jstClock = clockInfo.clocks[1]
+        expect(jstClock.isVisible).toBe(true, 'JST clock should be visible')
+        expect(jstClock.hasContent).toBe(true, 'JST clock should have content')
+        expect(jstClock.name).toBe('JST', 'Second clock should be JST')
+
+        // Verify Epoch clock (mclk-2) is hidden
+        const epochClock = clockInfo.clocks[2]
+        expect(epochClock.isVisible).toBe(false, 'Epoch clock should be hidden')
+        expect(epochClock.hasContent).toBe(true, 'Epoch clock should have content (even if hidden)')
+
+        // Verify that all clocks have content
+        clockInfo.clocks.forEach(clock => {
+            expect(clock.hasContent).toBe(true, `Clock ${clock.id} should have content`)
+        })
+
+        // Verify that clocks are rendered in list items
+        expect(clockInfo.listItemCount).toBe(3, 'All 3 clocks should be in list items')
+
+        console.log('Successfully verified: UTC and JST clocks are visible, Epoch clock is hidden')
+    })
+})
