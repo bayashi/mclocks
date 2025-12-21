@@ -889,4 +889,117 @@ describe('mclocks Application Launch Test', () => {
 
         console.log('Successfully verified: Timers can be removed with Ctrl+0 and Ctrl+Alt+0')
     })
+
+    it('should start 90-minute timer with Ctrl+Alt+9 and verify it updates', async () => {
+        // Connect to the application URL
+        console.log('Connecting to http://localhost:1420...')
+        await browser.url('/')
+
+        // Wait for the application to initialize
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        // Wait for initial clock elements to be rendered
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3 // UTC, JST, Epoch
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Get initial clock count
+        const initialClockCount = await browser.execute(() => {
+            return document.querySelectorAll('[id^="mclk-"]').length
+        })
+
+        // Press Ctrl+Alt+9 to start 90-minute timer (10 minutes × 9)
+        console.log('Pressing Ctrl+Alt+9 to start 90-minute timer...')
+        await browser.keys(['Control', 'Alt', '9'])
+
+        // Wait for timer clock to be added
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount > initialClockCount
+            },
+            {
+                timeout: 5000,
+                timeoutMsg: 'Timer clock was not added after Ctrl+Alt+9',
+                interval: 500
+            }
+        )
+
+        // Get timer clock element (should be the last one)
+        const timerClockInfo = await browser.execute(() => {
+            const clocks = Array.from(document.querySelectorAll('[id^="mclk-"]'))
+            const timerClock = clocks[clocks.length - 1]
+            if (!timerClock) return null
+            return {
+                id: timerClock.id,
+                textContent: timerClock.textContent.trim(),
+                isVisible: timerClock.closest('li') ? window.getComputedStyle(timerClock.closest('li')).display !== 'none' : false
+            }
+        })
+
+        expect(timerClockInfo).not.toBe(null, 'Timer clock should exist')
+        expect(timerClockInfo.isVisible).toBe(true, 'Timer clock should be visible')
+        // Timer format includes icon (e.g., "⏱90:00")
+        expect(timerClockInfo.textContent).toMatch(/.*\d{2}:\d{2}$/, 'Timer should display in MM:SS format (with optional icon)')
+
+        console.log(`Initial timer value: ${timerClockInfo.textContent}`)
+
+        // Get initial timer value as seconds
+        // Remove icon and other non-numeric characters before the time
+        const parseTimerValue = (value) => {
+            // Extract MM:SS pattern from the value
+            const match = value.match(/(\d{2}):(\d{2})/)
+            if (!match) return NaN
+            const minutes = parseInt(match[1], 10)
+            const seconds = parseInt(match[2], 10)
+            return minutes * 60 + seconds
+        }
+
+        const initialTimerSeconds = parseTimerValue(timerClockInfo.textContent)
+        expect(initialTimerSeconds).not.toBe(NaN, 'Initial timer value should be valid')
+        expect(initialTimerSeconds).toBeGreaterThan(0, 'Timer should have positive value')
+        // 90 minutes = 5400 seconds, but timer might show 89:59 or 90:00 depending on timing
+        expect(initialTimerSeconds).toBeGreaterThan(5300, '90-minute timer should be around 90 minutes (5400 seconds)')
+        expect(initialTimerSeconds).toBeLessThanOrEqual(5400, '90-minute timer should be 5400 seconds or less')
+
+        // Wait for timer to update (at least 2 seconds)
+        console.log('Waiting for timer to update...')
+        await browser.pause(2500)
+
+        // Get updated timer value
+        const updatedTimerClockInfo = await browser.execute(() => {
+            const clocks = Array.from(document.querySelectorAll('[id^="mclk-"]'))
+            const timerClock = clocks[clocks.length - 1]
+            if (!timerClock) return null
+            return {
+                id: timerClock.id,
+                textContent: timerClock.textContent.trim()
+            }
+        })
+
+        expect(updatedTimerClockInfo).not.toBe(null, 'Updated timer clock should exist')
+        expect(updatedTimerClockInfo.id).toBe(timerClockInfo.id, 'Timer clock ID should remain the same')
+
+        const updatedTimerSeconds = parseTimerValue(updatedTimerClockInfo.textContent)
+        console.log(`Updated timer value: ${updatedTimerClockInfo.textContent} (${updatedTimerSeconds} seconds)`)
+
+        // Verify that timer has been updated (should be less than initial value)
+        expect(updatedTimerSeconds).not.toBe(NaN, 'Updated timer value should be valid')
+        expect(updatedTimerSeconds).toBeLessThan(initialTimerSeconds, 'Timer should have decreased after waiting')
+
+        console.log('Successfully verified: 90-minute timer is started and updating with Ctrl+Alt+9')
+    })
 })
