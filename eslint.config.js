@@ -4,6 +4,9 @@ import globals from 'globals';
 export default [
   js.configs.recommended,
   {
+    ignores: ['test/**', 'wdio.conf.js'],
+  },
+  {
     files: ['src/**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',

@@ -119,7 +119,7 @@ try {
     currentPlatform = platform().toLowerCase();
     isMac = currentPlatform === 'macos';
     isWin = currentPlatform === 'windows';
-} catch (error) {
+} catch {
     // Fallback for testing environment
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : '';
     currentPlatform = ua.includes('mac') ? 'macos' : ua.includes('win') ? 'windows' : 'linux';

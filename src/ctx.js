@@ -24,7 +24,7 @@ export class Ctx {
   isMacOS() {
     try {
       return platform().toLowerCase() === 'macos';
-    } catch (error) {
+    } catch {
       // Fallback for testing environment
       const ua = typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : '';
       return ua.includes('mac');

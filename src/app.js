@@ -6,6 +6,7 @@ import { initClocks, adjustWindowSize, startClocks } from './matter.js';
 import { Ctx } from './ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
+import { getDefaultConfig } from './config.js';
 
 // Application entry point
 window.addEventListener("DOMContentLoaded", async () => {
@@ -101,26 +102,7 @@ const initConfig = async (ctx) => {
     // Fallback for testing environment where Tauri APIs are not available
     // Use default configuration
     console.warn('Could not load config from Tauri, using defaults:', error);
-    const defaultConfig = {
-      clocks: [
-        { name: 'UTC', timezone: 'UTC' },
-        { name: 'JST', timezone: 'Asia/Tokyo' }
-      ],
-      epochClockName: 'Epoch',
-      format: 'HH:mm:ss',
-      timerIcon: '⏱',
-      withoutNotification: false,
-      maxTimerClockNumber: 10,
-      usetz: false,
-      convtz: null,
-      disableHover: false,
-      forefront: false,
-      font: 'Courier, monospace',
-      color: '#fff',
-      size: '14px',
-      locale: 'en',
-      margin: '10px'
-    };
+    const defaultConfig = getDefaultConfig();
 
     ctx.setFormat(defaultConfig.format);
     ctx.setTimerIcon(defaultConfig.timerIcon);
