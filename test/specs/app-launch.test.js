@@ -1,5 +1,5 @@
-describe('mclocks Application Test', () => {
-    it('should launch mclocks and wait for initial state', async () => {
+describe('mclocks Application Launch Test', () => {
+    it('should launch the application and wait for it to be ready', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
         await browser.url('/')
