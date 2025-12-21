@@ -56,7 +56,20 @@ export const config = {
         console.log('Make sure mclocks is running on http://localhost:1420')
         console.log('You can start it with: pnpm tauri dev')
     },
-    
+
+    afterTest: async function (test, context, { error, result, duration, passed, retries }) {
+        // If test failed, keep browser open for debugging
+        if (!passed) {
+            console.log('\n=== Test failed - Browser will stay open for 30 seconds for debugging ===')
+            console.log('Test:', test.title)
+            if (error) {
+                console.log('Error:', error.message)
+            }
+            // Keep browser open for 30 seconds to allow copying error messages
+            await browser.pause(30000)
+        }
+    },
+
     onComplete: function(exitCode, config, capabilities, results) {
     }
 }

@@ -1,4 +1,17 @@
 describe('mclocks Application Launch Test', () => {
+    // Keep browser open for debugging if test fails
+    afterEach(async function() {
+        if (this.currentTest && this.currentTest.state === 'failed') {
+            console.log('\n=== Test failed - Browser will stay open for 30 seconds for debugging ===')
+            console.log('Test:', this.currentTest.title)
+            if (this.currentTest.err) {
+                console.log('Error:', this.currentTest.err.message)
+            }
+            // Keep browser open for 30 seconds to allow copying error messages
+            await browser.pause(30000)
+        }
+    })
+
     it('should launch the application and wait for it to be ready', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
