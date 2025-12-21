@@ -302,4 +302,212 @@ describe('mclocks Application Launch Test', () => {
 
         console.log('Successfully verified: UTC and JST clocks are visible, Epoch clock is hidden')
     })
+
+    it('should toggle Epoch time display with Ctrl+e and verify it updates', async () => {
+        // Connect to the application URL
+        console.log('Connecting to http://localhost:1420...')
+        await browser.url('/')
+
+        // Wait for the application to initialize
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        // Wait for clock elements to be rendered
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3 // UTC, JST, Epoch
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Verify Epoch clock is initially hidden
+        const initialEpochVisibility = await browser.execute(() => {
+            const epochClock = document.querySelector('#mclk-2')
+            if (!epochClock) return { visible: false, found: false }
+            const li = epochClock.closest('li')
+            return {
+                found: true,
+                visible: li ? window.getComputedStyle(li).display !== 'none' && !li.hidden : false
+            }
+        })
+
+        expect(initialEpochVisibility.found).toBe(true, 'Epoch clock should exist')
+        expect(initialEpochVisibility.visible).toBe(false, 'Epoch clock should be hidden initially')
+
+        // Press Ctrl+e to toggle Epoch time display
+        console.log('Pressing Ctrl+e to toggle Epoch time display...')
+        await browser.keys(['Control', 'e'])
+
+        // Wait for the Epoch clock to become visible
+        await browser.waitUntil(
+            async () => {
+                const visibility = await browser.execute(() => {
+                    const epochClock = document.querySelector('#mclk-2')
+                    if (!epochClock) return false
+                    const li = epochClock.closest('li')
+                    return li ? window.getComputedStyle(li).display !== 'none' && !li.hidden : false
+                })
+                return visibility === true
+            },
+            {
+                timeout: 5000,
+                timeoutMsg: 'Epoch clock did not become visible after Ctrl+e',
+                interval: 500
+            }
+        )
+
+        // Get initial Epoch time value
+        const initialEpochValue = await browser.execute(() => {
+            const epochClock = document.querySelector('#mclk-2')
+            return epochClock ? epochClock.textContent.trim() : null
+        })
+
+        expect(initialEpochValue).not.toBe(null, 'Epoch time value should exist')
+        expect(initialEpochValue).toMatch(/^\d+$/, 'Epoch time should be a number')
+
+        console.log(`Initial Epoch time value: ${initialEpochValue}`)
+
+        // Wait for Epoch time to update (at least 2 seconds)
+        console.log('Waiting for Epoch time to update...')
+        await browser.pause(2500)
+
+        // Get updated Epoch time value
+        const updatedEpochValue = await browser.execute(() => {
+            const epochClock = document.querySelector('#mclk-2')
+            return epochClock ? epochClock.textContent.trim() : null
+        })
+
+        expect(updatedEpochValue).not.toBe(null, 'Updated Epoch time value should exist')
+        expect(updatedEpochValue).toMatch(/^\d+$/, 'Updated Epoch time should be a number')
+
+        console.log(`Updated Epoch time value: ${updatedEpochValue}`)
+
+        // Verify that Epoch time has been updated (should be greater than initial value)
+        const initialNum = parseInt(initialEpochValue, 10)
+        const updatedNum = parseInt(updatedEpochValue, 10)
+        expect(updatedNum).toBeGreaterThan(initialNum, 'Epoch time should have increased after waiting')
+
+        // Verify Epoch clock is still visible
+        const epochVisibility = await browser.execute(() => {
+            const epochClock = document.querySelector('#mclk-2')
+            if (!epochClock) return false
+            const li = epochClock.closest('li')
+            return li ? window.getComputedStyle(li).display !== 'none' && !li.hidden : false
+        })
+
+        expect(epochVisibility).toBe(true, 'Epoch clock should still be visible after update')
+
+        console.log('Successfully verified: Epoch time is displayed and updating with Ctrl+e')
+    })
+
+    it('should toggle Epoch time display with Ctrl+u and verify it updates', async () => {
+        // Connect to the application URL
+        console.log('Connecting to http://localhost:1420...')
+        await browser.url('/')
+
+        // Wait for the application to initialize
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        // Wait for clock elements to be rendered
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3 // UTC, JST, Epoch
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Verify Epoch clock is initially hidden
+        const initialEpochVisibility = await browser.execute(() => {
+            const epochClock = document.querySelector('#mclk-2')
+            if (!epochClock) return { visible: false, found: false }
+            const li = epochClock.closest('li')
+            return {
+                found: true,
+                visible: li ? window.getComputedStyle(li).display !== 'none' && !li.hidden : false
+            }
+        })
+
+        expect(initialEpochVisibility.found).toBe(true, 'Epoch clock should exist')
+        expect(initialEpochVisibility.visible).toBe(false, 'Epoch clock should be hidden initially')
+
+        // Press Ctrl+u to toggle Epoch time display
+        console.log('Pressing Ctrl+u to toggle Epoch time display...')
+        await browser.keys(['Control', 'u'])
+
+        // Wait for the Epoch clock to become visible
+        await browser.waitUntil(
+            async () => {
+                const visibility = await browser.execute(() => {
+                    const epochClock = document.querySelector('#mclk-2')
+                    if (!epochClock) return false
+                    const li = epochClock.closest('li')
+                    return li ? window.getComputedStyle(li).display !== 'none' && !li.hidden : false
+                })
+                return visibility === true
+            },
+            {
+                timeout: 5000,
+                timeoutMsg: 'Epoch clock did not become visible after Ctrl+u',
+                interval: 500
+            }
+        )
+
+        // Get initial Epoch time value
+        const initialEpochValue = await browser.execute(() => {
+            const epochClock = document.querySelector('#mclk-2')
+            return epochClock ? epochClock.textContent.trim() : null
+        })
+
+        expect(initialEpochValue).not.toBe(null, 'Epoch time value should exist')
+        expect(initialEpochValue).toMatch(/^\d+$/, 'Epoch time should be a number')
+
+        console.log(`Initial Epoch time value: ${initialEpochValue}`)
+
+        // Wait for Epoch time to update (at least 2 seconds)
+        console.log('Waiting for Epoch time to update...')
+        await browser.pause(2500)
+
+        // Get updated Epoch time value
+        const updatedEpochValue = await browser.execute(() => {
+            const epochClock = document.querySelector('#mclk-2')
+            return epochClock ? epochClock.textContent.trim() : null
+        })
+
+        expect(updatedEpochValue).not.toBe(null, 'Updated Epoch time value should exist')
+        expect(updatedEpochValue).toMatch(/^\d+$/, 'Updated Epoch time should be a number')
+
+        console.log(`Updated Epoch time value: ${updatedEpochValue}`)
+
+        // Verify that Epoch time has been updated (should be greater than initial value)
+        const initialNum = parseInt(initialEpochValue, 10)
+        const updatedNum = parseInt(updatedEpochValue, 10)
+        expect(updatedNum).toBeGreaterThan(initialNum, 'Epoch time should have increased after waiting')
+
+        // Verify Epoch clock is still visible
+        const epochVisibility = await browser.execute(() => {
+            const epochClock = document.querySelector('#mclk-2')
+            if (!epochClock) return false
+            const li = epochClock.closest('li')
+            return li ? window.getComputedStyle(li).display !== 'none' && !li.hidden : false
+        })
+
+        expect(epochVisibility).toBe(true, 'Epoch clock should still be visible after update')
+
+        console.log('Successfully verified: Epoch time is displayed and updating with Ctrl+u')
+    })
 })
