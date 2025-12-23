@@ -66,7 +66,7 @@ function determineEpochUnit(e, pressedKeys) {
 // so they need to be converted to generally parseable datetime strings.
 function normalizeDT(src) {
   // BQ datetime format
-  const m = src.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\.\d+) UTC$/);
+  const m = src.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d(?:\.\d+)?) UTC$/);
   if (m) {
     return m[1] + "Z";
   }
