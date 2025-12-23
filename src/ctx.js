@@ -22,7 +22,13 @@ export class Ctx {
   }
 
   isMacOS() {
-    return platform().toLowerCase() === 'macos';
+    try {
+      return platform().toLowerCase() === 'macos';
+    } catch {
+      // Fallback for testing environment
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : '';
+      return ua.includes('mac');
+    }
   }
 
   cdateUTC(cdt) {

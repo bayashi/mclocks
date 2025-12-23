@@ -33,10 +33,14 @@ export const pad = (n) => (n >= 0 && n < 10 ? `0${n}` : n);
  * @param {string} str - The string to trim
  * @returns {string} The trimmed string
  */
-export const trim = (str) =>
-  str.replace(/^[\s\t]+/, '')
+export const trim = (str) => {
+  if (str == null) {
+    return '';
+  }
+  return str.replace(/^[\s\t]+/, '')
     .replace(/[\s\t]+$/, '')
     .replace(/\r?\n/g, '');
+};
 
 /**
  * Returns unique timezones from clocks with no duplication
@@ -109,9 +113,19 @@ export const openMessageDialog = async (body, title = 'mclocks', kind = 'info') 
 };
 
 // Platform detection with memoization
-const currentPlatform = platform().toLowerCase();
-const isMac = currentPlatform === 'macos';
-const isWin = currentPlatform === 'windows';
+// Fallback for testing environment where Tauri APIs are not available
+let currentPlatform, isMac, isWin;
+try {
+    currentPlatform = platform().toLowerCase();
+    isMac = currentPlatform === 'macos';
+    isWin = currentPlatform === 'windows';
+} catch {
+    // Fallback for testing environment
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : '';
+    currentPlatform = ua.includes('mac') ? 'macos' : ua.includes('win') ? 'windows' : 'linux';
+    isMac = currentPlatform === 'macos';
+    isWin = currentPlatform === 'windows';
+}
 
 /**
  * Checks if the current platform is macOS
