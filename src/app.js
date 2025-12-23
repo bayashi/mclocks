@@ -121,7 +121,7 @@ const initConfig = async (ctx) => {
       if (stored) {
         defaultConfig = JSON.parse(stored);
       }
-    } catch (_) {
+    } catch {
       // Ignore sessionStorage errors
     }
     defaultConfig = defaultConfig || window.__defaultConfig || getDefaultConfig();
