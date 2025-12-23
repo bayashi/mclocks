@@ -6,7 +6,19 @@ import { initClocks, adjustWindowSize, startClocks } from './matter.js';
 import { Ctx } from './ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
-import { getDefaultConfig } from './config.js';
+
+/**
+ * Default configuration for the application
+ * Used when config.json does not exist
+ * @returns {Object} Default configuration object
+ */
+const getDefaultConfig = () => {
+  return {
+    clocks: [
+      { name: 'UTC', timezone: 'UTC' }
+    ]
+  };
+};
 
 // Application entry point
 window.addEventListener("DOMContentLoaded", async () => {
@@ -102,7 +114,17 @@ const initConfig = async (ctx) => {
     // Fallback for testing environment where Tauri APIs are not available
     // Use default configuration
     console.warn('Could not load config from Tauri, using defaults:', error);
-    const defaultConfig = getDefaultConfig();
+    // Check sessionStorage first (for tests), then window.__defaultConfig, then getDefaultConfig()
+    let defaultConfig = null;
+    try {
+      const stored = sessionStorage.getItem('__defaultConfig');
+      if (stored) {
+        defaultConfig = JSON.parse(stored);
+      }
+    } catch (e) {
+      // Ignore sessionStorage errors
+    }
+    defaultConfig = defaultConfig || window.__defaultConfig || getDefaultConfig();
 
     ctx.setFormat(defaultConfig.format);
     ctx.setTimerIcon(defaultConfig.timerIcon);

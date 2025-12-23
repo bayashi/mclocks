@@ -1,4 +1,51 @@
 describe('mclocks Application Launch Test', () => {
+    // Set up test configuration
+    const testConfig = {
+        clocks: [
+            { name: 'UTC', timezone: 'UTC' },
+            { name: 'JST', timezone: 'Asia/Tokyo' }
+        ],
+        epochClockName: 'Epoch',
+        format: 'HH:mm:ss',
+        timerIcon: '⏱',
+        withoutNotification: false,
+        maxTimerClockNumber: 10,
+        usetz: false,
+        convtz: null,
+        disableHover: false,
+        forefront: false,
+        font: 'Courier, monospace',
+        color: '#fff',
+        size: '14px',
+        locale: 'en',
+        margin: '10px'
+    };
+
+    // Set up test configuration before each test
+    beforeEach(async () => {
+        // Navigate to the app
+        await browser.url('/');
+        // Set test config in both window.__defaultConfig and sessionStorage
+        // sessionStorage persists across page reloads
+        await browser.execute((config) => {
+            sessionStorage.setItem('__defaultConfig', JSON.stringify(config));
+            window.__defaultConfig = config;
+        }, testConfig);
+        // Reload to ensure config is available when DOMContentLoaded fires
+        await browser.refresh();
+        // Wait for page to be ready after refresh
+        await browser.waitUntil(
+            async () => {
+                const readyState = await browser.execute(() => document.readyState);
+                return readyState === 'complete';
+            },
+            {
+                timeout: 10000,
+                timeoutMsg: 'Page did not load after refresh'
+            }
+        );
+    });
+
     // Keep browser open for debugging if test fails
     afterEach(async function() {
         if (this.currentTest && this.currentTest.state === 'failed') {
@@ -15,7 +62,6 @@ describe('mclocks Application Launch Test', () => {
     it('should launch the application and wait for it to be ready', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the page to load
         console.log('Waiting for page to load...')
@@ -120,7 +166,6 @@ describe('mclocks Application Launch Test', () => {
     it('should render clocks and verify they are updating', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -210,7 +255,6 @@ describe('mclocks Application Launch Test', () => {
     it('should render multiple clocks with UTC, JST visible and Epoch hidden', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -319,7 +363,6 @@ describe('mclocks Application Launch Test', () => {
     it('should toggle Epoch time display with Ctrl+e and verify it updates', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -423,7 +466,6 @@ describe('mclocks Application Launch Test', () => {
     it('should toggle Epoch time display with Ctrl+u and verify it updates', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -527,7 +569,6 @@ describe('mclocks Application Launch Test', () => {
     it('should start 1-minute timer with Ctrl+1 and verify it updates', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -638,7 +679,6 @@ describe('mclocks Application Launch Test', () => {
     it('should pause timer with Ctrl+p', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -768,7 +808,6 @@ describe('mclocks Application Launch Test', () => {
     it('should remove timer with Ctrl+0 and Ctrl+Alt+0', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -906,7 +945,6 @@ describe('mclocks Application Launch Test', () => {
     it('should start 90-minute timer with Ctrl+Alt+9 and verify it updates', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -1019,7 +1057,6 @@ describe('mclocks Application Launch Test', () => {
     it('should switch format with Ctrl+f when format2 is defined', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -1129,7 +1166,6 @@ describe('mclocks Application Launch Test', () => {
     it('should copy displayed content to clipboard with Ctrl+c', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -1289,7 +1325,6 @@ describe('mclocks Application Launch Test', () => {
     it('should convert datetime string from clipboard with Ctrl+v and open result in editor', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
@@ -1500,7 +1535,6 @@ describe('mclocks Application Launch Test', () => {
     it('should convert epoch time from clipboard with Ctrl+v and open result in editor', async () => {
         // Connect to the application URL
         console.log('Connecting to http://localhost:1420...')
-        await browser.url('/')
 
         // Wait for the application to initialize
         const mainElement = await $('#mclocks')
