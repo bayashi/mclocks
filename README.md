@@ -255,13 +255,15 @@ Empty lines are preserved as-is in all operations.
 
     {
       "web": {
-        "root": "/path/to/your/webroot"
+        "root": "/path/to/your/webroot",
+        "dump": true
       }
     }
 
 * `root`: Path to the directory containing files to serve (required)
 * `port`: Port number to listen on (default: 3030)
 * `open_browser_at_start`: If set to `true`, automatically opens the web server URL in the default browser when `mclocks` starts (default: `false`)
+* `dump`: If set to `true`, enables the `/dump` endpoint that returns request details as JSON (default: `false`)
 
 If the `web` field is configured in your `config.json`, the web server starts automatically when `mclocks` launches. Access files at `http://127.0.0.1:3030`. The web server only listens on `127.0.0.1` (localhost), so it is only accessible from your local machine.
 
@@ -271,6 +273,20 @@ The web server supports the following file types:
 
 * Text: `html`, `css`, `js`, `json`, `md`, `txt`
 * Images: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+
+### /dump endpoint
+
+When `dump: true` is set in the `web` configuration, the web server provides a `/dump` endpoint that returns request details as JSON.
+
+The endpoint responds with a JSON object containing:
+* `method`: HTTP method (e.g., "GET", "POST")
+* `path`: Request path after `/dump/` (e.g., "/test" for `/dump/test`)
+* `query`: Query parameters as an array of key-value objects (e.g., `[{"key1": "value1"}, {"key2": "value2"}]`)
+* `headers`: Request headers as an array of key-value objects (e.g., `[{"Content-Type": "application/json"}]`)
+* `body`: Request body as a string (if present)
+* `parsed_body`: Parsed JSON object if Content-Type indicates JSON, or error message string if parsing fails
+
+Access the dump endpoint at `http://127.0.0.1:3030/dump` or any path under `/dump/` (e.g., `/dump/test?key=value`).
 
 ----------
 
