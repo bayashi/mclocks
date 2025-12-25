@@ -43,12 +43,15 @@ struct WebConfig {
     port: u16,
     #[serde(default = "df_open_browser_at_start")]
     open_browser_at_start: bool,
+    #[serde(default = "df_dump")]
+    dump: bool,
 }
 
 struct WebServerConfig {
     root: String,
     port: u16,
     open_browser_at_start: bool,
+    dump: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -107,6 +110,7 @@ fn df_epoch_clock_name() -> String { "Epoch".to_string() }
 fn df_disable_hover() -> bool { true }
 fn df_web_port() -> u16 { 3030 }
 fn df_open_browser_at_start() -> bool { false }
+fn df_dump() -> bool { false }
 
 fn get_config_file() -> String {
     let config_file = "config.json";
@@ -387,12 +391,14 @@ fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io::Cu
     }
 }
 
-fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>>> {
-    // Check if this is a /dump request (including /dump/ and any subpaths)
+fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dump_enabled: bool) -> Response<std::io::Cursor<Vec<u8>>> {
     let url = request.url();
-    let path = url.split('?').next().unwrap_or("/");
-    if path == "/dump" || path.starts_with("/dump/") {
-        return handle_dump_request(request);
+    // Check if this is a /dump request (including /dump/ and any subpaths)
+    if dump_enabled {
+        let path = url.split('?').next().unwrap_or("/");
+        if path == "/dump" || path.starts_with("/dump/") {
+            return handle_dump_request(request);
+        }
     }
 
     match parse_and_validate_path(url, root_path) {
@@ -408,7 +414,7 @@ fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf) -> 
     }
 }
 
-fn start_web_server(root: String, port: u16) {
+fn start_web_server(root: String, port: u16, dump_enabled: bool) {
     thread::spawn(move || {
         let server = match Server::http(format!("127.0.0.1:{}", port)) {
             Ok(s) => s,
@@ -427,7 +433,7 @@ fn start_web_server(root: String, port: u16) {
         println!("Web server started on http://localhost:{}", port);
 
         for mut request in server.incoming_requests() {
-            let response = handle_web_request(&mut request, &root_path);
+            let response = handle_web_request(&mut request, &root_path, dump_enabled);
             if let Err(e) = request.respond(response) {
                 eprintln!("Failed to send response: {}", e);
             }
@@ -486,6 +492,7 @@ fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, Strin
         root: web_config.root,
         port: web_config.port,
         open_browser_at_start: web_config.open_browser_at_start,
+        dump: web_config.dump,
     }))
 }
 
@@ -507,7 +514,7 @@ pub fn run() {
     };
 
     let port_to_open = web_config_for_startup.as_ref().map(|config| {
-        start_web_server(config.root.clone(), config.port);
+        start_web_server(config.root.clone(), config.port, config.dump);
         if config.open_browser_at_start {
             Some(config.port)
         } else {
