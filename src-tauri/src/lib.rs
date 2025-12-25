@@ -279,6 +279,8 @@ struct DumpResponse {
     query: Option<Vec<HashMap<String, String>>>,
     headers: Vec<HashMap<String, String>>,
     body: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parsed_body: Option<serde_json::Value>,
 }
 
 fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -343,12 +345,34 @@ fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io::Cu
         None
     };
 
+    // Check if Content-Type indicates JSON and parse body if so
+    let parsed_body = if let Some(ref body_str) = body {
+        let is_json = headers.iter().any(|header_map| {
+            header_map.iter().any(|(key, value)| {
+                key.eq_ignore_ascii_case("content-type") && value.contains("json")
+            })
+        });
+        if is_json {
+            match serde_json::from_str(body_str) {
+                Ok(value) => Some(value),
+                Err(e) => {
+                    Some(serde_json::Value::String(format!("ERROR: Failed to parse JSON body: {}", e)))
+                }
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     let dump_data = DumpResponse {
         method,
         path,
         query,
         headers,
         body,
+        parsed_body,
     };
 
     match serde_json::to_string_pretty(&dump_data) {
