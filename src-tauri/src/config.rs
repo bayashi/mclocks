@@ -215,5 +215,48 @@ mod tests {
         assert!(result.is_ok(), "Should return default empty JSON");
         assert_eq!(result.unwrap(), "{\n  \n}\n", "Should return default empty JSON");
     }
+
+    #[test]
+    fn test_ensure_config_file_exists() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let config_path = temp_dir.path().join("config.json");
+        let config_json = r#"{"clocks": [{"name": "Test"}]}"#;
+
+        let result = ensure_config_file_exists(&config_path, config_json);
+        assert!(result.is_ok(), "Should successfully create config file");
+
+        // Verify file exists and has correct content
+        assert!(config_path.exists(), "Config file should exist");
+        let content = fs::read_to_string(&config_path).expect("Failed to read config file");
+        assert_eq!(content, config_json, "File content should match");
+    }
+
+    #[test]
+    fn test_ensure_config_file_exists_with_subdir() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let config_path = temp_dir.path().join("subdir").join("config.json");
+        let config_json = r#"{"font": "Arial"}"#;
+
+        let result = ensure_config_file_exists(&config_path, config_json);
+        assert!(result.is_ok(), "Should successfully create config file with subdirectory");
+
+        // Verify file exists and subdirectory was created
+        assert!(config_path.exists(), "Config file should exist");
+        assert!(config_path.parent().unwrap().exists(), "Subdirectory should exist");
+
+        let content = fs::read_to_string(&config_path).expect("Failed to read config file");
+        assert_eq!(content, config_json, "File content should match");
+    }
+
+    #[test]
+    fn test_ensure_config_file_exists_invalid_path() {
+        let config_path = std::path::PathBuf::from("/");
+        let config_json = r#"{"test": "value"}"#;
+
+        let result = ensure_config_file_exists(&config_path, config_json);
+        assert!(result.is_err(), "Should fail with invalid path");
+        assert!(result.unwrap_err().contains("Invalid config path"),
+                "Error message should indicate invalid path");
+    }
 }
 
