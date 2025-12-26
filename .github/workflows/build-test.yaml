@@ -12,23 +12,90 @@ on:
       - '**/dependabot.yml'
 
 jobs:
-  build-on-macOS:
+  setup:
     runs-on: "macos-latest"
     steps:
       - uses: actions/checkout@v4
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            src-tauri/target
+            ~/.cargo
+          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rust-
 
       - name: setup node
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: install pnpm
+        run: |
+          npm install -g pnpm
+
+      - name: Cache pnpm dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
       - name: install frontend dependencies
         run: |
-          npm install -g pnpm
           pnpm install
+
+  lint-and-test:
+    needs: setup
+    runs-on: "macos-latest"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Rust dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            src-tauri/target
+            ~/.cargo
+          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rust-
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: install pnpm
+        run: |
+          npm install -g pnpm
+
+      - name: Restore pnpm dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: install frontend dependencies if needed
+        run: |
+          if [ ! -d "node_modules" ]; then
+            pnpm install
+          fi
 
       - name: display version info
         run: |
@@ -37,6 +104,59 @@ jobs:
       - name: run ESLint
         run: |
           pnpm exec eslint .
+
+      - name: run Rust tests
+        run: |
+          cd src-tauri
+          cargo test
+
+  build:
+    needs: setup
+    runs-on: "macos-latest"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Rust dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            src-tauri/target
+            ~/.cargo
+          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rust-
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: install pnpm
+        run: |
+          npm install -g pnpm
+
+      - name: Restore pnpm dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: install frontend dependencies if needed
+        run: |
+          if [ ! -d "node_modules" ]; then
+            pnpm install
+          fi
+
+      - name: display version info
+        run: |
+          pnpm tauri info
 
       - name: try to build
         run: |
