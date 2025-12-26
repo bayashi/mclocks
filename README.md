@@ -9,6 +9,7 @@ In addition, it also includes features:
 * Timer
 * Countdown timer
 * Epoch time and date-time convertor
+* Web server for developers (serves static files and provides a dump endpoint for debugging)
 
 `mclocks` doesn't need an internet connection — everything runs 100% locally.
 
