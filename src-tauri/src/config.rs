@@ -152,3 +152,28 @@ pub struct ContextConfig {
     pub app_identifier: String,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_config_app_path() {
+        let identifier = "test.app".to_string();
+        let path = get_config_app_path(&identifier);
+
+        // Should contain identifier and config file name
+        assert!(path.contains(&identifier), "Path should contain identifier");
+        assert!(path.contains("config.json") || path.contains("dev.config.json"),
+                "Path should contain config file name");
+
+        // Should use forward slash as separator
+        assert!(path.contains("/"), "Path should use forward slash separator");
+
+        // Should have format: identifier/config_file
+        let parts: Vec<&str> = path.split('/').collect();
+        assert_eq!(parts.len(), 2, "Path should have exactly 2 parts");
+        assert_eq!(parts[0], identifier, "First part should be identifier");
+        assert!(parts[1].contains("config.json"), "Second part should contain config.json");
+    }
+}
+
