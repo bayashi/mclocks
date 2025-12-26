@@ -155,6 +155,7 @@ pub struct ContextConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::TempDir;
 
     #[test]
     fn test_get_config_app_path() {
@@ -174,6 +175,45 @@ mod tests {
         assert_eq!(parts.len(), 2, "Path should have exactly 2 parts");
         assert_eq!(parts[0], identifier, "First part should be identifier");
         assert!(parts[1].contains("config.json"), "Second part should contain config.json");
+    }
+
+    #[test]
+    fn test_read_config_file_new_exists() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let config_path = temp_dir.path().join("config.json");
+        let old_config_path = temp_dir.path().join("old_config.json");
+
+        let test_content = r#"{"clocks": [{"name": "Test"}]}"#;
+        fs::write(&config_path, test_content).expect("Failed to write config file");
+
+        let result = read_config_file(&config_path, &old_config_path);
+        assert!(result.is_ok(), "Should successfully read new config file");
+        assert_eq!(result.unwrap(), test_content, "Content should match");
+    }
+
+    #[test]
+    fn test_read_config_file_old_exists() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let config_path = temp_dir.path().join("config.json");
+        let old_config_path = temp_dir.path().join("old_config.json");
+
+        let test_content = r#"{"clocks": [{"name": "Old"}]}"#;
+        fs::write(&old_config_path, test_content).expect("Failed to write old config file");
+
+        let result = read_config_file(&config_path, &old_config_path);
+        assert!(result.is_ok(), "Should successfully read old config file");
+        assert_eq!(result.unwrap(), test_content, "Content should match");
+    }
+
+    #[test]
+    fn test_read_config_file_neither_exists() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let config_path = temp_dir.path().join("config.json");
+        let old_config_path = temp_dir.path().join("old_config.json");
+
+        let result = read_config_file(&config_path, &old_config_path);
+        assert!(result.is_ok(), "Should return default empty JSON");
+        assert_eq!(result.unwrap(), "{\n  \n}\n", "Should return default empty JSON");
     }
 }
 
