@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf, thread, collections::HashMap};
 use tiny_http::{Server, Response, StatusCode, Header};
 
-use crate::{AppConfig, get_config_app_path};
+use crate::config::{AppConfig, get_config_app_path};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WebConfig {
