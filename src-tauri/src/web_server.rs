@@ -4,6 +4,7 @@ use std::{fs, path::PathBuf, thread, collections::HashMap};
 use tiny_http::{Server, Response, StatusCode, Header};
 
 use crate::config::{AppConfig, get_config_app_path};
+use crate::util::open_with_system_command;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WebConfig {
@@ -276,7 +277,7 @@ fn get_content_type(path: &PathBuf) -> String {
 }
 
 pub fn open_url_in_browser(url: &str) -> Result<(), String> {
-    crate::open_with_system_command(url, "Failed to open URL in browser")
+    open_with_system_command(url, "Failed to open URL in browser")
 }
 
 pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, String> {
