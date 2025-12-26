@@ -411,5 +411,65 @@ mod tests {
         assert_eq!(clock.countdown, Some("10:00".to_string()), "Countdown should match");
         assert_eq!(clock.target, Some("2024-01-01 12:00:00".to_string()), "Target should match");
     }
+
+    #[test]
+    fn test_in_font_size_deserialize_int() {
+        let json = "14";
+        let result: Result<InFontSize, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize integer");
+        match result.unwrap() {
+            InFontSize::Int(value) => assert_eq!(value, 14, "Integer value should match"),
+            _ => panic!("Should be Int variant"),
+        }
+    }
+
+    #[test]
+    fn test_in_font_size_deserialize_str() {
+        let json = "\"16px\"";
+        let result: Result<InFontSize, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize string");
+        match result.unwrap() {
+            InFontSize::Str(value) => assert_eq!(value, "16px", "String value should match"),
+            _ => panic!("Should be Str variant"),
+        }
+    }
+
+    #[test]
+    fn test_app_config_size_int() {
+        let json = "{\"size\": 18}";
+        let result: Result<AppConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize size as integer");
+        match result.unwrap().size {
+            InFontSize::Int(value) => assert_eq!(value, 18, "Size should be 18"),
+            _ => panic!("Size should be Int variant"),
+        }
+    }
+
+    #[test]
+    fn test_app_config_size_str() {
+        let json = "{\"size\": \"20px\"}";
+        let result: Result<AppConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize size as string");
+        match result.unwrap().size {
+            InFontSize::Str(value) => assert_eq!(value, "20px", "Size should be 20px"),
+            _ => panic!("Size should be Str variant"),
+        }
+    }
+
+    #[test]
+    fn test_app_config_size_alias_font_size() {
+        let json = "{\"fontSize\": 22}";
+        let result: Result<AppConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize fontSize alias");
+        match result.unwrap().size {
+            InFontSize::Int(value) => assert_eq!(value, 22, "Size should be 22"),
+            _ => panic!("Size should be Int variant"),
+        }
+    }
 }
 
