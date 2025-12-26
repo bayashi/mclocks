@@ -258,5 +258,111 @@ mod tests {
         assert!(result.unwrap_err().contains("Invalid config path"),
                 "Error message should indicate invalid path");
     }
+
+    #[test]
+    fn test_app_config_deserialize_empty() {
+        let json = "{}";
+        let result: Result<AppConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize empty JSON");
+        let config = result.unwrap();
+
+        // Check default values
+        assert_eq!(config.clocks.len(), 1, "Should have default clock");
+        assert_eq!(config.clocks[0].name, "UTC", "Default clock name should be UTC");
+        assert_eq!(config.clocks[0].timezone, "UTC", "Default clock timezone should be UTC");
+        assert_eq!(config.font, "Courier, monospace", "Default font should be Courier, monospace");
+        assert_eq!(config.color, "#fff", "Default color should be #fff");
+        assert_eq!(config.format, "MM-DD ddd HH:mm", "Default format should match");
+        assert_eq!(config.locale, "en", "Default locale should be en");
+        assert_eq!(config.margin, "1.65em", "Default margin should be 1.65em");
+        assert_eq!(config.timer_icon, "⧖ ", "Default timer icon should match");
+        assert_eq!(config.max_timer_clock_number, 5, "Default max timer clock number should be 5");
+        assert_eq!(config.epoch_clock_name, "Epoch", "Default epoch clock name should be Epoch");
+        assert_eq!(config.disable_hover, true, "Default disable_hover should be true");
+        assert_eq!(config.forefront, false, "Default forefront should be false");
+        assert_eq!(config.without_notification, false, "Default without_notification should be false");
+        assert_eq!(config.usetz, false, "Default usetz should be false");
+        assert_eq!(config.convtz, "", "Default convtz should be empty");
+        assert!(config.format2.is_none(), "Default format2 should be None");
+        assert!(config.web.is_none(), "Default web should be None");
+    }
+
+    #[test]
+    fn test_app_config_deserialize_partial() {
+        let json = "{\
+            \"clocks\": [{\"name\": \"JST\", \"timezone\": \"Asia/Tokyo\"}],\
+            \"font\": \"Arial\",\
+            \"color\": \"#000\"\
+        }";
+        let result: Result<AppConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize partial JSON");
+        let config = result.unwrap();
+
+        // Check specified values
+        assert_eq!(config.clocks.len(), 1, "Should have one clock");
+        assert_eq!(config.clocks[0].name, "JST", "Clock name should be JST");
+        assert_eq!(config.clocks[0].timezone, "Asia/Tokyo", "Clock timezone should be Asia/Tokyo");
+        assert_eq!(config.font, "Arial", "Font should be Arial");
+        assert_eq!(config.color, "#000", "Color should be #000");
+
+        // Check default values are still applied
+        assert_eq!(config.format, "MM-DD ddd HH:mm", "Default format should still apply");
+        assert_eq!(config.locale, "en", "Default locale should still apply");
+    }
+
+    #[test]
+    fn test_app_config_deserialize_full() {
+        let json = "{\
+            \"clocks\": [\
+                {\"name\": \"UTC\", \"timezone\": \"UTC\"},\
+                {\"name\": \"JST\", \"timezone\": \"Asia/Tokyo\"}\
+            ],\
+            \"font\": \"Courier New\",\
+            \"size\": 16,\
+            \"color\": \"#ff0000\",\
+            \"format\": \"HH:mm:ss\",\
+            \"format2\": \"YYYY-MM-DD\",\
+            \"locale\": \"ja\",\
+            \"forefront\": true,\
+            \"margin\": \"2em\",\
+            \"timerIcon\": \"⏱\",\
+            \"withoutNotification\": true,\
+            \"maxTimerClockNumber\": 10,\
+            \"epochClockName\": \"Unix Time\",\
+            \"usetz\": true,\
+            \"convtz\": \"Asia/Tokyo\",\
+            \"disableHover\": false\
+        }";
+        let result: Result<AppConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize full JSON");
+        let config = result.unwrap();
+
+        assert_eq!(config.clocks.len(), 2, "Should have two clocks");
+        assert_eq!(config.font, "Courier New", "Font should match");
+        assert_eq!(config.color, "#ff0000", "Color should match");
+        assert_eq!(config.format, "HH:mm:ss", "Format should match");
+        assert_eq!(config.format2, Some("YYYY-MM-DD".to_string()), "Format2 should match");
+        assert_eq!(config.locale, "ja", "Locale should match");
+        assert_eq!(config.forefront, true, "Forefront should be true");
+        assert_eq!(config.margin, "2em", "Margin should match");
+        assert_eq!(config.timer_icon, "⏱", "Timer icon should match");
+        assert_eq!(config.without_notification, true, "Without notification should be true");
+        assert_eq!(config.max_timer_clock_number, 10, "Max timer clock number should match");
+        assert_eq!(config.epoch_clock_name, "Unix Time", "Epoch clock name should match");
+        assert_eq!(config.usetz, true, "Usetz should be true");
+        assert_eq!(config.convtz, "Asia/Tokyo", "Convtz should match");
+        assert_eq!(config.disable_hover, false, "Disable hover should be false");
+    }
+
+    #[test]
+    fn test_app_config_deserialize_invalid_json() {
+        let json = "{ invalid json }";
+        let result: Result<AppConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_err(), "Should fail to deserialize invalid JSON");
+    }
 }
 
