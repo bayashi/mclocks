@@ -364,5 +364,52 @@ mod tests {
 
         assert!(result.is_err(), "Should fail to deserialize invalid JSON");
     }
+
+    #[test]
+    fn test_clock_deserialize_empty() {
+        let json = "{}";
+        let result: Result<Clock, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize empty Clock JSON");
+        let clock = result.unwrap();
+
+        assert_eq!(clock.name, "UTC", "Default name should be UTC");
+        assert_eq!(clock.timezone, "UTC", "Default timezone should be UTC");
+        assert!(clock.countdown.is_none(), "Countdown should be None");
+        assert!(clock.target.is_none(), "Target should be None");
+    }
+
+    #[test]
+    fn test_clock_deserialize_partial() {
+        let json = "{\"name\": \"JST\"}";
+        let result: Result<Clock, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize partial Clock JSON");
+        let clock = result.unwrap();
+
+        assert_eq!(clock.name, "JST", "Name should be JST");
+        assert_eq!(clock.timezone, "UTC", "Default timezone should still be UTC");
+        assert!(clock.countdown.is_none(), "Countdown should be None");
+        assert!(clock.target.is_none(), "Target should be None");
+    }
+
+    #[test]
+    fn test_clock_deserialize_full() {
+        let json = "{\
+            \"name\": \"EST\",\
+            \"timezone\": \"America/New_York\",\
+            \"countdown\": \"10:00\",\
+            \"target\": \"2024-01-01 12:00:00\"\
+        }";
+        let result: Result<Clock, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize full Clock JSON");
+        let clock = result.unwrap();
+
+        assert_eq!(clock.name, "EST", "Name should match");
+        assert_eq!(clock.timezone, "America/New_York", "Timezone should match");
+        assert_eq!(clock.countdown, Some("10:00".to_string()), "Countdown should match");
+        assert_eq!(clock.target, Some("2024-01-01 12:00:00".to_string()), "Target should match");
+    }
 }
 
