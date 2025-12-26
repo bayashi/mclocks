@@ -7,6 +7,7 @@ use crate::config::{AppConfig, get_config_app_path};
 use crate::util::open_with_system_command;
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct WebConfig {
     pub root: String,
     #[serde(default = "df_web_port")]
@@ -17,6 +18,7 @@ pub struct WebConfig {
     pub dump: bool,
 }
 
+#[derive(Debug)]
 pub struct WebServerConfig {
     pub root: String,
     pub port: u16,
@@ -308,5 +310,631 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         open_browser_at_start: web_config.open_browser_at_start,
         dump: web_config.dump,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_parse_and_validate_path_root() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let index_file = root_path.join("index.html");
+        fs::write(&index_file, "test").expect("Failed to create index.html");
+
+        let result = parse_and_validate_path("/", &root_path);
+        assert!(result.is_ok(), "Root path should resolve to index.html");
+        assert_eq!(result.unwrap(), index_file.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_parse_and_validate_path_normal_file() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let test_file = root_path.join("test.html");
+        fs::write(&test_file, "test").expect("Failed to create test.html");
+
+        let result = parse_and_validate_path("/test.html", &root_path);
+        assert!(result.is_ok(), "Normal file path should be valid");
+        assert_eq!(result.unwrap(), test_file.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_parse_and_validate_path_with_query_string() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let test_file = root_path.join("test.html");
+        fs::write(&test_file, "test").expect("Failed to create test.html");
+
+        let result = parse_and_validate_path("/test.html?key=value", &root_path);
+        assert!(result.is_ok(), "Query string should be stripped");
+        assert_eq!(result.unwrap(), test_file.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_parse_and_validate_path_with_fragment() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let test_file = root_path.join("test.html");
+        fs::write(&test_file, "test").expect("Failed to create test.html");
+
+        let result = parse_and_validate_path("/test.html#section", &root_path);
+        assert!(result.is_ok(), "Fragment should be stripped");
+        assert_eq!(result.unwrap(), test_file.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_parse_and_validate_path_directory_traversal() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+
+        let result = parse_and_validate_path("/../test.html", &root_path);
+        assert!(result.is_err(), "Directory traversal should be rejected");
+        assert_eq!(result.unwrap_err(), StatusCode(400));
+    }
+
+    #[test]
+    fn test_parse_and_validate_path_double_slash() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+
+        let result = parse_and_validate_path("//test.html", &root_path);
+        assert!(result.is_err(), "Double slash should be rejected");
+        assert_eq!(result.unwrap_err(), StatusCode(400));
+    }
+
+    #[test]
+    fn test_parse_and_validate_path_absolute_path_component() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+
+        // Test with non-existent path
+        let result = parse_and_validate_path("/nonexistent/file.html", &root_path);
+        assert!(result.is_err(), "Non-existent file should return 404");
+        assert_eq!(result.unwrap_err(), StatusCode(404));
+    }
+
+    #[test]
+    fn test_parse_and_validate_path_nonexistent_file() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+
+        let result = parse_and_validate_path("/nonexistent.html", &root_path);
+        assert!(result.is_err(), "Non-existent file should return 404");
+        assert_eq!(result.unwrap_err(), StatusCode(404));
+    }
+
+    #[test]
+    fn test_parse_and_validate_path_subdirectory() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let subdir = root_path.join("subdir");
+        fs::create_dir_all(&subdir).expect("Failed to create subdir");
+        let test_file = subdir.join("test.html");
+        fs::write(&test_file, "test").expect("Failed to create test.html");
+
+        let result = parse_and_validate_path("/subdir/test.html", &root_path);
+        assert!(result.is_ok(), "Subdirectory path should be valid");
+        assert_eq!(result.unwrap(), test_file.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn test_parse_and_validate_path_outside_root() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let outside_dir = temp_dir.path().parent().unwrap();
+        let outside_file = outside_dir.join("outside.html");
+        fs::write(&outside_file, "test").expect("Failed to create outside file");
+
+        // Try to access file outside root using path manipulation
+        // This should fail even if we try to construct a path
+        let result = parse_and_validate_path("/../outside.html", &root_path);
+        assert!(result.is_err(), "Path outside root should be rejected");
+        assert_eq!(result.unwrap_err(), StatusCode(400));
+    }
+
+    #[test]
+    fn test_get_content_type_html() {
+        let path = PathBuf::from("test.html");
+        assert_eq!(get_content_type(&path), "text/html");
+    }
+
+    #[test]
+    fn test_get_content_type_css() {
+        let path = PathBuf::from("style.css");
+        assert_eq!(get_content_type(&path), "text/css");
+    }
+
+    #[test]
+    fn test_get_content_type_js() {
+        let path = PathBuf::from("script.js");
+        assert_eq!(get_content_type(&path), "application/javascript");
+    }
+
+    #[test]
+    fn test_get_content_type_json() {
+        let path = PathBuf::from("data.json");
+        assert_eq!(get_content_type(&path), "application/json");
+    }
+
+    #[test]
+    fn test_get_content_type_md() {
+        let path = PathBuf::from("readme.md");
+        assert_eq!(get_content_type(&path), "text/markdown");
+    }
+
+    #[test]
+    fn test_get_content_type_png() {
+        let path = PathBuf::from("image.png");
+        assert_eq!(get_content_type(&path), "image/png");
+    }
+
+    #[test]
+    fn test_get_content_type_jpg() {
+        let path = PathBuf::from("photo.jpg");
+        assert_eq!(get_content_type(&path), "image/jpeg");
+    }
+
+    #[test]
+    fn test_get_content_type_jpeg() {
+        let path = PathBuf::from("photo.jpeg");
+        assert_eq!(get_content_type(&path), "image/jpeg");
+    }
+
+    #[test]
+    fn test_get_content_type_gif() {
+        let path = PathBuf::from("animation.gif");
+        assert_eq!(get_content_type(&path), "image/gif");
+    }
+
+    #[test]
+    fn test_get_content_type_svg() {
+        let path = PathBuf::from("icon.svg");
+        assert_eq!(get_content_type(&path), "image/svg+xml");
+    }
+
+    #[test]
+    fn test_get_content_type_ico() {
+        let path = PathBuf::from("favicon.ico");
+        assert_eq!(get_content_type(&path), "image/x-icon");
+    }
+
+    #[test]
+    fn test_get_content_type_txt() {
+        let path = PathBuf::from("readme.txt");
+        assert_eq!(get_content_type(&path), "text/plain");
+    }
+
+    #[test]
+    fn test_get_content_type_unknown() {
+        let path = PathBuf::from("file.unknown");
+        assert_eq!(get_content_type(&path), "application/octet-stream");
+    }
+
+    #[test]
+    fn test_get_content_type_no_extension() {
+        let path = PathBuf::from("file");
+        assert_eq!(get_content_type(&path), "application/octet-stream");
+    }
+
+    #[test]
+    fn test_get_content_type_subdirectory() {
+        let path = PathBuf::from("subdir/file.html");
+        assert_eq!(get_content_type(&path), "text/html");
+    }
+
+    fn start_test_server(root: PathBuf, port: u16, dump_enabled: bool) -> std::thread::JoinHandle<()> {
+        thread::spawn(move || {
+            let server = match Server::http(format!("127.0.0.1:{}", port)) {
+                Ok(s) => s,
+                Err(_) => return,
+            };
+
+            for mut request in server.incoming_requests() {
+                let response = handle_web_request(&mut request, &root, dump_enabled);
+                let _ = request.respond(response);
+            }
+        })
+    }
+
+    #[test]
+    fn test_handle_dump_request_basic() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3031;
+
+        let _server_handle = start_test_server(root_path, port, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/dump", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.headers().get("content-type").unwrap().to_str().unwrap(), "application/json");
+
+        let json: serde_json::Value = response.json().expect("Failed to parse JSON");
+        assert_eq!(json["method"], "GET");
+        assert_eq!(json["path"], "/");
+        assert!(json["query"].is_null());
+    }
+
+    #[test]
+    fn test_handle_dump_request_with_path() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3032;
+
+        let _server_handle = start_test_server(root_path, port, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/dump/test/path", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let json: serde_json::Value = response.json().expect("Failed to parse JSON");
+        assert_eq!(json["method"], "GET");
+        assert_eq!(json["path"], "/test/path");
+    }
+
+    #[test]
+    fn test_handle_dump_request_with_query_string() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3033;
+
+        let _server_handle = start_test_server(root_path, port, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/dump?key1=value1&key2=value2", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let json: serde_json::Value = response.json().expect("Failed to parse JSON");
+        assert_eq!(json["method"], "GET");
+        assert_eq!(json["path"], "/");
+
+        let query = json["query"].as_array().expect("Query should be an array");
+        assert_eq!(query.len(), 2);
+    }
+
+    #[test]
+    fn test_handle_dump_request_with_headers() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3034;
+
+        let _server_handle = start_test_server(root_path, port, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/dump", port))
+            .header("X-Custom-Header", "custom-value")
+            .header("User-Agent", "test-agent")
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let json: serde_json::Value = response.json().expect("Failed to parse JSON");
+
+        let headers = json["headers"].as_array().expect("Headers should be an array");
+        assert!(headers.len() > 0);
+    }
+
+    #[test]
+    fn test_handle_dump_request_with_json_body() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3035;
+
+        let _server_handle = start_test_server(root_path, port, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let body = serde_json::json!({"test": "value"});
+        let response = client.post(&format!("http://127.0.0.1:{}/dump", port))
+            .header("Content-Type", "application/json")
+            .json(&body)
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let json: serde_json::Value = response.json().expect("Failed to parse JSON");
+        assert_eq!(json["method"], "POST");
+
+        let body_str = json["body"].as_str().expect("Body should be a string");
+        assert!(body_str.contains("test"));
+        assert!(body_str.contains("value"));
+
+        let parsed_body = json["parsed_body"].as_object().expect("Parsed body should be an object");
+        assert_eq!(parsed_body["test"], "value");
+    }
+
+    #[test]
+    fn test_handle_dump_request_with_invalid_json_body() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3036;
+
+        let _server_handle = start_test_server(root_path, port, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.post(&format!("http://127.0.0.1:{}/dump", port))
+            .header("Content-Type", "application/json")
+            .body("{ invalid json }")
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let json: serde_json::Value = response.json().expect("Failed to parse JSON");
+        let parsed_body = json["parsed_body"].as_str().expect("Parsed body should be error string");
+        assert!(parsed_body.contains("ERROR"));
+    }
+
+    #[test]
+    fn test_handle_dump_request_with_text_body() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3037;
+
+        let _server_handle = start_test_server(root_path, port, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.post(&format!("http://127.0.0.1:{}/dump", port))
+            .header("Content-Type", "text/plain")
+            .body("plain text body")
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let json: serde_json::Value = response.json().expect("Failed to parse JSON");
+        assert_eq!(json["method"], "POST");
+        assert_eq!(json["body"], "plain text body");
+        assert!(json["parsed_body"].is_null());
+    }
+
+    #[test]
+    fn test_load_web_config_no_config_file() {
+        let identifier = "test.app.nonexistent".to_string();
+        let result = load_web_config(&identifier);
+        assert!(result.is_ok(), "Should return Ok when config file doesn't exist");
+        assert!(result.unwrap().is_none(), "Should return None when config file doesn't exist");
+    }
+
+    #[test]
+    fn test_load_web_config_no_web_field() {
+        let base_dir = BaseDirs::new().expect("Failed to get base dir");
+        let config_dir = base_dir.config_dir();
+        let test_config_dir = config_dir.join("test.app.noweb");
+        fs::create_dir_all(&test_config_dir).expect("Failed to create config dir");
+
+        // Use get_config_app_path to get the correct config file name
+        let config_file_name = if cfg!(debug_assertions) && tauri::is_dev() {
+            "dev.config.json"
+        } else {
+            "config.json"
+        };
+        let config_path = test_config_dir.join(config_file_name);
+        let config_json = r#"{"clocks": [{"name": "UTC"}]}"#;
+        fs::write(&config_path, config_json).expect("Failed to write config file");
+
+        let identifier = "test.app.noweb".to_string();
+        let result = load_web_config(&identifier);
+        assert!(result.is_ok(), "Should return Ok when web field is missing");
+        assert!(result.unwrap().is_none(), "Should return None when web field is missing");
+
+        // Cleanup
+        let _ = fs::remove_file(&config_path);
+        let _ = fs::remove_dir(&test_config_dir);
+    }
+
+    #[test]
+    fn test_load_web_config_nonexistent_root() {
+        let base_dir = BaseDirs::new().expect("Failed to get base dir");
+        let config_dir = base_dir.config_dir();
+        let test_config_dir = config_dir.join("test.app.badroot");
+        fs::create_dir_all(&test_config_dir).expect("Failed to create config dir");
+
+        // Use get_config_app_path to get the correct config file name
+        let config_file_name = if cfg!(debug_assertions) && tauri::is_dev() {
+            "dev.config.json"
+        } else {
+            "config.json"
+        };
+        let config_path = test_config_dir.join(config_file_name);
+        // Use a path that definitely doesn't exist (use forward slashes for JSON)
+        let nonexistent_path = if cfg!(windows) {
+            "C:/nonexistent/path/that/does/not/exist"
+        } else {
+            "/nonexistent/path/that/does/not/exist"
+        };
+        let config_json = format!(r#"{{
+            "web": {{
+                "root": "{}"
+            }}
+        }}"#, nonexistent_path);
+        fs::write(&config_path, config_json).expect("Failed to write config file");
+
+        let identifier = "test.app.badroot".to_string();
+        let result = load_web_config(&identifier);
+        assert!(result.is_err(), "Should return error when root path doesn't exist. Got: {:?}", result);
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("web.root not exists") || err_msg.contains("not exists"), 
+                "Error message should indicate root doesn't exist. Got: {}", err_msg);
+
+        // Cleanup
+        let _ = fs::remove_file(&config_path);
+        let _ = fs::remove_dir(&test_config_dir);
+    }
+
+    #[test]
+    fn test_load_web_config_success() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let web_root = temp_dir.path().join("webroot");
+        fs::create_dir_all(&web_root).expect("Failed to create web root");
+
+        let base_dir = BaseDirs::new().expect("Failed to get base dir");
+        let config_dir = base_dir.config_dir();
+        let test_config_dir = config_dir.join("test.app.success");
+        fs::create_dir_all(&test_config_dir).expect("Failed to create config dir");
+
+        // Use get_config_app_path to get the correct config file name
+        let config_file_name = if cfg!(debug_assertions) && tauri::is_dev() {
+            "dev.config.json"
+        } else {
+            "config.json"
+        };
+        let config_path = test_config_dir.join(config_file_name);
+        // Use absolute path for web.root, escape backslashes for JSON
+        let web_root_str = web_root.canonicalize().unwrap().to_string_lossy().replace('\\', "/");
+        let config_json = format!(r#"{{
+            "web": {{
+                "root": "{}",
+                "port": 8080,
+                "openBrowserAtStart": true,
+                "dump": true
+            }}
+        }}"#, web_root_str);
+        fs::write(&config_path, config_json).expect("Failed to write config file");
+
+        let identifier = "test.app.success".to_string();
+        let result = load_web_config(&identifier);
+        assert!(result.is_ok(), "Should successfully load web config. Got: {:?}", result);
+        let web_config = result.unwrap();
+        assert!(web_config.is_some(), "Should return Some(WebServerConfig). Got: {:?}", web_config);
+        let config = web_config.unwrap();
+        assert_eq!(config.port, 8080, "Port should match");
+        assert_eq!(config.open_browser_at_start, true, "open_browser_at_start should be true");
+        assert_eq!(config.dump, true, "dump should be true");
+
+        // Cleanup
+        let _ = fs::remove_file(&config_path);
+        let _ = fs::remove_dir(&test_config_dir);
+    }
+
+    #[test]
+    fn test_load_web_config_default_values() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let web_root = temp_dir.path().join("webroot");
+        fs::create_dir_all(&web_root).expect("Failed to create web root");
+
+        let base_dir = BaseDirs::new().expect("Failed to get base dir");
+        let config_dir = base_dir.config_dir();
+        let test_config_dir = config_dir.join("test.app.defaults");
+        fs::create_dir_all(&test_config_dir).expect("Failed to create config dir");
+
+        // Use get_config_app_path to get the correct config file name
+        let config_file_name = if cfg!(debug_assertions) && tauri::is_dev() {
+            "dev.config.json"
+        } else {
+            "config.json"
+        };
+        let config_path = test_config_dir.join(config_file_name);
+        // Use absolute path for web.root, escape backslashes for JSON
+        let web_root_str = web_root.canonicalize().unwrap().to_string_lossy().replace('\\', "/");
+        let config_json = format!(r#"{{
+            "web": {{
+                "root": "{}"
+            }}
+        }}"#, web_root_str);
+        fs::write(&config_path, config_json).expect("Failed to write config file");
+
+        let identifier = "test.app.defaults".to_string();
+        let result = load_web_config(&identifier);
+        assert!(result.is_ok(), "Should successfully load web config with defaults. Got: {:?}", result);
+        let web_config = result.unwrap();
+        assert!(web_config.is_some(), "Should return Some(WebServerConfig). Got: {:?}", web_config);
+        let config = web_config.unwrap();
+        assert_eq!(config.port, 3030, "Default port should be 3030");
+        assert_eq!(config.open_browser_at_start, false, "Default open_browser_at_start should be false");
+        assert_eq!(config.dump, false, "Default dump should be false");
+
+        // Cleanup
+        let _ = fs::remove_file(&config_path);
+        let _ = fs::remove_dir(&test_config_dir);
+    }
+
+    #[test]
+    fn test_web_config_deserialize_empty() {
+        // root is required, so we need at least that field
+        let json = r#"{"root": "/test"}"#;
+        let result: Result<WebConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize JSON with only root");
+        let config = result.unwrap();
+
+        // Check default values
+        assert_eq!(config.root, "/test", "Root should match");
+        assert_eq!(config.port, 3030, "Default port should be 3030");
+        assert_eq!(config.open_browser_at_start, false, "Default open_browser_at_start should be false");
+        assert_eq!(config.dump, false, "Default dump should be false");
+    }
+
+    #[test]
+    fn test_web_config_deserialize_partial() {
+        let json = r#"{"root": "/path/to/root", "port": 8080}"#;
+        let result: Result<WebConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize partial JSON");
+        let config = result.unwrap();
+
+        // Check specified values
+        assert_eq!(config.root, "/path/to/root", "Root should match");
+        assert_eq!(config.port, 8080, "Port should match");
+
+        // Check default values are still applied
+        assert_eq!(config.open_browser_at_start, false, "Default open_browser_at_start should still apply");
+        assert_eq!(config.dump, false, "Default dump should still apply");
+    }
+
+    #[test]
+    fn test_web_config_deserialize_full() {
+        let json = r#"{
+            "root": "/path/to/root",
+            "port": 8080,
+            "openBrowserAtStart": true,
+            "dump": true
+        }"#;
+        let result: Result<WebConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize full JSON");
+        let config = result.unwrap();
+
+        assert_eq!(config.root, "/path/to/root", "Root should match");
+        assert_eq!(config.port, 8080, "Port should match");
+        assert_eq!(config.open_browser_at_start, true, "open_browser_at_start should be true");
+        assert_eq!(config.dump, true, "dump should be true");
+    }
+
+    #[test]
+    fn test_web_config_deserialize_camel_case() {
+        let json = r#"{
+            "root": "/test",
+            "openBrowserAtStart": true
+        }"#;
+        let result: Result<WebConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_ok(), "Should deserialize camelCase field names");
+        let config = result.unwrap();
+        assert_eq!(config.root, "/test", "Root should match");
+        assert_eq!(config.open_browser_at_start, true, "openBrowserAtStart should map to open_browser_at_start");
+    }
+
+    #[test]
+    fn test_web_config_deserialize_invalid_json() {
+        let json = "{ invalid json }";
+        let result: Result<WebConfig, _> = serde_json::from_str(json);
+
+        assert!(result.is_err(), "Should fail to deserialize invalid JSON");
+    }
 }
 
