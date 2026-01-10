@@ -5,6 +5,7 @@ use tiny_http::{Server, Response, StatusCode, Header};
 
 use crate::config::{AppConfig, get_config_app_path};
 use crate::util::open_with_system_command;
+use crate::web_status_code::{get_status_phrase, should_have_response_body, apply_status_headers};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -18,6 +19,8 @@ pub struct WebConfig {
     pub dump: bool,
     #[serde(default = "df_slow")]
     pub slow: bool,
+    #[serde(default = "df_status")]
+    pub status: bool,
 }
 
 #[derive(Debug)]
@@ -27,12 +30,14 @@ pub struct WebServerConfig {
     pub open_browser_at_start: bool,
     pub dump: bool,
     pub slow: bool,
+    pub status: bool,
 }
 
 fn df_web_port() -> u16 { 3030 }
 fn df_open_browser_at_start() -> bool { false }
 fn df_dump() -> bool { false }
 fn df_slow() -> bool { false }
+fn df_status() -> bool { false }
 
 fn create_error_response(status_code: StatusCode, message: &str) -> Response<std::io::Cursor<Vec<u8>>> {
     Response::from_string(message).with_status_code(status_code)
@@ -109,6 +114,57 @@ struct DumpResponse {
     body: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     parsed_body: Option<serde_json::Value>,
+}
+
+fn handle_status_request(_request: &tiny_http::Request, path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
+    // Extract status code from path: /status/{code}
+    if !path.starts_with("/status/") {
+        return create_error_response(StatusCode(404), "Not Found");
+    }
+
+    let code_str = &path[8..]; // Skip "/status/"
+    let code_str = code_str.split('/').next().unwrap_or(code_str); // Get only the first segment
+
+    let status_code = match code_str.parse::<u16>() {
+        Ok(code) if (100..=599).contains(&code) => code,
+        _ => {
+            return create_error_response(StatusCode(400), "Invalid status code");
+        }
+    };
+
+    let status = StatusCode(status_code);
+
+    // Handle status codes that don't allow response body
+    let has_body = should_have_response_body(status_code);
+
+    // Special handling for 418 I'm a teapot
+    let body_content = if status_code == 418 {
+        "I'm a teapot".to_string()
+    } else if has_body {
+        format!("{} {}", status_code, get_status_phrase(status_code))
+    } else {
+        String::new()
+    };
+
+    let response = if has_body {
+        let mut resp = Response::from_string(body_content).with_status_code(status);
+        // Helper function to add header
+        let add_header = |response: Response<std::io::Cursor<Vec<u8>>>, name: &[u8], value: &[u8]| -> Response<std::io::Cursor<Vec<u8>>> {
+            if let Ok(header) = Header::from_bytes(name, value) {
+                response.with_header(header)
+            } else {
+                response
+            }
+        };
+        resp = add_header(resp, b"Content-Type", b"text/plain; charset=utf-8");
+        resp
+    } else {
+        // For 204 No Content and 304 Not Modified, use empty data
+        Response::from_data(Vec::<u8>::new()).with_status_code(status)
+    };
+
+    // Apply status-specific headers
+    apply_status_headers(response, status_code, status, has_body)
 }
 
 fn handle_slow_request(request: &tiny_http::Request) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -243,9 +299,16 @@ fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io::Cu
     }
 }
 
-fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dump_enabled: bool, slow_enabled: bool) -> Response<std::io::Cursor<Vec<u8>>> {
+fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) -> Response<std::io::Cursor<Vec<u8>>> {
     let url = request.url();
     let path = url.split('?').next().unwrap_or("/");
+
+    // Check if this is a /status request (including /status/ and any subpaths)
+    if status_enabled {
+        if path.starts_with("/status/") {
+            return handle_status_request(request, path);
+        }
+    }
 
     // Check if this is a /slow request (including /slow/ and any subpaths)
     if slow_enabled {
@@ -274,7 +337,7 @@ fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dum
     }
 }
 
-pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enabled: bool) {
+pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) {
     thread::spawn(move || {
         let server = match Server::http(format!("127.0.0.1:{}", port)) {
             Ok(s) => s,
@@ -293,7 +356,7 @@ pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enable
         println!("Web server started on http://localhost:{}", port);
 
         for mut request in server.incoming_requests() {
-            let response = handle_web_request(&mut request, &root_path, dump_enabled, slow_enabled);
+            let response = handle_web_request(&mut request, &root_path, dump_enabled, slow_enabled, status_enabled);
             if let Err(e) = request.respond(response) {
                 eprintln!("Failed to send response: {}", e);
             }
@@ -350,6 +413,7 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         open_browser_at_start: web_config.open_browser_at_start,
         dump: web_config.dump,
         slow: web_config.slow,
+        status: web_config.status,
     }))
 }
 
@@ -566,7 +630,7 @@ mod tests {
         assert_eq!(get_content_type(&path), "text/html");
     }
 
-    fn start_test_server(root: PathBuf, port: u16, dump_enabled: bool, slow_enabled: bool) -> std::thread::JoinHandle<()> {
+    fn start_test_server(root: PathBuf, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) -> std::thread::JoinHandle<()> {
         thread::spawn(move || {
             let server = match Server::http(format!("127.0.0.1:{}", port)) {
                 Ok(s) => s,
@@ -574,7 +638,7 @@ mod tests {
             };
 
             for mut request in server.incoming_requests() {
-                let response = handle_web_request(&mut request, &root, dump_enabled, slow_enabled);
+                let response = handle_web_request(&mut request, &root, dump_enabled, slow_enabled, status_enabled);
                 let _ = request.respond(response);
             }
         })
@@ -586,7 +650,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3031;
 
-        let _server_handle = start_test_server(root_path, port, true, false);
+        let _server_handle = start_test_server(root_path, port, true, false, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -609,7 +673,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3032;
 
-        let _server_handle = start_test_server(root_path, port, true, false);
+        let _server_handle = start_test_server(root_path, port, true, false, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -629,7 +693,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3033;
 
-        let _server_handle = start_test_server(root_path, port, true, false);
+        let _server_handle = start_test_server(root_path, port, true, false, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -652,7 +716,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3034;
 
-        let _server_handle = start_test_server(root_path, port, true, false);
+        let _server_handle = start_test_server(root_path, port, true, false, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -675,7 +739,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3035;
 
-        let _server_handle = start_test_server(root_path, port, true, false);
+        let _server_handle = start_test_server(root_path, port, true, false, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -704,7 +768,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3036;
 
-        let _server_handle = start_test_server(root_path, port, true, false);
+        let _server_handle = start_test_server(root_path, port, true, false, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -726,7 +790,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3037;
 
-        let _server_handle = start_test_server(root_path, port, true, false);
+        let _server_handle = start_test_server(root_path, port, true, false, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -749,7 +813,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3038;
 
-        let _server_handle = start_test_server(root_path, port, false, true);
+        let _server_handle = start_test_server(root_path, port, false, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let start = std::time::Instant::now();
@@ -772,7 +836,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3039;
 
-        let _server_handle = start_test_server(root_path, port, false, true);
+        let _server_handle = start_test_server(root_path, port, false, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let start = std::time::Instant::now();
@@ -795,7 +859,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3040;
 
-        let _server_handle = start_test_server(root_path, port, false, true);
+        let _server_handle = start_test_server(root_path, port, false, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let start = std::time::Instant::now();
@@ -818,7 +882,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3041;
 
-        let _server_handle = start_test_server(root_path, port, false, true);
+        let _server_handle = start_test_server(root_path, port, false, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -838,7 +902,7 @@ mod tests {
         fs::write(&index_file, "test").expect("Failed to create index.html");
         let port = 3042;
 
-        let _server_handle = start_test_server(root_path, port, false, false);
+        let _server_handle = start_test_server(root_path, port, false, false, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
