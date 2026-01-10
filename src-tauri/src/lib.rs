@@ -1,6 +1,7 @@
 mod web_server;
 mod config;
 mod util;
+mod web_status_code;
 
 use std::{sync::Arc, thread};
 use tauri::Manager;
@@ -31,7 +32,7 @@ pub fn run() {
     };
 
     let port_to_open = web_config_for_startup.as_ref().map(|config| {
-        start_web_server(config.root.clone(), config.port, config.dump, config.slow);
+        start_web_server(config.root.clone(), config.port, config.dump, config.slow, config.status);
         if config.open_browser_at_start {
             Some(config.port)
         } else {
