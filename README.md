@@ -9,7 +9,7 @@ In addition, it also includes features:
 * Timer
 * Countdown timer
 * Epoch time and date-time convertor
-* Web server for developers (serves static files and provides a dump endpoint for debugging)
+* Web server for developers (serves static files and provides dump and slow endpoints for debugging)
 
 `mclocks` doesn't need an internet connection — everything runs 100% locally.
 
@@ -257,7 +257,8 @@ Empty lines are preserved as-is in all operations.
     {
       "web": {
         "root": "/path/to/your/webroot",
-        "dump": true
+        "dump": true,
+        "slow": true
       }
     }
 
@@ -265,6 +266,7 @@ Empty lines are preserved as-is in all operations.
 * `port`: Port number to listen on (default: 3030)
 * `open_browser_at_start`: If set to `true`, automatically opens the web server URL in the default browser when `mclocks` starts (default: `false`)
 * `dump`: If set to `true`, enables the `/dump` endpoint that returns request details as JSON (default: `false`)
+* `slow`: If set to `true`, enables the `/slow` endpoint that delays the response (default: `false`)
 
 If the `web` field is configured in your `config.json`, the web server starts automatically when `mclocks` launches. Access files at `http://127.0.0.1:3030`. The web server only listens on `127.0.0.1` (localhost), so it is only accessible from your local machine.
 
@@ -288,6 +290,24 @@ The endpoint responds with a JSON object containing:
 * `parsed_body`: Parsed JSON object if Content-Type indicates JSON, or error message string if parsing fails
 
 Access the dump endpoint at `http://127.0.0.1:3030/dump` or any path under `/dump/` (e.g., `/dump/test?key=value`).
+
+### /slow endpoint
+
+When `slow: true` is set in the `web` configuration, the web server provides a `/slow` endpoint that delays the response before returning 200 OK.
+
+The endpoint is accessible via any HTTP method (GET, POST, etc.) and supports the following paths:
+
+* `/slow`: Waits 30 seconds (default) and returns 200 OK
+* `/slow/120`: Waits 120 seconds (or any specified number of seconds) and returns 200 OK
+
+This endpoint is useful for testing timeout behavior, connection handling, or simulating slow network conditions.
+
+Examples:
+* `http://127.0.0.1:3030/slow` - waits 30 seconds
+* `http://127.0.0.1:3030/slow/60` - waits 60 seconds
+* `http://127.0.0.1:3030/slow/120` - waits 120 seconds
+
+If an invalid seconds parameter is provided (e.g., `/slow/abc`), the endpoint returns a 400 Bad Request error.
 
 ----------
 
