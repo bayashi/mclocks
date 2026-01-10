@@ -258,7 +258,8 @@ Empty lines are preserved as-is in all operations.
       "web": {
         "root": "/path/to/your/webroot",
         "dump": true,
-        "slow": true
+        "slow": true,
+        "status": true
       }
     }
 
@@ -267,6 +268,7 @@ Empty lines are preserved as-is in all operations.
 * `open_browser_at_start`: If set to `true`, automatically opens the web server URL in the default browser when `mclocks` starts (default: `false`)
 * `dump`: If set to `true`, enables the `/dump` endpoint that returns request details as JSON (default: `false`)
 * `slow`: If set to `true`, enables the `/slow` endpoint that delays the response (default: `false`)
+* `status`: If set to `true`, enables the `/status/{code}` endpoint that returns arbitrary HTTP status codes (default: `false`)
 
 If the `web` field is configured in your `config.json`, the web server starts automatically when `mclocks` launches. Access files at `http://127.0.0.1:3030`. The web server only listens on `127.0.0.1` (localhost), so it is only accessible from your local machine.
 
@@ -308,6 +310,41 @@ Examples:
 * `http://127.0.0.1:3030/slow/120` - waits 120 seconds
 
 If an invalid seconds parameter is provided (e.g., `/slow/abc`), the endpoint returns a 400 Bad Request error.
+
+### /status endpoint
+
+When `status: true` is set in the `web` configuration, the web server provides a `/status/{code}` endpoint that returns arbitrary HTTP status codes defined in RFC standards (100-599).
+
+The endpoint returns a plain text response with the status code and its corresponding phrase, along with appropriate headers as required by the HTTP specification.
+
+**Examples:**
+* `http://127.0.0.1:3030/status/200` - returns 200 OK
+* `http://127.0.0.1:3030/status/404` - returns 404 Not Found
+* `http://127.0.0.1:3030/status/500` - returns 500 Internal Server Error
+* `http://127.0.0.1:3030/status/418` - returns 418 I'm a teapot (with special message)
+* `http://127.0.0.1:3030/status/301` - returns 301 Moved Permanently (with Location header)
+
+**Status-specific headers:**
+
+The endpoint automatically adds appropriate headers for specific status codes:
+
+* **3xx Redirection** (301, 302, 303, 305, 307, 308): Adds `Location` header
+* **401 Unauthorized**: Adds `WWW-Authenticate` header
+* **405 Method Not Allowed**: Adds `Allow` header
+* **407 Proxy Authentication Required**: Adds `Proxy-Authenticate` header
+* **416 Range Not Satisfiable**: Adds `Content-Range` header
+* **426 Upgrade Required**: Adds `Upgrade` header
+* **429 Too Many Requests**: Adds `Retry-After` header (60 seconds)
+* **503 Service Unavailable**: Adds `Retry-After` header (60 seconds)
+* **511 Network Authentication Required**: Adds `WWW-Authenticate` header
+
+**Response body handling:**
+
+* **204 No Content** and **304 Not Modified**: Returns empty response body (as per HTTP specification)
+* **418 I'm a teapot**: Returns special message "I'm a teapot" instead of standard status phrase
+* **All other status codes**: Returns plain text in format `{code} {phrase}` (e.g., "404 Not Found")
+
+This endpoint is useful for testing how your applications handle different HTTP status codes, error handling, redirects, authentication requirements, and rate limiting scenarios.
 
 ----------
 
