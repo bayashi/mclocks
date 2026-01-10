@@ -31,7 +31,7 @@ pub fn run() {
     };
 
     let port_to_open = web_config_for_startup.as_ref().map(|config| {
-        start_web_server(config.root.clone(), config.port, config.dump);
+        start_web_server(config.root.clone(), config.port, config.dump, config.slow);
         if config.open_browser_at_start {
             Some(config.port)
         } else {

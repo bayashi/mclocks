@@ -1,6 +1,6 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf, thread, collections::HashMap};
+use std::{fs, path::PathBuf, thread, collections::HashMap, time::Duration};
 use tiny_http::{Server, Response, StatusCode, Header};
 
 use crate::config::{AppConfig, get_config_app_path};
@@ -16,6 +16,8 @@ pub struct WebConfig {
     pub open_browser_at_start: bool,
     #[serde(default = "df_dump")]
     pub dump: bool,
+    #[serde(default = "df_slow")]
+    pub slow: bool,
 }
 
 #[derive(Debug)]
@@ -24,11 +26,13 @@ pub struct WebServerConfig {
     pub port: u16,
     pub open_browser_at_start: bool,
     pub dump: bool,
+    pub slow: bool,
 }
 
 fn df_web_port() -> u16 { 3030 }
 fn df_open_browser_at_start() -> bool { false }
 fn df_dump() -> bool { false }
+fn df_slow() -> bool { false }
 
 fn create_error_response(status_code: StatusCode, message: &str) -> Response<std::io::Cursor<Vec<u8>>> {
     Response::from_string(message).with_status_code(status_code)
@@ -105,6 +109,34 @@ struct DumpResponse {
     body: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     parsed_body: Option<serde_json::Value>,
+}
+
+fn handle_slow_request(request: &tiny_http::Request) -> Response<std::io::Cursor<Vec<u8>>> {
+    let url = request.url();
+    let path = url.split('?').next().unwrap_or("/");
+
+    // Extract seconds from path: /slow or /slow/120
+    // Note: This function is only called when path == "/slow" || path.starts_with("/slow/")
+    let seconds = if path == "/slow" {
+        30u64
+    } else {
+        // path.starts_with("/slow/") is guaranteed here
+        let after_slow = &path[6..];
+        // Extract the first segment (before next / if exists)
+        let seconds_str = match after_slow.split('/').next() {
+            Some(s) => s,
+            None => after_slow,
+        };
+        match seconds_str.parse::<u64>() {
+            Ok(secs) => secs,
+            Err(_) => {
+                return create_error_response(StatusCode(400), "Invalid seconds parameter");
+            }
+        }
+    };
+
+    thread::sleep(Duration::from_secs(seconds));
+    Response::from_string("OK").with_status_code(StatusCode(200))
 }
 
 fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -211,11 +243,19 @@ fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io::Cu
     }
 }
 
-fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dump_enabled: bool) -> Response<std::io::Cursor<Vec<u8>>> {
+fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dump_enabled: bool, slow_enabled: bool) -> Response<std::io::Cursor<Vec<u8>>> {
     let url = request.url();
+    let path = url.split('?').next().unwrap_or("/");
+
+    // Check if this is a /slow request (including /slow/ and any subpaths)
+    if slow_enabled {
+        if path == "/slow" || path.starts_with("/slow/") {
+            return handle_slow_request(request);
+        }
+    }
+
     // Check if this is a /dump request (including /dump/ and any subpaths)
     if dump_enabled {
-        let path = url.split('?').next().unwrap_or("/");
         if path == "/dump" || path.starts_with("/dump/") {
             return handle_dump_request(request);
         }
@@ -234,7 +274,7 @@ fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dum
     }
 }
 
-pub fn start_web_server(root: String, port: u16, dump_enabled: bool) {
+pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enabled: bool) {
     thread::spawn(move || {
         let server = match Server::http(format!("127.0.0.1:{}", port)) {
             Ok(s) => s,
@@ -253,7 +293,7 @@ pub fn start_web_server(root: String, port: u16, dump_enabled: bool) {
         println!("Web server started on http://localhost:{}", port);
 
         for mut request in server.incoming_requests() {
-            let response = handle_web_request(&mut request, &root_path, dump_enabled);
+            let response = handle_web_request(&mut request, &root_path, dump_enabled, slow_enabled);
             if let Err(e) = request.respond(response) {
                 eprintln!("Failed to send response: {}", e);
             }
@@ -309,6 +349,7 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         port: web_config.port,
         open_browser_at_start: web_config.open_browser_at_start,
         dump: web_config.dump,
+        slow: web_config.slow,
     }))
 }
 
@@ -525,7 +566,7 @@ mod tests {
         assert_eq!(get_content_type(&path), "text/html");
     }
 
-    fn start_test_server(root: PathBuf, port: u16, dump_enabled: bool) -> std::thread::JoinHandle<()> {
+    fn start_test_server(root: PathBuf, port: u16, dump_enabled: bool, slow_enabled: bool) -> std::thread::JoinHandle<()> {
         thread::spawn(move || {
             let server = match Server::http(format!("127.0.0.1:{}", port)) {
                 Ok(s) => s,
@@ -533,7 +574,7 @@ mod tests {
             };
 
             for mut request in server.incoming_requests() {
-                let response = handle_web_request(&mut request, &root, dump_enabled);
+                let response = handle_web_request(&mut request, &root, dump_enabled, slow_enabled);
                 let _ = request.respond(response);
             }
         })
@@ -545,7 +586,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3031;
 
-        let _server_handle = start_test_server(root_path, port, true);
+        let _server_handle = start_test_server(root_path, port, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -568,7 +609,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3032;
 
-        let _server_handle = start_test_server(root_path, port, true);
+        let _server_handle = start_test_server(root_path, port, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -588,7 +629,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3033;
 
-        let _server_handle = start_test_server(root_path, port, true);
+        let _server_handle = start_test_server(root_path, port, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -611,7 +652,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3034;
 
-        let _server_handle = start_test_server(root_path, port, true);
+        let _server_handle = start_test_server(root_path, port, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -634,7 +675,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3035;
 
-        let _server_handle = start_test_server(root_path, port, true);
+        let _server_handle = start_test_server(root_path, port, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -663,7 +704,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3036;
 
-        let _server_handle = start_test_server(root_path, port, true);
+        let _server_handle = start_test_server(root_path, port, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -685,7 +726,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let port = 3037;
 
-        let _server_handle = start_test_server(root_path, port, true);
+        let _server_handle = start_test_server(root_path, port, true, false);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -700,6 +741,114 @@ mod tests {
         assert_eq!(json["method"], "POST");
         assert_eq!(json["body"], "plain text body");
         assert!(json["parsed_body"].is_null());
+    }
+
+    #[test]
+    fn test_handle_slow_request_default() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3038;
+
+        let _server_handle = start_test_server(root_path, port, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let start = std::time::Instant::now();
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/slow/3", port))
+            .send()
+            .expect("Failed to send request");
+        let elapsed = start.elapsed();
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.text().unwrap(), "OK");
+        // Should wait approximately 3 seconds (allow some tolerance)
+        assert!(elapsed.as_secs() >= 3, "Should wait at least 3 seconds");
+        assert!(elapsed.as_secs() < 5, "Should not wait more than 5 seconds");
+    }
+
+    #[test]
+    fn test_handle_slow_request_with_seconds() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3039;
+
+        let _server_handle = start_test_server(root_path, port, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let start = std::time::Instant::now();
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/slow/5", port))
+            .send()
+            .expect("Failed to send request");
+        let elapsed = start.elapsed();
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.text().unwrap(), "OK");
+        // Should wait approximately 5 seconds (allow some tolerance)
+        assert!(elapsed.as_secs() >= 5, "Should wait at least 5 seconds");
+        assert!(elapsed.as_secs() < 7, "Should not wait more than 7 seconds");
+    }
+
+    #[test]
+    fn test_handle_slow_request_post_method() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3040;
+
+        let _server_handle = start_test_server(root_path, port, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let start = std::time::Instant::now();
+        let client = reqwest::blocking::Client::new();
+        let response = client.post(&format!("http://127.0.0.1:{}/slow/3", port))
+            .send()
+            .expect("Failed to send request");
+        let elapsed = start.elapsed();
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.text().unwrap(), "OK");
+        // Should wait approximately 3 seconds (allow some tolerance)
+        assert!(elapsed.as_secs() >= 3, "Should wait at least 3 seconds");
+        assert!(elapsed.as_secs() < 5, "Should not wait more than 5 seconds");
+    }
+
+    #[test]
+    fn test_handle_slow_request_invalid_seconds() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3041;
+
+        let _server_handle = start_test_server(root_path, port, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/slow/abc", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 400);
+        assert_eq!(response.text().unwrap(), "Invalid seconds parameter");
+    }
+
+    #[test]
+    fn test_handle_slow_request_disabled() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let index_file = root_path.join("index.html");
+        fs::write(&index_file, "test").expect("Failed to create index.html");
+        let port = 3042;
+
+        let _server_handle = start_test_server(root_path, port, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/slow/3", port))
+            .send()
+            .expect("Failed to send request");
+
+        // When slow_enabled is false, /slow should not be handled and should fall through to file serving
+        // Since there's no /slow/3 file, it should return 404
+        assert_eq!(response.status(), 404);
     }
 
     #[test]
