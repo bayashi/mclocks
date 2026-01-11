@@ -1,7 +1,7 @@
 mod web_server;
 mod config;
 mod util;
-mod web_status_code;
+mod web;
 
 use std::{sync::Arc, thread};
 use tauri::Manager;

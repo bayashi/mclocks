@@ -1,11 +1,11 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf, thread, collections::HashMap, time::Duration};
-use tiny_http::{Server, Response, StatusCode, Header};
+use std::{fs, path::PathBuf, thread};
+use tiny_http::Server;
 
 use crate::config::{AppConfig, get_config_app_path};
 use crate::util::open_with_system_command;
-use crate::web_status_code::{get_status_phrase, should_have_response_body, apply_status_headers};
+use crate::web::file::handle_web_request;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -39,304 +39,6 @@ fn df_dump() -> bool { false }
 fn df_slow() -> bool { false }
 fn df_status() -> bool { false }
 
-fn create_error_response(status_code: StatusCode, message: &str) -> Response<std::io::Cursor<Vec<u8>>> {
-    Response::from_string(message).with_status_code(status_code)
-}
-
-fn parse_and_validate_path(url: &str, root_path: &PathBuf) -> Result<PathBuf, StatusCode> {
-    // Parse URL to get path component (remove query string and fragment)
-    let path = match url.split('?').next() {
-        Some(p) => p.split('#').next().unwrap_or(p),
-        None => "/",
-    };
-
-    // Security: Check for directory traversal attempts
-    if path.contains("..") || path.contains("//") {
-        return Err(StatusCode(400));
-    }
-
-    let file_path = if path == "/" {
-        root_path.join("index.html")
-    } else {
-        // Remove leading slash and join with root_path
-        let relative_path = path.trim_start_matches('/');
-        // Additional check: ensure no absolute path components
-        if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
-            return Err(StatusCode(400));
-        }
-        root_path.join(relative_path)
-    };
-
-    // Normalize the path to resolve any symlinks and ensure it's within root_path
-    let normalized_path = match file_path.canonicalize() {
-        Ok(p) => p,
-        Err(_) => {
-            if file_path.exists() && file_path.starts_with(root_path) {
-                file_path
-            } else {
-                return Err(StatusCode(404));
-            }
-        }
-    };
-
-    let normalized_root = match root_path.canonicalize() {
-        Ok(p) => p,
-        Err(_) => root_path.clone(),
-    };
-
-    if normalized_path.starts_with(&normalized_root) {
-        Ok(normalized_path)
-    } else {
-        Err(StatusCode(404))
-    }
-}
-
-fn create_file_response(file_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>>> {
-    match fs::read(file_path) {
-        Ok(content) => {
-            let content_type = get_content_type(file_path);
-            if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
-                Response::from_data(content).with_header(header).with_status_code(StatusCode(200))
-            } else {
-                Response::from_data(content).with_status_code(StatusCode(200))
-            }
-        }
-        Err(_) => create_error_response(StatusCode(500), "Internal Server Error")
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct DumpResponse {
-    method: String,
-    path: String,
-    query: Option<Vec<HashMap<String, String>>>,
-    headers: Vec<HashMap<String, String>>,
-    body: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    parsed_body: Option<serde_json::Value>,
-}
-
-fn handle_status_request(_request: &tiny_http::Request, path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
-    // Extract status code from path: /status/{code}
-    if !path.starts_with("/status/") {
-        return create_error_response(StatusCode(404), "Not Found");
-    }
-
-    let code_str = &path[8..]; // Skip "/status/"
-    let code_str = code_str.split('/').next().unwrap_or(code_str); // Get only the first segment
-
-    let status_code = match code_str.parse::<u16>() {
-        Ok(code) if (100..=599).contains(&code) => code,
-        _ => {
-            return create_error_response(StatusCode(400), "Invalid status code");
-        }
-    };
-
-    let status = StatusCode(status_code);
-
-    // Handle status codes that don't allow response body
-    let has_body = should_have_response_body(status_code);
-
-    // Special handling for 418 I'm a teapot
-    let body_content = if status_code == 418 {
-        "I'm a teapot".to_string()
-    } else if has_body {
-        format!("{} {}", status_code, get_status_phrase(status_code))
-    } else {
-        String::new()
-    };
-
-    let response = if has_body {
-        let mut resp = Response::from_string(body_content).with_status_code(status);
-        // Helper function to add header
-        let add_header = |response: Response<std::io::Cursor<Vec<u8>>>, name: &[u8], value: &[u8]| -> Response<std::io::Cursor<Vec<u8>>> {
-            if let Ok(header) = Header::from_bytes(name, value) {
-                response.with_header(header)
-            } else {
-                response
-            }
-        };
-        resp = add_header(resp, b"Content-Type", b"text/plain; charset=utf-8");
-        resp
-    } else {
-        // For 204 No Content and 304 Not Modified, use empty data
-        Response::from_data(Vec::<u8>::new()).with_status_code(status)
-    };
-
-    // Apply status-specific headers
-    apply_status_headers(response, status_code, status, has_body)
-}
-
-fn handle_slow_request(request: &tiny_http::Request) -> Response<std::io::Cursor<Vec<u8>>> {
-    let url = request.url();
-    let path = url.split('?').next().unwrap_or("/");
-
-    // Extract seconds from path: /slow or /slow/120
-    // Note: This function is only called when path == "/slow" || path.starts_with("/slow/")
-    let seconds = if path == "/slow" {
-        30u64
-    } else {
-        // path.starts_with("/slow/") is guaranteed here
-        let after_slow = &path[6..];
-        // Extract the first segment (before next / if exists)
-        let seconds_str = match after_slow.split('/').next() {
-            Some(s) => s,
-            None => after_slow,
-        };
-        match seconds_str.parse::<u64>() {
-            Ok(secs) => secs,
-            Err(_) => {
-                return create_error_response(StatusCode(400), "Invalid seconds parameter");
-            }
-        }
-    };
-
-    thread::sleep(Duration::from_secs(seconds));
-    Response::from_string("OK").with_status_code(StatusCode(200))
-}
-
-fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io::Cursor<Vec<u8>>> {
-    let method = request.method().to_string();
-    let full_url = request.url();
-
-    // Extract path and query string
-    let (full_path, query_string) = match full_url.split_once('?') {
-        Some((p, q)) => (p, Some(q)),
-        None => (full_url, None),
-    };
-
-    // Extract path part after /dump or /dump/
-    let path = if full_path.starts_with("/dump/") {
-        format!("/{}", &full_path[6..])
-    } else {
-        "/".to_string()
-    };
-
-    // Parse query string into key-value pairs as array of objects (order preserved)
-    let query = query_string.map(|qs| {
-        qs.split('&')
-            .filter_map(|param| {
-                if param.is_empty() {
-                    None
-                } else {
-                    let mut map = HashMap::new();
-                    match param.split_once('=') {
-                        Some((key, value)) => {
-                            map.insert(key.to_string(), value.to_string());
-                            Some(map)
-                        }
-                        None => {
-                            map.insert(param.to_string(), String::new());
-                            Some(map)
-                        }
-                    }
-                }
-            })
-            .collect()
-    });
-
-    // Collect headers as array of objects (order preserved)
-    let headers: Vec<HashMap<String, String>> = request.headers()
-        .iter()
-        .filter_map(|header| {
-            if let Ok(value) = std::str::from_utf8(header.value.as_bytes()) {
-                let mut map = HashMap::new();
-                map.insert(header.field.to_string(), value.to_string());
-                Some(map)
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    // Read body if present
-    let mut body_content = Vec::new();
-    let body = if request.as_reader().read_to_end(&mut body_content).is_ok() && !body_content.is_empty() {
-        String::from_utf8(body_content).ok()
-    } else {
-        None
-    };
-
-    // Check if Content-Type indicates JSON and parse body if so
-    let parsed_body = if let Some(ref body_str) = body {
-        let is_json = headers.iter().any(|header_map| {
-            header_map.iter().any(|(key, value)| {
-                key.eq_ignore_ascii_case("content-type") && value.contains("json")
-            })
-        });
-        if is_json {
-            match serde_json::from_str(body_str) {
-                Ok(value) => Some(value),
-                Err(e) => {
-                    Some(serde_json::Value::String(format!("ERROR: Failed to parse JSON body: {}", e)))
-                }
-            }
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-
-    let dump_data = DumpResponse {
-        method,
-        path,
-        query,
-        headers,
-        body,
-        parsed_body,
-    };
-
-    match serde_json::to_string_pretty(&dump_data) {
-        Ok(json) => {
-            if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], b"application/json") {
-                Response::from_string(json).with_header(header).with_status_code(StatusCode(200))
-            } else {
-                Response::from_string(json).with_status_code(StatusCode(200))
-            }
-        }
-        Err(_) => create_error_response(StatusCode(500), "Internal Server Error"),
-    }
-}
-
-fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) -> Response<std::io::Cursor<Vec<u8>>> {
-    let url = request.url();
-    let path = url.split('?').next().unwrap_or("/");
-
-    // Check if this is a /status request (including /status/ and any subpaths)
-    if status_enabled {
-        if path.starts_with("/status/") {
-            return handle_status_request(request, path);
-        }
-    }
-
-    // Check if this is a /slow request (including /slow/ and any subpaths)
-    if slow_enabled {
-        if path == "/slow" || path.starts_with("/slow/") {
-            return handle_slow_request(request);
-        }
-    }
-
-    // Check if this is a /dump request (including /dump/ and any subpaths)
-    if dump_enabled {
-        if path == "/dump" || path.starts_with("/dump/") {
-            return handle_dump_request(request);
-        }
-    }
-
-    match parse_and_validate_path(url, root_path) {
-        Ok(file_path) => create_file_response(&file_path),
-        Err(status_code) => {
-            let message = match status_code {
-                StatusCode(400) => "Bad Request",
-                StatusCode(404) => "Not Found",
-                _ => "Internal Server Error",
-            };
-            create_error_response(status_code, message)
-        },
-    }
-}
-
 pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) {
     thread::spawn(move || {
         let server = match Server::http(format!("127.0.0.1:{}", port)) {
@@ -362,23 +64,6 @@ pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enable
             }
         }
     });
-}
-
-fn get_content_type(path: &PathBuf) -> String {
-    match path.extension().and_then(|s| s.to_str()) {
-        Some("html") => "text/html",
-        Some("css") => "text/css",
-        Some("js") => "application/javascript",
-        Some("json") => "application/json",
-        Some("md") => "text/markdown",
-        Some("png") => "image/png",
-        Some("jpg") | Some("jpeg") => "image/jpeg",
-        Some("gif") => "image/gif",
-        Some("svg") => "image/svg+xml",
-        Some("ico") => "image/x-icon",
-        Some("txt") => "text/plain",
-        _ => "application/octet-stream",
-    }.to_string()
 }
 
 pub fn open_url_in_browser(url: &str) -> Result<(), String> {
@@ -421,6 +106,11 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
 mod tests {
     use super::*;
     use tempfile::TempDir;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::thread;
+    use tiny_http::{Server, StatusCode};
+    use crate::web::file::{handle_web_request, parse_and_validate_path, get_content_type};
 
     #[test]
     fn test_parse_and_validate_path_root() {
@@ -981,7 +671,7 @@ mod tests {
         let result = load_web_config(&identifier);
         assert!(result.is_err(), "Should return error when root path doesn't exist. Got: {:?}", result);
         let err_msg = result.unwrap_err();
-        assert!(err_msg.contains("web.root not exists") || err_msg.contains("not exists"), 
+        assert!(err_msg.contains("web.root not exists") || err_msg.contains("not exists"),
                 "Error message should indicate root doesn't exist. Got: {}", err_msg);
 
         // Cleanup
@@ -1149,5 +839,210 @@ mod tests {
 
         assert!(result.is_err(), "Should fail to deserialize invalid JSON");
     }
-}
 
+    #[test]
+    fn test_handle_status_request_200() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3043;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/200", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.text().unwrap(), "200 OK");
+    }
+
+    #[test]
+    fn test_handle_status_request_418_im_a_teapot() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3044;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/418", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 418);
+        assert_eq!(response.text().unwrap(), "I'm a teapot");
+    }
+
+    #[test]
+    fn test_handle_status_request_204_no_content() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3045;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/204", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 204);
+        assert_eq!(response.text().unwrap(), "");
+    }
+
+    #[test]
+    fn test_handle_status_request_301_moved_permanently() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3046;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .expect("Failed to create client");
+        let response = client.get(&format!("http://127.0.0.1:{}/status/301", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 301);
+        assert!(response.headers().contains_key("location"));
+        assert_eq!(response.headers().get("location").unwrap().to_str().unwrap(), "/");
+    }
+
+    #[test]
+    fn test_handle_status_request_401_unauthorized() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3047;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/401", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 401);
+        assert!(response.headers().contains_key("www-authenticate"));
+        assert_eq!(response.headers().get("www-authenticate").unwrap().to_str().unwrap(), "Basic realm=\"test\"");
+    }
+
+    #[test]
+    fn test_handle_status_request_405_method_not_allowed() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3048;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/405", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 405);
+        assert!(response.headers().contains_key("allow"));
+        assert_eq!(response.headers().get("allow").unwrap().to_str().unwrap(), "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS");
+    }
+
+    #[test]
+    fn test_handle_status_request_invalid_status_code_too_low() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3049;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/99", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 400);
+        assert_eq!(response.text().unwrap(), "Invalid status code");
+    }
+
+    #[test]
+    fn test_handle_status_request_invalid_status_code_too_high() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3050;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/600", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 400);
+        assert_eq!(response.text().unwrap(), "Invalid status code");
+    }
+
+    #[test]
+    fn test_handle_status_request_disabled() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let index_file = root_path.join("index.html");
+        fs::write(&index_file, "test").expect("Failed to create index.html");
+        let port = 3051;
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/200", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 404);
+    }
+
+    #[test]
+    fn test_handle_status_request_500_internal_server_error() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3052;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/500", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 500);
+        assert_eq!(response.text().unwrap(), "500 Internal Server Error");
+    }
+
+    #[test]
+    fn test_handle_status_request_429_too_many_requests() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3053;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/429", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 429);
+        assert!(response.headers().contains_key("retry-after"));
+        assert_eq!(response.headers().get("retry-after").unwrap().to_str().unwrap(), "60");
+    }
+}
