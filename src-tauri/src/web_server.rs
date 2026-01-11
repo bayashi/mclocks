@@ -1149,5 +1149,211 @@ mod tests {
 
         assert!(result.is_err(), "Should fail to deserialize invalid JSON");
     }
+
+    #[test]
+    fn test_handle_status_request_200() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3043;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/200", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.text().unwrap(), "200 OK");
+    }
+
+    #[test]
+    fn test_handle_status_request_418_im_a_teapot() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3044;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/418", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 418);
+        assert_eq!(response.text().unwrap(), "I'm a teapot");
+    }
+
+    #[test]
+    fn test_handle_status_request_204_no_content() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3045;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/204", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 204);
+        assert_eq!(response.text().unwrap(), "");
+    }
+
+    #[test]
+    fn test_handle_status_request_301_moved_permanently() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3046;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .expect("Failed to create client");
+        let response = client.get(&format!("http://127.0.0.1:{}/status/301", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 301);
+        assert!(response.headers().contains_key("location"));
+        assert_eq!(response.headers().get("location").unwrap().to_str().unwrap(), "/");
+    }
+
+    #[test]
+    fn test_handle_status_request_401_unauthorized() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3047;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/401", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 401);
+        assert!(response.headers().contains_key("www-authenticate"));
+        assert_eq!(response.headers().get("www-authenticate").unwrap().to_str().unwrap(), "Basic realm=\"test\"");
+    }
+
+    #[test]
+    fn test_handle_status_request_405_method_not_allowed() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3048;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/405", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 405);
+        assert!(response.headers().contains_key("allow"));
+        assert_eq!(response.headers().get("allow").unwrap().to_str().unwrap(), "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS");
+    }
+
+    #[test]
+    fn test_handle_status_request_invalid_status_code_too_low() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3049;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/99", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 400);
+        assert_eq!(response.text().unwrap(), "Invalid status code");
+    }
+
+    #[test]
+    fn test_handle_status_request_invalid_status_code_too_high() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3050;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/600", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 400);
+        assert_eq!(response.text().unwrap(), "Invalid status code");
+    }
+
+    #[test]
+    fn test_handle_status_request_disabled() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let index_file = root_path.join("index.html");
+        fs::write(&index_file, "test").expect("Failed to create index.html");
+        let port = 3051;
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/200", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 404);
+    }
+
+    #[test]
+    fn test_handle_status_request_500_internal_server_error() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3052;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/500", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 500);
+        assert_eq!(response.text().unwrap(), "500 Internal Server Error");
+    }
+
+    #[test]
+    fn test_handle_status_request_429_too_many_requests() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3053;
+
+        let _server_handle = start_test_server(root_path, port, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/status/429", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 429);
+        assert!(response.headers().contains_key("retry-after"));
+        assert_eq!(response.headers().get("retry-after").unwrap().to_str().unwrap(), "60");
+    }
 }
 
