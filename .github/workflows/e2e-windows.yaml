@@ -1,0 +1,78 @@
+name: E2E Tests (Windows)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/e2e-windows.yaml"
+      - "test/**"
+      - "src/**"
+      - "src-tauri/**"
+      - "package.json"
+      - "wdio.conf.js"
+
+jobs:
+  test:
+    name: E2E Test (Windows)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install WebView2
+        shell: pwsh
+        run: |
+          winget install --id=Microsoft.EdgeWebView2Runtime -e --accept-package-agreements --accept-source-agreements || Write-Host "WebView2 may already be installed"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            src-tauri/target
+            ~/.cargo
+          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rust-
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Start Tauri app and run E2E tests
+        shell: pwsh
+        run: |
+          $job = Start-Job -ScriptBlock { pnpm tauri dev }
+          Write-Host "Waiting for app to start..."
+          $maxWait = 30
+          for ($i = 0; $i -lt $maxWait; $i++) {
+            try {
+              $null = Invoke-WebRequest -Uri "http://localhost:1420" -TimeoutSec 1 -ErrorAction Stop
+              Write-Host "App is ready"
+              break
+            } catch {
+              Start-Sleep -Seconds 1
+            }
+          }
+          try {
+            pnpm test
+          } finally {
+            Stop-Job -Job $job -ErrorAction SilentlyContinue
+            Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+            Get-Process -Name node,tauri -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          }
