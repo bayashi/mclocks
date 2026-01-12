@@ -5,7 +5,6 @@ export const config = {
     // ====================
     //
     runner: 'local',
-    
     //
     // ==================
     // Specify Test Files
@@ -14,7 +13,6 @@ export const config = {
     specs: [
         './test/specs/**/*.js'
     ],
-    
     //
     // ============
     // Capabilities
@@ -23,23 +21,39 @@ export const config = {
     capabilities: [{
         browserName: 'chrome',
         'goog:chromeOptions': {
-            args: ['--disable-web-security', '--disable-features=IsolateOrigins,site-per-process']
+            args: [
+                '--disable-web-security',
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--unsafely-treat-insecure-origin-as-secure=http://localhost:1420'
+            ],
+            prefs: {
+                'profile.default_content_setting_values.clipboard': 0,
+                'profile.content_settings.exceptions.clipboard': {
+                    'http://localhost:1420,*': {
+                        'last_modified': '13317004800000000',
+                        'setting': 1
+                    },
+                    'http://localhost,*': {
+                        'last_modified': '13317004800000000',
+                        'setting': 1
+                    },
+                    'http://127.0.0.1:1420,*': {
+                        'last_modified': '13317004800000000',
+                        'setting': 1
+                    }
+                }
+            }
         }
     }],
-    
     //
     // ===================
     // Test Configurations
     // ===================
     //
     baseUrl: 'http://localhost:1420',
-    
     logLevel: 'info',
-    
     framework: 'mocha',
-    
     reporters: ['spec'],
-    
     mochaOpts: {
         ui: 'bdd',
         timeout: 60000
@@ -56,7 +70,6 @@ export const config = {
         console.log('Make sure mclocks is running on http://localhost:1420')
         console.log('You can start it with: pnpm tauri dev')
     },
-
     afterTest: async function (test, context, { error, result, duration, passed, retries }) {
         // If test failed, keep browser open for debugging
         if (!passed) {
@@ -73,4 +86,3 @@ export const config = {
     onComplete: function(exitCode, config, capabilities, results) {
     }
 }
-

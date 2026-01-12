@@ -25,6 +25,31 @@ describe('mclocks Application Launch Test', () => {
     beforeEach(async () => {
         // Navigate to the app
         await browser.url('/');
+        // Grant clipboard permissions using Chrome DevTools Protocol
+        // This prevents the clipboard permission dialog from appearing
+        try {
+            // Check if CDP is available
+            if (typeof browser.cdp !== 'function') {
+                console.log('CDP not available, skipping programmatic permission grant');
+                console.log('Clipboard permissions should be handled via Chrome prefs');
+            } else {
+                const origins = ['http://localhost:1420', 'http://localhost:*', 'http://127.0.0.1:1420'];
+                for (const origin of origins) {
+                    try {
+                        // Try grantPermissions
+                        await browser.cdp('Browser', 'grantPermissions', {
+                            origin: origin,
+                            permissions: ['clipboardReadWrite', 'clipboardRead', 'clipboardWrite']
+                        });
+                        console.log(`Clipboard permissions granted via grantPermissions for ${origin}`);
+                    } catch (err) {
+                        console.log(`grantPermissions failed for ${origin}: ${err.message}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to grant clipboard permissions via CDP:', error.message);
+        }
         // Set test config in both window.__defaultConfig and sessionStorage
         // sessionStorage persists across page reloads
         await browser.execute((config) => {
