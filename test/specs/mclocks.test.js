@@ -45,22 +45,6 @@ describe('mclocks Application Launch Test', () => {
                     } catch (err) {
                         console.log(`grantPermissions failed for ${origin}: ${err.message}`);
                     }
-                    // Try setPermission as fallback
-                    try {
-                        await browser.cdp('Browser', 'setPermission', {
-                            origin: origin,
-                            permission: { name: 'clipboard-read' },
-                            setting: 'granted'
-                        });
-                        await browser.cdp('Browser', 'setPermission', {
-                            origin: origin,
-                            permission: { name: 'clipboard-write' },
-                            setting: 'granted'
-                        });
-                        console.log(`Clipboard permissions granted via setPermission for ${origin}`);
-                    } catch (err) {
-                        console.log(`setPermission failed for ${origin}: ${err.message}`);
-                    }
                 }
             }
         } catch (error) {
@@ -85,37 +69,6 @@ describe('mclocks Application Launch Test', () => {
                 timeoutMsg: 'Page did not load after refresh'
             }
         );
-        // Grant permissions again after refresh to ensure they persist
-        try {
-            if (typeof browser.cdp === 'function') {
-                await browser.cdp('Browser', 'grantPermissions', {
-                    origin: 'http://localhost:1420',
-                    permissions: ['clipboardReadWrite', 'clipboardRead', 'clipboardWrite']
-                });
-                console.log('Clipboard permissions re-granted after refresh');
-            }
-        } catch (error) {
-            console.warn('Failed to re-grant clipboard permissions after refresh:', error.message);
-        }
-        // Also try to pre-approve clipboard access by calling navigator.clipboard API
-        // This ensures the permission is requested and granted before any user interaction
-        try {
-            await browser.execute(async () => {
-                // Pre-request clipboard permission to trigger the permission system
-                if (navigator.permissions) {
-                    try {
-                        const readPermission = await navigator.permissions.query({ name: 'clipboard-read' });
-                        const writePermission = await navigator.permissions.query({ name: 'clipboard-write' });
-                        console.log('Clipboard read permission state:', readPermission.state);
-                        console.log('Clipboard write permission state:', writePermission.state);
-                    } catch (permError) {
-                        console.log('Permission query failed (may not be supported):', permError);
-                    }
-                }
-            });
-        } catch (error) {
-            console.warn('Failed to pre-request clipboard permissions:', error.message);
-        }
     });
 
     // Keep browser open for debugging if test fails

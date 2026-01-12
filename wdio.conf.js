@@ -70,9 +70,6 @@ export const config = {
         console.log('Make sure mclocks is running on http://localhost:1420')
         console.log('You can start it with: pnpm tauri dev')
     },
-    before: async function (capabilities, specs) {
-        // Note: CDP permissions will be set in beforeEach after browser is fully initialized
-    },
     afterTest: async function (test, context, { error, result, duration, passed, retries }) {
         // If test failed, keep browser open for debugging
         if (!passed) {
