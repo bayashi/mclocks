@@ -1362,16 +1362,23 @@ describe('mclocks Application Launch Test', () => {
                     // Handle clipboard read - Tauri clipboard plugin uses invoke
                     // The command might be something like 'plugin:clipboard-manager|read_text'
                     if (cmd && (typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read')))) {
+                        // Prioritize window.__clipboardText (test-set value) over navigator.clipboard
+                        // This ensures we use the value set by the test, not the old clipboard content
+                        if (window.__clipboardText) {
+                            console.log('Mock clipboard readText: returning test-set value', window.__clipboardText)
+                            return window.__clipboardText
+                        }
+                        // Fallback to navigator.clipboard if window.__clipboardText is not set
                         try {
                             if (navigator.clipboard && navigator.clipboard.readText) {
                                 const text = await navigator.clipboard.readText()
-                                console.log('Mock clipboard readText: returning', text)
+                                console.log('Mock clipboard readText: returning from navigator.clipboard', text)
                                 return text || ''
                             }
-                            return window.__clipboardText || ''
+                            return ''
                         } catch (error) {
                             console.warn('Error reading clipboard in mock:', error)
-                            return window.__clipboardText || ''
+                            return ''
                         }
                     }
 
@@ -1411,28 +1418,47 @@ describe('mclocks Application Launch Test', () => {
         // Set clipboard content to a datetime string
         const datetimeString = '2024-01-01 12:00:00'
         console.log(`Setting clipboard to: "${datetimeString}"`)
+        // Set both window.__clipboardText (for mock) and navigator.clipboard (for verification)
         const clipboardSet = await browser.execute(async (text) => {
             try {
+                // Set window.__clipboardText first (this will be used by the mock)
+                window.__clipboardText = text
+                console.log('Set window.__clipboardText to:', text)
+                // Also set navigator.clipboard if available (for verification)
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     await navigator.clipboard.writeText(text)
                     // Verify it was set by reading it back
-                    const readBack = await navigator.clipboard.readText()
-                    console.log('Clipboard set, read back:', readBack)
-                    return readBack === text
+                    try {
+                        const readBack = await navigator.clipboard.readText()
+                        console.log('Clipboard set, read back:', readBack)
+                        return readBack === text
+                    } catch (readError) {
+                        // If read fails (e.g., permission not granted), still return true
+                        // because window.__clipboardText is set and will be used by mock
+                        console.log('Could not verify clipboard via readText (may be permission issue), but window.__clipboardText is set')
+                        return true
+                    }
                 }
-                return false
+                // If navigator.clipboard is not available, still return true
+                // because window.__clipboardText is set and will be used by mock
+                return true
             } catch (error) {
                 console.error('Error setting clipboard:', error)
-                return false
+                // Even if navigator.clipboard fails, window.__clipboardText might be set
+                return window.__clipboardText === text
             }
         }, datetimeString)
 
         expect(clipboardSet).toBe(true, 'Clipboard should be set successfully')
 
-        // Wait a bit for clipboard to be set
-        await browser.pause(500)
+        // Verify that window.__clipboardText is set (this is what the mock will use)
+        const mockClipboardValue = await browser.execute(() => {
+            return window.__clipboardText || null
+        })
+        console.log(`window.__clipboardText value: "${mockClipboardValue}"`)
+        expect(mockClipboardValue).toBe(datetimeString, 'window.__clipboardText should contain the datetime string')
 
-        // Verify clipboard content before pressing Ctrl+v
+        // Also verify navigator.clipboard if possible (may fail if permission not granted)
         const clipboardContent = await browser.execute(async () => {
             try {
                 if (navigator.clipboard && navigator.clipboard.readText) {
@@ -1440,13 +1466,19 @@ describe('mclocks Application Launch Test', () => {
                 }
                 return null
             } catch (error) {
-                console.error('Error reading clipboard:', error)
+                // Permission may not be granted yet, which is okay
+                // because window.__clipboardText is set and will be used by mock
+                console.log('Could not read from navigator.clipboard (may be permission issue)')
                 return null
             }
         })
 
-        console.log(`Clipboard content before Ctrl+v: "${clipboardContent}"`)
-        expect(clipboardContent).toBe(datetimeString, 'Clipboard should contain the datetime string')
+        if (clipboardContent !== null) {
+            console.log(`Clipboard content before Ctrl+v (from navigator.clipboard): "${clipboardContent}"`)
+            expect(clipboardContent).toBe(datetimeString, 'Clipboard should contain the datetime string')
+        } else {
+            console.log('Skipping navigator.clipboard verification (permission may not be granted), but window.__clipboardText is set')
+        }
 
         // Verify mock is set up correctly
         const mockStatus = await browser.execute(() => {
@@ -1572,16 +1604,23 @@ describe('mclocks Application Launch Test', () => {
                     // Handle clipboard read - Tauri clipboard plugin uses invoke
                     // The command might be something like 'plugin:clipboard-manager|read_text'
                     if (cmd && (typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read')))) {
+                        // Prioritize window.__clipboardText (test-set value) over navigator.clipboard
+                        // This ensures we use the value set by the test, not the old clipboard content
+                        if (window.__clipboardText) {
+                            console.log('Mock clipboard readText: returning test-set value', window.__clipboardText)
+                            return window.__clipboardText
+                        }
+                        // Fallback to navigator.clipboard if window.__clipboardText is not set
                         try {
                             if (navigator.clipboard && navigator.clipboard.readText) {
                                 const text = await navigator.clipboard.readText()
-                                console.log('Mock clipboard readText: returning', text)
+                                console.log('Mock clipboard readText: returning from navigator.clipboard', text)
                                 return text || ''
                             }
-                            return window.__clipboardText || ''
+                            return ''
                         } catch (error) {
                             console.warn('Error reading clipboard in mock:', error)
-                            return window.__clipboardText || ''
+                            return ''
                         }
                     }
 
@@ -1622,28 +1661,47 @@ describe('mclocks Application Launch Test', () => {
         // Using a known epoch time: 1704067200 = 2024-01-01 00:00:00 UTC
         const epochTime = '1704067200'
         console.log(`Setting clipboard to epoch time: "${epochTime}"`)
+        // Set both window.__clipboardText (for mock) and navigator.clipboard (for verification)
         const clipboardSet = await browser.execute(async (text) => {
             try {
+                // Set window.__clipboardText first (this will be used by the mock)
+                window.__clipboardText = text
+                console.log('Set window.__clipboardText to:', text)
+                // Also set navigator.clipboard if available (for verification)
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     await navigator.clipboard.writeText(text)
                     // Verify it was set by reading it back
-                    const readBack = await navigator.clipboard.readText()
-                    console.log('Clipboard set, read back:', readBack)
-                    return readBack === text
+                    try {
+                        const readBack = await navigator.clipboard.readText()
+                        console.log('Clipboard set, read back:', readBack)
+                        return readBack === text
+                    } catch (readError) {
+                        // If read fails (e.g., permission not granted), still return true
+                        // because window.__clipboardText is set and will be used by mock
+                        console.log('Could not verify clipboard via readText (may be permission issue), but window.__clipboardText is set')
+                        return true
+                    }
                 }
-                return false
+                // If navigator.clipboard is not available, still return true
+                // because window.__clipboardText is set and will be used by mock
+                return true
             } catch (error) {
                 console.error('Error setting clipboard:', error)
-                return false
+                // Even if navigator.clipboard fails, window.__clipboardText might be set
+                return window.__clipboardText === text
             }
         }, epochTime)
 
         expect(clipboardSet).toBe(true, 'Clipboard should be set successfully')
 
-        // Wait a bit for clipboard to be set
-        await browser.pause(500)
+        // Verify that window.__clipboardText is set (this is what the mock will use)
+        const mockClipboardValue = await browser.execute(() => {
+            return window.__clipboardText || null
+        })
+        console.log(`window.__clipboardText value: "${mockClipboardValue}"`)
+        expect(mockClipboardValue).toBe(epochTime, 'window.__clipboardText should contain the epoch time')
 
-        // Verify clipboard content before pressing Ctrl+v
+        // Also verify navigator.clipboard if possible (may fail if permission not granted)
         const clipboardContent = await browser.execute(async () => {
             try {
                 if (navigator.clipboard && navigator.clipboard.readText) {
@@ -1651,13 +1709,19 @@ describe('mclocks Application Launch Test', () => {
                 }
                 return null
             } catch (error) {
-                console.error('Error reading clipboard:', error)
+                // Permission may not be granted yet, which is okay
+                // because window.__clipboardText is set and will be used by mock
+                console.log('Could not read from navigator.clipboard (may be permission issue)')
                 return null
             }
         })
 
-        console.log(`Clipboard content before Ctrl+v: "${clipboardContent}"`)
-        expect(clipboardContent).toBe(epochTime, 'Clipboard should contain the epoch time')
+        if (clipboardContent !== null) {
+            console.log(`Clipboard content before Ctrl+v (from navigator.clipboard): "${clipboardContent}"`)
+            expect(clipboardContent).toBe(epochTime, 'Clipboard should contain the epoch time')
+        } else {
+            console.log('Skipping navigator.clipboard verification (permission may not be granted), but window.__clipboardText is set')
+        }
 
         // Verify mock is set up correctly
         const mockStatus = await browser.execute(() => {
