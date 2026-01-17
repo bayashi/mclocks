@@ -188,7 +188,7 @@ export async function createStickyNote(text, cfg, windowId = null, x = null, y =
   const windowWidth = Math.round(calculatedWidth);
   const windowHeight = Math.round(calculatedHeight);
 
-  const finalWindowId = windowId || `sticky_note_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const finalWindowId = windowId || `${Date.now()}_${crypto.randomUUID()}`;
 
   const htmlContent = `<!doctype html>
 <html lang="en">
