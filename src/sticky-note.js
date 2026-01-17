@@ -148,6 +148,8 @@ export async function createStickyNote(text, cfg) {
       word-wrap: break-word;
       background: ${backgroundColor};
       -webkit-app-region: no-drag;
+      -webkit-user-select: text;
+      user-select: text;
     }
   </style>
 </head>
