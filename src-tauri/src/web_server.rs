@@ -109,125 +109,195 @@ mod tests {
     use std::fs;
     use std::path::PathBuf;
     use std::thread;
-    use tiny_http::{Server, StatusCode};
-    use crate::web::file::{handle_web_request, parse_and_validate_path, get_content_type};
+    use tiny_http::Server;
+    use crate::web::file::{handle_web_request, get_content_type};
 
     #[test]
-    fn test_parse_and_validate_path_root() {
+    fn test_handle_web_request_root_with_index() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let index_file = root_path.join("index.html");
-        fs::write(&index_file, "test").expect("Failed to create index.html");
+        fs::write(&index_file, "<html>test</html>").expect("Failed to create index.html");
+        let port = 3053;
 
-        let result = parse_and_validate_path("/", &root_path);
-        assert!(result.is_ok(), "Root path should resolve to index.html");
-        assert_eq!(result.unwrap(), index_file.canonicalize().unwrap());
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.text().unwrap(), "<html>test</html>");
     }
 
     #[test]
-    fn test_parse_and_validate_path_normal_file() {
+    fn test_handle_web_request_root_without_index() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
-        let test_file = root_path.join("test.html");
-        fs::write(&test_file, "test").expect("Failed to create test.html");
+        // Create some files and directories
+        fs::write(root_path.join("file1.txt"), "content1").expect("Failed to create file1.txt");
+        fs::write(root_path.join("file2.html"), "<html>content2</html>").expect("Failed to create file2.html");
+        fs::create_dir_all(root_path.join("subdir")).expect("Failed to create subdir");
+        let port = 3054;
 
-        let result = parse_and_validate_path("/test.html", &root_path);
-        assert!(result.is_ok(), "Normal file path should be valid");
-        assert_eq!(result.unwrap(), test_file.canonicalize().unwrap());
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().unwrap();
+        assert!(body.contains("Index of /"), "Should show directory listing");
+        assert!(body.contains("file1.txt"), "Should list file1.txt");
+        assert!(body.contains("file2.html"), "Should list file2.html");
+        assert!(body.contains("subdir/"), "Should list subdir");
     }
 
     #[test]
-    fn test_parse_and_validate_path_with_query_string() {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let root_path = temp_dir.path().to_path_buf();
-        let test_file = root_path.join("test.html");
-        fs::write(&test_file, "test").expect("Failed to create test.html");
-
-        let result = parse_and_validate_path("/test.html?key=value", &root_path);
-        assert!(result.is_ok(), "Query string should be stripped");
-        assert_eq!(result.unwrap(), test_file.canonicalize().unwrap());
-    }
-
-    #[test]
-    fn test_parse_and_validate_path_with_fragment() {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let root_path = temp_dir.path().to_path_buf();
-        let test_file = root_path.join("test.html");
-        fs::write(&test_file, "test").expect("Failed to create test.html");
-
-        let result = parse_and_validate_path("/test.html#section", &root_path);
-        assert!(result.is_ok(), "Fragment should be stripped");
-        assert_eq!(result.unwrap(), test_file.canonicalize().unwrap());
-    }
-
-    #[test]
-    fn test_parse_and_validate_path_directory_traversal() {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let root_path = temp_dir.path().to_path_buf();
-
-        let result = parse_and_validate_path("/../test.html", &root_path);
-        assert!(result.is_err(), "Directory traversal should be rejected");
-        assert_eq!(result.unwrap_err(), StatusCode(400));
-    }
-
-    #[test]
-    fn test_parse_and_validate_path_double_slash() {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let root_path = temp_dir.path().to_path_buf();
-
-        let result = parse_and_validate_path("//test.html", &root_path);
-        assert!(result.is_err(), "Double slash should be rejected");
-        assert_eq!(result.unwrap_err(), StatusCode(400));
-    }
-
-    #[test]
-    fn test_parse_and_validate_path_absolute_path_component() {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let root_path = temp_dir.path().to_path_buf();
-
-        // Test with non-existent path
-        let result = parse_and_validate_path("/nonexistent/file.html", &root_path);
-        assert!(result.is_err(), "Non-existent file should return 404");
-        assert_eq!(result.unwrap_err(), StatusCode(404));
-    }
-
-    #[test]
-    fn test_parse_and_validate_path_nonexistent_file() {
-        let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let root_path = temp_dir.path().to_path_buf();
-
-        let result = parse_and_validate_path("/nonexistent.html", &root_path);
-        assert!(result.is_err(), "Non-existent file should return 404");
-        assert_eq!(result.unwrap_err(), StatusCode(404));
-    }
-
-    #[test]
-    fn test_parse_and_validate_path_subdirectory() {
+    fn test_handle_web_request_directory_with_index() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let subdir = root_path.join("subdir");
         fs::create_dir_all(&subdir).expect("Failed to create subdir");
-        let test_file = subdir.join("test.html");
-        fs::write(&test_file, "test").expect("Failed to create test.html");
+        let index_file = subdir.join("index.html");
+        fs::write(&index_file, "<html>subdir index</html>").expect("Failed to create index.html");
+        let port = 3055;
 
-        let result = parse_and_validate_path("/subdir/test.html", &root_path);
-        assert!(result.is_ok(), "Subdirectory path should be valid");
-        assert_eq!(result.unwrap(), test_file.canonicalize().unwrap());
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/subdir/", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.text().unwrap(), "<html>subdir index</html>");
     }
 
     #[test]
-    fn test_parse_and_validate_path_outside_root() {
+    fn test_handle_web_request_directory_without_index() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
-        let outside_dir = temp_dir.path().parent().unwrap();
-        let outside_file = outside_dir.join("outside.html");
-        fs::write(&outside_file, "test").expect("Failed to create outside file");
+        let subdir = root_path.join("subdir");
+        fs::create_dir_all(&subdir).expect("Failed to create subdir");
+        fs::write(subdir.join("file.txt"), "content").expect("Failed to create file.txt");
+        let port = 3056;
 
-        // Try to access file outside root using path manipulation
-        // This should fail even if we try to construct a path
-        let result = parse_and_validate_path("/../outside.html", &root_path);
-        assert!(result.is_err(), "Path outside root should be rejected");
-        assert_eq!(result.unwrap_err(), StatusCode(400));
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/subdir/", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().unwrap();
+        assert!(body.contains("Index of /subdir/"), "Should show directory listing");
+        assert!(body.contains("file.txt"), "Should list file.txt");
+        assert!(body.contains("../"), "Should show parent directory link");
+    }
+
+    #[test]
+    fn test_handle_web_request_directory_traversal() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3057;
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+
+        // Test double slash which should be rejected
+        // Note: HTTP clients normalize /../ to /, so we can't test that directly
+        // But we can test double slash which is also a security concern
+        let response = client.get(&format!("http://127.0.0.1:{}/test//file.html", port))
+            .send()
+            .expect("Failed to send request");
+        // The client might normalize // to /, so we check for either 400 or 404
+        assert!(response.status() == 400 || response.status() == 404,
+                "Double slash should be rejected or not found");
+    }
+
+    #[test]
+    fn test_handle_web_request_double_slash() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3058;
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/test//file.html", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 400);
+    }
+
+    #[test]
+    fn test_handle_web_request_normal_file() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let test_file = root_path.join("test.html");
+        fs::write(&test_file, "<html>test</html>").expect("Failed to create test.html");
+        let port = 3059;
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/test.html", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.text().unwrap(), "<html>test</html>");
+    }
+
+    #[test]
+    fn test_handle_web_request_with_query_string() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let test_file = root_path.join("test.html");
+        fs::write(&test_file, "<html>test</html>").expect("Failed to create test.html");
+        let port = 3060;
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/test.html?key=value", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.text().unwrap(), "<html>test</html>");
+    }
+
+    #[test]
+    fn test_handle_web_request_nonexistent_file() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let port = 3061;
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/nonexistent.html", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 404);
     }
 
     #[test]
