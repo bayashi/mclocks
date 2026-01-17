@@ -1799,4 +1799,218 @@ describe('mclocks Application Launch Test', () => {
 
         console.log('Successfully verified: Ctrl+v converts epoch time from clipboard and opens result in editor')
     })
+
+    it('should create sticky note from clipboard text with Ctrl+s', async () => {
+        // Note: We cannot directly verify that a new Tauri window (WebviewWindow) was created in an E2E test environment,
+        // as the window is created outside the browser context that WebdriverIO has access to.
+        // Therefore, we use indirect verification by tracking invoke calls (create_sticky_note_html_file, save_sticky_notes)
+        // to verify the sticky note creation process was initiated.
+
+        // Connect to the application URL
+        console.log('Connecting to http://localhost:1420...')
+
+        // Wait for the application to initialize
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        // Wait for clock elements to be rendered
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 2 // UTC, JST
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Set up tracking for sticky note creation
+        await browser.execute(() => {
+            window.__stickyNoteHtmlFileCreated = false
+            window.__stickyNoteSaved = false
+            window.__clipboardText = null
+            window.__invokeCallLog = []
+
+            // Mock Tauri's invoke function by intercepting it
+            const createInvokeWrapper = (originalInvoke) => {
+                return async function(cmd, args) {
+                    // Log all invoke calls for debugging
+                    if (!window.__invokeCallLog) {
+                        window.__invokeCallLog = []
+                    }
+                    window.__invokeCallLog.push({ cmd, args, timestamp: Date.now() })
+
+                    // Track sticky note HTML file creation
+                    if (cmd === 'create_sticky_note_html_file') {
+                        window.__stickyNoteHtmlFileCreated = true
+                        // Call original invoke to actually create the file
+                        if (originalInvoke) {
+                            try {
+                                const result = await originalInvoke.call(this, cmd, args)
+                                // If originalInvoke returns null or undefined, return a mock file path for testing
+                                return result || '/tmp/sticky-note-test.html'
+                            } catch (error) {
+                                // Return a mock file path even if there's an error, so the test can proceed
+                                return '/tmp/sticky-note-test.html'
+                            }
+                        }
+                        // Return a mock file path if originalInvoke is not available
+                        return '/tmp/sticky-note-test.html'
+                    }
+
+                    // Track load_sticky_notes (called before save_sticky_notes in addStickyNote)
+                    if (cmd === 'load_sticky_notes') {
+                        // Return empty array if originalInvoke returns null or fails
+                        if (originalInvoke) {
+                            try {
+                                const result = await originalInvoke.call(this, cmd, args)
+                                // If result is null or undefined, return empty array
+                                return result || []
+                            } catch (error) {
+                                // Return empty array on error
+                                return []
+                            }
+                        }
+                        // Return empty array if originalInvoke is not available
+                        return []
+                    }
+
+                    // Track sticky note save
+                    if (cmd === 'save_sticky_notes') {
+                        window.__stickyNoteSaved = true
+                        // Call original invoke to actually save the notes
+                        if (originalInvoke) {
+                            try {
+                                const result = await originalInvoke.call(this, cmd, args)
+                                return result
+                            } catch (error) {
+                                return null
+                            }
+                        }
+                        return null
+                    }
+
+                    // Handle clipboard read - Tauri clipboard plugin uses invoke
+                    // The command format might be 'plugin:clipboard-manager|read_text' or similar
+                    // Check if command contains 'clipboard' and 'read' or 'text'
+                    if (cmd && typeof cmd === 'string' && (cmd.includes('clipboard') || (cmd.includes('read') && (cmd.includes('text') || cmd.includes('clipboard'))))) {
+                        if (window.__clipboardText) {
+                            return window.__clipboardText
+                        }
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.readText) {
+                                const text = await navigator.clipboard.readText()
+                                return text || ''
+                            }
+                            return ''
+                        } catch {
+                            return ''
+                        }
+                    }
+
+                    // For other commands, try original invoke
+                    if (originalInvoke) {
+                        try {
+                            const result = await originalInvoke.call(this, cmd, args)
+                            return result
+                        } catch (error) {
+                            return null
+                        }
+                    }
+                    return null
+                }
+            }
+
+            // Intercept invoke if TAURI_INTERNALS exists
+            if (window.__TAURI_INTERNALS__) {
+                const originalInvoke = window.__TAURI_INTERNALS__.invoke
+                window.__TAURI_INTERNALS__.invoke = createInvokeWrapper(originalInvoke)
+            } else {
+                // If __TAURI_INTERNALS__ doesn't exist, create it
+                window.__TAURI_INTERNALS__ = {
+                    invoke: createInvokeWrapper(null)
+                }
+            }
+        })
+
+        // Set up test text for clipboard
+        const testText = 'Test sticky note content'
+
+        // Set clipboard content
+        await browser.execute((text) => {
+            window.__clipboardText = text
+            navigator.clipboard.writeText(text).catch(() => {
+                // Fallback if clipboard API is not available
+                console.warn('Clipboard API not available in test environment')
+            })
+        }, testText)
+
+        // Wait a bit for clipboard to be set
+        await browser.pause(500)
+
+        // Click on the main element to ensure focus
+        await mainElement.click()
+        await browser.pause(200)
+
+        // Press Ctrl+s to create sticky note
+        await browser.keys(['Control', 's'])
+
+        // Wait for sticky note creation (invoke calls to complete)
+        // First wait for create_sticky_note_html_file
+        await browser.waitUntil(
+            async () => {
+                const result = await browser.execute(() => {
+                    return window.__stickyNoteHtmlFileCreated || false
+                })
+                return result === true
+            },
+            {
+                timeout: 5000,
+                timeoutMsg: 'create_sticky_note_html_file was not called within 5 seconds',
+                interval: 200
+            }
+        )
+
+        // Then wait for save_sticky_notes (it's called after load_sticky_notes in addStickyNote)
+        await browser.waitUntil(
+            async () => {
+                const result = await browser.execute(() => {
+                    return window.__stickyNoteSaved || false
+                })
+                return result === true
+            },
+            {
+                timeout: 5000,
+                timeoutMsg: 'save_sticky_notes was not called within 5 seconds',
+                interval: 200
+            }
+        )
+
+        // Verify that invoke commands were called
+        const invokeResult = await browser.execute(() => {
+            return {
+                htmlFileCreated: window.__stickyNoteHtmlFileCreated || false,
+                saved: window.__stickyNoteSaved || false,
+                clipboardText: window.__clipboardText || null
+            }
+        })
+
+        // Verify that create_sticky_note_html_file was called
+        expect(invokeResult.htmlFileCreated).toBe(true, 'create_sticky_note_html_file should be called when creating sticky note. Clipboard text: ' + invokeResult.clipboardText)
+
+        // Verify that save_sticky_notes was called
+        expect(invokeResult.saved).toBe(true, 'save_sticky_notes should be called when creating sticky note. Clipboard text: ' + invokeResult.clipboardText)
+
+        // Verify that no error occurred (application should still be working)
+        const clocksStillWorking = await browser.execute(() => {
+            const clocks = document.querySelectorAll('[id^="mclk-"]')
+            return clocks.length > 0 && clocks[0].textContent.trim().length > 0
+        })
+
+        expect(clocksStillWorking).toBe(true, 'Application should still work after Ctrl+s')
+    })
 })
