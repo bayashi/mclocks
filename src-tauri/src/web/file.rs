@@ -8,25 +8,25 @@ use super::slow_handler::handle_slow_request;
 use super::dump_handler::handle_dump_request;
 
 fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
-    let mut html = String::from("<!DOCTYPE html>¥n<html>¥n<head>¥n");
-    html.push_str("<meta charset=¥"utf-8¥">¥n");
+    let mut html = String::from("<!DOCTYPE html>\n<html>\n<head>\n");
+    html.push_str("<meta charset=\"utf-8\">\n");
     html.push_str("<title>Index of ");
     html.push_str(&html_escape(url_path));
-    html.push_str("</title>¥n");
-    html.push_str("<style>¥n");
-    html.push_str("body { font-family: monospace; margin: 20px; }¥n");
-    html.push_str("h1 { color: #333; }¥n");
-    html.push_str("ul { list-style-type: none; padding-left: 0; }¥n");
-    html.push_str("li { padding: 5px 0; }¥n");
-    html.push_str("a { text-decoration: none; color: #0066cc; }¥n");
-    html.push_str("a:hover { text-decoration: underline; }¥n");
-    html.push_str(".dir::before { content: '刀 '; }¥n");
-    html.push_str(".file::before { content: '塘 '; }¥n");
-    html.push_str("</style>¥n");
-    html.push_str("</head>¥n<body>¥n");
+    html.push_str("</title>\n");
+    html.push_str("<style>\n");
+    html.push_str("body { font-family: monospace; margin: 20px; }\n");
+    html.push_str("h1 { color: #333; }\n");
+    html.push_str("ul { list-style-type: none; padding-left: 0; }\n");
+    html.push_str("li { padding: 5px 0; }\n");
+    html.push_str("a { text-decoration: none; color: #0066cc; }\n");
+    html.push_str("a:hover { text-decoration: underline; }\n");
+    html.push_str(".dir::before { content: '📁'; }\n");
+    html.push_str(".file::before { content: '📄'; }\n");
+    html.push_str("</style>\n");
+    html.push_str("</head>\n<body>\n");
     html.push_str("<h1>Index of ");
     html.push_str(&html_escape(url_path));
-    html.push_str("</h1>¥n<ul>¥n");
+    html.push_str("</h1>\n<ul>\n");
 
     // Add parent directory link if not at root
     if url_path != "/" {
@@ -46,9 +46,9 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
                 None => "/".to_string(),
             }
         };
-        html.push_str("<li><a href=¥"");
+        html.push_str("<li><a href=\"");
         html.push_str(&html_escape(&parent_url));
-        html.push_str("¥">../</a></li>¥n");
+        html.push_str("\">../</a></li>\n");
     }
 
     // Read directory entries
@@ -89,11 +89,11 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
                     let base = url_path.trim_end_matches('/');
                     format!("{}/{}/", base, dir)
                 };
-                html.push_str("<li class=¥"dir¥"><a href=¥"");
+                html.push_str("<li class=\"dir\"><a href=\"");
                 html.push_str(&html_escape(&dir_url));
-                html.push_str("¥">");
+                html.push_str("\">");
                 html.push_str(&html_escape(&dir));
-                html.push_str("/</a></li>¥n");
+                html.push_str("/</a></li>\n");
             }
 
             // Add file entries
@@ -104,19 +104,19 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
                     let base = url_path.trim_end_matches('/');
                     format!("{}/{}", base, file)
                 };
-                html.push_str("<li class=¥"file¥"><a href=¥"");
+                html.push_str("<li class=\"file\"><a href=\"");
                 html.push_str(&html_escape(&file_url));
-                html.push_str("¥">");
+                html.push_str("\">");
                 html.push_str(&html_escape(&file));
-                html.push_str("</a></li>¥n");
+                html.push_str("</a></li>\n");
             }
         }
         Err(_) => {
-            html.push_str("<li>Error reading directory</li>¥n");
+            html.push_str("<li>Error reading directory</li>\n");
         }
     }
 
-    html.push_str("</ul>¥n</body>¥n</html>");
+    html.push_str("</ul>\n</body>\n</html>");
 
     let content_type = "text/html; charset=utf-8";
     if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
@@ -133,7 +133,7 @@ fn html_escape(s: &str) -> String {
             '<' => "&lt;".to_string(),
             '>' => "&gt;".to_string(),
             '"' => "&quot;".to_string(),
-            '¥'' => "&#x27;".to_string(),
+            '\'' => "&#x27;".to_string(),
             _ => c.to_string(),
         })
         .collect()
