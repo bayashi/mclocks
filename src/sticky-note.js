@@ -57,9 +57,23 @@ function getBackgroundColor(textColor) {
 }
 
 export async function createStickyNote(text, cfg) {
+  // Limit text size to 1KB (1024 bytes)
+  const MAX_TEXT_SIZE = 1024;
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let truncatedText = text;
+
+  // Calculate byte size and truncate if necessary
+  let byteSize = encoder.encode(truncatedText).length;
+  if (byteSize > MAX_TEXT_SIZE) {
+    // Truncate to fit within 1KB, ensuring we don't break UTF-8 sequences
+    const bytes = encoder.encode(truncatedText);
+    truncatedText = decoder.decode(bytes.slice(0, MAX_TEXT_SIZE));
+  }
+
   const fontSize = typeof cfg.size === 'number' || /^[\d.]+$/.test(cfg.size) ? `${cfg.size}px` : cfg.size;
   const fontSizeNum = parseFloat(fontSize);
-  const escapedText = escapeHTML(text);
+  const escapedText = escapeHTML(truncatedText);
   const backgroundColor = getBackgroundColor(cfg.color);
   // Header background is more opaque (higher alpha value)
   const headerBackgroundColor = backgroundColor.replace(/rgba?\(([^)]+),\s*([\d.]+)\)/, (match, colors, alpha) => {
@@ -68,7 +82,7 @@ export async function createStickyNote(text, cfg) {
   });
 
   // Calculate window size based on text content
-  const lines = text.split('\n');
+  const lines = truncatedText.split('\n');
   const lineCount = lines.length;
   const maxLineLength = Math.max(...lines.map(line => line.length), 0);
 
