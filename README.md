@@ -9,6 +9,7 @@ In addition, it also includes features:
 * Timer
 * Countdown timer
 * Epoch time and date-time convertor
+* Sticky notes
 * Web server for developers (serves static files and provides dump and slow endpoints for debugging)
 
 `mclocks` doesn't need an internet connection — everything runs 100% locally.
@@ -209,6 +210,16 @@ Empty lines are preserved as-is in all operations.
 
 (This Convert Text Feature has nothing to do with clocks or time, but software developers might find it handy! 😊)
 
+## Sticky Notes
+
+Click `mclocks` app window, then press `Ctrl + s` to create a sticky note from the clipboard text. Each sticky note opens in a separate window.
+
+Each sticky note's text is limited to 1KB (1024 bytes). Longer text is automatically truncated.
+
+### Closing Sticky Notes
+
+Click the `×` button in the top-right corner of a sticky note window to close it. The note will be removed from the saved data.
+
 ## Keyboard Shortcuts
 
 ### Show Help
@@ -249,6 +260,12 @@ Empty lines are preserved as-is in all operations.
 |----------|-------------|
 | `Ctrl + i` | Quote each line of clipboard text with double quotes, append comma to the end (except the last line), and open in editor |
 | `Ctrl + Shift + i` | Quote each line of clipboard text with single quotes, append comma to the end (except the last line), and open in editor |
+
+### Sticky Notes
+
+| Shortcut | Description |
+|----------|-------------|
+| `Ctrl + s` | Create a sticky note from clipboard text |
 
 ## Web Server
 
