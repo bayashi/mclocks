@@ -1,9 +1,10 @@
 import { openUrl } from '@tauri-apps/plugin-opener';
 
 import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, addTimerClock } from './matter.js';
-import { writeClipboardText, isMacOS, isWindowsOS, openMessageDialog } from './util.js';
+import { writeClipboardText, readClipboardText, isMacOS, isWindowsOS, openMessageDialog } from './util.js';
 import { conversionHandler } from './conversion.js';
 import { quoteAndAppendCommaClipboardHandler } from './clipboard.js';
+import { createStickyNote } from './sticky-note.js';
 
 // Win   ---> Ctrl
 // macOS ---> Command
@@ -163,5 +164,21 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   if (e.key === "v" || e.key === "V") {
     e.preventDefault();
     await conversionHandler(e, pressedKeys, clocks, ctx.useTZ(), ctx.convTZ());
+  }
+
+  // create sticky note from clipboard text
+  if (e.key === "s") {
+    e.preventDefault();
+    try {
+      const clipboardText = await readClipboardText();
+      if (!clipboardText || clipboardText.trim() === '') {
+        await openMessageDialog("Clipboard is empty", "mclocks", "info");
+        return;
+      }
+      await createStickyNote(clipboardText, cfg);
+    } catch (error) {
+      console.error('Error creating sticky note:', error);
+      await openMessageDialog(`Failed to create sticky note: ${error}`, "mclocks Error", "error");
+    }
   }
 }

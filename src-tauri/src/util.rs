@@ -38,6 +38,27 @@ fn create_temp_file_with_text(text: String) -> Result<std::path::PathBuf, String
     Ok(temp_file)
 }
 
+fn create_temp_html_file(html_content: String) -> Result<std::path::PathBuf, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let temp_dir = base_dir.cache_dir();
+
+    let temp_file = temp_dir.join(format!("mclocks_sticky_note_{}.html",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()));
+
+    fs::write(&temp_file, html_content).map_err(|e| format!("Failed to write temp HTML file: {}", e))?;
+
+    Ok(temp_file)
+}
+
+#[tauri::command]
+pub fn create_sticky_note_html_file(html_content: String) -> Result<String, String> {
+    let temp_file = create_temp_html_file(html_content)?;
+    Ok(temp_file.to_string_lossy().to_string())
+}
+
 #[tauri::command]
 pub fn open_text_in_editor(text: String) -> Result<(), String> {
     let temp_file = create_temp_file_with_text(text)?;

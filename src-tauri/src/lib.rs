@@ -14,6 +14,7 @@ const IS_DEV: bool = tauri::is_dev();
 
 const WINDOW_NAME: &str = "main";
 
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut tbr = tauri::Builder::default();
@@ -97,6 +98,7 @@ pub fn run() {
             load_config,
             get_config_path,
             open_text_in_editor,
+            util::create_sticky_note_html_file,
         ])
         .run(context)
         .expect("error while running tauri application");
