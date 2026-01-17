@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use tiny_http::{Response, StatusCode, Header};
 
 use super::common::create_error_response;
@@ -7,52 +7,136 @@ use super::status_handler::handle_status_request;
 use super::slow_handler::handle_slow_request;
 use super::dump_handler::handle_dump_request;
 
-pub fn parse_and_validate_path(url: &str, root_path: &PathBuf) -> Result<PathBuf, StatusCode> {
-    // Parse URL to get path component (remove query string and fragment)
-    let path = match url.split('?').next() {
-        Some(p) => p.split('#').next().unwrap_or(p),
-        None => "/",
-    };
+fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
+    let mut html = String::from("<!DOCTYPE html>\n<html>\n<head>\n");
+    html.push_str("<meta charset=\"utf-8\">\n");
+    html.push_str("<title>Index of ");
+    html.push_str(&html_escape(url_path));
+    html.push_str("</title>\n");
+    html.push_str("<style>\n");
+    html.push_str("body { font-family: monospace; margin: 20px; }\n");
+    html.push_str("h1 { color: #333; }\n");
+    html.push_str("ul { list-style-type: none; padding-left: 0; }\n");
+    html.push_str("li { padding: 5px 0; }\n");
+    html.push_str("a { text-decoration: none; color: #0066cc; }\n");
+    html.push_str("a:hover { text-decoration: underline; }\n");
+    html.push_str(".dir::before { content: '📁'; }\n");
+    html.push_str(".file::before { content: '📄'; }\n");
+    html.push_str("</style>\n");
+    html.push_str("</head>\n<body>\n");
+    html.push_str("<h1>Index of ");
+    html.push_str(&html_escape(url_path));
+    html.push_str("</h1>\n<ul>\n");
 
-    // Security: Check for directory traversal attempts
-    if path.contains("..") || path.contains("//") {
-        return Err(StatusCode(400));
+    // Add parent directory link if not at root
+    if url_path != "/" {
+        let trimmed = url_path.trim_end_matches('/');
+        let parent_url = if trimmed == "" {
+            "/".to_string()
+        } else {
+            match trimmed.rfind('/') {
+                Some(pos) => {
+                    let parent = &trimmed[..pos];
+                    if parent.is_empty() {
+                        "/".to_string()
+                    } else {
+                        format!("{}/", parent)
+                    }
+                }
+                None => "/".to_string(),
+            }
+        };
+        html.push_str("<li><a href=\"");
+        html.push_str(&html_escape(&parent_url));
+        html.push_str("\">../</a></li>\n");
     }
 
-    let file_path = if path == "/" {
-        root_path.join("index.html")
-    } else {
-        // Remove leading slash and join with root_path
-        let relative_path = path.trim_start_matches('/');
-        // Additional check: ensure no absolute path components
-        if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
-            return Err(StatusCode(400));
-        }
-        root_path.join(relative_path)
-    };
+    // Read directory entries
+    match fs::read_dir(dir_path) {
+        Ok(entries) => {
+            let mut dirs: Vec<String> = Vec::new();
+            let mut files: Vec<String> = Vec::new();
 
-    // Normalize the path to resolve any symlinks and ensure it's within root_path
-    let normalized_path = match file_path.canonicalize() {
-        Ok(p) => p,
-        Err(_) => {
-            if file_path.exists() && file_path.starts_with(root_path) {
-                file_path
-            } else {
-                return Err(StatusCode(404));
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    let file_name = entry.file_name();
+                    if let Some(name) = file_name.to_str() {
+                        // Skip hidden files (starting with .)
+                        if name.starts_with('.') {
+                            continue;
+                        }
+                        let metadata = entry.metadata();
+                        if let Ok(meta) = metadata {
+                            if meta.is_dir() {
+                                dirs.push(name.to_string());
+                            } else {
+                                files.push(name.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Sort directories and files
+            dirs.sort();
+            files.sort();
+
+            // Add directory entries
+            for dir in dirs {
+                let dir_url = if url_path == "/" {
+                    format!("/{}/", dir)
+                } else {
+                    let base = url_path.trim_end_matches('/');
+                    format!("{}/{}/", base, dir)
+                };
+                html.push_str("<li class=\"dir\"><a href=\"");
+                html.push_str(&html_escape(&dir_url));
+                html.push_str("\">");
+                html.push_str(&html_escape(&dir));
+                html.push_str("/</a></li>\n");
+            }
+
+            // Add file entries
+            for file in files {
+                let file_url = if url_path == "/" {
+                    format!("/{}", file)
+                } else {
+                    let base = url_path.trim_end_matches('/');
+                    format!("{}/{}", base, file)
+                };
+                html.push_str("<li class=\"file\"><a href=\"");
+                html.push_str(&html_escape(&file_url));
+                html.push_str("\">");
+                html.push_str(&html_escape(&file));
+                html.push_str("</a></li>\n");
             }
         }
-    };
-
-    let normalized_root = match root_path.canonicalize() {
-        Ok(p) => p,
-        Err(_) => root_path.clone(),
-    };
-
-    if normalized_path.starts_with(&normalized_root) {
-        Ok(normalized_path)
-    } else {
-        Err(StatusCode(404))
+        Err(_) => {
+            html.push_str("<li>Error reading directory</li>\n");
+        }
     }
+
+    html.push_str("</ul>\n</body>\n</html>");
+
+    let content_type = "text/html; charset=utf-8";
+    if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
+        Response::from_string(html).with_header(header).with_status_code(StatusCode(200))
+    } else {
+        Response::from_string(html).with_status_code(StatusCode(200))
+    }
+}
+
+fn html_escape(s: &str) -> String {
+    s.chars()
+        .map(|c| match c {
+            '&' => "&amp;".to_string(),
+            '<' => "&lt;".to_string(),
+            '>' => "&gt;".to_string(),
+            '"' => "&quot;".to_string(),
+            '\'' => "&#x27;".to_string(),
+            _ => c.to_string(),
+        })
+        .collect()
 }
 
 fn create_file_response(file_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -111,15 +195,87 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
         }
     }
 
-    match parse_and_validate_path(url, root_path) {
-        Ok(file_path) => create_file_response(&file_path),
-        Err(status_code) => {
-            let message = match status_code {
-                StatusCode(400) => "Bad Request",
-                StatusCode(404) => "Not Found",
-                _ => "Internal Server Error",
-            };
-            create_error_response(status_code, message)
-        },
+    // Parse URL to get path component (remove query string and fragment)
+    let url_path = match url.split('?').next() {
+        Some(p) => p.split('#').next().unwrap_or(p),
+        None => "/",
+    };
+
+    // Security: Check for directory traversal attempts
+    if url_path.contains("..") || url_path.contains("//") {
+        return create_error_response(StatusCode(400), "Bad Request");
     }
+
+    // Determine the actual file path
+    let file_path = if url_path == "/" {
+        root_path.join("index.html")
+    } else {
+        let relative_path = url_path.trim_start_matches('/');
+        if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
+            return create_error_response(StatusCode(400), "Bad Request");
+        }
+        root_path.join(relative_path)
+    };
+
+    // Check if the path exists and is within root_path
+    let normalized_root = match root_path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => root_path.clone(),
+    };
+
+    let normalized_path = match file_path.canonicalize() {
+        Ok(p) => {
+            if !p.starts_with(&normalized_root) {
+                return create_error_response(StatusCode(404), "Not Found");
+            }
+            p
+        }
+        Err(_) => {
+            // canonicalize() failed, check if file_path exists
+            // Special case: if url_path is "/", check for index.html first
+            if url_path == "/" {
+                let index_path = root_path.join("index.html");
+                if index_path.exists() && index_path.is_file() {
+                    return create_file_response(&index_path);
+                }
+                // If index.html doesn't exist, show directory listing
+                if root_path.exists() && root_path.is_dir() {
+                    return create_directory_listing(root_path, url_path);
+                }
+                return create_error_response(StatusCode(404), "Not Found");
+            }
+            // Check if it's a file
+            if file_path.exists() && file_path.is_file() {
+                return create_file_response(&file_path);
+            }
+            // Check if it's a directory request
+            if file_path.exists() && file_path.is_dir() {
+                // Check if directory is within root_path
+                if !file_path.starts_with(root_path) {
+                    return create_error_response(StatusCode(404), "Not Found");
+                }
+                // Check for index.html in the directory
+                let index_path = file_path.join("index.html");
+                if index_path.exists() && index_path.is_file() {
+                    return create_file_response(&index_path);
+                }
+                // Generate directory listing
+                return create_directory_listing(&file_path, url_path);
+            }
+            return create_error_response(StatusCode(404), "Not Found");
+        }
+    };
+
+    // If the normalized path is a directory, check for index.html
+    if normalized_path.is_dir() {
+        let index_path = normalized_path.join("index.html");
+        if index_path.exists() {
+            return create_file_response(&index_path);
+        }
+        // Generate directory listing
+        return create_directory_listing(&normalized_path, url_path);
+    }
+
+    // It's a file, serve it
+    create_file_response(&normalized_path)
 }
