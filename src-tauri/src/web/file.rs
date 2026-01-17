@@ -1,6 +1,8 @@
 use std::fs;
 use std::path::{PathBuf, Path};
 use tiny_http::{Response, StatusCode, Header};
+use encoding_rs::{Encoding, UTF_8};
+use chardetng::EncodingDetector;
 
 use super::common::create_error_response;
 use super::status_handler::handle_status_request;
@@ -139,10 +141,43 @@ fn html_escape(s: &str) -> String {
         .collect()
 }
 
+fn detect_encoding(content: &[u8]) -> &'static Encoding {
+    // Check for BOM first (highest priority)
+    if content.len() >= 3 && &content[0..3] == [0xEF, 0xBB, 0xBF] {
+        return UTF_8;
+    }
+    if content.len() >= 2 && &content[0..2] == [0xFF, 0xFE] {
+        return encoding_rs::UTF_16LE;
+    }
+    if content.len() >= 2 && &content[0..2] == [0xFE, 0xFF] {
+        return encoding_rs::UTF_16BE;
+    }
+
+    // Try UTF-8 decoding first (fast path for common case)
+    if std::str::from_utf8(content).is_ok() {
+        return UTF_8;
+    }
+
+    // Use chardetng to detect encoding for non-UTF-8 content
+    let mut detector = EncodingDetector::new();
+    detector.feed(content, true);
+    let encoding = detector.guess(None, true);
+
+    // chardetng returns &'static Encoding directly
+    encoding
+}
+
 fn create_file_response(file_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>>> {
     match fs::read(file_path) {
         Ok(content) => {
-            let content_type = get_content_type(file_path);
+            let base_content_type = get_content_type(file_path);
+            let content_type = if is_text_type(&base_content_type) {
+                let encoding = detect_encoding(&content);
+                let charset = encoding.name();
+                format!("{}; charset={}", base_content_type, charset)
+            } else {
+                base_content_type
+            };
             if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
                 Response::from_data(content).with_header(header).with_status_code(StatusCode(200))
             } else {
@@ -151,6 +186,13 @@ fn create_file_response(file_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>
         }
         Err(_) => create_error_response(StatusCode(500), "Internal Server Error")
     }
+}
+
+fn is_text_type(content_type: &str) -> bool {
+    content_type.starts_with("text/") ||
+    content_type == "application/javascript" ||
+    content_type == "application/json" ||
+    content_type == "image/svg+xml"
 }
 
 pub fn get_content_type(path: &PathBuf) -> String {
