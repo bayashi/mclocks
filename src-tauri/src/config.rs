@@ -148,6 +148,64 @@ pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, St
     serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct StickyNote {
+    pub id: String,
+    pub text: String,
+    #[serde(default)]
+    pub x: Option<f64>,
+    #[serde(default)]
+    pub y: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct StickyNotes {
+    pub notes: Vec<StickyNote>,
+}
+
+fn get_sticky_notes_file() -> String {
+    let notes_file = "sticky-notes.json";
+    if IS_DEV {
+        format!("dev.{}", notes_file)
+    } else {
+        notes_file.to_string()
+    }
+}
+
+fn get_sticky_notes_path(identifier: &String) -> PathBuf {
+    let base_dir = BaseDirs::new().unwrap();
+    let notes_app_path = vec![identifier.as_str(), &get_sticky_notes_file()].join("/");
+    base_dir.config_dir().join(notes_app_path)
+}
+
+#[tauri::command]
+pub fn save_sticky_notes(state: State<'_, Arc<ContextConfig>>, notes: Vec<StickyNote>) -> Result<(), String> {
+    let notes_path = get_sticky_notes_path(&state.app_identifier);
+    let sticky_notes = StickyNotes { notes };
+
+    fs::create_dir_all(notes_path.parent().ok_or("Invalid sticky notes path")?)
+        .map_err(|e| e.to_string())?;
+
+    let json = serde_json::to_string_pretty(&sticky_notes).map_err(|e| e.to_string())?;
+    fs::write(&notes_path, json).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn load_sticky_notes(state: State<'_, Arc<ContextConfig>>) -> Result<Vec<StickyNote>, String> {
+    let notes_path = get_sticky_notes_path(&state.app_identifier);
+
+    if !notes_path.exists() {
+        return Ok(Vec::new());
+    }
+
+    let json = fs::read_to_string(&notes_path).map_err(|e| e.to_string())?;
+    let sticky_notes: StickyNotes = serde_json::from_str(&json).map_err(|e| e.to_string())?;
+
+    Ok(sticky_notes.notes)
+}
+
 pub struct ContextConfig {
     pub app_identifier: String,
 }

@@ -4,10 +4,10 @@ mod util;
 mod web;
 
 use std::{sync::Arc, thread};
-use tauri::{Manager, AppHandle};
+use tauri::{Manager, AppHandle, State};
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use web_server::{start_web_server, open_url_in_browser, load_web_config};
-use config::{get_config_path, load_config};
+use config::{get_config_path, load_config, save_sticky_notes, load_sticky_notes};
 use util::open_text_in_editor;
 
 const IS_DEV: bool = tauri::is_dev();
@@ -22,6 +22,20 @@ fn close_sticky_note_window(app: AppHandle, window_label: String) -> Result<(), 
     } else {
         Err(format!("Window not found: {}", window_label))
     }
+}
+
+#[tauri::command]
+fn update_sticky_note_position(state: State<'_, Arc<config::ContextConfig>>, window_label: String, x: f64, y: f64) -> Result<(), String> {
+    let all_notes = load_sticky_notes(state.clone())?;
+    let mut updated_notes = all_notes;
+
+    if let Some(note) = updated_notes.iter_mut().find(|n| n.id == window_label) {
+        note.x = Some(x);
+        note.y = Some(y);
+        save_sticky_notes(state, updated_notes)?;
+    }
+
+    Ok(())
 }
 
 
@@ -110,6 +124,9 @@ pub fn run() {
             open_text_in_editor,
             util::create_sticky_note_html_file,
             close_sticky_note_window,
+            save_sticky_notes,
+            load_sticky_notes,
+            update_sticky_note_position,
         ])
         .run(context)
         .expect("error while running tauri application");

@@ -1,9 +1,85 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { LogicalPosition } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 import { escapeHTML } from './util.js';
 
 // Store references to all created sticky note windows
 const stickyNoteWindows = new Map();
+
+/**
+ * Saves sticky notes to file
+ * @param {Array<{id: string, text: string}>} notes - Array of sticky notes
+ * @returns {Promise<void>}
+ */
+async function saveStickyNotes(notes) {
+  try {
+    await invoke('save_sticky_notes', { notes });
+  } catch (e) {
+    console.error('Failed to save sticky notes:', e);
+  }
+}
+
+/**
+ * Loads sticky notes from file
+ * @returns {Promise<Array<{id: string, text: string}>>}
+ */
+export async function loadStickyNotes() {
+  try {
+    return await invoke('load_sticky_notes');
+  } catch (e) {
+    console.error('Failed to load sticky notes:', e);
+    return [];
+  }
+}
+
+/**
+ * Removes a sticky note from saved notes
+ * @param {string} windowId - The ID of the sticky note to remove
+ * @returns {Promise<void>}
+ */
+async function removeStickyNote(windowId) {
+  const allNotes = await loadStickyNotes();
+  const filteredNotes = allNotes.filter(note => note.id !== windowId);
+  await saveStickyNotes(filteredNotes);
+}
+
+/**
+ * Adds a sticky note to saved notes
+ * @param {string} windowId - The ID of the sticky note
+ * @param {string} text - The text content
+ * @param {number} x - Optional x position
+ * @param {number} y - Optional y position
+ * @returns {Promise<void>}
+ */
+async function addStickyNote(windowId, text, x = null, y = null) {
+  const allNotes = await loadStickyNotes();
+  // Remove existing note with same ID if any, then add new one
+  const filteredNotes = allNotes.filter(note => note.id !== windowId);
+  const note = { id: windowId, text };
+  if (x !== null && y !== null) {
+    note.x = x;
+    note.y = y;
+  }
+  filteredNotes.push(note);
+  await saveStickyNotes(filteredNotes);
+}
+
+/**
+ * Updates sticky note position
+ * @param {string} windowId - The ID of the sticky note
+ * @param {number} x - x position
+ * @param {number} y - y position
+ * @returns {Promise<void>}
+ */
+async function updateStickyNotePosition(windowId, x, y) {
+  const allNotes = await loadStickyNotes();
+  const note = allNotes.find(n => n.id === windowId);
+  if (note) {
+    note.x = x;
+    note.y = y;
+    await saveStickyNotes(allNotes);
+  }
+}
 
 /**
  * Closes a sticky note window by its label
@@ -16,6 +92,7 @@ export async function closeStickyNote(windowLabel) {
     try {
       await webview.close();
       stickyNoteWindows.delete(windowLabel);
+      await removeStickyNote(windowLabel);
     } catch (e) {
       console.error('Failed to close sticky note window:', e);
     }
@@ -26,6 +103,7 @@ export async function closeStickyNote(windowLabel) {
  * Creates a sticky note window with the given text and configuration
  * @param {string} text - The text to display in the sticky note
  * @param {Object} cfg - Configuration object with font, size, color
+ * @param {string} windowId - Optional window ID (for restoring from saved notes)
  * @returns {Promise<WebviewWindow>}
  */
 function hexToRgb(hex) {
@@ -56,7 +134,7 @@ function getBackgroundColor(textColor) {
   }
 }
 
-export async function createStickyNote(text, cfg) {
+export async function createStickyNote(text, cfg, windowId = null, x = null, y = null) {
   // Limit text size to 1KB (1024 bytes)
   const MAX_TEXT_SIZE = 1024;
   const encoder = new TextEncoder();
@@ -110,7 +188,7 @@ export async function createStickyNote(text, cfg) {
   const windowWidth = Math.round(calculatedWidth);
   const windowHeight = Math.round(calculatedHeight);
 
-  const windowId = `sticky_note_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const finalWindowId = windowId || `sticky_note_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
   const htmlContent = `<!doctype html>
 <html lang="en">
@@ -119,10 +197,42 @@ export async function createStickyNote(text, cfg) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>mclocks sticky note</title>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       const contentArea = document.getElementById('content-area');
       const closeButton = document.getElementById('close-button');
-      const windowLabel = '${windowId}';
+      const windowLabel = '${finalWindowId}';
+
+      // Set up window move handler to save position
+      if (window.__TAURI_INTERNALS__) {
+        try {
+          const { getCurrentWindow } = await import('@tauri-apps/api/window');
+          const currentWindow = getCurrentWindow();
+
+          let positionUpdateTimeout = null;
+          currentWindow.onMoved(() => {
+            // Debounce position updates
+            if (positionUpdateTimeout) {
+              clearTimeout(positionUpdateTimeout);
+            }
+            positionUpdateTimeout = setTimeout(async () => {
+              try {
+                const position = await currentWindow.innerPosition();
+                if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.core && window.__TAURI_INTERNALS__.core.invoke) {
+                  await window.__TAURI_INTERNALS__.core.invoke('update_sticky_note_position', {
+                    windowLabel: windowLabel,
+                    x: position.x,
+                    y: position.y
+                  });
+                }
+              } catch (e) {
+                // Ignore errors
+              }
+            }, 500);
+          });
+        } catch (e) {
+          // Ignore errors
+        }
+      }
 
       if (contentArea) {
         contentArea.addEventListener('mousedown', async () => {
@@ -295,10 +405,30 @@ export async function createStickyNote(text, cfg) {
     visible: true,
   };
 
-  const webview = new WebviewWindow(windowId, windowOptions);
+  // Set position if provided
+  if (x !== null && y !== null) {
+    windowOptions.x = x;
+    windowOptions.y = y;
+  }
+
+  const webview = new WebviewWindow(finalWindowId, windowOptions);
 
   // Store the window reference for potential manual closing
-  stickyNoteWindows.set(windowId, webview);
+  stickyNoteWindows.set(finalWindowId, webview);
+
+  // If position was set, apply it after window is created
+  if (x !== null && y !== null) {
+    try {
+      await webview.setPosition(new LogicalPosition(x, y));
+    } catch (e) {
+      // Ignore error if position setting fails
+    }
+  }
+
+  // Save sticky note to file (only if not restoring)
+  if (!windowId) {
+    await addStickyNote(finalWindowId, truncatedText);
+  }
 
   // After a short delay, set alwaysOnTop to false so it can be hidden by other windows
   setTimeout(async () => {

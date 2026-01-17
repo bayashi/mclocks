@@ -6,6 +6,7 @@ import { initClocks, adjustWindowSize, startClocks } from './matter.js';
 import { Ctx } from './ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
+import { createStickyNote, loadStickyNotes } from './sticky-note.js';
 
 /**
  * Default configuration for the application
@@ -202,6 +203,16 @@ const main = async (ctx) => {
     startClocks(ctx, clocks);
 
     const { cleanup } = initKeyboardHandlers(ctx, cfg, clocks);
+
+    // Restore sticky notes from saved file
+    try {
+      const savedNotes = await loadStickyNotes();
+      for (const note of savedNotes) {
+        await createStickyNote(note.text, cfg, note.id, note.x || null, note.y || null);
+      }
+    } catch (error) {
+      console.warn('Failed to restore sticky notes:', error);
+    }
 
     window.addEventListener('beforeunload', () => {
       cleanup();
