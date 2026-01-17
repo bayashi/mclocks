@@ -395,7 +395,7 @@ export async function createStickyNote(text, cfg, windowId = null, x = null, y =
     title: 'mclocks sticky note',
     width: windowWidth,
     height: windowHeight,
-    resizable: false,
+    resizable: true,
     minimizable: false,
     maximizable: false,
     transparent: true,
