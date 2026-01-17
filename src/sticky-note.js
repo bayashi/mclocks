@@ -61,6 +61,11 @@ export async function createStickyNote(text, cfg) {
   const fontSizeNum = parseFloat(fontSize);
   const escapedText = escapeHTML(text);
   const backgroundColor = getBackgroundColor(cfg.color);
+  // Header background is more opaque (higher alpha value)
+  const headerBackgroundColor = backgroundColor.replace(/rgba?\(([^)]+),\s*([\d.]+)\)/, (match, colors, alpha) => {
+    const newAlpha = Math.min(parseFloat(alpha) + 0.2, 1.0);
+    return `rgba(${colors}, ${newAlpha})`;
+  });
 
   // Calculate window size based on text content
   const lines = text.split('\n');
@@ -206,7 +211,7 @@ export async function createStickyNote(text, cfg) {
     }
     #drag-bar {
       height: 20px;
-      background: transparent;
+      background: ${headerBackgroundColor};
       -webkit-app-region: drag;
       flex-shrink: 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.2);
