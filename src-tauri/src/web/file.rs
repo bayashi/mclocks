@@ -231,16 +231,22 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
             p
         }
         Err(_) => {
-            // Path doesn't exist
-            // Special case: if url_path is "/" and index.html doesn't exist, show root directory listing
+            // canonicalize() failed, check if file_path exists
+            // Special case: if url_path is "/", check for index.html first
             if url_path == "/" {
-                // Check for index.html in root_path
                 let index_path = root_path.join("index.html");
-                if index_path.exists() {
+                if index_path.exists() && index_path.is_file() {
                     return create_file_response(&index_path);
                 }
-                // Generate directory listing for root
-                return create_directory_listing(root_path, url_path);
+                // If index.html doesn't exist, show directory listing
+                if root_path.exists() && root_path.is_dir() {
+                    return create_directory_listing(root_path, url_path);
+                }
+                return create_error_response(StatusCode(404), "Not Found");
+            }
+            // Check if it's a file
+            if file_path.exists() && file_path.is_file() {
+                return create_file_response(&file_path);
             }
             // Check if it's a directory request
             if file_path.exists() && file_path.is_dir() {
@@ -250,7 +256,7 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
                 }
                 // Check for index.html in the directory
                 let index_path = file_path.join("index.html");
-                if index_path.exists() {
+                if index_path.exists() && index_path.is_file() {
                     return create_file_response(&index_path);
                 }
                 // Generate directory listing

@@ -118,7 +118,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let index_file = root_path.join("index.html");
         fs::write(&index_file, "<html>test</html>").expect("Failed to create index.html");
-        let port = 3053;
+        let port = find_available_port();
 
         let _server_handle = start_test_server(root_path, port, false, false, false);
         thread::sleep(std::time::Duration::from_millis(100));
@@ -388,6 +388,31 @@ mod tests {
     fn test_get_content_type_subdirectory() {
         let path = PathBuf::from("subdir/file.html");
         assert_eq!(get_content_type(&path), "text/html");
+    }
+
+    fn find_available_port() -> u16 {
+        use std::net::TcpListener;
+        use std::hash::{Hash, Hasher};
+        use std::collections::hash_map::DefaultHasher;
+
+        let mut hasher = DefaultHasher::new();
+        // Current time with nanosecond precision
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+            .hash(&mut hasher);
+        // Thread ID for uniqueness in concurrent tests
+        std::thread::current().id().hash(&mut hasher);
+        let hash = hasher.finish();
+        let base_port = 30000 + ((hash % 10000) as u16);
+        for offset in 0..1000 {
+            let port = ((base_port as u32 + offset) % 10000) as u16 + 30000;
+            if TcpListener::bind(("127.0.0.1", port)).is_ok() {
+                return port;
+            }
+        }
+        30000
     }
 
     fn start_test_server(root: PathBuf, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) -> std::thread::JoinHandle<()> {
@@ -1101,7 +1126,7 @@ mod tests {
     fn test_handle_status_request_429_too_many_requests() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
-        let port = 3053;
+        let port = find_available_port();
 
         let _server_handle = start_test_server(root_path, port, false, false, true);
         thread::sleep(std::time::Duration::from_millis(100));
