@@ -3,6 +3,7 @@ use std::path::{PathBuf, Path};
 use tiny_http::{Response, StatusCode, Header};
 use encoding_rs::{Encoding, UTF_8};
 use chardetng::EncodingDetector;
+use urlencoding::{encode, decode};
 
 use super::common::create_error_response;
 use super::status_handler::handle_status_request;
@@ -10,10 +11,30 @@ use super::slow_handler::handle_slow_request;
 use super::dump_handler::handle_dump_request;
 
 fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
+    // Decode URL path for display (each segment separately)
+    let decoded_path = if url_path == "/" {
+        "/".to_string()
+    } else {
+        let segments: Vec<String> = url_path
+            .split('/')
+            .map(|segment| {
+                if segment.is_empty() {
+                    String::new()
+                } else {
+                    match decode(segment) {
+                        Ok(decoded) => decoded.into_owned(),
+                        Err(_) => segment.to_string(),
+                    }
+                }
+            })
+            .collect();
+        segments.join("/")
+    };
+
     let mut html = String::from("<!DOCTYPE html>\n<html>\n<head>\n");
     html.push_str("<meta charset=\"utf-8\">\n");
     html.push_str("<title>Index of ");
-    html.push_str(&html_escape(url_path));
+    html.push_str(&html_escape(&decoded_path));
     html.push_str("</title>\n");
     html.push_str("<style>\n");
     html.push_str("body { font-family: monospace; margin: 20px; }\n");
@@ -27,7 +48,7 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
     html.push_str("</style>\n");
     html.push_str("</head>\n<body>\n");
     html.push_str("<h1>Index of ");
-    html.push_str(&html_escape(url_path));
+    html.push_str(&html_escape(&decoded_path));
     html.push_str("</h1>\n<ul>\n");
 
     // Add parent directory link if not at root
@@ -85,11 +106,12 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
 
             // Add directory entries
             for dir in dirs {
+                let encoded_dir = encode(&dir);
                 let dir_url = if url_path == "/" {
-                    format!("/{}/", dir)
+                    format!("/{}/", encoded_dir)
                 } else {
                     let base = url_path.trim_end_matches('/');
-                    format!("{}/{}/", base, dir)
+                    format!("{}/{}/", base, encoded_dir)
                 };
                 html.push_str("<li class=\"dir\"><a href=\"");
                 html.push_str(&html_escape(&dir_url));
@@ -100,11 +122,12 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
 
             // Add file entries
             for file in files {
+                let encoded_file = encode(&file);
                 let file_url = if url_path == "/" {
-                    format!("/{}", file)
+                    format!("/{}", encoded_file)
                 } else {
                     let base = url_path.trim_end_matches('/');
-                    format!("{}/{}", base, file)
+                    format!("{}/{}", base, encoded_file)
                 };
                 html.push_str("<li class=\"file\"><a href=\"");
                 html.push_str(&html_escape(&file_url));
@@ -256,7 +279,15 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
         if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
             return create_error_response(StatusCode(400), "Bad Request");
         }
-        root_path.join(relative_path)
+        // Decode URL-encoded path components (each segment separately)
+        let mut decoded_segments = Vec::new();
+        for segment in relative_path.split('/') {
+            match decode(segment) {
+                Ok(decoded) => decoded_segments.push(decoded.into_owned()),
+                Err(_) => return create_error_response(StatusCode(400), "Bad Request"),
+            }
+        }
+        root_path.join(decoded_segments.join("/"))
     };
 
     // Check if the path exists and is within root_path

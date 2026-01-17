@@ -111,6 +111,7 @@ mod tests {
     use std::thread;
     use tiny_http::Server;
     use crate::web::file::{handle_web_request, get_content_type};
+    use urlencoding::encode;
 
     #[test]
     fn test_handle_web_request_root_with_index() {
@@ -298,6 +299,85 @@ mod tests {
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 404);
+    }
+
+    #[test]
+    fn test_handle_web_request_multibyte_filename() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let test_file = root_path.join("美乳雀のソーダ.txt");
+        fs::write(&test_file, "マルチバイト文字のテスト").expect("Failed to create file with multibyte name");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        // URL encode the filename
+        let encoded_filename = encode("美乳雀のソーダ.txt");
+        let response = client.get(&format!("http://127.0.0.1:{}/{}", port, encoded_filename))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.text().unwrap(), "マルチバイト文字のテスト");
+    }
+
+    #[test]
+    fn test_handle_web_request_multibyte_directory() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let multibyte_dir = root_path.join("美乳雀のソーダ");
+        fs::create_dir_all(&multibyte_dir).expect("Failed to create directory with multibyte name");
+        fs::write(multibyte_dir.join("test.txt"), "content").expect("Failed to create file");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        // URL encode the directory name
+        let encoded_dir = encode("美乳雀のソーダ");
+        let response = client.get(&format!("http://127.0.0.1:{}/{}/", port, encoded_dir))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().unwrap();
+        assert!(body.contains("Index of /"), "Should show directory listing");
+        assert!(body.contains("美乳雀のソーダ"), "Should show decoded directory name in title");
+        assert!(body.contains("test.txt"), "Should list test.txt");
+    }
+
+    #[test]
+    fn test_handle_web_request_multibyte_directory_listing() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let multibyte_file = root_path.join("日本語ファイル.txt");
+        let multibyte_dir = root_path.join("日本語ディレクトリ");
+        fs::write(&multibyte_file, "日本語ファイルの内容").expect("Failed to create file with multibyte name");
+        fs::create_dir_all(&multibyte_dir).expect("Failed to create directory with multibyte name");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client.get(&format!("http://127.0.0.1:{}/", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().unwrap();
+        assert!(body.contains("Index of /"), "Should show directory listing");
+        // Check that multibyte characters are displayed correctly (not URL encoded)
+        assert!(body.contains("日本語ファイル.txt"), "Should show decoded filename");
+        assert!(body.contains("日本語ディレクトリ"), "Should show decoded directory name");
+        // Check that links are URL encoded
+        let encoded_file = encode("日本語ファイル.txt");
+        let encoded_dir = encode("日本語ディレクトリ");
+        assert!(body.contains(encoded_file.as_ref()), "Should contain URL encoded filename in link");
+        assert!(body.contains(&format!("{}/", encoded_dir.as_ref())), "Should contain URL encoded directory name in link");
     }
 
     #[test]
