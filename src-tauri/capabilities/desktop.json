@@ -14,6 +14,7 @@
     "core:window:allow-set-always-on-top",
     "core:window:allow-start-dragging",
     "core:window:allow-set-focus",
+    "core:window:allow-close",
     "core:window:allow-create",
     "core:webview:allow-create-webview-window",
     "notification:default",

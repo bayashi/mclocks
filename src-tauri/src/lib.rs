@@ -4,7 +4,7 @@ mod util;
 mod web;
 
 use std::{sync::Arc, thread};
-use tauri::Manager;
+use tauri::{Manager, AppHandle};
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use web_server::{start_web_server, open_url_in_browser, load_web_config};
 use config::{get_config_path, load_config};
@@ -13,6 +13,16 @@ use util::open_text_in_editor;
 const IS_DEV: bool = tauri::is_dev();
 
 const WINDOW_NAME: &str = "main";
+
+#[tauri::command]
+fn close_sticky_note_window(app: AppHandle, window_label: String) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window(&window_label) {
+        window.close().map_err(|e| format!("Failed to close window: {}", e))?;
+        Ok(())
+    } else {
+        Err(format!("Window not found: {}", window_label))
+    }
+}
 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -99,6 +109,7 @@ pub fn run() {
             get_config_path,
             open_text_in_editor,
             util::create_sticky_note_html_file,
+            close_sticky_note_window,
         ])
         .run(context)
         .expect("error while running tauri application");

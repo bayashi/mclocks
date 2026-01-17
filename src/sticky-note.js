@@ -2,11 +2,31 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { invoke } from '@tauri-apps/api/core';
 import { escapeHTML } from './util.js';
 
+// Store references to all created sticky note windows
+const stickyNoteWindows = new Map();
+
+/**
+ * Closes a sticky note window by its label
+ * @param {string} windowLabel - The label of the window to close
+ * @returns {Promise<void>}
+ */
+export async function closeStickyNote(windowLabel) {
+  const webview = stickyNoteWindows.get(windowLabel);
+  if (webview) {
+    try {
+      await webview.close();
+      stickyNoteWindows.delete(windowLabel);
+    } catch (e) {
+      console.error('Failed to close sticky note window:', e);
+    }
+  }
+}
+
 /**
  * Creates a sticky note window with the given text and configuration
  * @param {string} text - The text to display in the sticky note
  * @param {Object} cfg - Configuration object with font, size, color
- * @returns {Promise<void>}
+ * @returns {Promise<WebviewWindow>}
  */
 function hexToRgb(hex) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -71,33 +91,81 @@ export async function createStickyNote(text, cfg) {
   const windowWidth = Math.round(calculatedWidth);
   const windowHeight = Math.round(calculatedHeight);
 
+  const windowId = `sticky_note_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
   const htmlContent = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>mclocks sticky note</title>
-  <script type="module">
-    import { getCurrentWindow } from '@tauri-apps/api/window';
+  <script>
     document.addEventListener('DOMContentLoaded', () => {
       const contentArea = document.getElementById('content-area');
-      const dragBar = document.getElementById('drag-bar');
+      const closeButton = document.getElementById('close-button');
+      const windowLabel = '${windowId}';
 
       if (contentArea) {
         contentArea.addEventListener('mousedown', async () => {
           try {
-            const window = getCurrentWindow();
-            await window.setAlwaysOnTop(true);
-            setTimeout(async () => {
-              try {
-                await window.setAlwaysOnTop(false);
-              } catch (e) {
-                // Ignore error
-              }
-            }, 100);
+            if (window.__TAURI_INTERNALS__) {
+              const { getCurrentWindow } = await import('@tauri-apps/api/window');
+              const window = getCurrentWindow();
+              await window.setAlwaysOnTop(true);
+              setTimeout(async () => {
+                try {
+                  await window.setAlwaysOnTop(false);
+                } catch (e) {
+                  // Ignore error
+                }
+              }, 100);
+            }
           } catch (e) {
             // Ignore error
           }
+        });
+      }
+
+      if (closeButton) {
+        const handleClose = async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            // First try the standard window.close() method
+            if (window.close) {
+              window.close();
+              return;
+            }
+
+            // If that doesn't work, try Tauri's internal API
+            if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.core) {
+              const core = window.__TAURI_INTERNALS__.core;
+              if (core.windows && core.windows.getCurrent) {
+                try {
+                  const currentWindow = await core.windows.getCurrent();
+                  if (currentWindow && currentWindow.close) {
+                    await currentWindow.close();
+                    return;
+                  }
+                } catch (err) {
+                  // Fall through to invoke method
+                }
+              }
+              // Fallback: use invoke with the window label
+              if (core.invoke) {
+                await core.invoke('close_sticky_note_window', {
+                  windowLabel: windowLabel
+                });
+              }
+            }
+          } catch (e) {
+            console.error('Failed to close window:', e);
+          }
+        };
+        closeButton.addEventListener('click', handleClose);
+        closeButton.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
         });
       }
     });
@@ -142,6 +210,29 @@ export async function createStickyNote(text, cfg) {
       -webkit-app-region: drag;
       flex-shrink: 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 4px;
+    }
+    #close-button {
+      width: 16px;
+      height: 16px;
+      background: transparent;
+      border: none;
+      color: ${cfg.color};
+      font-size: ${fontSize};
+      line-height: 1;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+    }
+    #close-button:hover {
+      opacity: 1;
     }
     #content-area {
       flex: 1;
@@ -160,12 +251,13 @@ export async function createStickyNote(text, cfg) {
   </style>
 </head>
 <body>
-  <div id="drag-bar"></div>
+  <div id="drag-bar">
+    <button id="close-button">×</button>
+  </div>
   <div id="content-area">${textWithNewlines}</div>
 </body>
 </html>`;
 
-  const windowId = `sticky_note_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   const tempFilePath = await invoke('create_sticky_note_html_file', { htmlContent });
   const fileUrl = `file://${tempFilePath.replace(/\\/g, '/')}`;
 
@@ -184,18 +276,19 @@ export async function createStickyNote(text, cfg) {
     visible: true,
   };
 
-  try {
-    const webview = new WebviewWindow(windowId, windowOptions);
-    // After a short delay, set alwaysOnTop to false so it can be hidden by other windows
-    setTimeout(async () => {
-      try {
-        await webview.setAlwaysOnTop(false);
-      } catch (e) {
-        // Ignore error if window is already closed
-      }
-    }, 500);
-  } catch (error) {
-    console.error('Failed to create sticky note window:', error);
-    throw error;
-  }
+  const webview = new WebviewWindow(windowId, windowOptions);
+
+  // Store the window reference for potential manual closing
+  stickyNoteWindows.set(windowId, webview);
+
+  // After a short delay, set alwaysOnTop to false so it can be hidden by other windows
+  setTimeout(async () => {
+    try {
+      await webview.setAlwaysOnTop(false);
+    } catch (e) {
+      // Ignore error if window is already closed
+    }
+  }, 500);
+
+  return webview;
 }
