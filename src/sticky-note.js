@@ -64,22 +64,6 @@ async function addStickyNote(windowId, text, x = null, y = null) {
   await saveStickyNotes(filteredNotes);
 }
 
-/**
- * Updates sticky note position
- * @param {string} windowId - The ID of the sticky note
- * @param {number} x - x position
- * @param {number} y - y position
- * @returns {Promise<void>}
- */
-async function updateStickyNotePosition(windowId, x, y) {
-  const allNotes = await loadStickyNotes();
-  const note = allNotes.find(n => n.id === windowId);
-  if (note) {
-    note.x = x;
-    note.y = y;
-    await saveStickyNotes(allNotes);
-  }
-}
 
 /**
  * Closes a sticky note window by its label
@@ -420,7 +404,7 @@ export async function createStickyNote(text, cfg, windowId = null, x = null, y =
   if (x !== null && y !== null) {
     try {
       await webview.setPosition(new LogicalPosition(x, y));
-    } catch (e) {
+    } catch {
       // Ignore error if position setting fails
     }
   }
@@ -434,7 +418,7 @@ export async function createStickyNote(text, cfg, windowId = null, x = null, y =
   setTimeout(async () => {
     try {
       await webview.setAlwaysOnTop(false);
-    } catch (e) {
+    } catch {
       // Ignore error if window is already closed
     }
   }, 500);
