@@ -40,25 +40,31 @@ export async function createStickyNote(text, cfg) {
   const fontSize = typeof cfg.size === 'number' || /^[\d.]+$/.test(cfg.size) ? `${cfg.size}px` : cfg.size;
   const fontSizeNum = parseFloat(fontSize);
   const escapedText = escapeHTML(text);
-  const textWithNewlines = escapedText.replace(/\n/g, '<br>');
   const backgroundColor = getBackgroundColor(cfg.color);
 
   // Calculate window size based on text content
   const lines = text.split('\n');
+  const lineCount = lines.length;
   const maxLineLength = Math.max(...lines.map(line => line.length), 0);
+
+  // For short text (single line or short), don't wrap
+  const isShortText = lineCount === 1 && maxLineLength < 50;
+  const textWithNewlines = isShortText ? escapedText : escapedText.replace(/\n/g, '<br>');
 
   const padding = 16;
   const lineHeight = fontSizeNum * 1.5;
   const charWidth = fontSizeNum * 0.6;
 
-  // Calculate width: ensure minimum, cap at maximum
-  const minWidth = 250;
+  // Calculate width: text-based minimum, cap at maximum
+  const minWidth = maxLineLength * charWidth + padding;
   const maxWidth = 600;
-  const calculatedWidth = Math.max(minWidth, Math.min(maxLineLength * charWidth + padding, maxWidth));
+  const calculatedWidth = Math.min(minWidth, maxWidth);
 
-  // Fixed height: always 6 lines maximum, use scroll for more
+  // Dynamic height: minimum 2 lines, maximum 6 lines, use scroll for more
   // Add 20px for drag bar at the top
-  const visibleLines = 6;
+  const minVisibleLines = 2;
+  const maxVisibleLines = 6;
+  const visibleLines = Math.max(minVisibleLines, Math.min(lineCount, maxVisibleLines));
   const dragBarHeight = 20;
   const calculatedHeight = visibleLines * lineHeight + padding + dragBarHeight;
 
@@ -144,7 +150,7 @@ export async function createStickyNote(text, cfg) {
       overflow-x: hidden;
       overflow-y: auto;
       box-sizing: border-box;
-      white-space: pre-wrap;
+      white-space: ${isShortText ? 'nowrap' : 'pre-wrap'};
       word-wrap: break-word;
       background: ${backgroundColor};
       -webkit-app-region: no-drag;
