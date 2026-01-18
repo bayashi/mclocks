@@ -3,7 +3,7 @@ mod config;
 mod util;
 mod web;
 
-use std::{sync::Arc, thread};
+use std::{sync::Arc, thread, fs};
 use tauri::{Manager, AppHandle, State};
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use web_server::{start_web_server, open_url_in_browser, load_web_config};
@@ -15,13 +15,59 @@ const IS_DEV: bool = tauri::is_dev();
 const WINDOW_NAME: &str = "main";
 
 #[tauri::command]
-fn close_sticky_note_window(app: AppHandle, window_label: String) -> Result<(), String> {
+fn close_sticky_note_window(app: AppHandle, state: State<'_, Arc<config::ContextConfig>>, window_label: String) -> Result<(), String> {
+    // Log that command was called
+    let _ = debug_log(format!("close_sticky_note_window called for: {}", window_label));
+    
+    // Remove sticky note from saved data before closing window
+    let all_notes = load_sticky_notes(state.clone())?;
+    let _ = debug_log(format!("close_sticky_note_window: loaded {} notes", all_notes.len()));
+    
+    let filtered_notes: Vec<_> = all_notes.into_iter().filter(|n| n.id != window_label).collect();
+    let filtered_count = filtered_notes.len();
+    let _ = debug_log(format!("close_sticky_note_window: filtering to {} notes (removing {})", filtered_count, window_label));
+    
+    save_sticky_notes(state.clone(), filtered_notes)?;
+    let _ = debug_log(format!("close_sticky_note_window: saved {} notes", filtered_count));
+
+    // Close the window after updating JSON
+    // The onCloseRequested handler prevents default close, so we need to close it here
     if let Some(window) = app.get_webview_window(&window_label) {
         window.close().map_err(|e| format!("Failed to close window: {}", e))?;
-        Ok(())
+        let _ = debug_log(format!("close_sticky_note_window: window closed for {}", window_label));
     } else {
-        Err(format!("Window not found: {}", window_label))
+        let _ = debug_log(format!("close_sticky_note_window: window not found for {}", window_label));
     }
+    
+    Ok(())
+}
+
+#[tauri::command]
+fn debug_log(message: String) -> Result<(), String> {
+    let log_dir = directories::BaseDirs::new()
+        .ok_or("Failed to get base dir")?
+        .cache_dir()
+        .join("mclocks");
+    fs::create_dir_all(&log_dir).map_err(|e| format!("Failed to create log dir: {}", e))?;
+    
+    let log_file = log_dir.join("debug.log");
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs_f64())
+        .unwrap_or(0.0);
+    let log_line = format!("[{:.3}] {}\n", timestamp, message);
+    
+    fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_file)
+        .and_then(|mut file| {
+            use std::io::Write;
+            file.write_all(log_line.as_bytes())
+        })
+        .map_err(|e| format!("Failed to write log: {}", e))?;
+    
+    Ok(())
 }
 
 #[tauri::command]
@@ -37,7 +83,6 @@ fn update_sticky_note_position(state: State<'_, Arc<config::ContextConfig>>, win
 
     Ok(())
 }
-
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -127,6 +172,7 @@ pub fn run() {
             save_sticky_notes,
             load_sticky_notes,
             update_sticky_note_position,
+            debug_log,
         ])
         .run(context)
         .expect("error while running tauri application");
