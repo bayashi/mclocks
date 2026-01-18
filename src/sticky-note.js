@@ -184,6 +184,7 @@ export async function createStickyNote(text, cfg, windowId = null, x = null, y =
     document.addEventListener('DOMContentLoaded', async () => {
       const contentArea = document.getElementById('content-area');
       const closeButton = document.getElementById('close-button');
+      const copyButton = document.getElementById('copy-button');
       const windowLabel = '${finalWindowId}';
 
       // Set up window move handler to save position
@@ -236,6 +237,42 @@ export async function createStickyNote(text, cfg, windowId = null, x = null, y =
           } catch (e) {
             // Ignore error
           }
+        });
+      }
+
+      if (copyButton && contentArea) {
+        const handleCopy = async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            const text = contentArea.textContent || contentArea.innerText || '';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(text);
+            } else {
+              // Fallback for older browsers
+              const textArea = document.createElement('textarea');
+              textArea.value = text;
+              textArea.style.position = 'fixed';
+              textArea.style.opacity = '0';
+              document.body.appendChild(textArea);
+              textArea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textArea);
+            }
+            // Change button text to copied and restore after 1 second
+            const originalText = copyButton.textContent;
+            copyButton.textContent = 'copied';
+            setTimeout(() => {
+              copyButton.textContent = originalText;
+            }, 1000);
+          } catch (e) {
+            // Ignore errors
+          }
+        };
+        copyButton.addEventListener('click', handleCopy);
+        copyButton.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
         });
       }
 
@@ -325,8 +362,29 @@ export async function createStickyNote(text, cfg, windowId = null, x = null, y =
       border-bottom: 1px solid rgba(255, 255, 255, 0.2);
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: space-between;
+      padding-left: 4px;
       padding-right: 4px;
+    }
+    #copy-button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: ${cfg.color};
+      font-size: ${fontSize * 0.5}px;
+      line-height: 1;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+      padding: 1px 4px;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.8;
+    }
+    #copy-button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.5);
+      opacity: 1;
     }
     #close-button {
       width: 16px;
@@ -365,6 +423,7 @@ export async function createStickyNote(text, cfg, windowId = null, x = null, y =
 </head>
 <body>
   <div id="drag-bar">
+    <button id="copy-button">copy</button>
     <button id="close-button">×</button>
   </div>
   <div id="content-area">${textWithNewlines}</div>
