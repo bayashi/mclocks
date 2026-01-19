@@ -272,6 +272,15 @@ class StickyNoteWindow {
 
     // Set initial collapsed state
     this.updateCollapsedState();
+
+    // Verify font is applied correctly
+    const computedFont = window.getComputedStyle(this.textElement).fontFamily;
+    const expectedFont = this.config.font;
+    if (computedFont !== expectedFont && !computedFont.includes(expectedFont.split(',')[0])) {
+      // If font doesn't match, force it
+      this.textElement.style.fontFamily = expectedFont;
+      this.element.style.fontFamily = expectedFont;
+    }
   }
 
   setupEventListeners() {
@@ -351,6 +360,39 @@ class StickyNoteWindow {
     await this.updateCollapsedState();
   }
 
+  measureRenderedLineCount() {
+    const computedStyle = window.getComputedStyle(this.textElement);
+    const fontSize = parseFloat(computedStyle.fontSize) || 14;
+    const lineHeightValue = parseFloat(computedStyle.lineHeight) || fontSize * 1.2;
+    const lineHeight = lineHeightValue;
+
+    const elementWidth = this.element.getBoundingClientRect().width || parseFloat(this.element.style.width) || 300;
+    const contentWidth = Math.max(1, elementWidth - 16); // 8px left + 8px right (text padding)
+
+    const probe = document.createElement('pre');
+    probe.style.position = 'absolute';
+    probe.style.left = '-99999px';
+    probe.style.top = '0';
+    probe.style.visibility = 'hidden';
+    probe.style.pointerEvents = 'none';
+    probe.style.margin = '0';
+    probe.style.padding = '0';
+    probe.style.border = '0';
+    probe.style.whiteSpace = 'pre-wrap';
+    probe.style.wordWrap = 'break-word';
+    probe.style.fontFamily = this.config.font;
+    probe.style.fontSize = `${fontSize}px`;
+    probe.style.lineHeight = `${lineHeight}px`;
+    probe.style.width = `${contentWidth}px`;
+    probe.textContent = this.text;
+
+    document.body.appendChild(probe);
+    const height = probe.scrollHeight;
+    document.body.removeChild(probe);
+
+    return Math.max(1, Math.ceil(height / lineHeight));
+  }
+
   async updateCollapsedState() {
     // Get actual line height from computed style
     const computedStyle = window.getComputedStyle(this.textElement);
@@ -363,13 +405,13 @@ class StickyNoteWindow {
     const resizeHandle = this.element.querySelector('.sticky-note-resize');
 
     if (this.isExpanded) {
-      // Calculate number of lines in text
-      const lines = this.text.split('\n');
-      const maxLines = 8;
-      const displayLines = Math.min(lines.length, maxLines);
+      const maxDisplayLines = 12;
+      const totalLines = this.measureRenderedLineCount();
+      const displayLines = Math.min(totalLines, maxDisplayLines);
       const contentHeight = displayLines * lineHeight + textPadding;
+      const needsScroll = totalLines > displayLines;
 
-      this.contentElement.style.overflowY = lines.length > maxLines ? 'auto' : 'hidden';
+      this.contentElement.style.overflowY = needsScroll ? 'auto' : 'hidden';
       this.contentElement.style.maxHeight = `${contentHeight}px`;
       this.contentElement.style.height = `${contentHeight}px`;
       this.contentElement.style.flex = 'none';
@@ -472,6 +514,19 @@ class StickyNoteWindow {
     const availableContentHeight = newHeight - headerHeight;
     this.contentElement.style.height = `${availableContentHeight}px`;
     this.contentElement.style.maxHeight = `${availableContentHeight}px`;
+
+    // Recalculate display lines when width changes (text wrapping changes)
+    if (this.isExpanded) {
+      const computedStyle = window.getComputedStyle(this.textElement);
+      const fontSize = parseFloat(computedStyle.fontSize) || 14;
+      const lineHeightValue = parseFloat(computedStyle.lineHeight) || fontSize * 1.2;
+      const maxDisplayLines = 12;
+      const totalLines = this.measureRenderedLineCount();
+      const displayLines = Math.min(totalLines, maxDisplayLines);
+      const maxDisplayHeight = displayLines * lineHeightValue + textPadding;
+      const needsScroll = totalLines > displayLines || availableContentHeight < maxDisplayHeight;
+      this.contentElement.style.overflowY = needsScroll ? 'auto' : 'hidden';
+    }
 
     // Resize window to match content (use requestAnimationFrame to ensure DOM is updated)
     requestAnimationFrame(() => {
