@@ -136,10 +136,11 @@ class StickyNote {
     this.contentElement.style.userSelect = 'text';
     this.contentElement.style.position = 'relative';
 
-    // Create text element (preformatted text)
+    // Create text element (preformatted text, editable)
     this.textElement = document.createElement('pre');
     this.textElement.className = 'sticky-note-text';
     this.textElement.textContent = this.text;
+    this.textElement.contentEditable = 'true';
     this.textElement.style.margin = '0';
     this.textElement.style.whiteSpace = 'pre-wrap';
     this.textElement.style.wordWrap = 'break-word';
@@ -226,6 +227,16 @@ class StickyNote {
     document.addEventListener('mouseup', () => {
       this.isDragging = false;
       this.isResizing = false;
+    });
+
+    // Listen for text changes
+    this.textElement.addEventListener('input', () => {
+      this.text = this.textElement.textContent || '';
+    });
+
+    // Listen for blur event when editing is finished
+    this.textElement.addEventListener('blur', () => {
+      this.text = this.textElement.textContent || '';
     });
   }
 
