@@ -1,5 +1,6 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
+import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
 import { readClipboardText, writeClipboardText } from './util.js';
 
 /**
@@ -32,6 +33,8 @@ class StickyNoteWindow {
     this.initialWidth = 0;
     this.initialHeight = 0;
     this.originalWidth = 300; // Store original width for restoring when collapsing
+    this.windowLabel = null; // Window label for persistence
+    this.saveDebounceTimer = null; // Debounce timer for saving state
 
     // Initialize config first (will be loaded asynchronously)
     this.config = {
@@ -45,6 +48,7 @@ class StickyNoteWindow {
   async init() {
     try {
       const currentWindow = getCurrentWindow();
+      this.windowLabel = currentWindow.label;
       await currentWindow.setAlwaysOnTop(true);
       // Initially disable resizing (single-line mode)
       await currentWindow.setResizable(false);
@@ -54,6 +58,8 @@ class StickyNoteWindow {
 
     // Load config for font, color, and size
     await this.loadConfig();
+    // Load saved state if available
+    await this.loadSavedState();
     this.create();
     this.setupEventListeners();
   }
@@ -74,6 +80,51 @@ class StickyNoteWindow {
         size: 14
       };
     }
+  }
+
+  async loadSavedState() {
+    if (!this.windowLabel) {
+      return;
+    }
+    try {
+      const savedState = await invoke("load_sticky_note_state", { label: this.windowLabel });
+      if (savedState) {
+        this.text = savedState.text || this.text;
+        this.isExpanded = savedState.isExpanded || false;
+      }
+    } catch (error) {
+      // Ignore error, use defaults
+    }
+  }
+
+  async saveState(skipWindowState = false) {
+    if (!this.windowLabel || !this.element) {
+      return;
+    }
+    // Clear existing debounce timer
+    if (this.saveDebounceTimer) {
+      clearTimeout(this.saveDebounceTimer);
+    }
+    // Debounce save operation
+    this.saveDebounceTimer = setTimeout(async () => {
+      try {
+        // Save text and expanded state to custom file
+        const state = {
+          text: this.text,
+          isExpanded: this.isExpanded
+        };
+        await invoke("save_sticky_note_state", {
+          label: this.windowLabel,
+          stickyState: state
+        });
+        // Save window position and size using window-state plugin (skip during resize)
+        if (!skipWindowState) {
+          await saveWindowState(StateFlags.ALL);
+        }
+      } catch (error) {
+        // Ignore error
+      }
+    }, 300); // 300ms debounce
   }
 
   colorToRgba(color, opacity) {
@@ -234,10 +285,11 @@ class StickyNoteWindow {
     this.contentElement.style.position = 'relative';
     this.contentElement.style.webkitAppRegion = 'no-drag';
 
-    // Create text element (preformatted text)
+    // Create text element (preformatted text, editable)
     this.textElement = document.createElement('pre');
     this.textElement.className = 'sticky-note-text';
     this.textElement.textContent = this.text;
+    this.textElement.contentEditable = 'true';
     this.textElement.style.margin = '0';
     this.textElement.style.padding = '4px 8px';
     this.textElement.style.whiteSpace = 'pre-wrap';
@@ -270,6 +322,9 @@ class StickyNoteWindow {
     container.appendChild(this.element);
     this.element.appendChild(resizeHandle);
 
+    // Restore saved state if available
+    this.restoreSavedState();
+
     // Set initial collapsed state
     this.updateCollapsedState();
 
@@ -281,6 +336,11 @@ class StickyNoteWindow {
       this.textElement.style.fontFamily = expectedFont;
       this.element.style.fontFamily = expectedFont;
     }
+  }
+
+  async restoreSavedState() {
+    // Window position and size are automatically restored by window-state plugin
+    // No manual restoration needed
   }
 
   setupEventListeners() {
@@ -350,14 +410,50 @@ class StickyNoteWindow {
       }
     });
 
-    document.addEventListener('mouseup', () => {
-      this.isResizing = false;
+    document.addEventListener('mouseup', async () => {
+      if (this.isResizing) {
+        this.isResizing = false;
+        // Save text and expanded state, and window position/size after resize ends
+        await this.saveState(false);
+      }
+    });
+
+    // Listen for window position changes
+    (async () => {
+      try {
+        const currentWindow = getCurrentWindow();
+        currentWindow.onMoved(async () => {
+          // Skip saving during resize to avoid hanging
+          if (this.isResizing) {
+            return;
+          }
+          // Save text and expanded state (position is automatically saved by window-state)
+          await this.saveState();
+        }).catch(() => {
+          // Ignore error
+        });
+      } catch (error) {
+        // Ignore error
+      }
+    })();
+
+    // Listen for text changes
+    this.textElement.addEventListener('input', async () => {
+      this.text = this.textElement.textContent || '';
+      await this.saveState();
+    });
+
+    // Listen for blur event to save text when editing is finished
+    this.textElement.addEventListener('blur', async () => {
+      this.text = this.textElement.textContent || '';
+      await this.saveState();
     });
   }
 
   async toggleExpand() {
     this.isExpanded = !this.isExpanded;
     await this.updateCollapsedState();
+    await this.saveState();
   }
 
   measureRenderedLineCount() {
@@ -529,8 +625,10 @@ class StickyNoteWindow {
     }
 
     // Resize window to match content (use requestAnimationFrame to ensure DOM is updated)
-    requestAnimationFrame(() => {
-      this.resizeWindow();
+    requestAnimationFrame(async () => {
+      await this.resizeWindow();
+      // Don't save window state during resize to avoid hanging
+      // It will be saved when resize ends (mouseup event)
     });
   }
 

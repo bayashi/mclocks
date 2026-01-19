@@ -7,7 +7,7 @@ use std::{sync::Arc, thread};
 use tauri::Manager;
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use web_server::{start_web_server, open_url_in_browser, load_web_config};
-use config::{get_config_path, load_config};
+use config::{get_config_path, load_config, save_config, load_sticky_note_state, save_sticky_note_state, load_all_sticky_note_states};
 use util::open_text_in_editor;
 
 const IS_DEV: bool = tauri::is_dev();
@@ -95,8 +95,12 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             load_config,
+            save_config,
             get_config_path,
             open_text_in_editor,
+            load_sticky_note_state,
+            save_sticky_note_state,
+            load_all_sticky_note_states,
         ])
         .run(context)
         .expect("error while running tauri application");

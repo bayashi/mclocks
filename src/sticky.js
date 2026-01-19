@@ -1,5 +1,6 @@
 import { readClipboardText, writeClipboardText } from './util.js';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Sticky note class
@@ -332,41 +333,64 @@ export async function createStickyNoteFromClipboard(ctx) {
 
     // Create unique label for the window
     const label = `sticky-${Date.now()}`;
-    const encodedText = encodeURIComponent(text);
+    await createStickyNoteWindow(label, text);
+  } catch (error) {
+    // Ignore error
+  }
+}
 
-    // Create new webview window
-    // Use absolute path based on current window location
-    let baseUrl = window.location.origin;
-    if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
-      baseUrl += window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-    }
-    const url = `${baseUrl}/sticky.html?text=${encodedText}`;
+/**
+ * Create a sticky note window with specified label and text
+ * @param {string} label - Window label
+ * @param {string} text - Note text
+ */
+async function createStickyNoteWindow(label, text) {
+  const encodedText = encodeURIComponent(text);
 
-    try {
-      const webview = new WebviewWindow(label, {
-        url: url,
-        title: 'Sticky Note',
-        width: 300,
-        height: 100,
-        resizable: false, // Initially false (single-line mode), will be enabled when expanded
-        minimizable: true,
-        maximizable: false,
-        transparent: true,
-        decorations: false,
-        alwaysOnTop: true,
-        skipTaskbar: true,
-        shadow: false
-      });
+  // Create new webview window
+  // Use absolute path based on current window location
+  let baseUrl = window.location.origin;
+  if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+    baseUrl += window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+  }
+  const url = `${baseUrl}/sticky.html?text=${encodedText}`;
 
-      webview.once('tauri://created', () => {
-        // Window created successfully
-      });
+  try {
+    const webview = new WebviewWindow(label, {
+      url: url,
+      title: 'Sticky Note',
+      width: 300,
+      height: 100,
+      resizable: false, // Initially false (single-line mode), will be enabled when expanded
+      minimizable: true,
+      maximizable: false,
+      transparent: true,
+      decorations: false,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      shadow: false
+    });
 
-      webview.once('tauri://error', (e) => {
-        // Ignore error
-      });
-    } catch (createError) {
+    webview.once('tauri://created', () => {
+      // Window created successfully
+    });
+
+    webview.once('tauri://error', (e) => {
       // Ignore error
+    });
+  } catch (createError) {
+    // Ignore error
+  }
+}
+
+/**
+ * Restore all saved sticky note windows on app startup
+ */
+export async function restoreStickyNotes() {
+  try {
+    const allStates = await invoke("load_all_sticky_note_states", {});
+    for (const [label, state] of Object.entries(allStates)) {
+      await createStickyNoteWindow(label, state.text);
     }
   } catch (error) {
     // Ignore error

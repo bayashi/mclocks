@@ -1,6 +1,6 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, io::Write, sync::Arc, path::PathBuf};
+use std::{fs, io::Write, sync::Arc, path::PathBuf, collections::HashMap};
 use tauri::State;
 
 use crate::web_server::WebConfig;
@@ -25,6 +25,13 @@ fn df_timezone() -> String { "UTC".to_string() }
 pub enum InFontSize {
     Int(i32),
     Str(String),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct StickyNoteState {
+    pub text: String,
+    pub is_expanded: bool,
 }
 
 fn df_clocks() -> Vec<Clock> {
@@ -98,6 +105,15 @@ fn get_config_file() -> String {
     }
 }
 
+fn get_sticky_notes_file() -> String {
+    let sticky_notes_file = "sticky-notes.json";
+    if IS_DEV {
+        format!("dev.{}", sticky_notes_file)
+    } else {
+        sticky_notes_file.to_string()
+    }
+}
+
 const OLD_CONFIG_DIR: &str = if IS_DEV { "mclocks.dev" } else { "mclocks" };
 
 fn get_old_config_app_path() -> String {
@@ -106,6 +122,10 @@ fn get_old_config_app_path() -> String {
 
 pub fn get_config_app_path(identifier: &String) -> String {
     vec![identifier, get_config_file().as_str()].join("/")
+}
+
+fn get_sticky_notes_app_path(identifier: &String) -> String {
+    vec![identifier, get_sticky_notes_file().as_str()].join("/")
 }
 
 #[tauri::command]
@@ -146,6 +166,52 @@ pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, St
     }
 
     serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
+}
+
+#[tauri::command]
+pub fn save_config(state: State<'_, Arc<ContextConfig>>, config: AppConfig) -> Result<(), String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let config_path = base_dir.config_dir().join(get_config_app_path(&state.app_identifier));
+    let config_json = serde_json::to_string_pretty(&config)
+        .map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))?;
+    ensure_config_file_exists(&config_path, &config_json)?;
+    Ok(())
+}
+
+fn read_sticky_notes_file(sticky_notes_path: &PathBuf) -> Result<HashMap<String, StickyNoteState>, String> {
+    if sticky_notes_path.exists() {
+        let sticky_notes_json = fs::read_to_string(sticky_notes_path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&sticky_notes_json).map_err(|e| vec!["JSON sticky notes: ", &e.to_string()].join(""))
+    } else {
+        Ok(HashMap::new())
+    }
+}
+
+#[tauri::command]
+pub fn load_sticky_note_state(state: State<'_, Arc<ContextConfig>>, label: String) -> Result<Option<StickyNoteState>, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
+    let sticky_notes = read_sticky_notes_file(&sticky_notes_path)?;
+    Ok(sticky_notes.get(&label).cloned())
+}
+
+#[tauri::command]
+pub fn save_sticky_note_state(state: State<'_, Arc<ContextConfig>>, label: String, sticky_state: StickyNoteState) -> Result<(), String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
+    let mut sticky_notes = read_sticky_notes_file(&sticky_notes_path)?;
+    sticky_notes.insert(label, sticky_state);
+    let sticky_notes_json = serde_json::to_string_pretty(&sticky_notes)
+        .map_err(|e| vec!["JSON sticky notes: ", &e.to_string()].join(""))?;
+    ensure_config_file_exists(&sticky_notes_path, &sticky_notes_json)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn load_all_sticky_note_states(state: State<'_, Arc<ContextConfig>>) -> Result<HashMap<String, StickyNoteState>, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
+    read_sticky_notes_file(&sticky_notes_path)
 }
 
 pub struct ContextConfig {
