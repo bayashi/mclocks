@@ -1,4 +1,5 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { invoke } from '@tauri-apps/api/core';
 import { readClipboardText, writeClipboardText } from './util.js';
 
 /**
@@ -7,6 +8,11 @@ import { readClipboardText, writeClipboardText } from './util.js';
 class StickyNoteWindow {
   constructor(text) {
     this.text = text;
+    this.config = {
+      font: "Courier, monospace",
+      color: "#fff",
+      size: 14
+    };
     this.isExpanded = false;
     this.element = null;
     this.headerElement = null;
@@ -27,6 +33,12 @@ class StickyNoteWindow {
     this.initialHeight = 0;
     this.originalWidth = 300; // Store original width for restoring when collapsing
 
+    // Initialize config first (will be loaded asynchronously)
+    this.config = {
+      font: "Courier, monospace",
+      color: "#fff",
+      size: 14
+    };
     this.init();
   }
 
@@ -40,8 +52,47 @@ class StickyNoteWindow {
       // Ignore error
     }
 
+    // Load config for font, color, and size
+    await this.loadConfig();
     this.create();
     this.setupEventListeners();
+  }
+
+  async loadConfig() {
+    try {
+      const config = await invoke("load_config", {});
+      this.config = {
+        font: config.font || "Courier, monospace",
+        color: config.color || "#fff",
+        size: config.size || 14
+      };
+    } catch (error) {
+      // Use defaults if config loading fails
+      this.config = {
+        font: "Courier, monospace",
+        color: "#fff",
+        size: 14
+      };
+    }
+  }
+
+  colorToRgba(color, opacity) {
+    // Convert color string to rgba format
+    // Supports hex (#fff, #ffffff), rgb(r, g, b), and named colors
+    if (color.startsWith('#')) {
+      const hex = color.slice(1);
+      const r = hex.length === 3 ? parseInt(hex[0] + hex[0], 16) : parseInt(hex.slice(0, 2), 16);
+      const g = hex.length === 3 ? parseInt(hex[1] + hex[1], 16) : parseInt(hex.slice(2, 4), 16);
+      const b = hex.length === 3 ? parseInt(hex[2] + hex[2], 16) : parseInt(hex.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    } else if (color.startsWith('rgb')) {
+      const match = color.match(/\d+/g);
+      if (match && match.length >= 3) {
+        return `rgba(${match[0]}, ${match[1]}, ${match[2]}, ${opacity})`;
+      }
+    }
+    // Fallback: use the color as-is and apply opacity via CSS
+    return color;
   }
 
   create() {
@@ -58,7 +109,9 @@ class StickyNoteWindow {
     this.element.style.top = '0';
     this.element.style.width = '300px';
     this.element.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-    this.element.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+    // Use clock color for border with opacity
+    const borderColor = this.colorToRgba(this.config.color, 0.3);
+    this.element.style.border = `1px solid ${borderColor}`;
     this.element.style.boxShadow = '2px 2px 5px rgba(0, 0, 0, 0.3)';
     this.element.style.display = 'flex';
     this.element.style.flexDirection = 'column';
@@ -67,9 +120,11 @@ class StickyNoteWindow {
     this.element.style.webkitAppRegion = 'no-drag';
     this.element.style.minWidth = '200px';
     this.element.style.minHeight = '50px';
-    this.element.style.fontFamily = 'Courier, monospace';
-    this.element.style.fontSize = '14px';
-    this.element.style.color = '#fff';
+    this.element.style.fontFamily = this.config.font;
+    const isNumericSize = typeof this.config.size === "number" || /^[\d.]+$/.test(this.config.size);
+    const sizeUnit = isNumericSize ? "px" : "";
+    this.element.style.fontSize = `${this.config.size}${sizeUnit}`;
+    this.element.style.color = this.config.color;
 
     // Create header
     this.headerElement = document.createElement('div');
@@ -78,13 +133,16 @@ class StickyNoteWindow {
     this.headerElement.style.justifyContent = 'space-between';
     this.headerElement.style.alignItems = 'center';
     this.headerElement.style.padding = '4px 8px';
-    this.headerElement.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-    this.headerElement.style.borderBottom = '1px solid rgba(255, 255, 255, 0.2)';
+    const headerBgColor = this.colorToRgba(this.config.color, 0.1);
+    this.headerElement.style.backgroundColor = headerBgColor;
+    const borderBottomColor = this.colorToRgba(this.config.color, 0.2);
+    this.headerElement.style.borderBottom = `1px solid ${borderBottomColor}`;
     this.headerElement.style.cursor = 'move';
     this.headerElement.style.userSelect = 'none';
-    this.headerElement.style.fontFamily = 'Courier, monospace';
-    this.headerElement.style.fontSize = '14px';
-    this.headerElement.style.color = '#fff';
+    this.headerElement.style.fontFamily = this.config.font;
+    const headerSizeUnit = typeof this.config.size === "number" || /^[\d.]+$/.test(this.config.size) ? "px" : "";
+    this.headerElement.style.fontSize = `${this.config.size}${headerSizeUnit}`;
+    this.headerElement.style.color = this.config.color;
     this.headerElement.style.webkitAppRegion = 'drag';
 
     // Create left buttons container
@@ -107,8 +165,8 @@ class StickyNoteWindow {
     this.expandButton.style.margin = '0';
     this.expandButton.style.marginTop = '2px';
     this.expandButton.style.userSelect = 'none';
-    this.expandButton.style.fontFamily = 'Courier, monospace';
-    this.expandButton.style.color = '#fff';
+    this.expandButton.style.fontFamily = this.config.font;
+    this.expandButton.style.color = this.config.color;
     this.expandButton.style.width = '20px';
     this.expandButton.style.height = '20px';
     this.expandButton.style.minWidth = '20px';
@@ -131,8 +189,8 @@ class StickyNoteWindow {
     this.copyButton.style.margin = '0';
     this.copyButton.style.marginTop = '2px';
     this.copyButton.style.userSelect = 'none';
-    this.copyButton.style.fontFamily = 'Courier, monospace';
-    this.copyButton.style.color = '#fff';
+    this.copyButton.style.fontFamily = this.config.font;
+    this.copyButton.style.color = this.config.color;
     this.copyButton.style.width = '20px';
     this.copyButton.style.height = '20px';
     this.copyButton.style.minWidth = '20px';
@@ -158,8 +216,8 @@ class StickyNoteWindow {
     this.closeButton.style.margin = '0';
     this.closeButton.style.userSelect = 'none';
     this.closeButton.style.lineHeight = '1';
-    this.closeButton.style.fontFamily = 'Courier, monospace';
-    this.closeButton.style.color = '#fff';
+    this.closeButton.style.fontFamily = this.config.font;
+    this.closeButton.style.color = this.config.color;
     this.closeButton.style.webkitAppRegion = 'no-drag';
 
     this.headerElement.appendChild(leftButtons);
@@ -184,9 +242,10 @@ class StickyNoteWindow {
     this.textElement.style.padding = '4px 8px';
     this.textElement.style.whiteSpace = 'pre-wrap';
     this.textElement.style.wordWrap = 'break-word';
-    this.textElement.style.fontFamily = 'Courier, monospace';
-    this.textElement.style.fontSize = '14px';
-    this.textElement.style.color = '#fff';
+    this.textElement.style.fontFamily = this.config.font;
+    const textSizeUnit = typeof this.config.size === "number" || /^[\d.]+$/.test(this.config.size) ? "px" : "";
+    this.textElement.style.fontSize = `${this.config.size}${textSizeUnit}`;
+    this.textElement.style.color = this.config.color;
     this.textElement.style.userSelect = 'text';
     this.textElement.style.lineHeight = '1.2';
 
