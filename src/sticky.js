@@ -331,8 +331,8 @@ export async function createStickyNoteFromClipboard(ctx) {
       return;
     }
 
-    // Create unique label for the window
-    const label = `sticky-${Date.now()}`;
+    // Create unique label for the window using UUID v4
+    const label = `sticky-${crypto.randomUUID()}`;
     await createStickyNoteWindow(label, text);
   } catch (error) {
     // Ignore error
