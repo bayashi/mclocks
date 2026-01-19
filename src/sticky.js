@@ -399,6 +399,10 @@ async function createStickyNoteWindow(label, text) {
  */
 export async function restoreStickyNotes() {
   try {
+    // Clean up window-state file for deleted sticky notes
+    await invoke("cleanup_window_state", {});
+
+    // Restore saved sticky notes
     const allStates = await invoke("load_all_sticky_note_states", {});
     for (const [label, state] of Object.entries(allStates)) {
       await createStickyNoteWindow(label, state.text);

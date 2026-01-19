@@ -208,10 +208,72 @@ pub fn save_sticky_note_state(state: State<'_, Arc<ContextConfig>>, label: Strin
 }
 
 #[tauri::command]
+pub fn delete_sticky_note_state(state: State<'_, Arc<ContextConfig>>, label: String) -> Result<(), String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
+    let mut sticky_notes = read_sticky_notes_file(&sticky_notes_path)?;
+    sticky_notes.remove(&label);
+    let sticky_notes_json = serde_json::to_string_pretty(&sticky_notes)
+        .map_err(|e| vec!["JSON sticky notes: ", &e.to_string()].join(""))?;
+    ensure_config_file_exists(&sticky_notes_path, &sticky_notes_json)?;
+    Ok(())
+}
+
+#[tauri::command]
 pub fn load_all_sticky_note_states(state: State<'_, Arc<ContextConfig>>) -> Result<HashMap<String, StickyNoteState>, String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
     let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
     read_sticky_notes_file(&sticky_notes_path)
+}
+
+#[tauri::command]
+pub fn cleanup_window_state(state: State<'_, Arc<ContextConfig>>) -> Result<(), String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+
+    // Get list of existing sticky note labels
+    let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
+    let sticky_notes = read_sticky_notes_file(&sticky_notes_path)?;
+    let sticky_labels: std::collections::HashSet<String> = sticky_notes.keys().cloned().collect();
+
+    // Get window-state file path
+    // window-state plugin uses ".window-state.json" as default filename
+    // In dev mode, it uses ".dev.window-state.json"
+    let window_state_filename = if IS_DEV {
+        ".dev.window-state.json"
+    } else {
+        ".window-state.json"
+    };
+    let window_state_path = base_dir.config_dir().join(&state.app_identifier).join(&window_state_filename);
+
+    // Read window-state file if it exists
+    if window_state_path.exists() {
+        let window_state_json = fs::read_to_string(&window_state_path).map_err(|e| e.to_string())?;
+
+        // Parse window-state JSON (it's a map of window labels to state)
+        let mut window_state: serde_json::Value = match serde_json::from_str(&window_state_json) {
+            Ok(v) => v,
+            Err(_) => return Ok(()), // If parsing fails, skip cleanup
+        };
+
+        if let Some(window_state_map) = window_state.as_object_mut() {
+            // Remove entries for sticky notes that no longer exist
+            let keys_to_remove: Vec<String> = window_state_map.keys()
+                .filter(|key| key.starts_with("sticky-") && !sticky_labels.contains(*key))
+                .cloned()
+                .collect();
+
+            for key in keys_to_remove {
+                window_state_map.remove(&key);
+            }
+
+            // Write back the cleaned window-state file
+            let cleaned_json = serde_json::to_string_pretty(&window_state)
+                .map_err(|e| vec!["JSON window state: ", &e.to_string()].join(""))?;
+            ensure_config_file_exists(&window_state_path, &cleaned_json)?;
+        }
+    }
+
+    Ok(())
 }
 
 pub struct ContextConfig {

@@ -62,6 +62,25 @@ class StickyNoteWindow {
     await this.loadSavedState();
     this.create();
     this.setupEventListeners();
+    // Listen for window close event to save state
+    this.setupWindowCloseHandler();
+  }
+
+  setupWindowCloseHandler() {
+    // Save state when window is about to close
+    window.addEventListener('beforeunload', async () => {
+      try {
+        // Clear debounce timer and save immediately
+        if (this.saveDebounceTimer) {
+          clearTimeout(this.saveDebounceTimer);
+          this.saveDebounceTimer = null;
+        }
+        // Save final window state
+        await saveWindowState(StateFlags.ALL);
+      } catch (error) {
+        // Ignore error
+      }
+    });
   }
 
   async loadConfig() {
@@ -374,6 +393,12 @@ class StickyNoteWindow {
       e.stopPropagation();
       e.preventDefault();
       try {
+        // Save final window state before closing
+        await saveWindowState(StateFlags.ALL);
+        // Delete from persistence file before closing
+        if (this.windowLabel) {
+          await invoke("delete_sticky_note_state", { label: this.windowLabel });
+        }
         const currentWindow = getCurrentWindow();
         await currentWindow.close();
       } catch (error) {
