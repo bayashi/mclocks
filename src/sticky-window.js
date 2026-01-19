@@ -1,0 +1,473 @@
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { readClipboardText, writeClipboardText } from './util.js';
+
+/**
+ * Sticky note class for window-based display
+ */
+class StickyNoteWindow {
+  constructor(text) {
+    this.text = text;
+    this.isExpanded = false;
+    this.element = null;
+    this.headerElement = null;
+    this.contentElement = null;
+    this.expandButton = null;
+    this.copyButton = null;
+    this.closeButton = null;
+    this.textElement = null;
+    this.isDragging = false;
+    this.isResizing = false;
+    this.dragStartX = 0;
+    this.dragStartY = 0;
+    this.initialLeft = 0;
+    this.initialTop = 0;
+    this.resizeStartX = 0;
+    this.resizeStartY = 0;
+    this.initialWidth = 0;
+    this.initialHeight = 0;
+    this.originalWidth = 300; // Store original width for restoring when collapsing
+
+    this.init();
+  }
+
+  async init() {
+    try {
+      const currentWindow = getCurrentWindow();
+      await currentWindow.setAlwaysOnTop(true);
+      // Initially disable resizing (single-line mode)
+      await currentWindow.setResizable(false);
+    } catch (error) {
+      // Ignore error
+    }
+
+    this.create();
+    this.setupEventListeners();
+  }
+
+  create() {
+    const container = document.querySelector('#sticky-container');
+    if (!container) {
+      return;
+    }
+
+    // Create sticky note container
+    this.element = document.createElement('div');
+    this.element.className = 'sticky-note';
+    this.element.style.position = 'relative';
+    this.element.style.left = '0';
+    this.element.style.top = '0';
+    this.element.style.width = '300px';
+    this.element.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    this.element.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+    this.element.style.boxShadow = '2px 2px 5px rgba(0, 0, 0, 0.3)';
+    this.element.style.display = 'flex';
+    this.element.style.flexDirection = 'column';
+    this.element.style.zIndex = '10000';
+    this.element.style.cursor = 'default';
+    this.element.style.webkitAppRegion = 'no-drag';
+    this.element.style.minWidth = '200px';
+    this.element.style.minHeight = '50px';
+    this.element.style.fontFamily = 'Courier, monospace';
+    this.element.style.fontSize = '14px';
+    this.element.style.color = '#fff';
+
+    // Create header
+    this.headerElement = document.createElement('div');
+    this.headerElement.className = 'sticky-note-header';
+    this.headerElement.style.display = 'flex';
+    this.headerElement.style.justifyContent = 'space-between';
+    this.headerElement.style.alignItems = 'center';
+    this.headerElement.style.padding = '4px 8px';
+    this.headerElement.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+    this.headerElement.style.borderBottom = '1px solid rgba(255, 255, 255, 0.2)';
+    this.headerElement.style.cursor = 'move';
+    this.headerElement.style.userSelect = 'none';
+    this.headerElement.style.fontFamily = 'Courier, monospace';
+    this.headerElement.style.fontSize = '14px';
+    this.headerElement.style.color = '#fff';
+    this.headerElement.style.webkitAppRegion = 'drag';
+
+    // Create left buttons container
+    const leftButtons = document.createElement('div');
+    leftButtons.style.display = 'flex';
+    leftButtons.style.gap = '4px';
+    leftButtons.style.alignItems = 'center';
+    leftButtons.style.webkitAppRegion = 'no-drag';
+    leftButtons.style.paddingTop = '2px';
+
+    // Create expand/collapse button
+    this.expandButton = document.createElement('button');
+    this.expandButton.className = 'sticky-note-expand';
+    this.expandButton.textContent = '▶';
+    this.expandButton.style.border = 'none';
+    this.expandButton.style.background = 'transparent';
+    this.expandButton.style.cursor = 'pointer';
+    this.expandButton.style.fontSize = '14px';
+    this.expandButton.style.padding = '0';
+    this.expandButton.style.margin = '0';
+    this.expandButton.style.marginTop = '2px';
+    this.expandButton.style.userSelect = 'none';
+    this.expandButton.style.fontFamily = 'Courier, monospace';
+    this.expandButton.style.color = '#fff';
+    this.expandButton.style.width = '20px';
+    this.expandButton.style.height = '20px';
+    this.expandButton.style.minWidth = '20px';
+    this.expandButton.style.minHeight = '20px';
+    this.expandButton.style.display = 'flex';
+    this.expandButton.style.alignItems = 'center';
+    this.expandButton.style.justifyContent = 'center';
+    this.expandButton.style.flexShrink = '0';
+    this.expandButton.style.boxSizing = 'border-box';
+
+    // Create copy button
+    this.copyButton = document.createElement('button');
+    this.copyButton.className = 'sticky-note-copy';
+    this.copyButton.textContent = '⧉';
+    this.copyButton.style.border = 'none';
+    this.copyButton.style.background = 'transparent';
+    this.copyButton.style.cursor = 'pointer';
+    this.copyButton.style.fontSize = '14px';
+    this.copyButton.style.padding = '0';
+    this.copyButton.style.margin = '0';
+    this.copyButton.style.marginTop = '2px';
+    this.copyButton.style.userSelect = 'none';
+    this.copyButton.style.fontFamily = 'Courier, monospace';
+    this.copyButton.style.color = '#fff';
+    this.copyButton.style.width = '20px';
+    this.copyButton.style.height = '20px';
+    this.copyButton.style.minWidth = '20px';
+    this.copyButton.style.minHeight = '20px';
+    this.copyButton.style.display = 'flex';
+    this.copyButton.style.alignItems = 'center';
+    this.copyButton.style.justifyContent = 'center';
+    this.copyButton.style.flexShrink = '0';
+    this.copyButton.style.boxSizing = 'border-box';
+
+    leftButtons.appendChild(this.expandButton);
+    leftButtons.appendChild(this.copyButton);
+
+    // Create close button
+    this.closeButton = document.createElement('button');
+    this.closeButton.className = 'sticky-note-close';
+    this.closeButton.textContent = '×';
+    this.closeButton.style.border = 'none';
+    this.closeButton.style.background = 'transparent';
+    this.closeButton.style.cursor = 'pointer';
+    this.closeButton.style.fontSize = '18px';
+    this.closeButton.style.padding = '2px 8px';
+    this.closeButton.style.margin = '0';
+    this.closeButton.style.userSelect = 'none';
+    this.closeButton.style.lineHeight = '1';
+    this.closeButton.style.fontFamily = 'Courier, monospace';
+    this.closeButton.style.color = '#fff';
+    this.closeButton.style.webkitAppRegion = 'no-drag';
+
+    this.headerElement.appendChild(leftButtons);
+    this.headerElement.appendChild(this.closeButton);
+
+    // Create content area
+    this.contentElement = document.createElement('div');
+    this.contentElement.className = 'sticky-note-content';
+    this.contentElement.style.padding = '0';
+    this.contentElement.style.flex = 'none';
+    this.contentElement.style.overflow = 'hidden';
+    this.contentElement.style.cursor = 'text';
+    this.contentElement.style.userSelect = 'text';
+    this.contentElement.style.position = 'relative';
+    this.contentElement.style.webkitAppRegion = 'no-drag';
+
+    // Create text element (preformatted text)
+    this.textElement = document.createElement('pre');
+    this.textElement.className = 'sticky-note-text';
+    this.textElement.textContent = this.text;
+    this.textElement.style.margin = '0';
+    this.textElement.style.padding = '4px 8px';
+    this.textElement.style.whiteSpace = 'pre-wrap';
+    this.textElement.style.wordWrap = 'break-word';
+    this.textElement.style.fontFamily = 'Courier, monospace';
+    this.textElement.style.fontSize = '14px';
+    this.textElement.style.color = '#fff';
+    this.textElement.style.userSelect = 'text';
+    this.textElement.style.lineHeight = '1.2';
+
+    this.contentElement.appendChild(this.textElement);
+
+    // Create resize handle
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'sticky-note-resize';
+    resizeHandle.style.position = 'absolute';
+    resizeHandle.style.bottom = '0';
+    resizeHandle.style.right = '0';
+    resizeHandle.style.width = '16px';
+    resizeHandle.style.height = '16px';
+    resizeHandle.style.cursor = 'nwse-resize';
+    resizeHandle.style.backgroundColor = 'transparent';
+    resizeHandle.style.zIndex = '1001';
+    resizeHandle.style.webkitAppRegion = 'no-drag';
+
+    this.element.appendChild(this.headerElement);
+    this.element.appendChild(this.contentElement);
+
+    container.appendChild(this.element);
+    this.element.appendChild(resizeHandle);
+
+    // Set initial collapsed state
+    this.updateCollapsedState();
+  }
+
+  setupEventListeners() {
+    // Expand/collapse button
+    this.expandButton.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await this.toggleExpand();
+    });
+
+    // Copy button
+    this.copyButton.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        await writeClipboardText(this.text);
+        
+        // Show checkmark feedback
+        const originalText = this.copyButton.textContent;
+        this.copyButton.textContent = '✓';
+        
+        // Restore original icon after 500ms
+        setTimeout(() => {
+          this.copyButton.textContent = originalText;
+        }, 500);
+      } catch (error) {
+        // Ignore error
+      }
+    });
+
+    // Close button
+    this.closeButton.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      try {
+        const currentWindow = getCurrentWindow();
+        await currentWindow.close();
+      } catch (error) {
+        // Ignore error
+      }
+    });
+
+    // Header drag (for window dragging)
+    this.headerElement.addEventListener('mousedown', async (e) => {
+      if (e.target === this.expandButton || e.target === this.copyButton || e.target === this.closeButton) {
+        return;
+      }
+      // Window dragging is handled by webkit-app-region: drag
+    });
+
+    // Resize handle
+    const resizeHandle = this.element.querySelector('.sticky-note-resize');
+    if (resizeHandle) {
+      resizeHandle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        // Only allow resizing when expanded
+        if (!this.isExpanded) {
+          e.preventDefault();
+          return;
+        }
+        this.startResizing(e);
+      });
+    }
+
+    // Mouse move and up handlers on document
+    document.addEventListener('mousemove', (e) => {
+      if (this.isResizing) {
+        this.resize(e);
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      this.isResizing = false;
+    });
+  }
+
+  async toggleExpand() {
+    this.isExpanded = !this.isExpanded;
+    await this.updateCollapsedState();
+  }
+
+  async updateCollapsedState() {
+    // Get actual line height from computed style
+    const computedStyle = window.getComputedStyle(this.textElement);
+    const fontSize = parseFloat(computedStyle.fontSize) || 14;
+    const lineHeightValue = parseFloat(computedStyle.lineHeight) || fontSize * 1.2;
+    const lineHeight = lineHeightValue;
+    
+    const headerHeight = this.headerElement.getBoundingClientRect().height || 30;
+    const textPadding = 8; // 4px top + 4px bottom from textElement padding
+    const resizeHandle = this.element.querySelector('.sticky-note-resize');
+
+    if (this.isExpanded) {
+      // Calculate number of lines in text
+      const lines = this.text.split('\n');
+      const maxLines = 8;
+      const displayLines = Math.min(lines.length, maxLines);
+      const contentHeight = displayLines * lineHeight + textPadding;
+
+      this.contentElement.style.overflowY = lines.length > maxLines ? 'auto' : 'hidden';
+      this.contentElement.style.maxHeight = `${contentHeight}px`;
+      this.contentElement.style.height = `${contentHeight}px`;
+      this.contentElement.style.flex = 'none';
+      this.expandButton.textContent = '▼';
+
+      // Set element height
+      const totalHeight = headerHeight + contentHeight;
+      this.element.style.height = `${totalHeight}px`;
+
+      // If width was changed, keep it; otherwise use original width
+      if (!this.element.style.width || this.element.style.width === '300px') {
+        this.element.style.width = `${this.originalWidth}px`;
+      }
+
+      // Show and enable resize handle
+      if (resizeHandle) {
+        resizeHandle.style.display = 'block';
+        resizeHandle.style.cursor = 'nwse-resize';
+        resizeHandle.style.pointerEvents = 'auto';
+      }
+
+      // Enable window resizing
+      await this.setWindowResizable(true);
+
+      // Clear size constraints when expanding
+      try {
+        const currentWindow = getCurrentWindow();
+        await currentWindow.setMaxSize(null);
+        await currentWindow.setMinSize(null);
+      } catch (error) {
+        // Ignore error
+      }
+
+      // Resize window to match content
+      this.resizeWindow();
+    } else {
+      this.contentElement.style.overflowY = 'hidden';
+      // Single line height: lineHeight + text padding (4px top + 4px bottom)
+      const singleLineHeight = lineHeight + textPadding;
+      this.contentElement.style.maxHeight = `${singleLineHeight}px`;
+      this.contentElement.style.height = `${singleLineHeight}px`;
+      this.contentElement.style.flex = 'none';
+      this.expandButton.textContent = '▶';
+
+      // Restore original width when collapsing
+      this.element.style.width = `${this.originalWidth}px`;
+
+      // Set element height to single line
+      const totalHeight = headerHeight + singleLineHeight;
+      this.element.style.height = `${totalHeight}px`;
+
+      // Hide and disable resize handle
+      if (resizeHandle) {
+        resizeHandle.style.display = 'none';
+        resizeHandle.style.cursor = 'default';
+        resizeHandle.style.pointerEvents = 'none';
+      }
+
+      // Disable window resizing
+      this.setWindowResizable(false);
+
+      // Resize window to match content
+      this.resizeWindow();
+    }
+  }
+
+  startResizing(e) {
+    // Only allow resizing when expanded
+    if (!this.isExpanded) {
+      return;
+    }
+
+    this.isResizing = true;
+    this.resizeStartX = e.clientX;
+    this.resizeStartY = e.clientY;
+    const rect = this.element.getBoundingClientRect();
+    this.initialWidth = rect.width;
+    this.initialHeight = rect.height;
+    e.preventDefault();
+  }
+
+  resize(e) {
+    if (!this.isResizing) return;
+    // Only allow resizing when expanded
+    if (!this.isExpanded) return;
+
+    const deltaX = e.clientX - this.resizeStartX;
+    const deltaY = e.clientY - this.resizeStartY;
+
+    const newWidth = Math.max(200, this.initialWidth + deltaX);
+    const newHeight = Math.max(50, this.initialHeight + deltaY);
+
+    // Update both width and height when expanded
+    this.element.style.width = `${newWidth}px`;
+    this.element.style.height = `${newHeight}px`;
+
+    // Update content height to fill available space
+    const headerHeight = this.headerElement.getBoundingClientRect().height || 30;
+    const textPadding = 8; // 4px top + 4px bottom from textElement padding
+    const availableContentHeight = newHeight - headerHeight;
+    this.contentElement.style.height = `${availableContentHeight}px`;
+    this.contentElement.style.maxHeight = `${availableContentHeight}px`;
+
+    // Resize window to match content (use requestAnimationFrame to ensure DOM is updated)
+    requestAnimationFrame(() => {
+      this.resizeWindow();
+    });
+  }
+
+  async setWindowResizable(resizable) {
+    try {
+      const currentWindow = getCurrentWindow();
+      await currentWindow.setResizable(resizable);
+    } catch (error) {
+      // Ignore error
+    }
+  }
+
+  async resizeWindow() {
+    try {
+      const currentWindow = getCurrentWindow();
+
+      // Get size from style directly to avoid timing issues
+      const elementWidth = parseFloat(this.element.style.width) || this.element.getBoundingClientRect().width;
+      const elementHeight = parseFloat(this.element.style.height) || this.element.getBoundingClientRect().height;
+
+      // Add border width (1px top + 1px bottom = 2px) to ensure border is visible
+      const borderWidth = 2;
+      const newWidth = Math.ceil(elementWidth) + borderWidth;
+      const newHeight = Math.ceil(elementHeight) + borderWidth;
+
+      // Remove any size constraints before resizing
+      try {
+        await currentWindow.setMaxSize(null);
+        await currentWindow.setMinSize(null);
+      } catch (error) {
+        // Ignore error
+      }
+
+      await currentWindow.setSize({
+        type: 'Logical',
+        width: newWidth,
+        height: newHeight
+      });
+    } catch (error) {
+      // Ignore error
+    }
+  }
+}
+
+// Initialize sticky note from URL parameter or clipboard
+window.addEventListener('DOMContentLoaded', async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const text = urlParams.get('text');
+
+  if (text) {
+    const decodedText = decodeURIComponent(text);
+    new StickyNoteWindow(decodedText);
+  }
+});
