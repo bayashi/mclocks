@@ -240,7 +240,8 @@ class StickyNoteWindow {
     const headerSizeUnit = typeof this.config.size === "number" || /^[\d.]+$/.test(this.config.size) ? "px" : "";
     this.headerElement.style.fontSize = `${this.config.size}${headerSizeUnit}`;
     this.headerElement.style.color = this.config.color;
-    this.headerElement.style.webkitAppRegion = 'drag';
+    // On macOS, use startDragging() instead of webkitAppRegion drag
+    this.headerElement.style.webkitAppRegion = isMacOS() ? 'no-drag' : 'drag';
 
     // Create left buttons container
     const leftButtons = document.createElement('div');
@@ -442,7 +443,16 @@ class StickyNoteWindow {
       if (e.target === this.expandButton || e.target === this.copyButton || e.target === this.closeButton) {
         return;
       }
-      // Window dragging is handled by webkit-app-region: drag
+      // On macOS, start dragging explicitly (webkit-app-region: drag is unreliable on some setups)
+      if (isMacOS()) {
+        try {
+          const currentWindow = getCurrentWindow();
+          await currentWindow.startDragging();
+        // eslint-disable-next-line no-unused-vars
+        } catch (_) {
+          // Ignore error
+        }
+      }
     });
 
     // Resize handle
