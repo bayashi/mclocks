@@ -367,7 +367,9 @@ async function createStickyNoteWindow(label, text) {
   const url = `${baseUrl}/sticky.html?text=${encodedText}`;
 
   try {
-    const webview = new WebviewWindow(label, {
+    // Use mocked WebviewWindow for testing if available, otherwise use the imported one
+    const WebviewWindowClass = (window.__TAURI_INTERNALS__?.WebviewWindow) || WebviewWindow;
+    const webview = new WebviewWindowClass(label, {
       url: url,
       title: 'Sticky Note',
       width: 300,
