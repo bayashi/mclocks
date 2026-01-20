@@ -96,10 +96,8 @@ class StickyNoteWindow {
     // This ensures position is saved even if other events don't fire
     setInterval(async () => {
       try {
-        // Only save if window is not currently being dragged
-        if (!this.isWindowDragging) {
-          await this.saveState();
-        }
+        // Save sticky note state periodically on macOS
+        await this.saveState();
       // eslint-disable-next-line no-unused-vars
       } catch (_) {
         // Ignore error
