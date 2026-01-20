@@ -336,6 +336,7 @@ class StickyNote {
  * Create a new sticky note window from clipboard text
  * @param {Ctx} ctx - Application context
  */
+// eslint-disable-next-line no-unused-vars
 export async function createStickyNoteFromClipboard(ctx) {
   try {
     const text = await readClipboardText();
@@ -346,7 +347,8 @@ export async function createStickyNoteFromClipboard(ctx) {
     // Create unique label for the window using UUID v4
     const label = `sticky-${crypto.randomUUID()}`;
     await createStickyNoteWindow(label, text);
-  } catch (error) {
+  // eslint-disable-next-line no-unused-vars
+  } catch (_) {
     // Ignore error
   }
 }
@@ -389,9 +391,11 @@ async function createStickyNoteWindow(label, text) {
       // Window created successfully
     });
 
+    // eslint-disable-next-line no-unused-vars
     webview.once('tauri://error', (_) => {
       // Ignore error
     });
+  // eslint-disable-next-line no-unused-vars
   } catch (_) {
     // Ignore error
   }
@@ -410,6 +414,7 @@ export async function restoreStickyNotes() {
     for (const [label, state] of Object.entries(allStates)) {
       await createStickyNoteWindow(label, state.text);
     }
+  // eslint-disable-next-line no-unused-vars
   } catch (_) {
     // Ignore error
   }

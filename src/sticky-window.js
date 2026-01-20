@@ -52,6 +52,7 @@ class StickyNoteWindow {
       await currentWindow.setAlwaysOnTop(true);
       // Initially disable resizing (single-line mode)
       await currentWindow.setResizable(false);
+    // eslint-disable-next-line no-unused-vars
     } catch (_) {
       // Ignore error
     }
@@ -111,7 +112,8 @@ class StickyNoteWindow {
         this.text = savedState.text || this.text;
         this.isExpanded = savedState.isExpanded || false;
       }
-    } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_) {
       // Ignore error, use defaults
     }
   }
@@ -383,7 +385,8 @@ class StickyNoteWindow {
         setTimeout(() => {
           this.copyButton.textContent = originalText;
         }, 500);
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_) {
         // Ignore error
       }
     });
@@ -401,6 +404,7 @@ class StickyNoteWindow {
         }
         const currentWindow = getCurrentWindow();
         await currentWindow.close();
+      // eslint-disable-next-line no-unused-vars
       } catch (_) {
         // Ignore error
       }
@@ -457,7 +461,8 @@ class StickyNoteWindow {
         }).catch(() => {
           // Ignore error
         });
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_) {
         // Ignore error
       }
     })();
@@ -562,6 +567,7 @@ class StickyNoteWindow {
         const currentWindow = getCurrentWindow();
         await currentWindow.setMaxSize(null);
         await currentWindow.setMinSize(null);
+      // eslint-disable-next-line no-unused-vars
       } catch (_) {
         // Ignore error
       }
@@ -683,6 +689,7 @@ class StickyNoteWindow {
       try {
         await currentWindow.setMaxSize(null);
         await currentWindow.setMinSize(null);
+      // eslint-disable-next-line no-unused-vars
       } catch (_) {
         // Ignore error
       }
@@ -692,6 +699,7 @@ class StickyNoteWindow {
         width: newWidth,
         height: newHeight
       });
+    // eslint-disable-next-line no-unused-vars
     } catch (_) {
       // Ignore error
     }
