@@ -599,5 +599,95 @@ mod tests {
             _ => panic!("Size should be Int variant"),
         }
     }
+
+    #[test]
+    fn test_read_sticky_notes_file_not_exists() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let sticky_notes_path = temp_dir.path().join("sticky-notes.json");
+
+        // File doesn't exist, should return empty HashMap
+        let result = read_sticky_notes_file(&sticky_notes_path);
+        assert!(result.is_ok(), "Should return Ok when file doesn't exist");
+        let sticky_notes = result.unwrap();
+        assert!(sticky_notes.is_empty(), "Should return empty HashMap when file doesn't exist");
+    }
+
+    #[test]
+    fn test_read_sticky_notes_file_valid_json() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let sticky_notes_path = temp_dir.path().join("sticky-notes.json");
+
+        let test_json = r#"{
+  "sticky-1": {
+    "text": "Test note 1",
+    "isExpanded": false
+  },
+  "sticky-2": {
+    "text": "Test note 2",
+    "isExpanded": true
+  }
+}"#;
+        fs::write(&sticky_notes_path, test_json).expect("Failed to write sticky notes file");
+
+        let result = read_sticky_notes_file(&sticky_notes_path);
+        assert!(result.is_ok(), "Should successfully read valid sticky notes file");
+        let sticky_notes = result.unwrap();
+        assert_eq!(sticky_notes.len(), 2, "Should have 2 sticky notes");
+
+        let note1 = sticky_notes.get("sticky-1");
+        assert!(note1.is_some(), "Should have sticky-1");
+        assert_eq!(note1.unwrap().text, "Test note 1", "Text should match");
+        assert_eq!(note1.unwrap().is_expanded, false, "isExpanded should be false");
+
+        let note2 = sticky_notes.get("sticky-2");
+        assert!(note2.is_some(), "Should have sticky-2");
+        assert_eq!(note2.unwrap().text, "Test note 2", "Text should match");
+        assert_eq!(note2.unwrap().is_expanded, true, "isExpanded should be true");
+    }
+
+    #[test]
+    fn test_read_sticky_notes_file_empty_json() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let sticky_notes_path = temp_dir.path().join("sticky-notes.json");
+
+        let test_json = "{}";
+        fs::write(&sticky_notes_path, test_json).expect("Failed to write sticky notes file");
+
+        let result = read_sticky_notes_file(&sticky_notes_path);
+        assert!(result.is_ok(), "Should successfully read empty JSON object");
+        let sticky_notes = result.unwrap();
+        assert!(sticky_notes.is_empty(), "Should return empty HashMap for empty JSON object");
+    }
+
+    #[test]
+    fn test_read_sticky_notes_file_invalid_json() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let sticky_notes_path = temp_dir.path().join("sticky-notes.json");
+
+        let invalid_json = r#"{"invalid": json}"#;
+        fs::write(&sticky_notes_path, invalid_json).expect("Failed to write invalid JSON file");
+
+        let result = read_sticky_notes_file(&sticky_notes_path);
+        assert!(result.is_err(), "Should return error for invalid JSON");
+        let error_msg = result.unwrap_err();
+        assert!(error_msg.contains("JSON sticky notes"), "Error message should mention JSON sticky notes");
+    }
+
+    #[test]
+    fn test_read_sticky_notes_file_missing_field() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let sticky_notes_path = temp_dir.path().join("sticky-notes.json");
+
+        // Missing isExpanded field
+        let invalid_json = r#"{
+  "sticky-1": {
+    "text": "Test note"
+  }
+}"#;
+        fs::write(&sticky_notes_path, invalid_json).expect("Failed to write JSON file with missing field");
+
+        let result = read_sticky_notes_file(&sticky_notes_path);
+        assert!(result.is_err(), "Should return error for JSON with missing required field");
+    }
 }
 
