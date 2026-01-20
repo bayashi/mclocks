@@ -78,7 +78,8 @@ class StickyNoteWindow {
         }
         // Save final window state
         await saveWindowState(StateFlags.ALL);
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_) {
         // Ignore error
       }
     });
@@ -92,7 +93,8 @@ class StickyNoteWindow {
         color: config.color || "#fff",
         size: config.size || 14
       };
-    } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_) {
       // Use defaults if config loading fails
       this.config = {
         font: "Courier, monospace",
@@ -142,6 +144,7 @@ class StickyNoteWindow {
         if (!skipWindowState) {
           await saveWindowState(StateFlags.ALL);
         }
+      // eslint-disable-next-line no-unused-vars
       } catch (_) {
         // Ignore error
       }
@@ -667,6 +670,7 @@ class StickyNoteWindow {
     try {
       const currentWindow = getCurrentWindow();
       await currentWindow.setResizable(resizable);
+    // eslint-disable-next-line no-unused-vars
     } catch (_) {
       // Ignore error
     }
