@@ -1,7 +1,7 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
-import { readClipboardText, writeClipboardText } from './util.js';
+import { writeClipboardText } from './util.js';
 
 /**
  * Sticky note class for window-based display
@@ -52,7 +52,7 @@ class StickyNoteWindow {
       await currentWindow.setAlwaysOnTop(true);
       // Initially disable resizing (single-line mode)
       await currentWindow.setResizable(false);
-    } catch (error) {
+    } catch (_) {
       // Ignore error
     }
 
@@ -140,7 +140,7 @@ class StickyNoteWindow {
         if (!skipWindowState) {
           await saveWindowState(StateFlags.ALL);
         }
-      } catch (error) {
+      } catch (_) {
         // Ignore error
       }
     }, 300); // 300ms debounce
@@ -401,7 +401,7 @@ class StickyNoteWindow {
         }
         const currentWindow = getCurrentWindow();
         await currentWindow.close();
-      } catch (error) {
+      } catch (_) {
         // Ignore error
       }
     });
@@ -562,7 +562,7 @@ class StickyNoteWindow {
         const currentWindow = getCurrentWindow();
         await currentWindow.setMaxSize(null);
         await currentWindow.setMinSize(null);
-      } catch (error) {
+      } catch (_) {
         // Ignore error
       }
 
@@ -661,7 +661,7 @@ class StickyNoteWindow {
     try {
       const currentWindow = getCurrentWindow();
       await currentWindow.setResizable(resizable);
-    } catch (error) {
+    } catch (_) {
       // Ignore error
     }
   }
@@ -683,7 +683,7 @@ class StickyNoteWindow {
       try {
         await currentWindow.setMaxSize(null);
         await currentWindow.setMinSize(null);
-      } catch (error) {
+      } catch (_) {
         // Ignore error
       }
 
@@ -692,7 +692,7 @@ class StickyNoteWindow {
         width: newWidth,
         height: newHeight
       });
-    } catch (error) {
+    } catch (_) {
       // Ignore error
     }
   }

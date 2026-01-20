@@ -3,8 +3,9 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { invoke } from '@tauri-apps/api/core';
 
 /**
- * Sticky note class
+ * Sticky note class (legacy, not currently used)
  */
+// eslint-disable-next-line no-unused-vars
 class StickyNote {
   constructor(text, ctx) {
     this.ctx = ctx;
@@ -388,10 +389,10 @@ async function createStickyNoteWindow(label, text) {
       // Window created successfully
     });
 
-    webview.once('tauri://error', (e) => {
+    webview.once('tauri://error', (_) => {
       // Ignore error
     });
-  } catch (createError) {
+  } catch (_) {
     // Ignore error
   }
 }
@@ -409,7 +410,7 @@ export async function restoreStickyNotes() {
     for (const [label, state] of Object.entries(allStates)) {
       await createStickyNoteWindow(label, state.text);
     }
-  } catch (error) {
+  } catch (_) {
     // Ignore error
   }
 }
