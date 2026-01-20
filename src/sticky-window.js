@@ -1,7 +1,7 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
-import { writeClipboardText } from './util.js';
+import { writeClipboardText, isMacOS } from './util.js';
 
 /**
  * Sticky note class for window-based display
@@ -65,6 +65,10 @@ class StickyNoteWindow {
     this.setupEventListeners();
     // Listen for window close event to save state
     this.setupWindowCloseHandler();
+    // Setup periodic save for macOS (fallback)
+    if (isMacOS()) {
+      this.setupMacPeriodicSave();
+    }
   }
 
   setupWindowCloseHandler() {
@@ -76,13 +80,31 @@ class StickyNoteWindow {
           clearTimeout(this.saveDebounceTimer);
           this.saveDebounceTimer = null;
         }
-        // Save final window state
-        await saveWindowState(StateFlags.ALL);
+        // Save final window state (skip on macOS due to platform-specific issues)
+        if (!isMacOS()) {
+          await saveWindowState(StateFlags.ALL);
+        }
       // eslint-disable-next-line no-unused-vars
       } catch (_) {
         // Ignore error
       }
     });
+  }
+
+  setupMacPeriodicSave() {
+    // Periodic save every 30 seconds as fallback for macOS
+    // This ensures position is saved even if other events don't fire
+    setInterval(async () => {
+      try {
+        // Only save if window is not currently being dragged
+        if (!this.isWindowDragging) {
+          await this.saveState();
+        }
+      // eslint-disable-next-line no-unused-vars
+      } catch (_) {
+        // Ignore error
+      }
+    }, 30000); // 30 seconds
   }
 
   async loadConfig() {
@@ -140,8 +162,8 @@ class StickyNoteWindow {
           label: this.windowLabel,
           stickyState: state
         });
-        // Save window position and size using window-state plugin (skip during resize)
-        if (!skipWindowState) {
+        // Save window position and size using window-state plugin (skip during resize and on macOS)
+        if (!skipWindowState && !isMacOS()) {
           await saveWindowState(StateFlags.ALL);
         }
       // eslint-disable-next-line no-unused-vars
@@ -399,8 +421,10 @@ class StickyNoteWindow {
       e.stopPropagation();
       e.preventDefault();
       try {
-        // Save final window state before closing
-        await saveWindowState(StateFlags.ALL);
+        // Save final window state before closing (skip on macOS due to platform-specific issues)
+        if (!isMacOS()) {
+          await saveWindowState(StateFlags.ALL);
+        }
         // Delete from persistence file before closing
         if (this.windowLabel) {
           await invoke("delete_sticky_note_state", { label: this.windowLabel });
@@ -455,6 +479,10 @@ class StickyNoteWindow {
       try {
         const currentWindow = getCurrentWindow();
         currentWindow.onMoved(async () => {
+          // Skip saving on macOS due to platform-specific issues
+          if (isMacOS()) {
+            return;
+          }
           // Skip saving during resize to avoid hanging
           if (this.isResizing) {
             return;
