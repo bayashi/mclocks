@@ -1,7 +1,9 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::{fs, io::Write, path::PathBuf};
-use tauri::{LogicalPosition, LogicalSize, WebviewWindow};
+use tauri::{LogicalSize, PhysicalPosition, WebviewWindow};
+#[cfg(not(target_os = "windows"))]
+use tauri::LogicalPosition;
 
 const IS_DEV: bool = tauri::is_dev();
 
@@ -49,26 +51,42 @@ pub fn load_window_state(identifier: &String) -> Result<WindowState, String> {
 
 pub fn save_window_state(identifier: &String, window: &WebviewWindow) -> Result<(), String> {
     // Get physical position and size
-    let physical_position = window.inner_position().ok();
+    // On Windows, use outer_position() and save as physical coordinates to avoid DPI scaling issues in multi-display setups
+    // On macOS, use inner_position() and convert to logical coordinates
+    let physical_position = {
+        #[cfg(target_os = "windows")]
+        {
+            window.outer_position().ok()
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            window.inner_position().ok()
+        }
+    };
     let physical_size = window.inner_size().ok();
 
-    // Convert to logical coordinates using scale factor
-    let scale_factor = window.scale_factor().unwrap_or(1.0);
-
-    let state = WindowState {
-        x: physical_position.map(|p| {
-            // Convert physical to logical: logical = physical / scale_factor
-            p.x as f64 / scale_factor
-        }),
-        y: physical_position.map(|p| {
-            p.y as f64 / scale_factor
-        }),
-        width: physical_size.map(|s| {
-            s.width as f64 / scale_factor
-        }),
-        height: physical_size.map(|s| {
-            s.height as f64 / scale_factor
-        }),
+    let state = {
+        #[cfg(target_os = "windows")]
+        {
+            // On Windows, save physical coordinates directly to avoid DPI scaling issues across monitors
+            WindowState {
+                x: physical_position.map(|p| p.x as f64),
+                y: physical_position.map(|p| p.y as f64),
+                width: physical_size.map(|s| s.width as f64),
+                height: physical_size.map(|s| s.height as f64),
+            }
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            // On macOS, convert to logical coordinates using scale factor
+            let scale_factor = window.scale_factor().unwrap_or(1.0);
+            WindowState {
+                x: physical_position.map(|p| p.x as f64 / scale_factor),
+                y: physical_position.map(|p| p.y as f64 / scale_factor),
+                width: physical_size.map(|s| s.width as f64 / scale_factor),
+                height: physical_size.map(|s| s.height as f64 / scale_factor),
+            }
+        }
     };
 
     let state_path = get_window_state_path(identifier)?;
@@ -94,14 +112,21 @@ pub fn apply_window_state(window: &WebviewWindow, state: &WindowState) -> Result
     // Apply position after size to ensure proper placement
     if let Some(x) = state.x {
         if let Some(y) = state.y {
-            // Verify the position is within available displays
-            // If the saved position is outside all displays, center on primary display
-            let position = LogicalPosition::new(x, y);
-
-            // Try to set the position, but don't fail if it's outside displays
-            // The window manager will handle positioning
-            if let Err(e) = window.set_position(position) {
-                eprintln!("Warning: Failed to set window position to ({}, {}): {}. Window may appear at default position.", x, y, e);
+            #[cfg(target_os = "windows")]
+            {
+                // On Windows, use physical coordinates to avoid DPI scaling issues across monitors
+                let position = PhysicalPosition::new(x as i32, y as i32);
+                if let Err(e) = window.set_position(position) {
+                    eprintln!("Warning: Failed to set window position to ({}, {}): {}. Window may appear at default position.", x, y, e);
+                }
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                // On macOS, use logical coordinates
+                let position = LogicalPosition::new(x, y);
+                if let Err(e) = window.set_position(position) {
+                    eprintln!("Warning: Failed to set window position to ({}, {}): {}. Window may appear at default position.", x, y, e);
+                }
             }
         }
     }
