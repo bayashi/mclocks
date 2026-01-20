@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
 
 import { initClocks, adjustWindowSize, startClocks } from './matter.js';
 import { Ctx } from './ctx.js';
@@ -35,7 +34,7 @@ window.addEventListener("DOMContentLoaded", async () => {
  * @param {Ctx} ctx - Application context
  */
 const globalInit = async (ctx) => {
-  // Window move handler with debouncing for non-macOS platforms
+  // Window move handler with debouncing
   // Fallback for testing environment where Tauri APIs are not available
   let currentWindow;
   try {
@@ -48,15 +47,14 @@ const globalInit = async (ctx) => {
 
   try {
     await currentWindow.onMoved(() => {
-      // Skip saving window state on macOS due to platform-specific issues
-      if (ctx.ignoreOnMoved() || ctx.isMacOS()) {
+      if (ctx.ignoreOnMoved()) {
         return;
       }
 
       ctx.setIgnoreOnMoved(true);
       setTimeout(async () => {
         try {
-          await saveWindowState(StateFlags.ALL);
+          await invoke("save_window_state_all", {});
         } catch (error) {
           console.warn('Err:', error);
         } finally {

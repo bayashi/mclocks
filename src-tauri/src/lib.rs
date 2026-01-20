@@ -4,8 +4,9 @@ mod util;
 mod web;
 
 use std::{sync::Arc, thread};
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 use web_server::{start_web_server, open_url_in_browser, load_web_config};
 use config::{get_config_path, load_config, save_config, load_sticky_note_state, save_sticky_note_state, delete_sticky_note_state, load_all_sticky_note_states, cleanup_window_state};
 use util::open_text_in_editor;
@@ -13,6 +14,12 @@ use util::open_text_in_editor;
 const IS_DEV: bool = tauri::is_dev();
 
 const WINDOW_NAME: &str = "main";
+
+/// Save window state (ALL flags) for all windows.
+#[tauri::command]
+async fn save_window_state_all(app: AppHandle) -> Result<(), String> {
+    app.save_window_state(StateFlags::all()).map_err(|e| e.to_string())
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -103,6 +110,7 @@ pub fn run() {
             delete_sticky_note_state,
             load_all_sticky_note_states,
             cleanup_window_state,
+            save_window_state_all,
         ])
         .run(context)
         .expect("error while running tauri application");
