@@ -1,6 +1,6 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
-import { readClipboardText, writeClipboardText, isWindowsOS } from './util.js';
+import { readClipboardText, writeClipboardText, isWindowsOS, isMacOS } from './util.js';
 
 /**
  * Sticky note class for window-based display
@@ -287,7 +287,7 @@ class StickyNoteWindow {
     const headerSizeUnit = typeof this.config.size === "number" || /^[\d.]+$/.test(this.config.size) ? "px" : "";
     this.headerElement.style.fontSize = `${this.config.size}${headerSizeUnit}`;
     this.headerElement.style.color = this.config.color;
-    this.headerElement.style.webkitAppRegion = 'drag';
+    this.headerElement.style.webkitAppRegion = isMacOS() ? 'no-drag' : 'drag';
 
     // Create left buttons container
     const leftButtons = document.createElement('div');
@@ -586,6 +586,15 @@ class StickyNoteWindow {
         return;
       }
       // Window dragging is handled by webkit-app-region: drag
+      if (isMacOS()) {
+        try {
+          const currentWindow = getCurrentWindow();
+          await currentWindow.startDragging();
+        // eslint-disable-next-line no-unused-vars
+        } catch (_) {
+          // Ignore error
+        }
+      }
     });
 
     // Resize handle
