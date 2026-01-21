@@ -1,7 +1,9 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::{fs, io::Write, path::PathBuf, collections::HashMap};
-use tauri::{LogicalSize, PhysicalPosition, WebviewWindow};
+use tauri::{LogicalSize, WebviewWindow};
+#[cfg(target_os = "windows")]
+use tauri::PhysicalPosition;
 #[cfg(not(target_os = "windows"))]
 use tauri::LogicalPosition;
 
