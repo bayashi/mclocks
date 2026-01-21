@@ -1,6 +1,6 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
-import { readClipboardText, writeClipboardText, isWindowsOS, isMacOS } from './util.js';
+import { writeClipboardText, isWindowsOS, isMacOS } from './util.js';
 
 /**
  * Sticky note class for window-based display
@@ -52,7 +52,8 @@ class StickyNoteWindow {
       await currentWindow.setAlwaysOnTop(true);
       // Initially disable resizing (single-line mode)
       await currentWindow.setResizable(false);
-    } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_error) {
       // Ignore error
     }
 
@@ -84,7 +85,8 @@ class StickyNoteWindow {
         const currentWindow = getCurrentWindow();
         await currentWindow.setMaxSize(null);
         await currentWindow.setMinSize(null);
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_error) {
         // Ignore error
       }
 
@@ -149,7 +151,8 @@ class StickyNoteWindow {
           await invoke("delete_sticky_note_state", { label: this.windowLabel });
           await invoke("delete_sticky_note_window_state", { label: this.windowLabel });
         }
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_error) {
         // Ignore error
       }
     });
@@ -163,7 +166,8 @@ class StickyNoteWindow {
         color: config.color || "#fff",
         size: config.size || 14
       };
-    } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_error) {
       // Use defaults if config loading fails
       this.config = {
         font: "Courier, monospace",
@@ -183,7 +187,8 @@ class StickyNoteWindow {
         this.text = savedState.text || this.text;
         this.isExpanded = savedState.isExpanded || false;
       }
-    } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_error) {
       // Ignore error, use defaults
     }
   }
@@ -214,7 +219,8 @@ class StickyNoteWindow {
             label: this.windowLabel
           });
         }
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_error) {
         // Ignore error
       }
     }, 300); // 300ms debounce
@@ -458,7 +464,8 @@ class StickyNoteWindow {
             const scaleFactor = await currentWindow.scaleFactor();
             widthToSet = savedWindowState.width / scaleFactor;
             heightToSet = savedWindowState.height / scaleFactor;
-          } catch (error) {
+          // eslint-disable-next-line no-unused-vars
+          } catch (_error) {
             // If scaleFactor fails, use saved size as-is (might be Logical already)
             widthToSet = savedWindowState.width;
             heightToSet = savedWindowState.height;
@@ -532,7 +539,8 @@ class StickyNoteWindow {
           });
         }
       }
-    } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_error) {
       // Ignore error
     }
   }
@@ -558,7 +566,8 @@ class StickyNoteWindow {
         setTimeout(() => {
           this.copyButton.textContent = originalText;
         }, 500);
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_error) {
         // Ignore error
       }
     });
@@ -575,7 +584,8 @@ class StickyNoteWindow {
         }
         const currentWindow = getCurrentWindow();
         await currentWindow.close();
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_error) {
         // Ignore error
       }
     });
@@ -640,7 +650,8 @@ class StickyNoteWindow {
         }).catch(() => {
           // Ignore error
         });
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_error) {
         // Ignore error
       }
     })();
@@ -792,7 +803,8 @@ class StickyNoteWindow {
         const currentWindow = getCurrentWindow();
         await currentWindow.setMaxSize(null);
         await currentWindow.setMinSize(null);
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_error) {
         // Ignore error
       }
 
@@ -908,7 +920,8 @@ class StickyNoteWindow {
     try {
       const currentWindow = getCurrentWindow();
       await currentWindow.setResizable(resizable);
-    } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_error) {
       // Ignore error
     }
   }
@@ -930,7 +943,8 @@ class StickyNoteWindow {
       try {
         await currentWindow.setMaxSize(null);
         await currentWindow.setMinSize(null);
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_error) {
         // Ignore error
       }
 
@@ -939,7 +953,8 @@ class StickyNoteWindow {
         width: newWidth,
         height: newHeight
       });
-    } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_error) {
       // Ignore error
     }
   }
@@ -962,7 +977,8 @@ class StickyNoteWindow {
       try {
         await currentWindow.setMaxSize(null);
         await currentWindow.setMinSize(null);
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_error) {
         // Ignore error
       }
 
@@ -972,7 +988,8 @@ class StickyNoteWindow {
         width: newWidth,
         height: newHeight
       });
-    } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+    } catch (_error) {
       // Ignore error
     }
   }

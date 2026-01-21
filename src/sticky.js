@@ -1,12 +1,13 @@
-import { readClipboardText, writeClipboardText, isWindowsOS } from './util.js';
+import { readClipboardText, isWindowsOS } from './util.js';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Create a sticky note from clipboard text
- * @param {Object} ctx - Application context
+ * @param {Object} _ctx - Application context
  */
-export async function createStickyNoteFromClipboard(ctx) {
+// eslint-disable-next-line no-unused-vars
+export async function createStickyNoteFromClipboard(_ctx) {
   try {
     const text = await readClipboardText();
     if (!text || text.trim().length === 0) {
@@ -16,7 +17,8 @@ export async function createStickyNoteFromClipboard(ctx) {
     // Create unique label for the window using UUID v4
     const label = `sticky-${crypto.randomUUID()}`;
     await createStickyNoteWindow(label, text);
-  } catch (error) {
+  // eslint-disable-next-line no-unused-vars
+  } catch (_error) {
     // Ignore error
   }
 }
@@ -35,7 +37,8 @@ async function createStickyNoteWindow(label, text) {
   try {
     savedWindowState = await invoke("load_sticky_note_window_state", { label });
     savedStickyState = await invoke("load_sticky_note_state", { label });
-  } catch (error) {
+  // eslint-disable-next-line no-unused-vars
+  } catch (_error) {
     // Ignore error, use defaults
   }
 
@@ -100,16 +103,19 @@ async function createStickyNoteWindow(label, text) {
               await webview.setPosition({ type: 'Logical', x: savedWindowState.x, y: savedWindowState.y });
             }
           }
-        } catch (error) {
+        // eslint-disable-next-line no-unused-vars
+        } catch (_error) {
           // Ignore error
         }
       }
     });
 
-    webview.once('tauri://error', (e) => {
+    // eslint-disable-next-line no-unused-vars
+    webview.once('tauri://error', (_e) => {
       // Ignore error
     });
-  } catch (createError) {
+  // eslint-disable-next-line no-unused-vars
+  } catch (_createError) {
     // Ignore error
   }
 }
@@ -127,7 +133,8 @@ export async function restoreStickyNotes() {
     for (const [label, state] of Object.entries(allStates)) {
       await createStickyNoteWindow(label, state.text);
     }
-  } catch (error) {
+  // eslint-disable-next-line no-unused-vars
+  } catch (_error) {
     // Ignore error
   }
 }
