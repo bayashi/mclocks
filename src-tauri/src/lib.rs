@@ -8,9 +8,10 @@ use std::{sync::Arc, thread, time::{Duration, Instant}};
 use tauri::Manager;
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use web_server::{start_web_server, open_url_in_browser, load_web_config};
-use config::{get_config_path, load_config};
+use config::{get_config_path, load_config, save_config, load_sticky_note_state, save_sticky_note_state, delete_sticky_note_state, load_all_sticky_note_states, cleanup_window_state, ContextConfig};
 use util::open_text_in_editor;
-use window_state::{load_window_state, save_window_state, apply_window_state};
+use window_state::{load_window_state, save_window_state, apply_window_state, load_window_state_by_label, save_window_state_by_label, delete_window_state_by_label};
+use tauri::State;
 
 const IS_DEV: bool = tauri::is_dev();
 
@@ -152,9 +153,35 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             load_config,
+            save_config,
             get_config_path,
             open_text_in_editor,
+            load_sticky_note_state,
+            save_sticky_note_state,
+            delete_sticky_note_state,
+            load_all_sticky_note_states,
+            cleanup_window_state,
+            load_sticky_note_window_state,
+            save_sticky_note_window_state,
+            delete_sticky_note_window_state,
         ])
         .run(context)
         .expect("error while running tauri application");
+}
+
+#[tauri::command]
+fn load_sticky_note_window_state(state: State<'_, Arc<ContextConfig>>, label: String) -> Result<window_state::WindowState, String> {
+    load_window_state_by_label(&state.app_identifier, &label)
+}
+
+#[tauri::command]
+fn save_sticky_note_window_state(app: tauri::AppHandle, state: State<'_, Arc<ContextConfig>>, label: String) -> Result<(), String> {
+    let window = app.get_webview_window(&label)
+        .ok_or_else(|| format!("Window with label '{}' not found", label))?;
+    save_window_state_by_label(&state.app_identifier, &label, &window)
+}
+
+#[tauri::command]
+fn delete_sticky_note_window_state(state: State<'_, Arc<ContextConfig>>, label: String) -> Result<(), String> {
+    delete_window_state_by_label(&state.app_identifier, &label)
 }

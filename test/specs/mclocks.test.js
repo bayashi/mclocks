@@ -1799,4 +1799,163 @@ describe('mclocks Application Launch Test', () => {
 
         console.log('Successfully verified: Ctrl+v converts epoch time from clipboard and opens result in editor')
     })
+
+    it('should create sticky note from clipboard with Ctrl+s', async () => {
+        // Connect to the application URL
+        console.log('Connecting to http://localhost:1420...')
+
+        // Wait for the application to initialize
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        // Wait for clock elements to be rendered
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3 // UTC, JST, Epoch
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Set up mock for clipboard and WebviewWindow
+        await browser.execute(() => {
+            window.__clipboardText = null
+            window.__stickyNoteCreated = false
+            window.__stickyNoteText = null
+            window.__stickyNoteLabel = null
+
+            // Mock Tauri's invoke function for clipboard read
+            const createInvokeWrapper = (originalInvoke) => {
+                return async function(cmd, args) {
+                    // Handle clipboard read
+                    if (cmd && (typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read')))) {
+                        if (window.__clipboardText) {
+                            return window.__clipboardText
+                        }
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.readText) {
+                                return await navigator.clipboard.readText() || ''
+                            }
+                            return ''
+                        } catch (error) {
+                            return ''
+                        }
+                    }
+
+                    // For other commands, try original invoke or return a mock response
+                    if (originalInvoke) {
+                        try {
+                            return await originalInvoke.call(this, cmd, args)
+                        } catch (error) {
+                            return Promise.resolve(null)
+                        }
+                    }
+                    return Promise.resolve(null)
+                }
+            }
+
+            if (window.__TAURI_INTERNALS__) {
+                const originalInvoke = window.__TAURI_INTERNALS__.invoke
+                window.__TAURI_INTERNALS__.invoke = createInvokeWrapper(originalInvoke)
+            } else {
+                window.__TAURI_INTERNALS__ = {
+                    invoke: createInvokeWrapper(null)
+                }
+            }
+
+            // Mock WebviewWindow constructor
+            if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.WebviewWindow) {
+                // Already mocked
+            } else {
+                // Try to intercept WebviewWindow creation
+                // Since WebviewWindow is imported from @tauri-apps/api/webviewWindow,
+                // we need to mock it at the module level
+                // For E2E test, we'll track it via a global flag set in the mock
+            }
+        })
+
+        // Mock WebviewWindow by intercepting the module
+        await browser.execute(() => {
+            // Store original WebviewWindow if it exists
+            if (window.__TAURI_INTERNALS__) {
+                window.__TAURI_INTERNALS__.WebviewWindow = class MockWebviewWindow {
+                    constructor(label, options) {
+                        window.__stickyNoteCreated = true
+                        window.__stickyNoteLabel = label
+                        window.__stickyNoteText = options?.url ? decodeURIComponent(options.url.split('text=')[1] || '') : null
+                        console.log('Mock WebviewWindow created:', label, options)
+                        return {
+                            once: (event, callback) => {
+                                if (event === 'tauri://created') {
+                                    setTimeout(callback, 0)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        // Set clipboard content
+        const testText = 'Test sticky note content'
+        console.log(`Setting clipboard to: "${testText}"`)
+        const clipboardSet = await browser.execute(async (text) => {
+            try {
+                window.__clipboardText = text
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text)
+                    try {
+                        const readBack = await navigator.clipboard.readText()
+                        return readBack === text
+                    } catch (readError) {
+                        return true
+                    }
+                }
+                return true
+            } catch (error) {
+                return window.__clipboardText === text
+            }
+        }, testText)
+
+        expect(clipboardSet).toBe(true, 'Clipboard should be set successfully')
+
+        // Verify clipboard is set
+        const mockClipboardValue = await browser.execute(() => {
+            return window.__clipboardText || null
+        })
+        expect(mockClipboardValue).toBe(testText, 'window.__clipboardText should contain the test text')
+
+        // Press Ctrl+s to create sticky note
+        console.log('Pressing Ctrl+s to create sticky note...')
+        await browser.keys(['Control', 's'])
+
+        // Wait for sticky note creation
+        await browser.pause(1000)
+
+        // Check if sticky note was created
+        const stickyNoteResult = await browser.execute(() => {
+            return {
+                created: window.__stickyNoteCreated || false,
+                label: window.__stickyNoteLabel || null,
+                text: window.__stickyNoteText || null
+            }
+        })
+
+        console.log(`Sticky note created: ${stickyNoteResult.created}`)
+        console.log(`Sticky note label: ${stickyNoteResult.label}`)
+        console.log(`Sticky note text: ${stickyNoteResult.text}`)
+
+        // Verify that sticky note was created
+        expect(stickyNoteResult.created).toBe(true, 'Sticky note should be created with Ctrl+s')
+        expect(stickyNoteResult.label).toMatch(/^sticky-/, 'Sticky note label should start with "sticky-"')
+        expect(stickyNoteResult.text).toBe(testText, 'Sticky note text should match clipboard content')
+
+        console.log('Successfully verified: Ctrl+s creates sticky note from clipboard')
+    })
 })

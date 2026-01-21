@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sticky Note</title>
+  <link rel="stylesheet" href="src/reset.css" />
+  <link rel="stylesheet" href="src/styles.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      -webkit-app-region: drag;
+    }
+    #sticky-container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script type="module" src="src/sticky-window.js"></script>
+</head>
+<body>
+  <div id="sticky-container"></div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, io::Write, sync::Arc, path::PathBuf};
+use std::{fs, io::Write, sync::Arc, path::PathBuf, collections::HashMap};
 use tauri::State;
 
 use crate::web_server::WebConfig;
@@ -25,6 +25,13 @@ fn df_timezone() -> String { "UTC".to_string() }
 pub enum InFontSize {
     Int(i32),
     Str(String),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct StickyNoteState {
+    pub text: String,
+    pub is_expanded: bool,
 }
 
 fn df_clocks() -> Vec<Clock> {
@@ -98,6 +105,15 @@ fn get_config_file() -> String {
     }
 }
 
+fn get_sticky_notes_file() -> String {
+    let sticky_notes_file = "sticky-notes.json";
+    if IS_DEV {
+        format!("dev.{}", sticky_notes_file)
+    } else {
+        sticky_notes_file.to_string()
+    }
+}
+
 const OLD_CONFIG_DIR: &str = if IS_DEV { "mclocks.dev" } else { "mclocks" };
 
 fn get_old_config_app_path() -> String {
@@ -106,6 +122,10 @@ fn get_old_config_app_path() -> String {
 
 pub fn get_config_app_path(identifier: &String) -> String {
     vec![identifier, get_config_file().as_str()].join("/")
+}
+
+fn get_sticky_notes_app_path(identifier: &String) -> String {
+    vec![identifier, get_sticky_notes_file().as_str()].join("/")
 }
 
 #[tauri::command]
@@ -146,6 +166,116 @@ pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, St
     }
 
     serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
+}
+
+#[tauri::command]
+pub fn save_config(state: State<'_, Arc<ContextConfig>>, config: AppConfig) -> Result<(), String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let config_path = base_dir.config_dir().join(get_config_app_path(&state.app_identifier));
+    let config_json = serde_json::to_string_pretty(&config)
+        .map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))?;
+    ensure_config_file_exists(&config_path, &config_json)?;
+    Ok(())
+}
+
+fn read_sticky_notes_file(sticky_notes_path: &PathBuf) -> Result<HashMap<String, StickyNoteState>, String> {
+    if sticky_notes_path.exists() {
+        let sticky_notes_json = fs::read_to_string(sticky_notes_path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&sticky_notes_json).map_err(|e| vec!["JSON sticky notes: ", &e.to_string()].join(""))
+    } else {
+        Ok(HashMap::new())
+    }
+}
+
+#[tauri::command]
+pub fn load_sticky_note_state(state: State<'_, Arc<ContextConfig>>, label: String) -> Result<Option<StickyNoteState>, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
+    let sticky_notes = read_sticky_notes_file(&sticky_notes_path)?;
+    Ok(sticky_notes.get(&label).cloned())
+}
+
+#[tauri::command]
+pub fn save_sticky_note_state(state: State<'_, Arc<ContextConfig>>, label: String, sticky_state: StickyNoteState) -> Result<(), String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
+    let mut sticky_notes = read_sticky_notes_file(&sticky_notes_path)?;
+    sticky_notes.insert(label, sticky_state);
+    let sticky_notes_json = serde_json::to_string_pretty(&sticky_notes)
+        .map_err(|e| vec!["JSON sticky notes: ", &e.to_string()].join(""))?;
+    ensure_config_file_exists(&sticky_notes_path, &sticky_notes_json)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_sticky_note_state(state: State<'_, Arc<ContextConfig>>, label: String) -> Result<(), String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
+    let mut sticky_notes = read_sticky_notes_file(&sticky_notes_path)?;
+    sticky_notes.remove(&label);
+    let sticky_notes_json = serde_json::to_string_pretty(&sticky_notes)
+        .map_err(|e| vec!["JSON sticky notes: ", &e.to_string()].join(""))?;
+    ensure_config_file_exists(&sticky_notes_path, &sticky_notes_json)?;
+    // Also delete from window-state.json
+    // Note: This is done via a separate command to avoid circular dependencies
+    Ok(())
+}
+
+#[tauri::command]
+pub fn load_all_sticky_note_states(state: State<'_, Arc<ContextConfig>>) -> Result<HashMap<String, StickyNoteState>, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
+    read_sticky_notes_file(&sticky_notes_path)
+}
+
+#[tauri::command]
+pub fn cleanup_window_state(state: State<'_, Arc<ContextConfig>>) -> Result<(), String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+
+    // Get list of existing sticky note labels
+    let sticky_notes_path = base_dir.config_dir().join(get_sticky_notes_app_path(&state.app_identifier));
+    let sticky_notes = read_sticky_notes_file(&sticky_notes_path)?;
+    let sticky_labels: std::collections::HashSet<String> = sticky_notes.keys().cloned().collect();
+
+    // Get window-state file path
+    // window-state plugin uses ".window-state.json" as default filename
+    // In dev mode, it uses ".dev.window-state.json"
+    let window_state_filename = if IS_DEV {
+        ".dev.window-state.json"
+    } else {
+        ".window-state.json"
+    };
+    let window_state_path = base_dir.config_dir().join(&state.app_identifier).join(&window_state_filename);
+
+    // Read window-state file if it exists
+    if window_state_path.exists() {
+        let window_state_json = fs::read_to_string(&window_state_path).map_err(|e| e.to_string())?;
+
+        // Parse window-state JSON (it's a map of window labels to state)
+        let mut window_state: serde_json::Value = match serde_json::from_str(&window_state_json) {
+            Ok(v) => v,
+            Err(_) => return Ok(()), // If parsing fails, skip cleanup
+        };
+
+        if let Some(window_state_map) = window_state.as_object_mut() {
+            // Remove entries for sticky notes that no longer exist
+            let keys_to_remove: Vec<String> = window_state_map.keys()
+                .filter(|key| key.starts_with("sticky-") && !sticky_labels.contains(*key))
+                .cloned()
+                .collect();
+
+            for key in keys_to_remove {
+                window_state_map.remove(&key);
+            }
+
+            // Write back the cleaned window-state file
+            let cleaned_json = serde_json::to_string_pretty(&window_state)
+                .map_err(|e| vec!["JSON window state: ", &e.to_string()].join(""))?;
+            ensure_config_file_exists(&window_state_path, &cleaned_json)?;
+        }
+    }
+
+    Ok(())
 }
 
 pub struct ContextConfig {
@@ -470,6 +600,96 @@ mod tests {
             InFontSize::Int(value) => assert_eq!(value, 22, "Size should be 22"),
             _ => panic!("Size should be Int variant"),
         }
+    }
+
+    #[test]
+    fn test_read_sticky_notes_file_not_exists() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let sticky_notes_path = temp_dir.path().join("sticky-notes.json");
+
+        // File doesn't exist, should return empty HashMap
+        let result = read_sticky_notes_file(&sticky_notes_path);
+        assert!(result.is_ok(), "Should return Ok when file doesn't exist");
+        let sticky_notes = result.unwrap();
+        assert!(sticky_notes.is_empty(), "Should return empty HashMap when file doesn't exist");
+    }
+
+    #[test]
+    fn test_read_sticky_notes_file_valid_json() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let sticky_notes_path = temp_dir.path().join("sticky-notes.json");
+
+        let test_json = r#"{
+  "sticky-1": {
+    "text": "Test note 1",
+    "isExpanded": false
+  },
+  "sticky-2": {
+    "text": "Test note 2",
+    "isExpanded": true
+  }
+}"#;
+        fs::write(&sticky_notes_path, test_json).expect("Failed to write sticky notes file");
+
+        let result = read_sticky_notes_file(&sticky_notes_path);
+        assert!(result.is_ok(), "Should successfully read valid sticky notes file");
+        let sticky_notes = result.unwrap();
+        assert_eq!(sticky_notes.len(), 2, "Should have 2 sticky notes");
+
+        let note1 = sticky_notes.get("sticky-1");
+        assert!(note1.is_some(), "Should have sticky-1");
+        assert_eq!(note1.unwrap().text, "Test note 1", "Text should match");
+        assert_eq!(note1.unwrap().is_expanded, false, "isExpanded should be false");
+
+        let note2 = sticky_notes.get("sticky-2");
+        assert!(note2.is_some(), "Should have sticky-2");
+        assert_eq!(note2.unwrap().text, "Test note 2", "Text should match");
+        assert_eq!(note2.unwrap().is_expanded, true, "isExpanded should be true");
+    }
+
+    #[test]
+    fn test_read_sticky_notes_file_empty_json() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let sticky_notes_path = temp_dir.path().join("sticky-notes.json");
+
+        let test_json = "{}";
+        fs::write(&sticky_notes_path, test_json).expect("Failed to write sticky notes file");
+
+        let result = read_sticky_notes_file(&sticky_notes_path);
+        assert!(result.is_ok(), "Should successfully read empty JSON object");
+        let sticky_notes = result.unwrap();
+        assert!(sticky_notes.is_empty(), "Should return empty HashMap for empty JSON object");
+    }
+
+    #[test]
+    fn test_read_sticky_notes_file_invalid_json() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let sticky_notes_path = temp_dir.path().join("sticky-notes.json");
+
+        let invalid_json = r#"{"invalid": json}"#;
+        fs::write(&sticky_notes_path, invalid_json).expect("Failed to write invalid JSON file");
+
+        let result = read_sticky_notes_file(&sticky_notes_path);
+        assert!(result.is_err(), "Should return error for invalid JSON");
+        let error_msg = result.unwrap_err();
+        assert!(error_msg.contains("JSON sticky notes"), "Error message should mention JSON sticky notes");
+    }
+
+    #[test]
+    fn test_read_sticky_notes_file_missing_field() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let sticky_notes_path = temp_dir.path().join("sticky-notes.json");
+
+        // Missing isExpanded field
+        let invalid_json = r#"{
+  "sticky-1": {
+    "text": "Test note"
+  }
+}"#;
+        fs::write(&sticky_notes_path, invalid_json).expect("Failed to write JSON file with missing field");
+
+        let result = read_sticky_notes_file(&sticky_notes_path);
+        assert!(result.is_err(), "Should return error for JSON with missing required field");
     }
 }
 

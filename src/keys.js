@@ -4,6 +4,7 @@ import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, 
 import { writeClipboardText, isMacOS, isWindowsOS, openMessageDialog } from './util.js';
 import { conversionHandler } from './conversion.js';
 import { quoteAndAppendCommaClipboardHandler } from './clipboard.js';
+import { createStickyNoteFromClipboard } from './sticky.js';
 
 // Win   ---> Ctrl
 // macOS ---> Command
@@ -163,5 +164,12 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   if (e.key === "v" || e.key === "V") {
     e.preventDefault();
     await conversionHandler(e, pressedKeys, clocks, ctx.useTZ(), ctx.convTZ());
+  }
+
+  // create sticky note from clipboard text
+  if (e.key === "s" || e.key === "S") {
+    e.preventDefault();
+    await createStickyNoteFromClipboard(ctx);
+    return;
   }
 }

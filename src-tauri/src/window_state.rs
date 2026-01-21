@@ -1,6 +1,6 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, io::Write, path::PathBuf};
+use std::{fs, io::Write, path::PathBuf, collections::HashMap};
 use tauri::{LogicalSize, PhysicalPosition, WebviewWindow};
 #[cfg(not(target_os = "windows"))]
 use tauri::LogicalPosition;
@@ -34,22 +34,59 @@ fn get_window_state_path(identifier: &String) -> Result<PathBuf, String> {
 }
 
 pub fn load_window_state(identifier: &String) -> Result<WindowState, String> {
+    // For backward compatibility, try to load "main" window state
+    load_window_state_by_label(identifier, &"main".to_string())
+}
+
+fn read_all_window_states(identifier: &String) -> Result<HashMap<String, WindowState>, String> {
     let state_path = get_window_state_path(identifier)?;
 
     if !state_path.exists() {
-        return Ok(WindowState {
-            x: None,
-            y: None,
-            width: None,
-            height: None,
-        });
+        return Ok(HashMap::new());
     }
 
     let state_json = fs::read_to_string(&state_path).map_err(|e| e.to_string())?;
-    serde_json::from_str(&state_json).map_err(|e| format!("Failed to parse window state: {}", e))
+
+    // Try to parse as HashMap first (new format)
+    if let Ok(states) = serde_json::from_str::<HashMap<String, WindowState>>(&state_json) {
+        return Ok(states);
+    }
+
+    // Fall back to old format (single WindowState object) for backward compatibility
+    if let Ok(state) = serde_json::from_str::<WindowState>(&state_json) {
+        let mut states = HashMap::new();
+        states.insert("main".to_string(), state);
+        return Ok(states);
+    }
+
+    Err(format!("Failed to parse window states: invalid JSON format"))
 }
 
-pub fn save_window_state(identifier: &String, window: &WebviewWindow) -> Result<(), String> {
+fn write_all_window_states(identifier: &String, states: &HashMap<String, WindowState>) -> Result<(), String> {
+    let state_path = get_window_state_path(identifier)?;
+    fs::create_dir_all(state_path.parent().ok_or("Invalid window state path")?)
+        .map_err(|e| e.to_string())?;
+
+    let state_json = serde_json::to_string_pretty(states).map_err(|e| e.to_string())?;
+    let mut state_file = fs::File::create(&state_path).map_err(|e| e.to_string())?;
+    state_file.write_all(state_json.as_bytes()).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub fn load_window_state_by_label(identifier: &String, label: &String) -> Result<WindowState, String> {
+    let all_states = read_all_window_states(identifier)?;
+    Ok(all_states.get(label).cloned().unwrap_or(WindowState {
+        x: None,
+        y: None,
+        width: None,
+        height: None,
+    }))
+}
+
+pub fn save_window_state_by_label(identifier: &String, label: &String, window: &WebviewWindow) -> Result<(), String> {
+    let mut all_states = read_all_window_states(identifier)?;
+
     // Get physical position and size
     // On Windows, use outer_position() and save as physical coordinates to avoid DPI scaling issues in multi-display setups
     // On macOS, use inner_position() and convert to logical coordinates
@@ -89,15 +126,19 @@ pub fn save_window_state(identifier: &String, window: &WebviewWindow) -> Result<
         }
     };
 
-    let state_path = get_window_state_path(identifier)?;
-    fs::create_dir_all(state_path.parent().ok_or("Invalid window state path")?)
-        .map_err(|e| e.to_string())?;
+    all_states.insert(label.clone(), state);
+    write_all_window_states(identifier, &all_states)
+}
 
-    let state_json = serde_json::to_string_pretty(&state).map_err(|e| e.to_string())?;
-    let mut state_file = fs::File::create(&state_path).map_err(|e| e.to_string())?;
-    state_file.write_all(state_json.as_bytes()).map_err(|e| e.to_string())?;
+pub fn save_window_state(identifier: &String, window: &WebviewWindow) -> Result<(), String> {
+    // For main window, use "main" as label
+    save_window_state_by_label(identifier, &"main".to_string(), window)
+}
 
-    Ok(())
+pub fn delete_window_state_by_label(identifier: &String, label: &String) -> Result<(), String> {
+    let mut all_states = read_all_window_states(identifier)?;
+    all_states.remove(label);
+    write_all_window_states(identifier, &all_states)
 }
 
 pub fn apply_window_state(window: &WebviewWindow, state: &WindowState) -> Result<(), String> {

@@ -5,6 +5,7 @@ import { initClocks, adjustWindowSize, startClocks } from './matter.js';
 import { Ctx } from './ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
+import { restoreStickyNotes } from './sticky.js';
 
 /**
  * Default configuration for the application
@@ -180,6 +181,9 @@ const main = async (ctx) => {
     startClocks(ctx, clocks);
 
     const { cleanup } = initKeyboardHandlers(ctx, cfg, clocks);
+
+    // Restore saved sticky notes on app startup
+    await restoreStickyNotes();
 
     window.addEventListener('beforeunload', () => {
       cleanup();

@@ -20,3 +20,40 @@ ul, li {
   display: inline;
   vertical-align: middle;
 }
+
+.sticky-note {
+  -webkit-app-region: no-drag;
+}
+
+.sticky-note-header button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.sticky-note-content::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+}
+
+.sticky-note-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sticky-note-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.sticky-note-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.sticky-note-resize {
+  background: linear-gradient(-45deg, transparent 0%, transparent 35%, rgba(255, 255, 255, 0.5) 35%, rgba(255, 255, 255, 0.5) 40%, transparent 40%, transparent 60%, rgba(255, 255, 255, 0.5) 60%, rgba(255, 255, 255, 0.5) 65%, transparent 65%);
+  opacity: 0.6;
+}
+
+.sticky-note-resize:hover {
+  opacity: 1;
+  background: linear-gradient(-45deg, transparent 0%, transparent 35%, rgba(255, 255, 255, 0.7) 35%, rgba(255, 255, 255, 0.7) 40%, transparent 40%, transparent 60%, rgba(255, 255, 255, 0.7) 60%, rgba(255, 255, 255, 0.7) 65%, transparent 65%);
+}

@@ -6,7 +6,8 @@
     "linux"
   ],
   "windows": [
-    "main"
+    "main",
+    "*"
   ],
   "permissions": [
     "core:default",
@@ -14,6 +15,10 @@
     "core:window:allow-set-always-on-top",
     "core:window:allow-start-dragging",
     "core:window:allow-set-position",
+    "core:window:allow-close",
+    "core:window:allow-set-max-size",
+    "core:window:allow-set-min-size",
+    "core:webview:allow-create-webview-window",
     "notification:default",
     "clipboard-manager:allow-write-text",
     "clipboard-manager:allow-read-text",
