@@ -1958,4 +1958,68 @@ describe('mclocks Application Launch Test', () => {
 
         console.log('Successfully verified: Ctrl+s creates sticky note from clipboard')
     })
+
+    it('should render sticky note window with text query', async () => {
+        // Open sticky note window directly (smoke test for sticky.html)
+        const text = 'Hello sticky'
+        await browser.url(`/sticky.html?text=${encodeURIComponent(text)}`)
+
+        const container = await $('#sticky-container')
+        await container.waitForExist({ timeout: 10000 })
+
+        const noteText = await $('.sticky-note-text')
+        await noteText.waitForExist({ timeout: 10000 })
+
+        const renderedText = await noteText.getText()
+        expect(renderedText).toContain(text, 'Sticky note should render text from query parameter')
+    })
+
+    it('should expand sticky note and save edited text', async () => {
+        // Open sticky note window directly and verify expand + edit behavior
+        const initialText = 'Hello'
+        await browser.url(`/sticky.html?text=${encodeURIComponent(initialText)}`)
+
+        const noteText = await $('.sticky-note-text')
+        await noteText.waitForExist({ timeout: 10000 })
+
+        // Expand
+        const expandButton = await $('.sticky-note-expand')
+        await expandButton.waitForExist({ timeout: 10000 })
+        await expandButton.click()
+
+        await browser.waitUntil(
+            async () => {
+                const label = await expandButton.getText()
+                return label === '▼'
+            },
+            {
+                timeout: 5000,
+                timeoutMsg: 'Sticky note did not expand'
+            }
+        )
+
+        // Edit text to trigger save (focus first, then set textContent and trigger input event)
+        const updatedText = 'Hello updated'
+        await noteText.click()
+        await browser.pause(100)
+        await browser.execute((text) => {
+            const el = document.querySelector('.sticky-note-text')
+            if (!el) {
+                return
+            }
+            el.focus()
+            el.textContent = text
+            const inputEvent = new Event('input', { bubbles: true, cancelable: true })
+            el.dispatchEvent(inputEvent)
+            const blurEvent = new Event('blur', { bubbles: true, cancelable: true })
+            el.dispatchEvent(blurEvent)
+        }, updatedText)
+
+        // Wait for debounce save (300ms) + a bit more for async operations
+        await browser.pause(1000)
+
+        // Verify text was updated
+        const finalText = await noteText.getText()
+        expect(finalText).toContain(updatedText, 'Sticky note text should be updated')
+    })
 })
