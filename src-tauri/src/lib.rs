@@ -87,12 +87,12 @@ pub fn run() {
         ws = tauri_plugin_window_state::Builder::with_filename(ws, filename);
     }
 
-    tbr.plugin(ws.build())
-        .plugin(tauri_plugin_os::init())
+    tbr.plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(ws.build())
         .invoke_handler(tauri::generate_handler![
             load_config,
             get_config_path,
