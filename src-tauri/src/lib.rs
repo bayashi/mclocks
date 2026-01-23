@@ -2,15 +2,13 @@ mod web_server;
 mod config;
 mod util;
 mod web;
-mod window_state;
 
-use std::{sync::Arc, thread, time::{Duration, Instant}};
+use std::{sync::Arc, thread};
 use tauri::Manager;
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use web_server::{start_web_server, open_url_in_browser, load_web_config};
 use config::{get_config_path, load_config};
 use util::open_text_in_editor;
-use window_state::{load_window_state, save_window_state, apply_window_state};
 
 const IS_DEV: bool = tauri::is_dev();
 
@@ -43,21 +41,12 @@ pub fn run() {
     }).flatten();
 
     let error_msg = web_error.clone();
-    let identifier_for_setup = identifier.clone();
     tbr = tbr.setup(move |app| {
-        let window = app.get_webview_window(WINDOW_NAME).unwrap();
-
-        // Load and apply saved window state
-        if let Ok(state) = load_window_state(&identifier_for_setup) {
-            if let Err(e) = apply_window_state(&window, &state) {
-                eprintln!("Failed to apply window state: {}", e);
-            }
-        }
-
         if IS_DEV {
+            let _window = app.get_webview_window(WINDOW_NAME).unwrap();
             #[cfg(debug_assertions)]
             {
-                window.open_devtools();
+                _window.open_devtools();
             }
         }
 
@@ -80,58 +69,6 @@ pub fn run() {
                     .blocking_show();
             }
         }
-
-        // Set up window state saving on move/resize with proper debouncing
-        let window_clone = window.clone();
-        let identifier_for_events = identifier_for_setup.clone();
-        let last_event_time = Arc::new(std::sync::Mutex::new(Instant::now()));
-        let save_pending = Arc::new(std::sync::atomic::AtomicBool::new(false));
-
-        window.on_window_event(move |event| {
-            match event {
-                tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) => {
-                    let window_for_save = window_clone.clone();
-                    let identifier_for_save = identifier_for_events.clone();
-                    let last_event = last_event_time.clone();
-                    let pending = save_pending.clone();
-
-                    // Update last event time
-                    *last_event.lock().unwrap() = Instant::now();
-
-                    // Only spawn a new thread if one isn't already pending
-                    if !pending.swap(true, std::sync::atomic::Ordering::Acquire) {
-                        let window_save = window_for_save.clone();
-                        let identifier_save = identifier_for_save.clone();
-                        let last_event_save = last_event_time.clone();
-                        let pending_save = save_pending.clone();
-
-                        if let Err(e) = thread::Builder::new()
-                            .name("window-state-saver".to_string())
-                            .spawn(move || {
-                                loop {
-                                    thread::sleep(Duration::from_millis(500));
-
-                                    let elapsed = last_event_save.lock().unwrap().elapsed();
-                                    if elapsed >= Duration::from_millis(500) {
-                                        // Save window state
-                                        if let Err(e) = save_window_state(&identifier_save, &window_save) {
-                                            eprintln!("Failed to save window state: {}", e);
-                                        }
-                                        pending_save.store(false, std::sync::atomic::Ordering::Release);
-                                        break;
-                                    }
-                                }
-                            }) {
-                            // If thread spawn fails, reset the flag and log error
-                            eprintln!("Failed to spawn window state save thread: {}", e);
-                            pending.store(false, std::sync::atomic::Ordering::Release);
-                        }
-                    }
-                }
-                _ => {}
-            }
-        });
-
         Ok(())
     });
 
@@ -144,7 +81,13 @@ pub fn run() {
         }))
     }
 
-    tbr
+    let mut ws = tauri_plugin_window_state::Builder::new();
+    if IS_DEV {
+        let filename = format!("{}{}", ".dev", tauri_plugin_window_state::DEFAULT_FILENAME);
+        ws = tauri_plugin_window_state::Builder::with_filename(ws, filename);
+    }
+
+    tbr.plugin(ws.build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_clipboard_manager::init())
