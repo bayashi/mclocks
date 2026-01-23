@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
 
 import { initClocks, adjustWindowSize, startClocks } from './matter.js';
 import { Ctx } from './ctx.js';
@@ -44,7 +45,28 @@ const globalInit = async (ctx) => {
     return;
   }
 
-  // Window state is now saved automatically by the backend on move/resize events
+  try {
+    await currentWindow.onMoved(() => {
+      // Skip saving window state on macOS due to platform-specific issues
+      if (ctx.ignoreOnMoved() || ctx.isMacOS()) {
+        return;
+      }
+
+      ctx.setIgnoreOnMoved(true);
+      setTimeout(async () => {
+        try {
+          await saveWindowState(StateFlags.ALL);
+        } catch (error) {
+          console.warn('Err:', error);
+        } finally {
+          ctx.setIgnoreOnMoved(false);
+        }
+      }, 5000);
+    });
+  } catch (error) {
+    // Ignore error in testing environment
+    console.warn('Could not set up window move handler:', error);
+  }
 
   // Enable window dragging on macOS
   ctx.mainElement().addEventListener("mousedown", async () => {
