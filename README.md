@@ -29,7 +29,7 @@ For macOS, you can get `.dmg` file to install.
 
 ### Linux
 
-For Linux, you can get `.deb`, `.rpm` or `.AppImage` file to install.
+Binary distributions for Linux are not currently provided.
 
 ## config.json
 
@@ -39,7 +39,8 @@ The `config.json` file should be located in the following directories:
 
 * Windows: `C:\Users\{USER}\AppData\Roaming\com.bayashi.mclocks\`
 * Mac: `/Users/{USER}/Library/Application Support/com.bayashi.mclocks/`
-* Linux: `/home/{USER}/.config/com.bayashi.mclocks/`
+
+<!-- * Linux: `/home/{USER}/.config/com.bayashi.mclocks/` -->
 
 When you start `mclocks`, then press `Ctrl + o` to edit your `config.json` file.
 
