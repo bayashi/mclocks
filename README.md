@@ -4,12 +4,21 @@ The desktop clock application for multiple time zones🕒🌍🕕
 
 ![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png)
 
-In addition, it also includes features:
+Clock-related features:
 
+* Text clock for multiple time zones
 * Timer
 * Countdown timer
 * Epoch time and date-time convertor
-* Web server for developers (serves static files and provides dump and slow endpoints for debugging)
+
+In addition, it also includes features useful for web developers:
+
+* Simple text convertor
+    * such as easily creating SQL `IN` clauses
+* Web server
+    * serves static files
+    * dump request and response server
+    * slow endpoints for debugging
 
 `mclocks` doesn't need an internet connection — everything runs 100% locally.
 
@@ -43,12 +52,6 @@ The `config.json` file should be located in the following directories:
 <!-- * Linux: `/home/{USER}/.config/com.bayashi.mclocks/` -->
 
 When you start `mclocks`, then press `Ctrl + o` to edit your `config.json` file.
-
-### Backwards Compatibility Notes
-
-The directory of the `config.json` file has been changed to `com.bayashi.mclocks` from just `mclocks` after version 0.2.9.
-
-And after version 0.2.13, old `config.json` file is automatically migrated into new directory if the new config file doesn't exist.
 
 ### Example of config.json
 
@@ -304,11 +307,6 @@ The endpoint is accessible via any HTTP method (GET, POST, etc.) and supports th
 * `/slow/120`: Waits 120 seconds (or any specified number of seconds) and returns 200 OK
 
 This endpoint is useful for testing timeout behavior, connection handling, or simulating slow network conditions.
-
-Examples:
-* `http://127.0.0.1:3030/slow` - waits 30 seconds
-* `http://127.0.0.1:3030/slow/60` - waits 60 seconds
-* `http://127.0.0.1:3030/slow/120` - waits 120 seconds
 
 If an invalid seconds parameter is provided (e.g., `/slow/abc`), the endpoint returns a 400 Bad Request error.
 
