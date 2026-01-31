@@ -34,6 +34,7 @@ class StickyNoteWindow {
     this.originalWidth = 300; // Store original width for restoring when collapsing
     this.windowLabel = null; // Window label for persistence
     this.saveDebounceTimer = null; // Debounce timer for saving state
+    this.isInitialLoad = true; // Flag to preserve restored window size on first render
 
     // Initialize config first (will be loaded asynchronously)
     this.config = {
@@ -61,6 +62,8 @@ class StickyNoteWindow {
     await this.loadSavedState();
     this.create();
     this.setupEventListeners();
+    await this.updateCollapsedState();
+    this.isInitialLoad = false;
     // Listen for window close event to save state
     this.setupWindowCloseHandler();
   }
@@ -172,7 +175,9 @@ class StickyNoteWindow {
     this.element.style.position = 'relative';
     this.element.style.left = '0';
     this.element.style.top = '0';
-    this.element.style.width = '300px';
+    // Let the window define the width on initial load (plugin restores window size)
+    this.element.style.width = '100%';
+    this.element.style.height = '100%';
     this.element.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
     // Use clock color for border with opacity
     const borderColor = this.colorToRgba(this.config.color, 0.3);
@@ -339,8 +344,28 @@ class StickyNoteWindow {
     // Restore saved state if available
     this.restoreSavedState();
 
-    // Set initial collapsed state
-    this.updateCollapsedState();
+    // Capture current width as the base width (after plugin restore)
+    // Do not change the window size here.
+    requestAnimationFrame(() => {
+      if (!this.element) {
+        return;
+      }
+      const rect = this.element.getBoundingClientRect();
+      const borderWidth = 2;
+      const width = Math.max(200, rect.width - borderWidth);
+      if (width > 0) {
+        this.originalWidth = width;
+        this.element.style.width = `${width}px`;
+      }
+      if (this.isExpanded) {
+        const height = Math.max(50, rect.height - borderWidth);
+        this.element.style.height = `${height}px`;
+        const headerHeight = this.headerElement.getBoundingClientRect().height || 30;
+        const availableContentHeight = Math.max(1, height - headerHeight);
+        this.contentElement.style.height = `${availableContentHeight}px`;
+        this.contentElement.style.maxHeight = `${availableContentHeight}px`;
+      }
+    });
 
     // Verify font is applied correctly
     const computedFont = window.getComputedStyle(this.textElement).fontFamily;
@@ -531,14 +556,23 @@ class StickyNoteWindow {
       const needsScroll = totalLines > displayLines;
 
       this.contentElement.style.overflowY = needsScroll ? 'auto' : 'hidden';
-      this.contentElement.style.maxHeight = `${contentHeight}px`;
-      this.contentElement.style.height = `${contentHeight}px`;
       this.contentElement.style.flex = 'none';
       this.expandButton.textContent = '▼';
 
-      // Set element height
-      const totalHeight = headerHeight + contentHeight;
-      this.element.style.height = `${totalHeight}px`;
+      if (this.isInitialLoad) {
+        const currentContentHeight = parseFloat(this.contentElement.style.height);
+        if (currentContentHeight) {
+          this.contentElement.style.maxHeight = `${currentContentHeight}px`;
+        } else {
+          this.contentElement.style.maxHeight = `${contentHeight}px`;
+        }
+      } else {
+        this.contentElement.style.maxHeight = `${contentHeight}px`;
+        this.contentElement.style.height = `${contentHeight}px`;
+        // Set element height
+        const totalHeight = headerHeight + contentHeight;
+        this.element.style.height = `${totalHeight}px`;
+      }
 
       // If width was changed, keep it; otherwise use original width
       if (!this.element.style.width || this.element.style.width === '300px') {
@@ -565,7 +599,10 @@ class StickyNoteWindow {
       }
 
       // Resize window to match content
-      this.resizeWindow();
+      // During initial load, keep the restored window size
+      if (!this.isInitialLoad) {
+        this.resizeWindow();
+      }
     } else {
       this.contentElement.style.overflowY = 'hidden';
       // Single line height: lineHeight + text padding (4px top + 4px bottom)
@@ -593,7 +630,9 @@ class StickyNoteWindow {
       this.setWindowResizable(false);
 
       // Resize window to match content
-      this.resizeWindow();
+      if (!this.isInitialLoad) {
+        this.resizeWindow();
+      }
     }
   }
 
