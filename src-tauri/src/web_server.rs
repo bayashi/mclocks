@@ -9,6 +9,19 @@ use crate::web::file::handle_web_request;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct EditorConfig {
+    #[serde(default)]
+    pub repos_dir: Option<String>,
+    #[serde(default)]
+    pub include_host: bool,
+    #[serde(default)]
+    pub command: Option<String>,
+    #[serde(default)]
+    pub args: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct WebConfig {
     pub root: String,
     #[serde(default = "df_web_port")]
@@ -21,6 +34,8 @@ pub struct WebConfig {
     pub slow: bool,
     #[serde(default = "df_status")]
     pub status: bool,
+    #[serde(default)]
+    pub editor: Option<EditorConfig>,
 }
 
 #[derive(Debug)]
@@ -31,6 +46,10 @@ pub struct WebServerConfig {
     pub dump: bool,
     pub slow: bool,
     pub status: bool,
+    pub editor_repos_dir: Option<String>,
+    pub editor_include_host: bool,
+    pub editor_command: String,
+    pub editor_args: Vec<String>,
 }
 
 fn df_web_port() -> u16 { 3030 }
@@ -39,7 +58,7 @@ fn df_dump() -> bool { false }
 fn df_slow() -> bool { false }
 fn df_status() -> bool { false }
 
-pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) {
+pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool, editor_repos_dir: Option<String>, editor_include_host: bool, editor_command: String, editor_args: Vec<String>) {
     thread::spawn(move || {
         let server = match Server::http(format!("127.0.0.1:{}", port)) {
             Ok(s) => s,
@@ -58,7 +77,7 @@ pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enable
         println!("Web server started on http://localhost:{}", port);
 
         for mut request in server.incoming_requests() {
-            let response = handle_web_request(&mut request, &root_path, dump_enabled, slow_enabled, status_enabled);
+            let response = handle_web_request(&mut request, &root_path, dump_enabled, slow_enabled, status_enabled, &editor_repos_dir, editor_include_host, &editor_command, &editor_args);
             if let Err(e) = request.respond(response) {
                 eprintln!("Failed to send response: {}", e);
             }
@@ -92,6 +111,17 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         return Err(format!("web.root not exists: {}", root_path.display()));
     }
 
+    let editor_repos_dir = match web_config.editor.as_ref().and_then(|e| e.repos_dir.as_ref()) {
+        Some(repos_dir) => Some(normalize_editor_repos_dir(repos_dir)?),
+        None => None,
+    };
+    let editor_include_host = web_config.editor.as_ref().map(|e| e.include_host).unwrap_or(false);
+    let editor_command = web_config.editor.as_ref().and_then(|e| e.command.as_ref()).cloned().unwrap_or("code".to_string());
+    let editor_args = web_config.editor.as_ref().and_then(|e| e.args.as_ref()).cloned().unwrap_or(vec![
+        "-g".to_string(),
+        "{file}:{line}".to_string(),
+    ]);
+
     Ok(Some(WebServerConfig {
         root: web_config.root,
         port: web_config.port,
@@ -99,7 +129,32 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         dump: web_config.dump,
         slow: web_config.slow,
         status: web_config.status,
+        editor_repos_dir,
+        editor_include_host,
+        editor_command,
+        editor_args,
     }))
+}
+
+fn normalize_editor_repos_dir(repos_dir: &str) -> Result<String, String> {
+    let mut normalized = repos_dir.to_string();
+
+    if normalized.starts_with("~") {
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .map_err(|_| "HOME or USERPROFILE environment variable not set")?;
+        normalized = normalized.replacen("~", &home, 1);
+    }
+
+    let path = PathBuf::from(&normalized);
+    if !path.exists() {
+        return Err(format!("web.editor.reposDir not exists: {}", normalized));
+    }
+    if !path.is_dir() {
+        return Err(format!("web.editor.reposDir is not a directory: {}", normalized));
+    }
+
+    Ok(normalized)
 }
 
 #[cfg(test)]
@@ -502,8 +557,14 @@ mod tests {
                 Err(_) => return,
             };
 
+            let editor_command = "code";
+            let editor_args = vec![
+                "-g".to_string(),
+                "{file}:{line}".to_string(),
+            ];
+
             for mut request in server.incoming_requests() {
-                let response = handle_web_request(&mut request, &root, dump_enabled, slow_enabled, status_enabled);
+                let response = handle_web_request(&mut request, &root, dump_enabled, slow_enabled, status_enabled, &None, false, editor_command, &editor_args);
                 let _ = request.respond(response);
             }
         })
