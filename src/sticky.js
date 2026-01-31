@@ -5,7 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 /**
  * Sticky note class
  */
-class StickyNote {
+export class StickyNote {
   constructor(text, ctx) {
     this.ctx = ctx;
     this.text = text;
@@ -333,9 +333,8 @@ class StickyNote {
 
 /**
  * Create a new sticky note window from clipboard text
- * @param {Ctx} ctx - Application context
  */
-export async function createStickyNoteFromClipboard(ctx) {
+export async function createStickyNoteFromClipboard() {
   try {
     const text = await readClipboardText();
     if (!text) {
@@ -345,7 +344,7 @@ export async function createStickyNoteFromClipboard(ctx) {
     // Create unique label for the window using UUID v4
     const label = `sticky-${crypto.randomUUID()}`;
     await createStickyNoteWindow(label, text);
-  } catch (error) {
+  } catch {
     // Ignore error
   }
 }
@@ -388,10 +387,10 @@ async function createStickyNoteWindow(label, text) {
       // Window created successfully
     });
 
-    webview.once('tauri://error', (e) => {
+    webview.once('tauri://error', () => {
       // Ignore error
     });
-  } catch (createError) {
+  } catch {
     // Ignore error
   }
 }
@@ -409,7 +408,7 @@ export async function restoreStickyNotes() {
     for (const [label, state] of Object.entries(allStates)) {
       await createStickyNoteWindow(label, state.text);
     }
-  } catch (error) {
+  } catch {
     // Ignore error
   }
 }

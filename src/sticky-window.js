@@ -1,7 +1,7 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
-import { readClipboardText, writeClipboardText } from './util.js';
+import { writeClipboardText } from './util.js';
 
 /**
  * Sticky note class for window-based display
@@ -52,7 +52,7 @@ class StickyNoteWindow {
       await currentWindow.setAlwaysOnTop(true);
       // Initially disable resizing (single-line mode)
       await currentWindow.setResizable(false);
-    } catch (error) {
+    } catch {
       // Ignore error
     }
 
@@ -77,7 +77,7 @@ class StickyNoteWindow {
         }
         // Save final window state
         await saveWindowState(StateFlags.ALL);
-      } catch (error) {
+      } catch {
         // Ignore error
       }
     });
@@ -91,7 +91,7 @@ class StickyNoteWindow {
         color: config.color || "#fff",
         size: config.size || 14
       };
-    } catch (error) {
+    } catch {
       // Use defaults if config loading fails
       this.config = {
         font: "Courier, monospace",
@@ -111,7 +111,7 @@ class StickyNoteWindow {
         this.text = savedState.text || this.text;
         this.isExpanded = savedState.isExpanded || false;
       }
-    } catch (error) {
+    } catch {
       // Ignore error, use defaults
     }
   }
@@ -140,7 +140,7 @@ class StickyNoteWindow {
         if (!skipWindowState) {
           await saveWindowState(StateFlags.ALL);
         }
-      } catch (error) {
+      } catch {
         // Ignore error
       }
     }, 300); // 300ms debounce
@@ -374,16 +374,16 @@ class StickyNoteWindow {
       e.stopPropagation();
       try {
         await writeClipboardText(this.text);
-        
+
         // Show checkmark feedback
         const originalText = this.copyButton.textContent;
         this.copyButton.textContent = '✓';
-        
+
         // Restore original icon after 500ms
         setTimeout(() => {
           this.copyButton.textContent = originalText;
         }, 500);
-      } catch (error) {
+      } catch {
         // Ignore error
       }
     });
@@ -401,7 +401,7 @@ class StickyNoteWindow {
         }
         const currentWindow = getCurrentWindow();
         await currentWindow.close();
-      } catch (error) {
+      } catch {
         // Ignore error
       }
     });
@@ -457,7 +457,7 @@ class StickyNoteWindow {
         }).catch(() => {
           // Ignore error
         });
-      } catch (error) {
+      } catch {
         // Ignore error
       }
     })();
@@ -520,7 +520,7 @@ class StickyNoteWindow {
     const fontSize = parseFloat(computedStyle.fontSize) || 14;
     const lineHeightValue = parseFloat(computedStyle.lineHeight) || fontSize * 1.2;
     const lineHeight = lineHeightValue;
-    
+
     const headerHeight = this.headerElement.getBoundingClientRect().height || 30;
     const textPadding = 8; // 4px top + 4px bottom from textElement padding
     const resizeHandle = this.element.querySelector('.sticky-note-resize');
@@ -562,7 +562,7 @@ class StickyNoteWindow {
         const currentWindow = getCurrentWindow();
         await currentWindow.setMaxSize(null);
         await currentWindow.setMinSize(null);
-      } catch (error) {
+      } catch {
         // Ignore error
       }
 
@@ -661,7 +661,7 @@ class StickyNoteWindow {
     try {
       const currentWindow = getCurrentWindow();
       await currentWindow.setResizable(resizable);
-    } catch (error) {
+    } catch {
       // Ignore error
     }
   }
@@ -683,7 +683,7 @@ class StickyNoteWindow {
       try {
         await currentWindow.setMaxSize(null);
         await currentWindow.setMinSize(null);
-      } catch (error) {
+      } catch {
         // Ignore error
       }
 
@@ -692,7 +692,7 @@ class StickyNoteWindow {
         width: newWidth,
         height: newHeight
       });
-    } catch (error) {
+    } catch {
       // Ignore error
     }
   }
