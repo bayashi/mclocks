@@ -1,15 +1,30 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
 use tiny_http::{Response, StatusCode, Header, Method};
 use serde::Deserialize;
+use rand::rngs::OsRng;
+use rand::RngCore;
 
 use super::common::create_error_response;
+
+const TOKEN_TTL: Duration = Duration::from_secs(15);
+const MAX_TOKENS: usize = 3;
+static EDITOR_TOKENS: OnceLock<Mutex<HashMap<String, TokenEntry>>> = OnceLock::new();
+
+struct TokenEntry {
+	expires_at: Instant,
+	expected_path: String,
+}
 
 #[derive(Deserialize)]
 struct EditorRequest {
 	path: String,
 	line: Option<u32>,
 	repos_dir: Option<String>,
+	token: Option<String>,
 }
 
 pub fn handle_editor_request(
@@ -30,8 +45,9 @@ fn handle_get_request(request: &tiny_http::Request) -> Response<std::io::Cursor<
 	let url = request.url();
 	let url_path = url.split('?').next().unwrap_or("/");
 	let github_path = url_path.strip_prefix("/editor").unwrap_or(url_path);
-	let github_path = if github_path.is_empty() { "/" } else { github_path };
-	let html = generate_editor_html(github_path);
+	let github_path = normalize_github_path_for_token(github_path);
+	let token = issue_one_time_token(&github_path);
+	let html = generate_editor_html(&github_path, &token);
 
 	if let Ok(header) = Header::from_bytes(b"Content-Type", b"text/html; charset=utf-8") {
 		Response::from_string(html).with_header(header).with_status_code(StatusCode(200))
@@ -49,24 +65,33 @@ fn handle_post_request(
 ) -> Response<std::io::Cursor<Vec<u8>>> {
 	let mut body = Vec::new();
 	if let Err(_) = request.as_reader().read_to_end(&mut body) {
-		return create_error_html_response("Bad Request: Failed to read request body", None, None, None);
+		return create_error_html_response_with_status(StatusCode(400), "Bad Request: Failed to read request body", None, None, None);
 	}
 
 	let body_str = match String::from_utf8(body) {
 		Ok(s) => s,
-		Err(_) => return create_error_html_response("Bad Request: Invalid UTF-8", None, None, None),
+		Err(_) => return create_error_html_response_with_status(StatusCode(400), "Bad Request: Invalid UTF-8", None, None, None),
 	};
 
 	let params: EditorRequest = match serde_json::from_str(&body_str) {
 		Ok(p) => p,
-		Err(_) => return create_error_html_response("Bad Request: Invalid JSON", None, None, None),
+		Err(_) => return create_error_html_response_with_status(StatusCode(400), "Bad Request: Invalid JSON", None, None, None),
 	};
 
 	let github_owner_repo = extract_github_owner_repo(&params.path);
 
-	let local_path = match convert_github_path_to_local(&params.path, repos_dir, &params.repos_dir, include_host) {
+	let token = params.token.as_deref().unwrap_or("");
+	if token.is_empty() {
+		return create_error_html_response_with_status(StatusCode(403), "Forbidden: Missing token. Reload and try again.", github_owner_repo.as_deref(), None, None);
+	}
+	let normalized_path = normalize_github_path_for_token(&params.path);
+	if !consume_one_time_token(token, &normalized_path) {
+		return create_error_html_response_with_status(StatusCode(403), "Forbidden: Invalid or expired token. Reload and try again.", github_owner_repo.as_deref(), None, None);
+	}
+
+	let local_path = match convert_github_path_to_local(&normalized_path, repos_dir, &params.repos_dir, include_host) {
 		Ok(path) => path,
-		Err(e) => return create_error_html_response(&format!("Not Found: {}", e), github_owner_repo.as_deref(), None, None),
+		Err(e) => return create_error_html_response_with_status(StatusCode(404), &format!("Not Found: {}", e), github_owner_repo.as_deref(), None, None),
 	};
 
 	let line = params.line.unwrap_or(1);
@@ -74,12 +99,12 @@ fn handle_post_request(
 	let command_preview = format_command_preview(editor_command, &rendered_args);
 
 	if !local_path.exists() {
-		return create_error_html_response("File not found", github_owner_repo.as_deref(), Some(local_path.display().to_string()), Some(command_preview));
+		return create_error_html_response_with_status(StatusCode(404), "File not found", github_owner_repo.as_deref(), Some(local_path.display().to_string()), Some(command_preview));
 	}
 
 	let file_for_check = local_path.display().to_string();
 	if let Some(ch) = find_unsafe_path_char(&file_for_check) {
-		return create_error_html_response(&format!("Unsafe character '{}' in local file path", ch), github_owner_repo.as_deref(), Some(file_for_check), Some(command_preview));
+		return create_error_html_response_with_status(StatusCode(400), &format!("Unsafe character '{}' in local file path", ch), github_owner_repo.as_deref(), Some(file_for_check), Some(command_preview));
 	}
 
 	match execute_command(editor_command, &rendered_args) {
@@ -87,11 +112,11 @@ fn handle_post_request(
 			let message = "OK".to_string();
 			Response::from_string(message).with_status_code(StatusCode(200))
 		}
-		Err(e) => create_error_html_response(&format!("Failed to execute command: {}", e), github_owner_repo.as_deref(), Some(local_path.display().to_string()), Some(command_preview)),
+		Err(e) => create_error_html_response_with_status(StatusCode(500), &format!("Failed to execute command: {}", e), github_owner_repo.as_deref(), Some(local_path.display().to_string()), Some(command_preview)),
 	}
 }
 
-fn generate_editor_html(_path: &str) -> String {
+fn generate_editor_html(_path: &str, token: &str) -> String {
 	format!(
 		r#"<!DOCTYPE html>
 <html>
@@ -135,6 +160,7 @@ body {{
 <div id="result"></div>
 <script>
 let data = new Object();
+data.token = '{}';
 let pathname = document.location.pathname;
 // Remove /editor prefix if present
 if (pathname.startsWith('/editor')) {{
@@ -171,10 +197,12 @@ request.send(JSON.stringify(data));
 </script>
 </body>
 </html>"#
+		,
+		js_escape_single_quoted(token)
 	)
 }
 
-fn create_error_html_response(message: &str, owner_repo: Option<&str>, local_full_path: Option<String>, command_preview: Option<String>) -> Response<std::io::Cursor<Vec<u8>>> {
+fn create_error_html_response_with_status(status_code: StatusCode, message: &str, owner_repo: Option<&str>, local_full_path: Option<String>, command_preview: Option<String>) -> Response<std::io::Cursor<Vec<u8>>> {
 	let details_section = if let Some(local_full_path) = local_full_path {
 		let cmd_section = if let Some(command_preview) = command_preview {
 			format!(
@@ -280,9 +308,9 @@ body {{
 	);
 
 	if let Ok(header) = Header::from_bytes(b"Content-Type", b"text/html; charset=utf-8") {
-		Response::from_string(html).with_header(header).with_status_code(StatusCode(404))
+		Response::from_string(html).with_header(header).with_status_code(status_code)
 	} else {
-		Response::from_string(html).with_status_code(StatusCode(404))
+		Response::from_string(html).with_status_code(status_code)
 	}
 }
 
@@ -297,6 +325,63 @@ fn html_escape(s: &str) -> String {
 			_ => c.to_string(),
 		})
 		.collect()
+}
+
+fn js_escape_single_quoted(s: &str) -> String {
+	s.replace('\\', "\\\\").replace('\'', "\\'")
+}
+
+fn token_store() -> &'static Mutex<HashMap<String, TokenEntry>> {
+	EDITOR_TOKENS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn issue_one_time_token(expected_path: &str) -> String {
+	let mut bytes = [0u8; 16];
+	OsRng.fill_bytes(&mut bytes);
+	let token: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
+
+	let now = Instant::now();
+	let expires_at = now + TOKEN_TTL;
+	let store = token_store();
+	let mut map = store.lock().unwrap();
+	map.retain(|_, v| v.expires_at > now);
+	map.insert(token.clone(), TokenEntry {
+		expires_at,
+		expected_path: expected_path.to_string(),
+	});
+	while map.len() > MAX_TOKENS {
+		let oldest_key = map.iter()
+			.min_by_key(|(_, v)| v.expires_at)
+			.map(|(k, _)| k.clone());
+		match oldest_key {
+			Some(k) => {
+				let _ = map.remove(&k);
+			}
+			None => break,
+		}
+	}
+	token
+}
+
+fn consume_one_time_token(token: &str, expected_path: &str) -> bool {
+	let now = Instant::now();
+	let store = token_store();
+	let mut map = store.lock().unwrap();
+	map.retain(|_, v| v.expires_at > now);
+	match map.remove(token) {
+		Some(entry) => entry.expires_at > now && entry.expected_path == expected_path,
+		None => false,
+	}
+}
+
+fn normalize_github_path_for_token(path: &str) -> String {
+	if path.is_empty() {
+		"/".to_string()
+	} else if path.starts_with('/') {
+		path.to_string()
+	} else {
+		format!("/{}", path)
+	}
 }
 
 fn extract_github_owner_repo(github_path: &str) -> Option<String> {
