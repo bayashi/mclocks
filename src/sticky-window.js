@@ -1,7 +1,6 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
-import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
-import { writeClipboardText } from './util.js';
+import { writeClipboardText, saveWindowStateSafely, scheduleSaveWindowStateSafely, STICKY_WINDOW_STATE_SAVE_DELAY_MS } from './util.js';
 
 /**
  * Sticky note class for window-based display
@@ -76,7 +75,7 @@ class StickyNoteWindow {
           this.saveDebounceTimer = null;
         }
         // Save final window state
-        await saveWindowState(StateFlags.ALL);
+        await saveWindowStateSafely();
       } catch {
         // Ignore error
       }
@@ -116,7 +115,7 @@ class StickyNoteWindow {
     }
   }
 
-  async saveState(skipWindowState = false) {
+  async saveState() {
     if (!this.windowLabel || !this.element) {
       return;
     }
@@ -136,10 +135,6 @@ class StickyNoteWindow {
           label: this.windowLabel,
           stickyState: state
         });
-        // Save window position and size using window-state plugin (skip during resize)
-        if (!skipWindowState) {
-          await saveWindowState(StateFlags.ALL);
-        }
       } catch {
         // Ignore error
       }
@@ -394,7 +389,7 @@ class StickyNoteWindow {
       e.preventDefault();
       try {
         // Save final window state before closing
-        await saveWindowState(StateFlags.ALL);
+        await saveWindowStateSafely();
         // Delete from persistence file before closing
         if (this.windowLabel) {
           await invoke("delete_sticky_note_state", { label: this.windowLabel });
@@ -438,8 +433,9 @@ class StickyNoteWindow {
     document.addEventListener('mouseup', async () => {
       if (this.isResizing) {
         this.isResizing = false;
-        // Save text and expanded state, and window position/size after resize ends
-        await this.saveState(false);
+        // Save text and expanded state after resize ends
+        await this.saveState();
+        scheduleSaveWindowStateSafely(STICKY_WINDOW_STATE_SAVE_DELAY_MS);
       }
     });
 
@@ -452,8 +448,9 @@ class StickyNoteWindow {
           if (this.isResizing) {
             return;
           }
-          // Save text and expanded state (position is automatically saved by window-state)
+          // Save text and expanded state, and schedule window state save
           await this.saveState();
+          scheduleSaveWindowStateSafely(STICKY_WINDOW_STATE_SAVE_DELAY_MS);
         }).catch(() => {
           // Ignore error
         });
@@ -479,6 +476,7 @@ class StickyNoteWindow {
     this.isExpanded = !this.isExpanded;
     await this.updateCollapsedState();
     await this.saveState();
+    scheduleSaveWindowStateSafely(STICKY_WINDOW_STATE_SAVE_DELAY_MS);
   }
 
   measureRenderedLineCount() {

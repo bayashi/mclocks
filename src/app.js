@@ -1,12 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
 
 import { initClocks, adjustWindowSize, startClocks } from './matter.js';
 import { Ctx } from './ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
 import { restoreStickyNotes } from './sticky.js';
+import { scheduleSaveWindowStateSafely, CLOCK_WINDOW_STATE_SAVE_DELAY_MS } from './util.js';
 
 /**
  * Default configuration for the application
@@ -48,21 +48,7 @@ const globalInit = async (ctx) => {
 
   try {
     await currentWindow.onMoved(() => {
-      // Skip saving window state on macOS due to platform-specific issues
-      if (ctx.ignoreOnMoved() || ctx.isMacOS()) {
-        return;
-      }
-
-      ctx.setIgnoreOnMoved(true);
-      setTimeout(async () => {
-        try {
-          await saveWindowState(StateFlags.ALL);
-        } catch (error) {
-          console.warn('Err:', error);
-        } finally {
-          ctx.setIgnoreOnMoved(false);
-        }
-      }, 5000);
+      scheduleSaveWindowStateSafely(CLOCK_WINDOW_STATE_SAVE_DELAY_MS);
     });
   } catch (error) {
     // Ignore error in testing environment

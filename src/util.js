@@ -2,6 +2,7 @@ import { isPermissionGranted, requestPermission, sendNotification } from '@tauri
 import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
 import { message } from '@tauri-apps/plugin-dialog';
 import { platform } from '@tauri-apps/plugin-os';
+import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
 
 const ESCAPE_MAP = new Map([
   ['&', '&amp;'],
@@ -138,3 +139,48 @@ export const isMacOS = () => isMac;
  * @returns {boolean} True if running on Windows
  */
 export const isWindowsOS = () => isWin;
+
+export const DEFAULT_WINDOW_STATE_SAVE_DELAY_MS = 5000;
+export const CLOCK_WINDOW_STATE_SAVE_DELAY_MS = DEFAULT_WINDOW_STATE_SAVE_DELAY_MS;
+export const STICKY_WINDOW_STATE_SAVE_DELAY_MS = 1500;
+
+/**
+ * Saves window state safely.
+ * On macOS, this does nothing to avoid a hang caused by explicit saveWindowState() calls.
+ * @param {import('@tauri-apps/plugin-window-state').StateFlags} [flags]
+ * @returns {Promise<void>}
+ */
+export const saveWindowStateSafely = async (flags = StateFlags.ALL) => {
+  if (isMacOS()) {
+    return;
+  }
+  try {
+    await saveWindowState(flags);
+  } catch {
+    // Ignore error
+  }
+};
+
+let saveWindowStateSafelyTimer = null;
+
+/**
+ * Schedules window state save safely with debounce.
+ * If called repeatedly, it saves once after the last call.
+ * On macOS, this does nothing to avoid a hang caused by explicit saveWindowState() calls.
+ * @param {number} [delayMs]
+ * @param {import('@tauri-apps/plugin-window-state').StateFlags} [flags]
+ * @returns {void}
+ */
+export const scheduleSaveWindowStateSafely = (delayMs = DEFAULT_WINDOW_STATE_SAVE_DELAY_MS, flags = StateFlags.ALL) => {
+  if (isMacOS()) {
+    return;
+  }
+  if (saveWindowStateSafelyTimer) {
+    clearTimeout(saveWindowStateSafelyTimer);
+    saveWindowStateSafelyTimer = null;
+  }
+  saveWindowStateSafelyTimer = setTimeout(async () => {
+    saveWindowStateSafelyTimer = null;
+    await saveWindowStateSafely(flags);
+  }, delayMs);
+};
