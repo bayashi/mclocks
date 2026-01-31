@@ -556,3 +556,65 @@ fn execute_command(command: &str, args: &[String]) -> Result<(), String> {
 	Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	static TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+	fn with_test_lock<F:FnOnce()>(f: F) {
+		let lock = TEST_LOCK.get_or_init(|| Mutex::new(()));
+		let _guard = lock.lock().unwrap();
+		{
+			let mut map = token_store().lock().unwrap();
+			map.clear();
+		}
+		f();
+	}
+
+	#[test]
+	fn test_token_one_time_and_path_bound() {
+		with_test_lock(|| {
+			let expected_path = "/o/r/blob/main/src/lib.rs";
+			let token = issue_one_time_token(expected_path);
+			assert!(consume_one_time_token(&token, expected_path));
+			assert!(!consume_one_time_token(&token, expected_path));
+
+			let token2 = issue_one_time_token(expected_path);
+			assert!(!consume_one_time_token(&token2, "/o/r/blob/main/src/other.rs"));
+		});
+	}
+
+	#[test]
+	fn test_get_local_lib_path_owner_repo_without_host() {
+		with_test_lock(|| {
+			let github_path = "/o/r/blob/main/src/lib.rs";
+			let local = get_local_lib_path(github_path, false).unwrap();
+			let expected = std::path::PathBuf::from("o").join("r").join("src").join("lib.rs");
+			assert_eq!(local, expected);
+
+			let err = get_local_lib_path(github_path, true).unwrap_err();
+			assert!(err.contains("includeHost is true"));
+		});
+	}
+
+	#[test]
+	fn test_get_local_lib_path_with_host_when_enabled() {
+		with_test_lock(|| {
+			let github_path = "/github.com/o/r/blob/main/src/lib.rs";
+			let local = get_local_lib_path(github_path, true).unwrap();
+			let expected = std::path::PathBuf::from("github.com").join("o").join("r").join("src").join("lib.rs");
+			assert_eq!(local, expected);
+		});
+	}
+
+	#[test]
+	fn test_find_unsafe_path_char() {
+		with_test_lock(|| {
+			assert_eq!(find_unsafe_path_char("C:\\safe\\path\\file.txt"), None);
+			assert_eq!(find_unsafe_path_char("C:\\bad&path\\file.txt"), Some('&'));
+			assert_eq!(find_unsafe_path_char("C:\\bad\\path\nfile.txt"), Some('\n'));
+		});
+	}
+}
+
