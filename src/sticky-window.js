@@ -627,6 +627,9 @@ class StickyNoteWindow {
     this.element.style.width = `${newWidth}px`;
     this.element.style.height = `${newHeight}px`;
 
+    // Preserve width for collapse/expand toggles after resizing
+    this.originalWidth = newWidth;
+
     // Update content height to fill available space
     const headerHeight = this.headerElement.getBoundingClientRect().height || 30;
     const textPadding = 8; // 4px top + 4px bottom from textElement padding
