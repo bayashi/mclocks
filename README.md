@@ -370,7 +370,7 @@ Add the following to your `web` configuration:
     }
 
 * `reposDir`: Path to your local repositories directory. Supports `~` for home directory expansion (e.g., `"~/repos"` on macOS or `"C:/Users/username/repos"` on Windows). This directory must exist.
-* `includeHost`: If `true`, local path resolution includes `github.com/` as a directory (e.g. `{reposDir}/github.com/{owner}/{repo}/...`). If `false`, it resolves to `{reposDir}/{owner}/{repo}/...` (default: `false`).
+* `includeHost`: If `true`, local path resolution includes the original host as a directory (e.g. `{reposDir}/{host}/{owner}/{repo}/...`). If `false`, it resolves to `{reposDir}/{owner}/{repo}/...` (default: `false`).
 * `command`: Command name or path to your editor executable (default: `code`)
 * `args`: Arguments template array. Use `{file}` and `{line}` placeholders. If `#L...` is not present in URL, `{line}` uses 1.
 
@@ -386,7 +386,7 @@ Add the following to your `web` configuration:
 Create a bookmarklet to quickly open GitHub files in your local editor. Replace `3030` with your configured port number:
 
 ```javascript
-javascript:(function(){C=document.location.href;N=C.replace(/https:\/\/github\.com/, 'http://127.0.0.1:3030/editor');open(N, '_blank');})()
+javascript:(function(){var u=new URL(document.location.href);open('http://127.0.0.1:3030/editor/'+u.host+u.pathname+u.hash,'_blank');})()
 ```
 
 **Line number support:**
