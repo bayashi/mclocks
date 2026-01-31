@@ -19,6 +19,13 @@ struct TokenEntry {
 	expected_path: String,
 }
 
+struct ParsedRepoPath {
+	host: Option<String>,
+	owner: String,
+	repo: String,
+	file_path_parts: Vec<String>,
+}
+
 #[derive(Deserialize)]
 struct EditorRequest {
 	path: String,
@@ -65,33 +72,38 @@ fn handle_post_request(
 ) -> Response<std::io::Cursor<Vec<u8>>> {
 	let mut body = Vec::new();
 	if let Err(_) = request.as_reader().read_to_end(&mut body) {
-		return create_error_html_response_with_status(StatusCode(400), "Bad Request: Failed to read request body", None, None, None);
+		return create_error_html_response_with_status(StatusCode(400), "Bad Request: Failed to read request body", None, None, None, None);
 	}
 
 	let body_str = match String::from_utf8(body) {
 		Ok(s) => s,
-		Err(_) => return create_error_html_response_with_status(StatusCode(400), "Bad Request: Invalid UTF-8", None, None, None),
+		Err(_) => return create_error_html_response_with_status(StatusCode(400), "Bad Request: Invalid UTF-8", None, None, None, None),
 	};
 
 	let params: EditorRequest = match serde_json::from_str(&body_str) {
 		Ok(p) => p,
-		Err(_) => return create_error_html_response_with_status(StatusCode(400), "Bad Request: Invalid JSON", None, None, None),
+		Err(_) => return create_error_html_response_with_status(StatusCode(400), "Bad Request: Invalid JSON", None, None, None, None),
 	};
 
-	let github_owner_repo = extract_github_owner_repo(&params.path);
+	let parsed_for_link = parse_repo_path_best_effort(&params.path);
+	let owner_repo_for_link = parsed_for_link.as_ref().map(|p| format!("{}/{}", p.owner, p.repo));
+	let href_for_link = parsed_for_link.as_ref().map(|p| {
+		let host = p.host.as_deref().unwrap_or("github.com");
+		format!("https://{}/{}/{}", host, p.owner, p.repo)
+	});
 
 	let token = params.token.as_deref().unwrap_or("");
 	if token.is_empty() {
-		return create_error_html_response_with_status(StatusCode(403), "Forbidden: Missing token. Reload and try again.", github_owner_repo.as_deref(), None, None);
+		return create_error_html_response_with_status(StatusCode(403), "Forbidden: Missing token. Reload and try again.", owner_repo_for_link.as_deref(), href_for_link.as_deref(), None, None);
 	}
 	let normalized_path = normalize_github_path_for_token(&params.path);
 	if !consume_one_time_token(token, &normalized_path) {
-		return create_error_html_response_with_status(StatusCode(403), "Forbidden: Invalid or expired token. Reload and try again.", github_owner_repo.as_deref(), None, None);
+		return create_error_html_response_with_status(StatusCode(403), "Forbidden: Invalid or expired token. Reload and try again.", owner_repo_for_link.as_deref(), href_for_link.as_deref(), None, None);
 	}
 
 	let local_path = match convert_github_path_to_local(&normalized_path, repos_dir, &params.repos_dir, include_host) {
 		Ok(path) => path,
-		Err(e) => return create_error_html_response_with_status(StatusCode(404), &format!("Not Found: {}", e), github_owner_repo.as_deref(), None, None),
+		Err(e) => return create_error_html_response_with_status(StatusCode(404), &format!("Not Found: {}", e), owner_repo_for_link.as_deref(), href_for_link.as_deref(), None, None),
 	};
 
 	let line = params.line.unwrap_or(1);
@@ -99,12 +111,12 @@ fn handle_post_request(
 	let command_preview = format_command_preview(editor_command, &rendered_args);
 
 	if !local_path.exists() {
-		return create_error_html_response_with_status(StatusCode(404), "File not found", github_owner_repo.as_deref(), Some(local_path.display().to_string()), Some(command_preview));
+		return create_error_html_response_with_status(StatusCode(404), "File not found", owner_repo_for_link.as_deref(), href_for_link.as_deref(), Some(local_path.display().to_string()), Some(command_preview));
 	}
 
 	let file_for_check = local_path.display().to_string();
 	if let Some(ch) = find_unsafe_path_char(&file_for_check) {
-		return create_error_html_response_with_status(StatusCode(400), &format!("Unsafe character '{}' in local file path", ch), github_owner_repo.as_deref(), Some(file_for_check), Some(command_preview));
+		return create_error_html_response_with_status(StatusCode(400), &format!("Unsafe character '{}' in local file path", ch), owner_repo_for_link.as_deref(), href_for_link.as_deref(), Some(file_for_check), Some(command_preview));
 	}
 
 	match execute_command(editor_command, &rendered_args) {
@@ -112,7 +124,7 @@ fn handle_post_request(
 			let message = "OK".to_string();
 			Response::from_string(message).with_status_code(StatusCode(200))
 		}
-		Err(e) => create_error_html_response_with_status(StatusCode(500), &format!("Failed to execute command: {}", e), github_owner_repo.as_deref(), Some(local_path.display().to_string()), Some(command_preview)),
+		Err(e) => create_error_html_response_with_status(StatusCode(500), &format!("Failed to execute command: {}", e), owner_repo_for_link.as_deref(), href_for_link.as_deref(), Some(local_path.display().to_string()), Some(command_preview)),
 	}
 }
 
@@ -202,7 +214,7 @@ request.send(JSON.stringify(data));
 	)
 }
 
-fn create_error_html_response_with_status(status_code: StatusCode, message: &str, owner_repo: Option<&str>, local_full_path: Option<String>, command_preview: Option<String>) -> Response<std::io::Cursor<Vec<u8>>> {
+fn create_error_html_response_with_status(status_code: StatusCode, message: &str, owner_repo: Option<&str>, owner_repo_href: Option<&str>, local_full_path: Option<String>, command_preview: Option<String>) -> Response<std::io::Cursor<Vec<u8>>> {
 	let details_section = if let Some(local_full_path) = local_full_path {
 		let cmd_section = if let Some(command_preview) = command_preview {
 			format!(
@@ -229,7 +241,7 @@ fn create_error_html_response_with_status(status_code: StatusCode, message: &str
 	};
 
 	let repo_section = if let Some(owner_repo) = owner_repo {
-		let href = format!("https://github.com/{}", owner_repo);
+		let href = owner_repo_href.unwrap_or("https://github.com").to_string();
 		let label = owner_repo;
 		format!(
 			r#"
@@ -384,14 +396,47 @@ fn normalize_github_path_for_token(path: &str) -> String {
 	}
 }
 
-fn extract_github_owner_repo(github_path: &str) -> Option<String> {
-	let parts: Vec<&str> = github_path.split('/').filter(|s| !s.is_empty()).collect();
-	if parts.len() < 2 {
+fn parse_repo_path_best_effort(path: &str) -> Option<ParsedRepoPath> {
+	let path = normalize_github_path_for_token(path);
+	let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+	if segments.len() < 4 {
 		return None;
 	}
-	let account_name = parts.get(0)?;
-	let repo_name = parts.get(1)?;
-	Some(format!("{}/{}", account_name, repo_name))
+
+	// Try host+owner+repo+blob|tree+branch+...
+	if segments.len() >= 6 {
+		let blob_or_tree = segments.get(3).copied().unwrap_or("");
+		if blob_or_tree == "blob" || blob_or_tree == "tree" {
+			let host = segments.get(0)?.to_string();
+			let owner = segments.get(1)?.to_string();
+			let repo = segments.get(2)?.to_string();
+			let file_path_parts: Vec<String> = segments[5..].iter().map(|s| s.to_string()).collect();
+			return Some(ParsedRepoPath {
+				host: Some(host),
+				owner,
+				repo,
+				file_path_parts,
+			});
+		}
+	}
+
+	// Try owner+repo+blob|tree+branch+...
+	{
+		let blob_or_tree = segments.get(2).copied().unwrap_or("");
+		if blob_or_tree == "blob" || blob_or_tree == "tree" {
+			let owner = segments.get(0)?.to_string();
+			let repo = segments.get(1)?.to_string();
+			let file_path_parts: Vec<String> = segments[4..].iter().map(|s| s.to_string()).collect();
+			return Some(ParsedRepoPath {
+				host: None,
+				owner,
+				repo,
+				file_path_parts,
+			});
+		}
+	}
+
+	None
 }
 
 fn convert_github_path_to_local(
@@ -430,27 +475,19 @@ fn normalize_repos_dir(repos_dir: &str) -> Result<String, String> {
 }
 
 fn get_local_lib_path(github_path: &str, include_host: bool) -> Result<PathBuf, String> {
-	let parts: Vec<&str> = github_path.split('/').filter(|s| !s.is_empty()).collect();
-	if parts.len() < 4 {
-		return Err("Invalid GitHub path format".to_string());
+	let parsed = parse_repo_path_best_effort(github_path).ok_or("Invalid GitHub path format")?;
+
+	if include_host && parsed.host.is_none() {
+		return Err("includeHost is true but host segment is missing in path".to_string());
 	}
 
-	let owner_name = parts.get(0).ok_or("Invalid path")?;
-	let repo_name = parts.get(1).ok_or("Invalid path")?;
-	let blob_or_tree = parts.get(2).ok_or("Invalid path")?;
-	if *blob_or_tree != "blob" && *blob_or_tree != "tree" {
-		return Err("Path must contain 'blob' or 'tree'".to_string());
-	}
-
-	// parts: [account, repo, blob|tree, branch, ...paths]
-	let file_path_parts: Vec<&str> = if parts.len() > 4 { parts[4..].to_vec() } else { Vec::new() };
 	let mut rel_path = PathBuf::new();
 	if include_host {
-		rel_path.push("github.com");
+		rel_path.push(parsed.host.as_deref().unwrap_or("github.com"));
 	}
-	rel_path.push(owner_name);
-	rel_path.push(repo_name);
-	for p in file_path_parts {
+	rel_path.push(&parsed.owner);
+	rel_path.push(&parsed.repo);
+	for p in &parsed.file_path_parts {
 		rel_path.push(p);
 	}
 	Ok(rel_path)
