@@ -32,7 +32,7 @@ pub fn run() {
     };
 
     let port_to_open = web_config_for_startup.as_ref().map(|config| {
-        start_web_server(config.root.clone(), config.port, config.dump, config.slow, config.status);
+        start_web_server(config.root.clone(), config.port, config.dump, config.slow, config.status, config.editor_repos_dir.clone(), config.editor_include_host, config.editor_command.clone(), config.editor_args.clone());
         if config.open_browser_at_start {
             Some(config.port)
         } else {
