@@ -1,10 +1,10 @@
 import { platform } from '@tauri-apps/plugin-os';
 import { cdate } from 'cdate';
+import { ignoreOnMoved as ignoreOnMovedGlobal, setIgnoreOnMoved as setIgnoreOnMovedGlobal } from './util.js';
 
 export class Ctx {
   #mainElement;
   #cdateUTC;
-  #ignoreOnMoved = false;
   #pauseTimer = false;
   #lockKeyP = false;
   #displayEpoch = false;
@@ -40,10 +40,10 @@ export class Ctx {
   }
 
   ignoreOnMoved() {
-    return this.#ignoreOnMoved;
+    return ignoreOnMovedGlobal();
   }
   setIgnoreOnMoved(ignoreOnMoved) {
-    this.#ignoreOnMoved = ignoreOnMoved;
+    setIgnoreOnMovedGlobal(ignoreOnMoved);
     return this;
   }
 

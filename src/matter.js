@@ -4,7 +4,7 @@ import { openPath } from '@tauri-apps/plugin-opener';
 
 import { cdate } from 'cdate';
 
-import { escapeHTML, pad, enqueueNotification, openMessageDialog } from './util.js';
+import { escapeHTML, pad, enqueueNotification, openMessageDialog, setIgnoreOnMoved } from './util.js';
 
 export function initClocks(ctx, cfg, clocks) {
   let clocksHtml = '';
@@ -59,11 +59,14 @@ export async function adjustWindowSize(ctx, clocks) {
 
   try {
     const currentWindow = getCurrentWindow();
+    setIgnoreOnMoved(true);
     await currentWindow.setSize(new LogicalSize(w + 16, ctx.mainElement().offsetHeight + 16));
+    setIgnoreOnMoved(false);
   } catch (e) {
     // Fallback for testing environment where Tauri APIs are not available
     console.warn('Could not adjust window size (testing environment?):', e);
     // Don't throw error in testing environment, just log it
+    setIgnoreOnMoved(false);
   }
 }
 

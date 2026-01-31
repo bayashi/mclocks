@@ -6,7 +6,7 @@ import { Ctx } from './ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
 import { restoreStickyNotes } from './sticky.js';
-import { scheduleSaveWindowStateSafely, CLOCK_WINDOW_STATE_SAVE_DELAY_MS } from './util.js';
+import { scheduleSaveWindowStateSafely, CLOCK_WINDOW_STATE_SAVE_DELAY_MS, ignoreOnMoved } from './util.js';
 
 /**
  * Default configuration for the application
@@ -48,6 +48,9 @@ const globalInit = async (ctx) => {
 
   try {
     await currentWindow.onMoved(() => {
+      if (ignoreOnMoved()) {
+        return;
+      }
       scheduleSaveWindowStateSafely(CLOCK_WINDOW_STATE_SAVE_DELAY_MS);
     });
   } catch (error) {

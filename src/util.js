@@ -144,6 +144,36 @@ export const DEFAULT_WINDOW_STATE_SAVE_DELAY_MS = 5000;
 export const CLOCK_WINDOW_STATE_SAVE_DELAY_MS = DEFAULT_WINDOW_STATE_SAVE_DELAY_MS;
 export const STICKY_WINDOW_STATE_SAVE_DELAY_MS = 1500;
 
+let ignoreOnMovedDepth = 0;
+
+/**
+ * Returns true if onMoved handlers should be ignored.
+ * This is global in the window context to prevent schedule/save collisions.
+ * @returns {boolean}
+ */
+export const ignoreOnMoved = () => ignoreOnMovedDepth > 0;
+
+/**
+ * Enables/disables ignoreOnMoved flag.
+ * This is re-entrant: setIgnoreOnMoved(true) increments, setIgnoreOnMoved(false) decrements.
+ * @param {boolean} ignore
+ * @returns {void}
+ */
+export const setIgnoreOnMoved = (ignore) => {
+  if (ignore) {
+    ignoreOnMovedDepth += 1;
+    return;
+  }
+  const nextDepth = Math.max(0, ignoreOnMovedDepth - 1);
+  ignoreOnMovedDepth = nextDepth;
+  if (nextDepth === 0 && saveWindowStateSafelyRequested && !isSavingWindowStateSafely) {
+    const reqFlags = saveWindowStateSafelyRequestedFlags;
+    saveWindowStateSafelyRequested = false;
+    saveWindowStateSafelyRequestedFlags = 0;
+    void saveWindowStateSafely(reqFlags || StateFlags.ALL);
+  }
+};
+
 /**
  * Saves window state safely.
  * On macOS, this does nothing to avoid a hang caused by explicit saveWindowState() calls.
@@ -154,14 +184,35 @@ export const saveWindowStateSafely = async (flags = StateFlags.ALL) => {
   if (isMacOS()) {
     return;
   }
+  if (saveWindowStateSafelyTimer) {
+    clearTimeout(saveWindowStateSafelyTimer);
+    saveWindowStateSafelyTimer = null;
+  }
+  if (isSavingWindowStateSafely) {
+    saveWindowStateSafelyRequested = true;
+    saveWindowStateSafelyRequestedFlags |= flags;
+    return;
+  }
+  isSavingWindowStateSafely = true;
   try {
     await saveWindowState(flags);
   } catch {
     // Ignore error
+  } finally {
+    isSavingWindowStateSafely = false;
+    if (saveWindowStateSafelyRequested) {
+      const reqFlags = saveWindowStateSafelyRequestedFlags;
+      saveWindowStateSafelyRequested = false;
+      saveWindowStateSafelyRequestedFlags = 0;
+      await saveWindowStateSafely(reqFlags || StateFlags.ALL);
+    }
   }
 };
 
 let saveWindowStateSafelyTimer = null;
+let isSavingWindowStateSafely = false;
+let saveWindowStateSafelyRequested = false;
+let saveWindowStateSafelyRequestedFlags = 0;
 
 /**
  * Schedules window state save safely with debounce.
@@ -175,12 +226,27 @@ export const scheduleSaveWindowStateSafely = (delayMs = DEFAULT_WINDOW_STATE_SAV
   if (isMacOS()) {
     return;
   }
+  if (ignoreOnMoved()) {
+    saveWindowStateSafelyRequested = true;
+    saveWindowStateSafelyRequestedFlags |= flags;
+    return;
+  }
+  if (isSavingWindowStateSafely) {
+    saveWindowStateSafelyRequested = true;
+    saveWindowStateSafelyRequestedFlags |= flags;
+    return;
+  }
   if (saveWindowStateSafelyTimer) {
     clearTimeout(saveWindowStateSafelyTimer);
     saveWindowStateSafelyTimer = null;
   }
   saveWindowStateSafelyTimer = setTimeout(async () => {
     saveWindowStateSafelyTimer = null;
+    if (ignoreOnMoved()) {
+      saveWindowStateSafelyRequested = true;
+      saveWindowStateSafelyRequestedFlags |= flags;
+      return;
+    }
     await saveWindowStateSafely(flags);
   }, delayMs);
 };

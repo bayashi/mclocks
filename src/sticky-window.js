@@ -1,6 +1,6 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
-import { writeClipboardText, saveWindowStateSafely, scheduleSaveWindowStateSafely, STICKY_WINDOW_STATE_SAVE_DELAY_MS } from './util.js';
+import { writeClipboardText, saveWindowStateSafely, scheduleSaveWindowStateSafely, STICKY_WINDOW_STATE_SAVE_DELAY_MS, ignoreOnMoved, setIgnoreOnMoved } from './util.js';
 
 /**
  * Sticky note class for window-based display
@@ -21,16 +21,6 @@ class StickyNoteWindow {
     this.copyButton = null;
     this.closeButton = null;
     this.textElement = null;
-    this.isDragging = false;
-    this.isResizing = false;
-    this.dragStartX = 0;
-    this.dragStartY = 0;
-    this.initialLeft = 0;
-    this.initialTop = 0;
-    this.resizeStartX = 0;
-    this.resizeStartY = 0;
-    this.initialWidth = 0;
-    this.initialHeight = 0;
     this.originalWidth = 300; // Store original width for restoring when collapsing
     this.windowLabel = null; // Window label for persistence
     this.saveDebounceTimer = null; // Debounce timer for saving state
@@ -444,33 +434,16 @@ class StickyNoteWindow {
           e.preventDefault();
           return;
         }
-        this.startResizing(e);
+        this.beginResize(e);
       });
     }
-
-    // Mouse move and up handlers on document
-    document.addEventListener('mousemove', (e) => {
-      if (this.isResizing) {
-        this.resize(e);
-      }
-    });
-
-    document.addEventListener('mouseup', async () => {
-      if (this.isResizing) {
-        this.isResizing = false;
-        // Save text and expanded state after resize ends
-        await this.saveStickyState();
-        scheduleSaveWindowStateSafely(STICKY_WINDOW_STATE_SAVE_DELAY_MS);
-      }
-    });
 
     // Listen for window position changes
     (async () => {
       try {
         const currentWindow = getCurrentWindow();
         currentWindow.onMoved(async () => {
-          // Skip saving during resize to avoid hanging
-          if (this.isResizing) {
+          if (ignoreOnMoved()) {
             return;
           }
           // Save text and expanded state, and schedule window state save
@@ -601,7 +574,7 @@ class StickyNoteWindow {
       // Resize window to match content
       // During initial load, keep the restored window size
       if (!this.isInitialLoad) {
-        this.resizeWindow();
+        await this.resizeWindow();
       }
     } else {
       this.contentElement.style.overflowY = 'hidden';
@@ -627,74 +600,57 @@ class StickyNoteWindow {
       }
 
       // Disable window resizing
-      this.setWindowResizable(false);
+      await this.setWindowResizable(false);
 
       // Resize window to match content
       if (!this.isInitialLoad) {
-        this.resizeWindow();
+        await this.resizeWindow();
       }
     }
   }
 
-  startResizing(e) {
-    // Only allow resizing when expanded
+  beginResize(e) {
     if (!this.isExpanded) {
       return;
     }
-
-    this.isResizing = true;
-    this.resizeStartX = e.clientX;
-    this.resizeStartY = e.clientY;
+    setIgnoreOnMoved(true);
+    const startX = e.clientX;
+    const startY = e.clientY;
     const rect = this.element.getBoundingClientRect();
-    this.initialWidth = rect.width;
-    this.initialHeight = rect.height;
+    const startWidth = rect.width;
+    const startHeight = rect.height;
     e.preventDefault();
-  }
 
-  resize(e) {
-    if (!this.isResizing) return;
-    // Only allow resizing when expanded
-    if (!this.isExpanded) return;
+    const onMouseMove = (ev) => {
+      const deltaX = ev.clientX - startX;
+      const deltaY = ev.clientY - startY;
+      const newWidth = Math.max(200, startWidth + deltaX);
+      const newHeight = Math.max(50, startHeight + deltaY);
 
-    const deltaX = e.clientX - this.resizeStartX;
-    const deltaY = e.clientY - this.resizeStartY;
+      this.element.style.width = `${newWidth}px`;
+      this.element.style.height = `${newHeight}px`;
+      this.originalWidth = newWidth;
 
-    const newWidth = Math.max(200, this.initialWidth + deltaX);
-    const newHeight = Math.max(50, this.initialHeight + deltaY);
+      const headerHeight = this.headerElement.getBoundingClientRect().height || 30;
+      const availableContentHeight = newHeight - headerHeight;
+      this.contentElement.style.height = `${availableContentHeight}px`;
+      this.contentElement.style.maxHeight = `${availableContentHeight}px`;
+      this.contentElement.style.overflowY = 'auto';
+    };
 
-    // Update both width and height when expanded
-    this.element.style.width = `${newWidth}px`;
-    this.element.style.height = `${newHeight}px`;
+    const onMouseUp = async () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      try {
+        await this.resizeWindow();
+        await this.saveStickyState();
+      } finally {
+        setIgnoreOnMoved(false);
+      }
+      scheduleSaveWindowStateSafely(STICKY_WINDOW_STATE_SAVE_DELAY_MS);
+    };
 
-    // Preserve width for collapse/expand toggles after resizing
-    this.originalWidth = newWidth;
-
-    // Update content height to fill available space
-    const headerHeight = this.headerElement.getBoundingClientRect().height || 30;
-    const textPadding = 8; // 4px top + 4px bottom from textElement padding
-    const availableContentHeight = newHeight - headerHeight;
-    this.contentElement.style.height = `${availableContentHeight}px`;
-    this.contentElement.style.maxHeight = `${availableContentHeight}px`;
-
-    // Recalculate display lines when width changes (text wrapping changes)
-    if (this.isExpanded) {
-      const computedStyle = window.getComputedStyle(this.textElement);
-      const fontSize = parseFloat(computedStyle.fontSize) || 14;
-      const lineHeightValue = parseFloat(computedStyle.lineHeight) || fontSize * 1.2;
-      const maxDisplayLines = 12;
-      const totalLines = this.measureRenderedLineCount();
-      const displayLines = Math.min(totalLines, maxDisplayLines);
-      const maxDisplayHeight = displayLines * lineHeightValue + textPadding;
-      const needsScroll = totalLines > displayLines || availableContentHeight < maxDisplayHeight;
-      this.contentElement.style.overflowY = needsScroll ? 'auto' : 'hidden';
-    }
-
-    // Resize window to match content (use requestAnimationFrame to ensure DOM is updated)
-    requestAnimationFrame(async () => {
-      await this.resizeWindow();
-      // Don't save window state during resize to avoid hanging
-      // It will be saved when resize ends (mouseup event)
-    });
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp, { once: true });
   }
 
   async setWindowResizable(resizable) {
@@ -719,23 +675,19 @@ class StickyNoteWindow {
       const newWidth = Math.ceil(elementWidth) + borderWidth;
       const newHeight = Math.ceil(elementHeight) + borderWidth;
 
-      // Remove any size constraints before resizing
-      try {
-        await currentWindow.setMaxSize(null);
-        await currentWindow.setMinSize(null);
-      } catch {
-        // Ignore error
-      }
-
+      setIgnoreOnMoved(true);
       await currentWindow.setSize({
         type: 'Logical',
         width: newWidth,
         height: newHeight
       });
+      setIgnoreOnMoved(false);
     } catch {
       // Ignore error
+      setIgnoreOnMoved(false);
     }
   }
+
 }
 
 // Initialize sticky note from URL parameter or clipboard
