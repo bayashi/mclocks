@@ -115,7 +115,7 @@ class StickyNoteWindow {
     }
   }
 
-  async saveState() {
+  async saveStickyState() {
     if (!this.windowLabel || !this.element) {
       return;
     }
@@ -434,7 +434,7 @@ class StickyNoteWindow {
       if (this.isResizing) {
         this.isResizing = false;
         // Save text and expanded state after resize ends
-        await this.saveState();
+        await this.saveStickyState();
         scheduleSaveWindowStateSafely(STICKY_WINDOW_STATE_SAVE_DELAY_MS);
       }
     });
@@ -449,7 +449,7 @@ class StickyNoteWindow {
             return;
           }
           // Save text and expanded state, and schedule window state save
-          await this.saveState();
+          await this.saveStickyState();
           scheduleSaveWindowStateSafely(STICKY_WINDOW_STATE_SAVE_DELAY_MS);
         }).catch(() => {
           // Ignore error
@@ -462,20 +462,20 @@ class StickyNoteWindow {
     // Listen for text changes
     this.textElement.addEventListener('input', async () => {
       this.text = this.textElement.textContent || '';
-      await this.saveState();
+      await this.saveStickyState();
     });
 
     // Listen for blur event to save text when editing is finished
     this.textElement.addEventListener('blur', async () => {
       this.text = this.textElement.textContent || '';
-      await this.saveState();
+      await this.saveStickyState();
     });
   }
 
   async toggleExpand() {
     this.isExpanded = !this.isExpanded;
     await this.updateCollapsedState();
-    await this.saveState();
+    await this.saveStickyState();
     scheduleSaveWindowStateSafely(STICKY_WINDOW_STATE_SAVE_DELAY_MS);
   }
 
