@@ -1,7 +1,7 @@
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 import { writeClipboardText, saveWindowStateSafely, scheduleSaveWindowStateSafely, STICKY_WINDOW_STATE_SAVE_DELAY_MS, ignoreOnMoved, setIgnoreOnMoved } from './util.js';
 import { DEFAULT_MAX_DISPLAY_LINES, computeExpandedContentLayout, measureRenderedLineCount } from './sticky-layout.js';
+import { StickyWindowAdapter } from './sticky-window-adapter.js';
 
 /**
  * Sticky note class for window-based display
@@ -24,6 +24,7 @@ class StickyNoteWindow {
     this.textElement = null;
     this.originalWidth = 300; // Store original width for restoring when collapsing
     this.windowLabel = null; // Window label for persistence
+    this.window = new StickyWindowAdapter();
     this.saveDebounceTimer = null; // Debounce timer for saving state
     this.isInitialLoad = true; // Flag to preserve restored window size on first render
 
@@ -38,11 +39,10 @@ class StickyNoteWindow {
 
   async init() {
     try {
-      const currentWindow = getCurrentWindow();
-      this.windowLabel = currentWindow.label;
-      await currentWindow.setAlwaysOnTop(true);
+      this.windowLabel = this.window.getLabel();
+      await this.window.setAlwaysOnTop(true);
       // Initially disable resizing (single-line mode)
-      await currentWindow.setResizable(false);
+      await this.window.setResizable(false);
     } catch {
       // Ignore error
     }
@@ -410,8 +410,7 @@ class StickyNoteWindow {
         if (this.windowLabel) {
           await invoke("delete_sticky_note_state", { label: this.windowLabel });
         }
-        const currentWindow = getCurrentWindow();
-        await currentWindow.close();
+        await this.window.close();
       } catch {
         // Ignore error
       }
@@ -442,8 +441,7 @@ class StickyNoteWindow {
     // Listen for window position changes
     (async () => {
       try {
-        const currentWindow = getCurrentWindow();
-        currentWindow.onMoved(async () => {
+        this.window.onMoved(async () => {
           if (ignoreOnMoved()) {
             return;
           }
@@ -542,9 +540,8 @@ class StickyNoteWindow {
 
       // Clear size constraints when expanding
       try {
-        const currentWindow = getCurrentWindow();
-        await currentWindow.setMaxSize(null);
-        await currentWindow.setMinSize(null);
+        await this.window.setMaxSize(null);
+        await this.window.setMinSize(null);
       } catch {
         // Ignore error
       }
@@ -632,18 +629,11 @@ class StickyNoteWindow {
   }
 
   async setWindowResizable(resizable) {
-    try {
-      const currentWindow = getCurrentWindow();
-      await currentWindow.setResizable(resizable);
-    } catch {
-      // Ignore error
-    }
+    await this.window.setResizable(resizable);
   }
 
   async resizeWindow() {
     try {
-      const currentWindow = getCurrentWindow();
-
       // Get size from style directly to avoid timing issues
       const elementWidth = parseFloat(this.element.style.width) || this.element.getBoundingClientRect().width;
       const elementHeight = parseFloat(this.element.style.height) || this.element.getBoundingClientRect().height;
@@ -654,7 +644,7 @@ class StickyNoteWindow {
       const newHeight = Math.ceil(elementHeight) + borderWidth;
 
       setIgnoreOnMoved(true);
-      await currentWindow.setSize({
+      await this.window.setSize({
         type: 'Logical',
         width: newWidth,
         height: newHeight
