@@ -1,6 +1,7 @@
 import { readClipboardText, writeClipboardText } from './util.js';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 /**
  * Sticky note class
@@ -365,6 +366,16 @@ async function createStickyNoteWindow(label, text) {
   }
   const url = `${baseUrl}/sticky.html?text=${encodedText}`;
 
+  let parentWindow;
+  let alwaysOnTop = true;
+  try {
+    const currentWindow = getCurrentWindow();
+    parentWindow = currentWindow;
+    alwaysOnTop = await currentWindow.isAlwaysOnTop();
+  } catch {
+    // Ignore error
+  }
+
   try {
     // Use mocked WebviewWindow for testing if available, otherwise use the imported one
     const WebviewWindowClass = (window.__TAURI_INTERNALS__?.WebviewWindow) || WebviewWindow;
@@ -378,9 +389,10 @@ async function createStickyNoteWindow(label, text) {
       maximizable: false,
       transparent: true,
       decorations: false,
-      alwaysOnTop: true,
+      alwaysOnTop,
       skipTaskbar: true,
-      shadow: false
+      shadow: false,
+      parent: parentWindow
     });
 
     webview.once('tauri://created', () => {

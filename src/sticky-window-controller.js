@@ -25,7 +25,6 @@ export class StickyNoteWindowController {
   async init() {
     try {
       this.windowLabel = this.window.getLabel();
-      await this.window.setAlwaysOnTop(true);
       // Initially disable resizing (single-line mode)
       await this.window.setResizable(false);
     } catch {
