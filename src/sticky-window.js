@@ -1,6 +1,7 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 import { writeClipboardText, saveWindowStateSafely, scheduleSaveWindowStateSafely, STICKY_WINDOW_STATE_SAVE_DELAY_MS, ignoreOnMoved, setIgnoreOnMoved } from './util.js';
+import { DEFAULT_MAX_DISPLAY_LINES, computeExpandedContentLayout, measureRenderedLineCount } from './sticky-layout.js';
 
 /**
  * Sticky note class for window-based display
@@ -477,39 +478,6 @@ class StickyNoteWindow {
     scheduleSaveWindowStateSafely(STICKY_WINDOW_STATE_SAVE_DELAY_MS);
   }
 
-  measureRenderedLineCount() {
-    const computedStyle = window.getComputedStyle(this.textElement);
-    const fontSize = parseFloat(computedStyle.fontSize) || 14;
-    const lineHeightValue = parseFloat(computedStyle.lineHeight) || fontSize * 1.2;
-    const lineHeight = lineHeightValue;
-
-    const elementWidth = this.element.getBoundingClientRect().width || parseFloat(this.element.style.width) || 300;
-    const contentWidth = Math.max(1, elementWidth - 16); // 8px left + 8px right (text padding)
-
-    const probe = document.createElement('pre');
-    probe.style.position = 'absolute';
-    probe.style.left = '-99999px';
-    probe.style.top = '0';
-    probe.style.visibility = 'hidden';
-    probe.style.pointerEvents = 'none';
-    probe.style.margin = '0';
-    probe.style.padding = '0';
-    probe.style.border = '0';
-    probe.style.whiteSpace = 'pre-wrap';
-    probe.style.wordWrap = 'break-word';
-    probe.style.fontFamily = this.config.font;
-    probe.style.fontSize = `${fontSize}px`;
-    probe.style.lineHeight = `${lineHeight}px`;
-    probe.style.width = `${contentWidth}px`;
-    probe.textContent = this.text;
-
-    document.body.appendChild(probe);
-    const height = probe.scrollHeight;
-    document.body.removeChild(probe);
-
-    return Math.max(1, Math.ceil(height / lineHeight));
-  }
-
   async updateCollapsedState() {
     // Get actual line height from computed style
     const computedStyle = window.getComputedStyle(this.textElement);
@@ -522,11 +490,21 @@ class StickyNoteWindow {
     const resizeHandle = this.element.querySelector('.sticky-note-resize');
 
     if (this.isExpanded) {
-      const maxDisplayLines = 12;
-      const totalLines = this.measureRenderedLineCount();
-      const displayLines = Math.min(totalLines, maxDisplayLines);
-      const contentHeight = displayLines * lineHeight + textPadding;
-      const needsScroll = totalLines > displayLines;
+      const elementWidth = this.element.getBoundingClientRect().width || parseFloat(this.element.style.width) || 300;
+      const contentWidth = Math.max(1, elementWidth - 16); // 8px left + 8px right (text padding)
+      const totalLines = measureRenderedLineCount({
+        text: this.text,
+        fontFamily: this.config.font,
+        fontSizePx: fontSize,
+        lineHeightPx: lineHeight,
+        contentWidthPx: contentWidth
+      });
+      const { needsScroll, contentHeight } = computeExpandedContentLayout({
+        totalLines,
+        maxDisplayLines: DEFAULT_MAX_DISPLAY_LINES,
+        lineHeightPx: lineHeight,
+        textPaddingPx: textPadding
+      });
 
       this.contentElement.style.overflowY = needsScroll ? 'auto' : 'hidden';
       this.contentElement.style.flex = 'none';
