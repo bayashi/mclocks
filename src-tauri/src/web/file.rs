@@ -9,6 +9,7 @@ use super::common::create_error_response;
 use super::status_handler::handle_status_request;
 use super::slow_handler::handle_slow_request;
 use super::dump_handler::handle_dump_request;
+use super::editor_handler::handle_editor_request;
 
 fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
     // Decode URL path for display (each segment separately)
@@ -235,9 +236,16 @@ pub fn get_content_type(path: &PathBuf) -> String {
     }.to_string()
 }
 
-pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) -> Response<std::io::Cursor<Vec<u8>>> {
+pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dump_enabled: bool, slow_enabled: bool, status_enabled: bool, editor_repos_dir: &Option<String>, editor_include_host: bool, editor_command: &str, editor_args: &[String]) -> Response<std::io::Cursor<Vec<u8>>> {
     let url = request.url();
     let path = url.split('?').next().unwrap_or("/");
+
+    // Check if this is a /editor request
+    if editor_repos_dir.is_some() {
+        if path == "/editor" || path.starts_with("/editor/") {
+            return handle_editor_request(request, editor_repos_dir, editor_include_host, editor_command, editor_args);
+        }
+    }
 
     // Check if this is a /status request (including /status/ and any subpaths)
     if status_enabled {

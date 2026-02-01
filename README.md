@@ -4,12 +4,21 @@ The desktop clock application for multiple time zones🕒🌍🕕
 
 ![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png)
 
-In addition, it also includes features:
+Clock-related features:
 
+* Text clock for multiple time zones
 * Timer
 * Countdown timer
 * Epoch time and date-time convertor
-* Web server for developers (serves static files and provides dump and slow endpoints for debugging)
+
+In addition, it also includes features useful for web developers:
+
+* Simple text convertor
+    * such as easily creating SQL `IN` clauses
+* Web server
+    * serves static files
+    * dump request and response server
+    * slow endpoints for debugging
 
 `mclocks` doesn't need an internet connection — everything runs 100% locally.
 
@@ -29,7 +38,7 @@ For macOS, you can get `.dmg` file to install.
 
 ### Linux
 
-For Linux, you can get `.deb`, `.rpm` or `.AppImage` file to install.
+Binary distributions for Linux are not currently provided.
 
 ## config.json
 
@@ -39,15 +48,10 @@ The `config.json` file should be located in the following directories:
 
 * Windows: `C:\Users\{USER}\AppData\Roaming\com.bayashi.mclocks\`
 * Mac: `/Users/{USER}/Library/Application Support/com.bayashi.mclocks/`
-* Linux: `/home/{USER}/.config/com.bayashi.mclocks/`
+
+<!-- * Linux: `/home/{USER}/.config/com.bayashi.mclocks/` -->
 
 When you start `mclocks`, then press `Ctrl + o` to edit your `config.json` file.
-
-### Backwards Compatibility Notes
-
-The directory of the `config.json` file has been changed to `com.bayashi.mclocks` from just `mclocks` after version 0.2.9.
-
-And after version 0.2.13, old `config.json` file is automatically migrated into new directory if the new config file doesn't exist.
 
 ### Example of config.json
 
@@ -259,7 +263,10 @@ Empty lines are preserved as-is in all operations.
         "root": "/path/to/your/webroot",
         "dump": true,
         "slow": true,
-        "status": true
+        "status": true,
+        "editor": {
+          "reposDir": "/path/to/your/repos"
+        }
       }
     }
 
@@ -269,6 +276,7 @@ Empty lines are preserved as-is in all operations.
 * `dump`: If set to `true`, enables the `/dump` endpoint that returns request details as JSON (default: `false`)
 * `slow`: If set to `true`, enables the `/slow` endpoint that delays the response (default: `false`)
 * `status`: If set to `true`, enables the `/status/{code}` endpoint that returns arbitrary HTTP status codes (default: `false`)
+* `editor`: If set and contains `reposDir`, enables the `/editor` endpoint that opens local files in your editor from browser's GitHub URLs (default: not set)
 
 If the `web` field is configured in your `config.json`, the web server starts automatically when `mclocks` launches. Access files at `http://127.0.0.1:3030`. The web server only listens on `127.0.0.1` (localhost), so it is only accessible from your local machine.
 
@@ -303,11 +311,6 @@ The endpoint is accessible via any HTTP method (GET, POST, etc.) and supports th
 * `/slow/120`: Waits 120 seconds (or any specified number of seconds) and returns 200 OK
 
 This endpoint is useful for testing timeout behavior, connection handling, or simulating slow network conditions.
-
-Examples:
-* `http://127.0.0.1:3030/slow` - waits 30 seconds
-* `http://127.0.0.1:3030/slow/60` - waits 60 seconds
-* `http://127.0.0.1:3030/slow/120` - waits 120 seconds
 
 If an invalid seconds parameter is provided (e.g., `/slow/abc`), the endpoint returns a 400 Bad Request error.
 
@@ -345,6 +348,64 @@ The endpoint automatically adds appropriate headers for specific status codes:
 * **All other status codes**: Returns plain text in format `{code} {phrase}` (e.g., "404 Not Found")
 
 This endpoint is useful for testing how your applications handle different HTTP status codes, error handling, redirects, authentication requirements, and rate limiting scenarios.
+
+### /editor endpoint
+
+When `web.editor.reposDir` is set in the configuration file, the web server provides a `/editor` endpoint that allows you to open local files in your editor directly from browser's GitHub URLs.
+
+**Configuration:**
+
+Add the following to your `web` configuration:
+
+    {
+      "web": {
+        "root": "/path/to/your/webroot",
+        "editor": {
+          "reposDir": "~/repos",
+          "includeHost": false,
+          "command": "code",
+          "args": ["-g", "{file}:{line}"]
+        }
+      }
+    }
+
+* `reposDir`: Path to your local repositories directory. Supports `~` for home directory expansion (e.g., `"~/repos"` on macOS or `"C:/Users/username/repos"` on Windows). This directory must exist.
+* `includeHost`: If `true`, local path resolution includes the original host as a directory (e.g. `{reposDir}/{host}/{owner}/{repo}/...`). If `false`, it resolves to `{reposDir}/{owner}/{repo}/...` (default: `false`).
+* `command`: Command name or path to your editor executable (default: `code`)
+* `args`: Arguments template array. Use `{file}` and `{line}` placeholders. If `#L...` is not present in URL, `{line}` uses 1.
+
+**How it works:**
+
+1. When you access a GitHub file URL through the `/editor` endpoint, it converts the GitHub path to a local file path
+2. The local file path is constructed as: `{reposDir}/{owner}/{repository_name}/{file_path}`
+3. If the file exists, it opens the file in your editor at the specified line number using the configured command and args (default: `code -g {local_file_path}:{line_number}`)
+4. If the file doesn't exist, an error page is displayed with a link to clone the repository
+
+**Bookmarklet:**
+
+Create a bookmarklet to quickly open GitHub files in your local editor. Replace `3030` with your configured port number:
+
+```javascript
+javascript:(function(){var u=new URL(document.location.href);open('http://127.0.0.1:3030/editor/'+u.host+u.pathname+u.hash,'_blank');})()
+```
+
+**Line number support:**
+
+You can specify a line number using the hash fragment in the URL:
+* `https://github.com/username/repo/blob/main/file.rs#L123` → Opens at line 123
+
+**Error handling:**
+
+* If the file doesn't exist locally, the tab stays open and displays an error message with a link to clone the repository from GitHub
+* If the file is successfully opened, the tab automatically closes
+* If `web.editor.reposDir` is not configured or doesn't exist, the `/editor` endpoint is not enabled (and you will get 404)
+
+**Example:**
+
+1. You're viewing a file on GitHub: `https://github.com/bayashi/mclocks/blob/main/src/app.js#L42`
+2. Click the bookmarklet or manually navigate to: `http://127.0.0.1:3030/editor/bayashi/mclocks/blob/main/src/app.js#L42`
+3. If `~/repos/mclocks/src/app.js` exists in your local, VS Code opens it at line 42
+4. If the file doesn't exist, an error page shows with a link to `https://github.com/bayashi/mclocks` for cloning
 
 ----------
 

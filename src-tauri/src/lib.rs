@@ -32,7 +32,7 @@ pub fn run() {
     };
 
     let port_to_open = web_config_for_startup.as_ref().map(|config| {
-        start_web_server(config.root.clone(), config.port, config.dump, config.slow, config.status);
+        start_web_server(config.root.clone(), config.port, config.dump, config.slow, config.status, config.editor_repos_dir.clone(), config.editor_include_host, config.editor_command.clone(), config.editor_args.clone());
         if config.open_browser_at_start {
             Some(config.port)
         } else {
@@ -87,13 +87,14 @@ pub fn run() {
         ws = tauri_plugin_window_state::Builder::with_filename(ws, filename);
     }
 
-    tbr.plugin(ws.build())
-        .plugin(tauri_plugin_os::init())
+    tbr = tbr.plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![
+        .plugin(ws.build());
+
+    tbr.invoke_handler(tauri::generate_handler![
             load_config,
             save_config,
             get_config_path,
