@@ -3,6 +3,7 @@ import { writeClipboardText, saveWindowStateSafely, scheduleSaveWindowStateSafel
 import { DEFAULT_MAX_DISPLAY_LINES, computeExpandedContentLayout, measureRenderedLineCount } from './sticky-layout.js';
 import { StickyWindowAdapter } from './sticky-window-adapter.js';
 import { StickyNoteWindowView } from './sticky-window-view.js';
+import { applyThemeCssVars } from './theme.js';
 
 export class StickyNoteWindowController {
   constructor(text) {
@@ -32,6 +33,11 @@ export class StickyNoteWindowController {
     }
 
     await this.loadConfig();
+    try {
+      applyThemeCssVars(this.config);
+    } catch {
+      // Ignore error
+    }
     await this.loadSavedState();
 
     const container = document.querySelector('#sticky-container');

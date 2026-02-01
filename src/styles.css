@@ -7,8 +7,9 @@
   -webkit-app-region: drag;
   -webkit-user-select: none;
   user-select: none;
-  font: 14px Courier, monospace;
-  color: #fff;
+  font-family: var(--mclocks-font-family, Courier, monospace);
+  font-size: var(--mclocks-font-size, 14px);
+  color: var(--mclocks-color, #fff);
 }
 
 #mclocks {

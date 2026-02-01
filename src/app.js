@@ -7,6 +7,7 @@ import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
 import { restoreStickyNotes } from './sticky.js';
 import { scheduleSaveWindowStateSafely, CLOCK_WINDOW_STATE_SAVE_DELAY_MS, ignoreOnMoved } from './util.js';
+import { applyThemeCssVars } from './theme.js';
 
 /**
  * Default configuration for the application
@@ -134,6 +135,12 @@ const initConfig = async (ctx) => {
  * @param {Object} cfg - Configuration object
  */
 const initStyles = (ctx, cfg) => {
+  try {
+    applyThemeCssVars(cfg);
+  } catch {
+    // Ignore error
+  }
+
   const appStyle = ctx.mainElement().style;
 
   appStyle.fontFamily = cfg.font;

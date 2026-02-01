@@ -385,7 +385,6 @@ async function createStickyNoteWindow(label, text) {
       width: 300,
       height: 100,
       resizable: false, // Initially false (single-line mode), will be enabled when expanded
-      minimizable: true,
       maximizable: false,
       transparent: true,
       decorations: false,
