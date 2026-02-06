@@ -148,11 +148,11 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   }
 
   // Ctrl + i: Quote clipboard text with double quotes and append comma to the end of each line and open in editor
-  // Ctrl + Shift + i: Quote clipboard text with single quotes and append comma to the end of each line and open in editor
+  // Ctrl + Shift + i: Append comma to the end of each line (no quotes) for INT list IN condition and open in editor
   if (e.key === "i" || e.key === "I") {
     e.preventDefault();
     if (e.shiftKey) {
-      await quoteAndAppendCommaClipboardHandler("'");
+      await quoteAndAppendCommaClipboardHandler("");
     } else {
       await quoteAndAppendCommaClipboardHandler('"');
     }
