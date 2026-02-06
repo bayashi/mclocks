@@ -2,6 +2,7 @@ mod web_server;
 mod config;
 mod util;
 mod web;
+mod sticky;
 
 use std::{sync::Arc, thread};
 use tauri::Manager;
@@ -24,6 +25,7 @@ pub fn run() {
         app_identifier: identifier.clone(),
     });
     tbr = tbr.manage(context_config_clone);
+    tbr = tbr.manage(sticky::StickyInitStore::default());
 
     let (web_error, web_config_for_startup) = match load_web_config(&identifier) {
         Ok(Some(config)) => (None, Some(config)),
@@ -98,6 +100,8 @@ pub fn run() {
             load_config,
             get_config_path,
             open_text_in_editor,
+            sticky::create_sticky,
+            sticky::sticky_take_init_text,
         ])
         .run(context)
         .expect("error while running tauri application");

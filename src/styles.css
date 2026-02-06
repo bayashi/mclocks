@@ -1,14 +1,31 @@
-::-webkit-scrollbar {
+html:not(.sticky)::-webkit-scrollbar {
+  display: none;
+}
+
+html:not(.sticky) *::-webkit-scrollbar {
   display: none;
 }
 
 :root {
   background: transparent;
+  font: 14px Courier, monospace;
+  color: #fff;
+}
+
+html:not(.sticky) {
   -webkit-app-region: drag;
   -webkit-user-select: none;
   user-select: none;
-  font: 14px Courier, monospace;
-  color: #fff;
+}
+
+html.sticky {
+  -webkit-app-region: no-drag;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+html.sticky, html.sticky body {
+  height: 100%;
 }
 
 #mclocks {
@@ -16,7 +33,139 @@
   margin: 8px;
 }
 
+html.sticky #mclocks {
+  white-space: normal;
+  margin: 0;
+  padding: 8px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
 ul, li {
   display: inline;
   vertical-align: middle;
+}
+
+html.sticky ul, html.sticky li {
+  display: block;
+}
+
+html.sticky #sticky-root {
+  position: relative;
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  border: 0.5px solid currentColor;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 3px;
+}
+
+html.sticky #sticky-header {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  -webkit-app-region: drag;
+}
+
+html.sticky #sticky-header button {
+  -webkit-app-region: no-drag;
+}
+
+html.sticky #sticky-spacer {
+  flex: 1;
+}
+
+html.sticky #sticky-header button {
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  padding: 1px 5px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(2px);
+  transition: opacity 120ms ease;
+  cursor: pointer;
+}
+
+html.sticky #sticky-copy.is-copied {
+  opacity: 0.45;
+}
+
+html.sticky #sticky-toggle {
+  font-size: 1.2em;
+}
+
+html.sticky #sticky-header button:active {
+  opacity: 0.75;
+}
+
+html.sticky #sticky-text {
+  -webkit-app-region: no-drag;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 5px;
+  border: none;
+  border-radius: 4px;
+  padding: 4px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  outline: none;
+  resize: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(255, 255, 255, 0.35) rgba(0, 0, 0, 0.25);
+}
+
+html.sticky .sticky-closed #sticky-text {
+  flex: 0 0 auto;
+}
+
+html.sticky #sticky-text::-webkit-scrollbar {
+  width: 12px;
+}
+
+html.sticky #sticky-text::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+}
+
+html.sticky #sticky-text::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+}
+
+html.sticky #sticky-text::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+html.sticky #sticky-resize-handle {
+  display: none;
+}
+
+html.sticky .sticky-open #sticky-resize-handle {
+  display: block;
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  -webkit-app-region: no-drag;
+  background:
+    linear-gradient(135deg, transparent 0 50%, rgba(255, 255, 255, 0.35) 50% 55%, transparent 55% 100%),
+    linear-gradient(135deg, transparent 0 65%, rgba(255, 255, 255, 0.35) 65% 70%, transparent 70% 100%),
+    linear-gradient(135deg, transparent 0 80%, rgba(255, 255, 255, 0.35) 80% 85%, transparent 85% 100%);
+  opacity: 0.8;
 }

@@ -4,6 +4,7 @@ import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, 
 import { writeClipboardText, isMacOS, isWindowsOS, openMessageDialog } from './util.js';
 import { conversionHandler } from './conversion.js';
 import { quoteAndAppendCommaClipboardHandler } from './clipboard.js';
+import { createSticky } from './sticky_manager.js';
 
 // Win   ---> Ctrl
 // macOS ---> Command
@@ -25,6 +26,13 @@ async function openHelpPage() {
 }
 
 export async function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
+  if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+    e.preventDefault();
+    console.info('[sticky] hotkey: Ctrl/Meta+S (keys handler)', { key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey });
+    await createSticky();
+    return;
+  }
+
   if (isWindowsOS()) {
     if (e.metaKey && e.key === "d") {
       e.preventDefault(); // ignore "Windows + D" to keep displaying mclocks
@@ -63,6 +71,13 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   if (e.key === "o") {
     e.preventDefault();
     openToEditConfigFile(ctx);
+    return;
+  }
+
+  // Ctrl + s: Create a sticky note from clipboard text
+  if (e.key === "s" || e.key === "S") {
+    e.preventDefault();
+    await createSticky();
     return;
   }
 

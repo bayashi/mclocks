@@ -6,6 +6,8 @@ import { initClocks, adjustWindowSize, startClocks } from './matter.js';
 import { Ctx } from './ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
+import { stickyEntry } from './sticky.js';
+import { createSticky } from './sticky_manager.js';
 
 /**
  * Default configuration for the application
@@ -23,6 +25,28 @@ const getDefaultConfig = () => {
 // Application entry point
 window.addEventListener("DOMContentLoaded", async () => {
   const mainElement = document.querySelector("#mclocks");
+
+  let windowLabel = null;
+  try {
+    windowLabel = getCurrentWindow().label;
+  } catch {
+    windowLabel = null;
+  }
+
+  if (windowLabel?.startsWith('sticky-')) {
+    await stickyEntry(mainElement);
+    return;
+  }
+
+  window.addEventListener('keydown', async (event) => {
+    if ((event.ctrlKey || event.metaKey) && (event.key === "s" || event.key === "S")) {
+      event.preventDefault();
+      event.stopPropagation();
+      console.info('[sticky] hotkey: Ctrl/Meta+S (app capture)', { key: event.key, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey, altKey: event.altKey });
+      await createSticky();
+    }
+  }, true);
+
   const ctx = new Ctx(mainElement);
 
   await globalInit(ctx);

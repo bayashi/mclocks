@@ -1,4 +1,5 @@
 {
+  "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "desktop-capability",
   "platforms": [
     "macOS",
@@ -6,13 +7,17 @@
     "linux"
   ],
   "windows": [
-    "main"
+    "main",
+    "sticky-*"
   ],
   "permissions": [
     "core:default",
     "core:window:allow-set-size",
     "core:window:allow-set-always-on-top",
     "core:window:allow-start-dragging",
+    "core:window:allow-start-resize-dragging",
+    "core:window:allow-close",
+    "os:default",
     "notification:default",
     "window-state:default",
     "clipboard-manager:allow-write-text",
@@ -20,23 +25,23 @@
     "dialog:allow-ask",
     "dialog:allow-message",
     {
-        "identifier": "opener:allow-open-path",
-        "allow": [
-            {
-                "path": "$APPDATA/config.json"
-            },
-            {
-                "path": "$APPDATA/dev.config.json"
-            }
-        ]
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$APPDATA/config.json"
+        },
+        {
+          "path": "$APPDATA/dev.config.json"
+        }
+      ]
     },
     {
-        "identifier": "opener:allow-open-url",
-        "allow": [
-            {
-                "url": "https://github.com/bayashi/mclocks*"
-            }
-        ]
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://github.com/bayashi/mclocks*"
+        }
+      ]
     }
   ]
 }
