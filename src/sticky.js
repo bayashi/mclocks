@@ -110,7 +110,6 @@ export async function stickyEntry(mainElement) {
 	debugLog('[sticky] stickyEntry: start');
 
 	const stickyRoot = document.getElementById('sticky-root');
-	const header = document.getElementById('sticky-header');
 	const toggleButton = document.getElementById('sticky-toggle');
 	const copyButton = document.getElementById('sticky-copy');
 	const closeButton = document.getElementById('sticky-close');
