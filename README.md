@@ -207,7 +207,7 @@ When pasted date-time values do not include timezone information, they are treat
 Click `mclocks` app window, then use the following keyboard shortcuts to process clipboard text and open it in an editor:
 
 * `Ctrl + i`: Quotes each line of clipboard text with double quotes and appends a comma to the end (except the last line)
-* `Ctrl + Shift + i`: Quotes each line of clipboard text with single quotes and appends a comma to the end (except the last line)
+* `Ctrl + Shift + i`: Appends a comma to the end of each line (no quotes) for INT list IN condition (except the last line)
 
 Empty lines are preserved as-is in all operations.
 
@@ -252,7 +252,7 @@ Empty lines are preserved as-is in all operations.
 | Shortcut | Description |
 |----------|-------------|
 | `Ctrl + i` | Quote each line of clipboard text with double quotes, append comma to the end (except the last line), and open in editor |
-| `Ctrl + Shift + i` | Quote each line of clipboard text with single quotes, append comma to the end (except the last line), and open in editor |
+| `Ctrl + Shift + i` | Append comma to the end of each line (no quotes) for INT list IN condition (except the last line), and open in editor |
 
 ## Web Server
 
