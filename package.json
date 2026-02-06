@@ -19,7 +19,11 @@
     "@tauri-apps/plugin-opener": "2.4.0",
     "@tauri-apps/plugin-os": "2.3.0",
     "@tauri-apps/plugin-window-state": "2.4.0",
-    "cdate": "0.0.7"
+    "cdate": "0.0.7",
+    "diff": "8.0.3",
+    "fast-xml-parser": "5.3.4",
+    "lodash": "4.17.23",
+    "undici": "6.23.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
