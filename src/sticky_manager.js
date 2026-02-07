@@ -14,7 +14,7 @@ function getTextByteSize(text) {
 
 export async function createSticky() {
 	debugLog('[sticky] createSticky: start');
-	let text = '';
+	let text;
 	try {
 		debugLog('[sticky] clipboard: read start');
 		text = await readClipboardText();

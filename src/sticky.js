@@ -120,7 +120,7 @@ export async function stickyEntry(mainElement) {
 	try {
 		cfg = await invoke("load_config", {});
 	} catch {
-		cfg = null;
+		// cfg remains null
 	}
 
 	if (cfg) {

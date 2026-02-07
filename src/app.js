@@ -30,7 +30,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   try {
     windowLabel = getCurrentWindow().label;
   } catch {
-    windowLabel = null;
+    // windowLabel remains null
   }
 
   if (windowLabel?.startsWith('sticky-')) {
