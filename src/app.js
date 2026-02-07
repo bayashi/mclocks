@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
-import { initClocks, adjustWindowSize, startClocks } from './matter.js';
+import { initClocks, adjustWindowSize, startClocks } from './clock_matter.js';
 import { ClockCtx } from './clock_ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
