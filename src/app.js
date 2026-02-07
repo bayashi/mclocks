@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import { initClocks, adjustWindowSize, startClocks } from './matter.js';
-import { Ctx } from './ctx.js';
+import { ClockCtx } from './clock_ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
 import { stickyEntry } from './sticky/sticky.js';
@@ -46,10 +46,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }, true);
 
-  const ctx = new Ctx(mainElement);
+  const clockCtx = new ClockCtx(mainElement);
 
-  await globalInit(ctx);
-  await main(ctx);
+  await globalInit(clockCtx);
+  await main(clockCtx);
 
   // Restore persisted sticky notes
   try {
@@ -61,9 +61,9 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 /**
  * Initialize global event handlers and window behavior
- * @param {Ctx} ctx - Application context
+ * @param {ClockCtx} clockCtx - Application context
  */
-const globalInit = async (ctx) => {
+const globalInit = async (clockCtx) => {
   // Window move handler with debouncing for non-macOS platforms
   // Fallback for testing environment where Tauri APIs are not available
   let currentWindow;
@@ -78,18 +78,18 @@ const globalInit = async (ctx) => {
   try {
     await currentWindow.onMoved(() => {
       // Skip saving window state on macOS due to platform-specific issues
-      if (ctx.ignoreOnMoved() || ctx.isMacOS()) {
+      if (clockCtx.ignoreOnMoved() || clockCtx.isMacOS()) {
         return;
       }
 
-      ctx.setIgnoreOnMoved(true);
+      clockCtx.setIgnoreOnMoved(true);
       setTimeout(async () => {
         try {
           await invoke('save_window_state_exclusive');
         } catch (error) {
           console.warn('Err:', error);
         } finally {
-          ctx.setIgnoreOnMoved(false);
+          clockCtx.setIgnoreOnMoved(false);
         }
       }, 5000);
     });
@@ -99,8 +99,8 @@ const globalInit = async (ctx) => {
   }
 
   // Enable window dragging on macOS
-  ctx.mainElement().addEventListener("mousedown", async () => {
-    if (ctx.isMacOS()) {
+  clockCtx.mainElement().addEventListener("mousedown", async () => {
+    if (clockCtx.isMacOS()) {
       try {
         if (currentWindow) {
           await currentWindow.startDragging();
@@ -114,11 +114,11 @@ const globalInit = async (ctx) => {
 
 /**
  * Initialize application configuration from backend
- * @param {Ctx} ctx - Application context
+ * @param {ClockCtx} clockCtx - Application context
  * @returns {Promise<Object>} Configuration object
  * @throws {Error} If configuration loading fails
  */
-const initConfig = async (ctx) => {
+const initConfig = async (clockCtx) => {
   try {
     const config = await invoke("load_config", {});
 
@@ -131,13 +131,13 @@ const initConfig = async (ctx) => {
       }
     }
 
-    ctx.setFormat(config.format);
-    ctx.setTimerIcon(config.timerIcon);
-    ctx.setWithoutNotification(config.withoutNotification);
-    ctx.setMaxTimerClockNumber(config.maxTimerClockNumber);
-    ctx.setUseTZ(config.usetz);
-    ctx.setConvTZ(config.convtz);
-    ctx.setDisableHover(config.disableHover);
+    clockCtx.setFormat(config.format);
+    clockCtx.setTimerIcon(config.timerIcon);
+    clockCtx.setWithoutNotification(config.withoutNotification);
+    clockCtx.setMaxTimerClockNumber(config.maxTimerClockNumber);
+    clockCtx.setUseTZ(config.usetz);
+    clockCtx.setConvTZ(config.convtz);
+    clockCtx.setDisableHover(config.disableHover);
 
     return config;
   } catch (error) {
@@ -156,13 +156,13 @@ const initConfig = async (ctx) => {
     }
     defaultConfig = defaultConfig || window.__defaultConfig || getDefaultConfig();
 
-    ctx.setFormat(defaultConfig.format);
-    ctx.setTimerIcon(defaultConfig.timerIcon);
-    ctx.setWithoutNotification(defaultConfig.withoutNotification);
-    ctx.setMaxTimerClockNumber(defaultConfig.maxTimerClockNumber);
-    ctx.setUseTZ(defaultConfig.usetz);
-    ctx.setConvTZ(defaultConfig.convtz);
-    ctx.setDisableHover(defaultConfig.disableHover);
+    clockCtx.setFormat(defaultConfig.format);
+    clockCtx.setTimerIcon(defaultConfig.timerIcon);
+    clockCtx.setWithoutNotification(defaultConfig.withoutNotification);
+    clockCtx.setMaxTimerClockNumber(defaultConfig.maxTimerClockNumber);
+    clockCtx.setUseTZ(defaultConfig.usetz);
+    clockCtx.setConvTZ(defaultConfig.convtz);
+    clockCtx.setDisableHover(defaultConfig.disableHover);
 
     return defaultConfig;
   }
@@ -170,11 +170,11 @@ const initConfig = async (ctx) => {
 
 /**
  * Initialize application styles based on configuration
- * @param {Ctx} ctx - Application context
+ * @param {ClockCtx} clockCtx - Application context
  * @param {Object} cfg - Configuration object
  */
-const initStyles = (ctx, cfg) => {
-  const appStyle = ctx.mainElement().style;
+const initStyles = (clockCtx, cfg) => {
+  const appStyle = clockCtx.mainElement().style;
 
   appStyle.fontFamily = cfg.font;
   appStyle.color = cfg.color;
@@ -186,17 +186,17 @@ const initStyles = (ctx, cfg) => {
 
 /**
  * Initialize keyboard event handlers
- * @param {Ctx} ctx - Application context
+ * @param {ClockCtx} clockCtx - Application context
  * @param {Object} cfg - Configuration object
  * @param {Clocks} clocks - Clocks instance
  * @returns {Object} Cleanup functions
  */
-const initKeyboardHandlers = (ctx, cfg, clocks) => {
+const initKeyboardHandlers = (clockCtx, cfg, clocks) => {
   const pressedKeys = new Set();
 
   const keydownHandler = async (event) => {
     pressedKeys.add(event.key);
-    await operationKeysHandler(event, pressedKeys, ctx, cfg, clocks);
+    await operationKeysHandler(event, pressedKeys, clockCtx, cfg, clocks);
   };
 
   const keyupHandler = (event) => {
@@ -219,25 +219,25 @@ const initKeyboardHandlers = (ctx, cfg, clocks) => {
 
 /**
  * Main application initialization and startup
- * @param {Ctx} ctx - Application context
+ * @param {ClockCtx} clockCtx - Application context
  */
-const main = async (ctx) => {
+const main = async (clockCtx) => {
   try {
-    const cfg = await initConfig(ctx);
+    const cfg = await initConfig(clockCtx);
     const clocks = new Clocks(cfg.clocks, cfg.epochClockName);
-    initStyles(ctx, cfg);
-    initClocks(ctx, cfg, clocks);
-    adjustWindowSize(ctx, clocks);
+    initStyles(clockCtx, cfg);
+    initClocks(clockCtx, cfg, clocks);
+    adjustWindowSize(clockCtx, clocks);
 
-    startClocks(ctx, clocks);
+    startClocks(clockCtx, clocks);
 
-    const { cleanup } = initKeyboardHandlers(ctx, cfg, clocks);
+    const { cleanup } = initKeyboardHandlers(clockCtx, cfg, clocks);
 
     window.addEventListener('beforeunload', () => {
       cleanup();
     });
   } catch (error) {
     console.error('Err:', error);
-    ctx.mainElement().textContent = `Err: ${error.message}`;
+    clockCtx.mainElement().textContent = `Err: ${error.message}`;
   }
 };

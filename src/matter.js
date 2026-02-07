@@ -6,60 +6,60 @@ import { cdate } from 'cdate';
 
 import { escapeHTML, pad, enqueueNotification, openMessageDialog } from './util.js';
 
-export function initClocks(ctx, cfg, clocks) {
+export function initClocks(clockCtx, cfg, clocks) {
   let clocksHtml = '';
 
   for (const [index, clock] of clocks.getAllClocks().entries()) {
     clock.id = `mclk-${index}`;
-    clocksHtml += renderClockHTML(ctx, clock);
+    clocksHtml += renderClockHTML(clockCtx, clock);
     if (!clock.countdown) {
       clock.fn = cdate().locale(cfg.locale).tz(clock.timezone).cdateFn();
     }
   }
 
-  ctx.mainElement().innerHTML = `<ul>${clocksHtml}</ul>`;
+  clockCtx.mainElement().innerHTML = `<ul>${clocksHtml}</ul>`;
 
   for (const clock of clocks.getAllClocks()) {
     clock.el = document.getElementById(clock.id);
     clock.el.style.paddingRight = cfg.margin;
 
     if (clock.countdown) {
-      if (!ctx.disableHover()) {
+      if (!clockCtx.disableHover()) {
         clock.el.title = clock.timerName ?? `Until ${cdate(clock.target).tz(clock.timezone).format("YYYY-MM-DD HH:mm:ssZ")}`;
       }
     } else if (clock.isEpoch) {
-      if (!ctx.disableHover()) {
+      if (!clockCtx.disableHover()) {
         clock.el.title = "elapsed since 1970-01-01T00:00:00Z";
       }
-      clock.el.parentElement.hidden = !ctx.displayEpoch();
-      clock.el.parentElement.style.display = ctx.displayEpoch() ? "inline" : "none";
+      clock.el.parentElement.hidden = !clockCtx.displayEpoch();
+      clock.el.parentElement.style.display = clockCtx.displayEpoch() ? "inline" : "none";
     } else {
-      if (!ctx.disableHover()) {
+      if (!clockCtx.disableHover()) {
         clock.el.title = `${clock.timezone} ${clock.fn().format("Z")}`;
       }
     }
   }
 
-  function renderClockHTML(ctx, clock) {
+  function renderClockHTML(clockCtx, clock) {
     if (clock.countdown) {
-      return `<li><span id='${clock.id}'>${escapeHTML(buildCountdown(ctx, clock))}</span></li>`;
+      return `<li><span id='${clock.id}'>${escapeHTML(buildCountdown(clockCtx, clock))}</span></li>`;
     } else {
       return `<li>${escapeHTML(clock.name)} <span id='${clock.id}'></span></li>`;
     }
   }
 }
 
-export async function adjustWindowSize(ctx, clocks) {
+export async function adjustWindowSize(clockCtx, clocks) {
   let w = 0;
 
   for (const clock of clocks.getAllClocks()) {
-    tock(ctx, clock);
+    tock(clockCtx, clock);
     w += clock.el.parentElement.offsetWidth;
   }
 
   try {
     const currentWindow = getCurrentWindow();
-    await currentWindow.setSize(new LogicalSize(w + 16, ctx.mainElement().offsetHeight + 16));
+    await currentWindow.setSize(new LogicalSize(w + 16, clockCtx.mainElement().offsetHeight + 16));
   } catch (e) {
     // Fallback for testing environment where Tauri APIs are not available
     console.warn('Could not adjust window size (testing environment?):', e);
@@ -67,20 +67,20 @@ export async function adjustWindowSize(ctx, clocks) {
   }
 }
 
-export function startClocks(ctx, clocks) {
+export function startClocks(clockCtx, clocks) {
   for (const clock of clocks.getAllClocks()) {
-    tick(ctx, clock);
+    tick(clockCtx, clock);
   }
 }
 
-export function buildCountdown(ctx, clock) {
+export function buildCountdown(clockCtx, clock) {
   let diffSec = 0, diffMin = 0, diffHour = 0, diffDay = 0;
 
   if (!clock.isFinishCountDown) {
     let diffMS;
     if (clock.timerName) {
       // clock.pauseStart is null when not paused, so null is treated as current datetime
-      diffMS = ctx.cdateUTC(clock.target).t - ctx.cdateUTC(clock.pauseStart).t;
+      diffMS = clockCtx.cdateUTC(clock.target).t - clockCtx.cdateUTC(clock.pauseStart).t;
     } else {
       // diffMS = targetMS - nowMS - offsetMS
       diffMS = cdate(clock.target).t - cdate().t - (cdate().tz(clock.timezone).utcOffset() * 60 * 1000);
@@ -97,7 +97,7 @@ export function buildCountdown(ctx, clock) {
 
     if (diffMS === 0) {
       clock.isFinishCountDown = true;
-      if (!ctx.withoutNotification()) {
+      if (!clockCtx.withoutNotification()) {
         enqueueNotification("mclocks", `Beep! ${clock.timerName}`);
       }
     }
@@ -114,57 +114,57 @@ export function buildCountdown(ctx, clock) {
     .replace("%s", pad(diffSec % 60));
 }
 
-function tick(ctx, clock) {
-  tock(ctx, clock);
-  clock.timeoutId = setTimeout(() => { tick(ctx, clock); }, 1000 - Date.now() % 1000);
+function tick(clockCtx, clock) {
+  tock(clockCtx, clock);
+  clock.timeoutId = setTimeout(() => { tick(clockCtx, clock); }, 1000 - Date.now() % 1000);
 }
 
-function tock(ctx, clock) {
+function tock(clockCtx, clock) {
   if (clock.countdown) {
-    clock.el.innerHTML = escapeHTML(buildCountdown(ctx, clock));
+    clock.el.innerHTML = escapeHTML(buildCountdown(clockCtx, clock));
   } else {
     if (clock.isEpoch) {
       clock.el.innerHTML = `${Math.trunc(clock.fn().t / 1000)}`;
     } else {
-      clock.el.innerHTML = escapeHTML(clock.fn().format(ctx.format()));
+      clock.el.innerHTML = escapeHTML(clock.fn().format(clockCtx.format()));
     }
   }
 }
 
-export function switchFormat(ctx, cfg, clocks) {
-  ctx.setFormat(ctx.format() === cfg.format && cfg.format2 ? cfg.format2 : cfg.format);
-  adjustWindowSize(ctx, clocks);
+export function switchFormat(clockCtx, cfg, clocks) {
+  clockCtx.setFormat(clockCtx.format() === cfg.format && cfg.format2 ? cfg.format2 : cfg.format);
+  adjustWindowSize(clockCtx, clocks);
 }
 
-export async function openToEditConfigFile(ctx) {
+export async function openToEditConfigFile(clockCtx) {
   try {
     await openMessageDialog("Please restart mclocks after editing the config.json");
     const config_path = await invoke("get_config_path");
     await openPath(config_path);
   } catch (e) {
-    ctx.mainElement().textContent = `Err: ${e}`;
+    clockCtx.mainElement().textContent = `Err: ${e}`;
     throw new Error(e, { cause: e });
   }
 }
 
-export function toggleEpochTime(ctx, clocks) {
-  ctx.setDisplayEpoch(!ctx.displayEpoch());
+export function toggleEpochTime(clockCtx, clocks) {
+  clockCtx.setDisplayEpoch(!clockCtx.displayEpoch());
   const epochClock = clocks.getClocks().at(-1);
-  epochClock.el.parentElement.hidden = !ctx.displayEpoch();
-  epochClock.el.parentElement.style.display = ctx.displayEpoch() ? "inline" : "none";
-  adjustWindowSize(ctx, clocks);
+  epochClock.el.parentElement.hidden = !clockCtx.displayEpoch();
+  epochClock.el.parentElement.style.display = clockCtx.displayEpoch() ? "inline" : "none";
+  adjustWindowSize(clockCtx, clocks);
 }
 
-export function addTimerClock(ctx, cfg, clocks, timerInSec) {
+export function addTimerClock(clockCtx, cfg, clocks, timerInSec) {
   clocks.pushTimerClock({
-    countdown: `${ctx.timerIcon()}%M:%s`, // The timer clock is just an alternative countdown timer
-    target: ctx.cdateUTC().add(timerInSec, "s").text(),
+    countdown: `${clockCtx.timerIcon()}%M:%s`, // The timer clock is just an alternative countdown timer
+    target: clockCtx.cdateUTC().add(timerInSec, "s").text(),
     timezone: "UTC",
     id: `mclk-${clocks.getAllClocks().length - 1}`,
     timerName: `${timerInSec / 60}-minute timer`,
     pauseStart: null,
   });
-  initClocks(ctx, cfg, clocks);
-  adjustWindowSize(ctx, clocks);
-  startClocks(ctx, clocks);
+  initClocks(clockCtx, cfg, clocks);
+  adjustWindowSize(clockCtx, clocks);
+  startClocks(clockCtx, clocks);
 }
