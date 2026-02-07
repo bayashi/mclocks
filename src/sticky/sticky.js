@@ -3,10 +3,6 @@ import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 
 import { writeClipboardText, openMessageDialog, isMacOS } from '../util.js';
 
-const debugLog = import.meta.env.DEV
-	? (...args) => console.info(...args)
-	: () => {};
-
 const MAX_OPEN_LINES = 12;
 
 function getLineHeightPx(el) {
@@ -107,7 +103,6 @@ export async function stickyEntry(mainElement) {
 </div>`;
 
 	const currentWindow = getCurrentWindow();
-	debugLog('[sticky] stickyEntry: start');
 
 	const stickyRoot = document.getElementById('sticky-root');
 	const toggleButton = document.getElementById('sticky-toggle');
@@ -142,24 +137,20 @@ export async function stickyEntry(mainElement) {
 	} catch {
 		label = '';
 	}
-	debugLog('[sticky] stickyEntry: window label=%s', label);
 
 	try {
 		const initText = await invoke('sticky_take_init_text', { id: label });
 		textarea.value = initText ?? '';
-		debugLog('[sticky] sticky_take_init_text: ok length=%d', textarea.value?.length ?? 0);
 	} catch {
 		textarea.value = '';
-		debugLog('[sticky] sticky_take_init_text: failed');
 	}
 
 	// Load persisted open/close state and open-mode size
 	let stickyState = null;
 	try {
 		stickyState = await invoke('load_sticky_state', { id: label });
-		debugLog('[sticky] load_sticky_state: %o', stickyState);
 	} catch {
-		debugLog('[sticky] load_sticky_state: failed');
+		// ignore
 	}
 
 	// isOpen is true when the sticky is in expanded (open) state
@@ -184,7 +175,6 @@ export async function stickyEntry(mainElement) {
 	let ignoreStickyWindowStateSave = false;
 	// stickyWindowStateSaveId is a pending delay id for window-state plugin save, cancelled on close
 	let stickyWindowStateSaveId = null;
-	debugLog('[sticky] isMacOS=%s', isMacOS());
 
 	// Restore open-mode size from persisted state
 	if (stickyState) {
@@ -196,21 +186,17 @@ export async function stickyEntry(mainElement) {
 	}
 
 	const setProgrammaticSize = async (width, height) => {
-		debugLog('[sticky] setProgrammaticSize: %dx%d for %s', width, height, label);
 		lastProgrammaticSize = { width, height };
 		await setWindowSize(currentWindow, width, height);
-		debugLog('[sticky] setProgrammaticSize: done for %s', label);
 	};
 
 	// Debounced save of open/close state and open-mode size
 	const scheduleStateSave = () => {
-		debugLog('[sticky] scheduleStateSave: called for %s isOpen=%s savedOpenSize=%o', label, isOpen, savedOpenSize);
 		if (stateSaveDebouncerId != null) {
 			clearTimeout(stateSaveDebouncerId);
 		}
 		stateSaveDebouncerId = setTimeout(async () => {
 			stateSaveDebouncerId = null;
-			debugLog('[sticky] scheduleStateSave: firing for %s', label);
 			try {
 				await invoke('save_sticky_state', {
 					id: label,
@@ -218,9 +204,8 @@ export async function stickyEntry(mainElement) {
 					openWidth: savedOpenSize?.width ?? null,
 					openHeight: savedOpenSize?.height ?? null,
 				});
-				debugLog('[sticky] scheduleStateSave: done for %s', label);
-			} catch (error) {
-				debugLog('[sticky] scheduleStateSave: failed for %s:', label, error);
+			} catch {
+				// ignore
 			}
 		}, 500);
 	};
@@ -231,25 +216,20 @@ export async function stickyEntry(mainElement) {
 	// pointer-events:none blocks user interaction during save to prevent OS modal loop deadlock.
 	const scheduleStickyWindowStateSave = () => {
 		if (isMacOS() || ignoreStickyWindowStateSave) {
-			debugLog('[sticky] scheduleStickyWindowStateSave: skip for %s (macOS=%s ignore=%s)', label, isMacOS(), ignoreStickyWindowStateSave);
 			return;
 		}
 		ignoreStickyWindowStateSave = true;
-		debugLog('[sticky] scheduleStickyWindowStateSave: scheduled for %s', label);
 		stickyWindowStateSaveId = setTimeout(async () => {
 			stickyWindowStateSaveId = null;
 			// Block user interaction to prevent OS modal loop during save
 			stickyRoot.style.pointerEvents = 'none';
-			debugLog('[sticky] scheduleStickyWindowStateSave: firing for %s', label);
 			try {
 				await invoke('save_window_state_exclusive');
-				debugLog('[sticky] scheduleStickyWindowStateSave: done for %s', label);
-			} catch (error) {
-				debugLog('[sticky] scheduleStickyWindowStateSave: error for %s: %s', label, error);
+			} catch {
+				// ignore
 			} finally {
 				stickyRoot.style.pointerEvents = '';
 				ignoreStickyWindowStateSave = false;
-				debugLog('[sticky] scheduleStickyWindowStateSave: unlocked for %s', label);
 			}
 		}, 5000);
 	};
@@ -329,29 +309,23 @@ export async function stickyEntry(mainElement) {
 	};
 
 	const openSticky = async () => {
-		debugLog('[sticky] openSticky: start for %s', label);
 		isOpen = true;
 		await ensureOpenSize();
-		debugLog('[sticky] openSticky: done for %s', label);
 	};
 
 	const closeSticky = async () => {
-		debugLog('[sticky] closeSticky: start for %s isOpen=%s', label, isOpen);
 		if (isOpen) {
 			const inner = await getInnerSize(currentWindow);
 			if (inner) {
 				savedWidth = inner.width;
 				savedOpenSize = { width: inner.width, height: inner.height };
-				debugLog('[sticky] closeSticky: captured open size %o for %s', savedOpenSize, label);
 			}
 		}
 		isOpen = false;
 		await ensureClosedSize();
-		debugLog('[sticky] closeSticky: done for %s', label);
 	};
 
 	toggleButton.addEventListener('click', async () => {
-		debugLog('[sticky] toggle: click isOpen=%s for %s', isOpen, label);
 		try {
 			if (isOpen) {
 				await closeSticky();
@@ -360,7 +334,6 @@ export async function stickyEntry(mainElement) {
 			}
 			scheduleStateSave();
 		} catch (error) {
-			debugLog('[sticky] toggle: error for %s: %s', label, error);
 			await openMessageDialog(`Failed to toggle sticky: ${error}`, "mclocks Error", "error");
 		}
 	});
@@ -402,7 +375,6 @@ export async function stickyEntry(mainElement) {
 				ignoreStickyWindowStateSave = false;
 			}
 			await invoke('delete_sticky_text', { id: label });
-			debugLog('[sticky] deleted persistent data for %s', label);
 			await currentWindow.close();
 		} catch (error) {
 			await openMessageDialog(`Failed to close sticky: ${error}`, "mclocks Error", "error");
@@ -423,14 +395,11 @@ export async function stickyEntry(mainElement) {
 
 	try {
 		await currentWindow.onResized(async () => {
-			debugLog('[sticky] onResized: fired for %s isOpen=%s', label, isOpen);
 			if (!isOpen) {
-				debugLog('[sticky] onResized: skip (closed) for %s', label);
 				return;
 			}
 			const inner = await getInnerSize(currentWindow);
 			if (!inner) {
-				debugLog('[sticky] onResized: skip (no inner) for %s', label);
 				return;
 			}
 
@@ -438,12 +407,10 @@ export async function stickyEntry(mainElement) {
 				const dw = Math.abs(inner.width - lastProgrammaticSize.width);
 				const dh = Math.abs(inner.height - lastProgrammaticSize.height);
 				if (dw <= 2 && dh <= 2) {
-					debugLog('[sticky] onResized: skip (within tolerance) for %s dw=%d dh=%d', label, dw, dh);
 					return;
 				}
 			}
 
-			debugLog('[sticky] onResized: user resize detected %dx%d for %s', inner.width, inner.height, label);
 			userResized = true;
 			savedOpenSize = { width: inner.width, height: inner.height };
 			savedWidth = inner.width;
@@ -456,7 +423,6 @@ export async function stickyEntry(mainElement) {
 	// Save window position on move (non-macOS only, flag pattern)
 	try {
 		await currentWindow.onMoved(() => {
-			debugLog('[sticky] onMoved: fired for %s ignore=%s macOS=%s', label, ignoreStickyWindowStateSave, isMacOS());
 			scheduleStickyWindowStateSave();
 		});
 	} catch {
@@ -472,9 +438,8 @@ export async function stickyEntry(mainElement) {
 			saveDebouncerId = null;
 			try {
 				await invoke('save_sticky_text', { id: label, text: textarea.value });
-				debugLog('[sticky] saved text for %s', label);
-			} catch (error) {
-				debugLog('[sticky] save failed:', error);
+			} catch {
+				// ignore
 			}
 		}, 500);
 
