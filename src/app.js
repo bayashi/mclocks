@@ -38,7 +38,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   const clockCtx = new ClockCtx(mainElement);
 
-  await globalInit(clockCtx);
+  await clockGlobalInit(clockCtx);
   await main(clockCtx);
 
   // Restore persisted sticky notes
@@ -53,7 +53,7 @@ window.addEventListener("DOMContentLoaded", async () => {
  * Initialize global event handlers and window behavior
  * @param {ClockCtx} clockCtx - Application context
  */
-const globalInit = async (clockCtx) => {
+const clockGlobalInit = async (clockCtx) => {
   // Window move handler with debouncing for non-macOS platforms
   // Fallback for testing environment where Tauri APIs are not available
   let currentClockWindow;
