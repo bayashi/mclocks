@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
 
 import { initClocks, adjustWindowSize, startClocks } from './matter.js';
 import { Ctx } from './ctx.js';
@@ -86,7 +85,7 @@ const globalInit = async (ctx) => {
       ctx.setIgnoreOnMoved(true);
       setTimeout(async () => {
         try {
-          await saveWindowState(StateFlags.ALL);
+          await invoke('save_window_state_exclusive');
         } catch (error) {
           console.warn('Err:', error);
         } finally {

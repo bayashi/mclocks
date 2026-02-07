@@ -4,12 +4,34 @@ mod util;
 mod web;
 mod sticky;
 
-use std::{sync::Arc, thread};
+use std::sync::{Arc, Mutex};
+use std::thread;
 use tauri::Manager;
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use web_server::{start_web_server, open_url_in_browser, load_web_config};
 use config::{get_config_path, load_config};
 use util::open_text_in_editor;
+
+/// Global lock to serialize all saveWindowState calls across windows.
+/// Prevents potential deadlocks in the window-state plugin when multiple
+/// windows (main + stickies) attempt to save state simultaneously.
+struct WindowStateSaveLock(Mutex<()>);
+
+impl Default for WindowStateSaveLock {
+fn default() -> Self {
+Self(Mutex::new(()))
+}
+}
+
+#[tauri::command]
+fn save_window_state_exclusive(
+app: tauri::AppHandle,
+lock: tauri::State<'_, WindowStateSaveLock>,
+) -> Result<(), String> {
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
+let _guard = lock.0.lock().map_err(|e| e.to_string())?;
+app.save_window_state(StateFlags::all()).map_err(|e| e.to_string())
+}
 
 const IS_DEV: bool = tauri::is_dev();
 
@@ -27,6 +49,7 @@ pub fn run() {
     tbr = tbr.manage(context_config_clone);
     tbr = tbr.manage(sticky::StickyInitStore::default());
     tbr = tbr.manage(sticky::StickyPersistStore::new(&identifier));
+    tbr = tbr.manage(WindowStateSaveLock::default());
 
     let (web_error, web_config_for_startup) = match load_web_config(&identifier) {
         Ok(Some(config)) => (None, Some(config)),
@@ -101,6 +124,7 @@ pub fn run() {
             load_config,
             get_config_path,
             open_text_in_editor,
+            save_window_state_exclusive,
             sticky::create_sticky,
             sticky::sticky_take_init_text,
             sticky::save_sticky_text,
