@@ -171,8 +171,8 @@ export async function stickyEntry(mainElement) {
 	let saveDebouncerId = null;
 	// stickyStateLockId is a pending debounce id for open/close state save (save_sticky_state)
 	let stickyStateLockId = null;
-	// ignoreStickyWindowStateSave is a flag to block subsequent onMoved triggers until save_window_state_exclusive completes
-	let ignoreStickyWindowStateSave = false;
+	// ignoreSaveStickyWindowLocation is a flag to block subsequent onMoved triggers until save_window_state_exclusive completes
+	let ignoreSaveStickyWindowLocation = false;
 	// stickyWindowLocationLockId is a pending delay id for window-state plugin save, cancelled on close
 	let stickyWindowLocationLockId = null;
 
@@ -215,10 +215,10 @@ export async function stickyEntry(mainElement) {
 	// Flag blocks subsequent onMoved triggers until save completes (matches app.js pattern).
 	// pointer-events:none blocks user interaction during save to prevent OS modal loop deadlock.
 	const saveStickyWindowLocation = () => {
-		if (isMacOS() || ignoreStickyWindowStateSave) {
+		if (isMacOS() || ignoreSaveStickyWindowLocation) {
 			return;
 		}
-		ignoreStickyWindowStateSave = true;
+		ignoreSaveStickyWindowLocation = true;
 		stickyWindowLocationLockId = setTimeout(async () => {
 			stickyWindowLocationLockId = null;
 			// Block user interaction to prevent OS modal loop during save
@@ -229,7 +229,7 @@ export async function stickyEntry(mainElement) {
 				// ignore
 			} finally {
 				stickyRoot.style.pointerEvents = '';
-				ignoreStickyWindowStateSave = false;
+				ignoreSaveStickyWindowLocation = false;
 			}
 		}, 5000);
 	};
@@ -372,7 +372,7 @@ export async function stickyEntry(mainElement) {
 			if (stickyWindowLocationLockId != null) {
 				clearTimeout(stickyWindowLocationLockId);
 				stickyWindowLocationLockId = null;
-				ignoreStickyWindowStateSave = false;
+				ignoreSaveStickyWindowLocation = false;
 			}
 			await invoke('delete_sticky_text', { id: label });
 			await currentWindow.close();
