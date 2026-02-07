@@ -108,7 +108,7 @@ const clockGlobalInit = async (clockCtx) => {
  * @returns {Promise<Object>} Configuration object
  * @throws {Error} If configuration loading fails
  */
-const initConfig = async (clockCtx) => {
+const initClockConfig = async (clockCtx) => {
   try {
     const config = await invoke("load_config", {});
 
@@ -213,7 +213,7 @@ const initKeyboardHandlers = (clockCtx, cfg, clocks) => {
  */
 const clockMain = async (clockCtx) => {
   try {
-    const cfg = await initConfig(clockCtx);
+    const cfg = await initClockConfig(clockCtx);
     const clocks = new Clocks(cfg.clocks, cfg.epochClockName);
     initClockStyles(clockCtx, cfg);
     initClocks(clockCtx, cfg, clocks);
