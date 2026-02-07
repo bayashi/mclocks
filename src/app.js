@@ -24,6 +24,24 @@ const getDefaultConfig = () => {
 window.addEventListener("DOMContentLoaded", async () => {
   const mainElement = document.querySelector("#mclocks");
 
+  if (await handleStickyWindow(mainElement)) {
+    return;
+  }
+
+  const clockCtx = new ClockCtx(mainElement);
+
+  await clockGlobalInit(clockCtx);
+  await clockMain(clockCtx);
+
+  await restoreStickies();
+});
+
+/**
+ * Handle sticky note window entry
+ * @param {HTMLElement} mainElement - Main application element
+ * @returns {Promise<boolean>} true if this window is a sticky note window
+ */
+const handleStickyWindow = async (mainElement) => {
   let windowLabel = null;
   try {
     windowLabel = getCurrentWindow().label;
@@ -33,21 +51,22 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   if (windowLabel?.startsWith('sticky-')) {
     await stickyEntry(mainElement);
-    return;
+    return true;
   }
 
-  const clockCtx = new ClockCtx(mainElement);
+  return false;
+};
 
-  await clockGlobalInit(clockCtx);
-  await clockMain(clockCtx);
-
-  // Restore persisted sticky notes
+/**
+ * Restore persisted sticky notes
+ */
+const restoreStickies = async () => {
   try {
     await invoke('restore_stickies');
   } catch (error) {
     console.warn('[sticky] Failed to restore stickies:', error);
   }
-});
+};
 
 /**
  * Initialize global event handlers and window behavior
