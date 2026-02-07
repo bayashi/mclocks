@@ -163,7 +163,7 @@ const initConfig = async (clockCtx) => {
  * @param {ClockCtx} clockCtx - Application context
  * @param {Object} cfg - Configuration object
  */
-const initStyles = (clockCtx, cfg) => {
+const initClockStyles = (clockCtx, cfg) => {
   const appStyle = clockCtx.mainElement().style;
 
   appStyle.fontFamily = cfg.font;
@@ -215,7 +215,7 @@ const clockMain = async (clockCtx) => {
   try {
     const cfg = await initConfig(clockCtx);
     const clocks = new Clocks(cfg.clocks, cfg.epochClockName);
-    initStyles(clockCtx, cfg);
+    initClockStyles(clockCtx, cfg);
     initClocks(clockCtx, cfg, clocks);
     adjustWindowSize(clockCtx, clocks);
 
