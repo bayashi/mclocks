@@ -191,7 +191,7 @@ export async function stickyEntry(mainElement) {
 	};
 
 	// Debounced save of open/close state and open-mode size
-	const scheduleStateSave = () => {
+	const saveStickyState = () => {
 		if (stateSaveDebouncerId != null) {
 			clearTimeout(stateSaveDebouncerId);
 		}
@@ -214,7 +214,7 @@ export async function stickyEntry(mainElement) {
 	// Only called from onMoved to avoid conflicts with programmatic resizes.
 	// Flag blocks subsequent onMoved triggers until save completes (matches app.js pattern).
 	// pointer-events:none blocks user interaction during save to prevent OS modal loop deadlock.
-	const scheduleStickyWindowStateSave = () => {
+	const saveStickyWindowLocation = () => {
 		if (isMacOS() || ignoreStickyWindowStateSave) {
 			return;
 		}
@@ -332,7 +332,7 @@ export async function stickyEntry(mainElement) {
 			} else {
 				await openSticky();
 			}
-			scheduleStateSave();
+			saveStickyState();
 		} catch (error) {
 			await openMessageDialog(`Failed to toggle sticky: ${error}`, "mclocks Error", "error");
 		}
@@ -414,7 +414,7 @@ export async function stickyEntry(mainElement) {
 			userResized = true;
 			savedOpenSize = { width: inner.width, height: inner.height };
 			savedWidth = inner.width;
-			scheduleStateSave();
+			saveStickyState();
 		});
 	} catch {
 		// ignore
@@ -423,7 +423,7 @@ export async function stickyEntry(mainElement) {
 	// Save window position on move (non-macOS only, flag pattern)
 	try {
 		await currentWindow.onMoved(() => {
-			scheduleStickyWindowStateSave();
+			saveStickyWindowLocation();
 		});
 	} catch {
 		// ignore
