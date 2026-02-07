@@ -5,8 +5,8 @@ import { initClocks, adjustWindowSize, startClocks } from './matter.js';
 import { Ctx } from './ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
-import { stickyEntry } from './sticky.js';
-import { createSticky } from './sticky_manager.js';
+import { stickyEntry } from './sticky/sticky.js';
+import { createSticky } from './sticky/sticky_manager.js';
 
 /**
  * Default configuration for the application

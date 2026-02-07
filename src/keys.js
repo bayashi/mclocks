@@ -4,7 +4,7 @@ import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, 
 import { writeClipboardText, isMacOS, isWindowsOS, openMessageDialog } from './util.js';
 import { conversionHandler } from './conversion.js';
 import { quoteAndAppendCommaClipboardHandler } from './clipboard.js';
-import { createSticky } from './sticky_manager.js';
+import { createSticky } from './sticky/sticky_manager.js';
 
 // Win   ---> Ctrl
 // macOS ---> Command

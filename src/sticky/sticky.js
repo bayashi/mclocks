@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 
-import { writeClipboardText, openMessageDialog, isMacOS } from './util.js';
+import { writeClipboardText, openMessageDialog, isMacOS } from '../util.js';
 
 const debugLog = import.meta.env.DEV
 	? (...args) => console.info(...args)
@@ -501,4 +501,3 @@ export async function stickyEntry(mainElement) {
 		await closeSticky();
 	}
 }
-

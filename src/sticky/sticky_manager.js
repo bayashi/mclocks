@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import { readClipboardText, openMessageDialog } from './util.js';
+import { readClipboardText, openMessageDialog } from '../util.js';
 
 const debugLog = import.meta.env.DEV
 	? (...args) => console.info(...args)
@@ -65,4 +65,3 @@ export async function createSticky() {
 		}
 	}
 }
-
