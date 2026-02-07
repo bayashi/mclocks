@@ -56,9 +56,9 @@ window.addEventListener("DOMContentLoaded", async () => {
 const globalInit = async (clockCtx) => {
   // Window move handler with debouncing for non-macOS platforms
   // Fallback for testing environment where Tauri APIs are not available
-  let currentWindow;
+  let currentClockWindow;
   try {
-    currentWindow = getCurrentWindow();
+    currentClockWindow = getCurrentWindow();
   } catch (error) {
     // Fallback for testing environment
     console.warn('getCurrentWindow not available, skipping window handlers:', error);
@@ -66,7 +66,7 @@ const globalInit = async (clockCtx) => {
   }
 
   try {
-    await currentWindow.onMoved(() => {
+    await currentClockWindow.onMoved(() => {
       // Skip saving window state on macOS due to platform-specific issues
       if (clockCtx.ignoreOnMoved() || clockCtx.isMacOS()) {
         return;
@@ -92,8 +92,8 @@ const globalInit = async (clockCtx) => {
   clockCtx.mainElement().addEventListener("mousedown", async () => {
     if (clockCtx.isMacOS()) {
       try {
-        if (currentWindow) {
-          await currentWindow.startDragging();
+        if (currentClockWindow) {
+          await currentClockWindow.startDragging();
         }
       } catch (error) {
         console.warn('Err:', error);
