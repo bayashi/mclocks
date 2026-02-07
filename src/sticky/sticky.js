@@ -169,8 +169,8 @@ export async function stickyEntry(mainElement) {
 	let copyButtonDefaultText = null;
 	// saveDebouncerId is a pending debounce id for text save (save_sticky_text)
 	let saveDebouncerId = null;
-	// stateSaveDebouncerId is a pending debounce id for open/close state save (save_sticky_state)
-	let stateSaveDebouncerId = null;
+	// stickyStateLockId is a pending debounce id for open/close state save (save_sticky_state)
+	let stickyStateLockId = null;
 	// ignoreStickyWindowStateSave is a flag to block subsequent onMoved triggers until save_window_state_exclusive completes
 	let ignoreStickyWindowStateSave = false;
 	// stickyWindowStateSaveId is a pending delay id for window-state plugin save, cancelled on close
@@ -192,11 +192,11 @@ export async function stickyEntry(mainElement) {
 
 	// Debounced save of open/close state and open-mode size
 	const saveStickyState = () => {
-		if (stateSaveDebouncerId != null) {
-			clearTimeout(stateSaveDebouncerId);
+		if (stickyStateLockId != null) {
+			clearTimeout(stickyStateLockId);
 		}
-		stateSaveDebouncerId = setTimeout(async () => {
-			stateSaveDebouncerId = null;
+		stickyStateLockId = setTimeout(async () => {
+			stickyStateLockId = null;
 			try {
 				await invoke('save_sticky_state', {
 					id: label,
@@ -365,9 +365,9 @@ export async function stickyEntry(mainElement) {
 				clearTimeout(saveDebouncerId);
 				saveDebouncerId = null;
 			}
-			if (stateSaveDebouncerId != null) {
-				clearTimeout(stateSaveDebouncerId);
-				stateSaveDebouncerId = null;
+			if (stickyStateLockId != null) {
+				clearTimeout(stickyStateLockId);
+				stickyStateLockId = null;
 			}
 			if (stickyWindowStateSaveId != null) {
 				clearTimeout(stickyWindowStateSaveId);
