@@ -173,8 +173,8 @@ export async function stickyEntry(mainElement) {
 	let stickyStateLockId = null;
 	// ignoreStickyWindowStateSave is a flag to block subsequent onMoved triggers until save_window_state_exclusive completes
 	let ignoreStickyWindowStateSave = false;
-	// stickyWindowStateSaveId is a pending delay id for window-state plugin save, cancelled on close
-	let stickyWindowStateSaveId = null;
+	// stickyWindowLocationLockId is a pending delay id for window-state plugin save, cancelled on close
+	let stickyWindowLocationLockId = null;
 
 	// Restore open-mode size from persisted state
 	if (stickyState) {
@@ -219,8 +219,8 @@ export async function stickyEntry(mainElement) {
 			return;
 		}
 		ignoreStickyWindowStateSave = true;
-		stickyWindowStateSaveId = setTimeout(async () => {
-			stickyWindowStateSaveId = null;
+		stickyWindowLocationLockId = setTimeout(async () => {
+			stickyWindowLocationLockId = null;
 			// Block user interaction to prevent OS modal loop during save
 			stickyRoot.style.pointerEvents = 'none';
 			try {
@@ -369,9 +369,9 @@ export async function stickyEntry(mainElement) {
 				clearTimeout(stickyStateLockId);
 				stickyStateLockId = null;
 			}
-			if (stickyWindowStateSaveId != null) {
-				clearTimeout(stickyWindowStateSaveId);
-				stickyWindowStateSaveId = null;
+			if (stickyWindowLocationLockId != null) {
+				clearTimeout(stickyWindowLocationLockId);
+				stickyWindowLocationLockId = null;
 				ignoreStickyWindowStateSave = false;
 			}
 			await invoke('delete_sticky_text', { id: label });
