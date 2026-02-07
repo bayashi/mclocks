@@ -39,7 +39,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   const clockCtx = new ClockCtx(mainElement);
 
   await clockGlobalInit(clockCtx);
-  await main(clockCtx);
+  await clockMain(clockCtx);
 
   // Restore persisted sticky notes
   try {
@@ -211,7 +211,7 @@ const initKeyboardHandlers = (clockCtx, cfg, clocks) => {
  * Main application initialization and startup
  * @param {ClockCtx} clockCtx - Application context
  */
-const main = async (clockCtx) => {
+const clockMain = async (clockCtx) => {
   try {
     const cfg = await initConfig(clockCtx);
     const clocks = new Clocks(cfg.clocks, cfg.epochClockName);
