@@ -15,15 +15,6 @@ use crate::config::{ContextConfig, load_config};
 
 const IS_DEV: bool = tauri::is_dev();
 
-#[allow(unused_macros)]
-macro_rules! debug_log {
-	($($arg:tt)*) => {
-		if tauri::is_dev() {
-			eprintln!($($arg)*);
-		}
-	};
-}
-
 /// Persistent data for a single sticky note
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StickyData {
@@ -85,8 +76,6 @@ impl StickyPersistStore {
 			HashMap::new()
 		};
 
-		debug_log!("[sticky] StickyPersistStore: path={:?} entries={}", file_path, data.len());
-
 		Self {
 			file_path,
 			data: Mutex::new(data),
@@ -120,23 +109,15 @@ fn spawn_sticky_window(app: AppHandle, label: String, forefront: bool) {
 
 		let url = match url {
 			Ok(u) => u,
-			Err(e) => {
-				debug_log!("[sticky] spawn_sticky_window: invalid url: {}", e);
-				return;
-			}
+			Err(_) => return,
 		};
 
 		let app_for_closure = app_for_main.clone();
 		let schedule_target = app_for_main.clone();
 		let result = schedule_target.run_on_main_thread(move || {
-			debug_log!("[sticky] spawn_sticky_window(main): build start label={}", label_for_build);
-
 			let main = match app_for_closure.get_webview_window("main") {
 				Some(w) => w,
-				None => {
-					debug_log!("[sticky] spawn_sticky_window(main): main window not found");
-					return;
-				}
+				None => return,
 			};
 
 			let w = WebviewWindowBuilder::new(&app_for_closure, label_for_build.clone(), url)
@@ -152,32 +133,22 @@ fn spawn_sticky_window(app: AppHandle, label: String, forefront: bool) {
 
 			let w = match w.parent(&main) {
 				Ok(next) => next,
-				Err(e) => {
-					debug_log!("[sticky] spawn_sticky_window(main): parent failed: {}", e);
-					return;
-				}
+				Err(_) => return,
 			};
 
 			let w = w.center();
 
-			match w.build() {
-				Ok(_) => debug_log!("[sticky] spawn_sticky_window(main): build ok"),
-				Err(e) => debug_log!("[sticky] spawn_sticky_window(main): build failed: {}", e),
-			}
+			let _ = w.build();
 		});
 
-		if let Err(e) = result {
-			debug_log!("[sticky] spawn_sticky_window(main): schedule failed: {}", e);
-		}
+		let _ = result;
 	});
 }
 
 #[tauri::command]
 pub fn create_sticky(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>, sticky_store: State<'_, StickyInitStore>, persist: State<'_, StickyPersistStore>, text: String) -> Result<String, String> {
-	debug_log!("[sticky] create_sticky: start");
 	let id = uuid_v4();
 	let label = format!("sticky-{}", id);
-	debug_log!("[sticky] create_sticky: label={}", label);
 
 	{
 		let mut map = sticky_store.text_by_window_label.lock().map_err(|_| "Failed to lock sticky store".to_string())?;
@@ -188,13 +159,10 @@ pub fn create_sticky(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>, s
 	{
 		let mut data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
 		data.insert(label.clone(), StickyData::new(text));
-		if let Err(e) = persist.write_file(&data) {
-			debug_log!("[sticky] create_sticky: persist failed: {}", e);
-		}
+		let _ = persist.write_file(&data);
 	}
 
 	let cfg = load_config(cfg_state)?;
-	debug_log!("[sticky] create_sticky: load_config ok");
 
 	spawn_sticky_window(app, label.clone(), cfg.forefront);
 
@@ -255,11 +223,8 @@ pub fn restore_stickies(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>
 	};
 
 	if notes.is_empty() {
-		debug_log!("[sticky] restore_stickies: no saved stickies");
 		return Ok(());
 	}
-
-	debug_log!("[sticky] restore_stickies: restoring {} stickies", notes.len());
 
 	let cfg = load_config(cfg_state)?;
 

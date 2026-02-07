@@ -1,10 +1,10 @@
 import { openUrl } from '@tauri-apps/plugin-opener';
 
-import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, addTimerClock } from './matter.js';
+import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, addTimerClock } from './clock_matter.js';
 import { writeClipboardText, isMacOS, isWindowsOS, openMessageDialog } from './util.js';
 import { conversionHandler } from './conversion.js';
 import { quoteAndAppendCommaClipboardHandler } from './clipboard.js';
-import { createSticky } from './sticky_manager.js';
+import { createSticky } from './sticky/sticky_manager.js';
 
 // Win   ---> Ctrl
 // macOS ---> Command
@@ -25,14 +25,7 @@ async function openHelpPage() {
   }
 }
 
-export async function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
-  if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
-    e.preventDefault();
-    console.info('[sticky] hotkey: Ctrl/Meta+S (keys handler)', { key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey });
-    await createSticky();
-    return;
-  }
-
+export async function operationKeysHandler(e, pressedKeys, clockCtx, cfg, clocks) {
   if (isWindowsOS()) {
     if (e.metaKey && e.key === "d") {
       e.preventDefault(); // ignore "Windows + D" to keep displaying mclocks
@@ -55,22 +48,22 @@ export async function operationKeysHandler(e, pressedKeys, ctx, cfg, clocks) {
   }
 
   if (pressingBaseKey(e)) {
-    await withBaseKey(e, pressedKeys, ctx, cfg, clocks);
+    await withBaseKey(e, pressedKeys, clockCtx, cfg, clocks);
   }
 }
 
 // operations to be pressed together with Ctrl key
-async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
+async function withBaseKey(e, pressedKeys, clockCtx, cfg, clocks) {
   // switch date-time format if format2 would be defined
   if (e.key === "f") {
     e.preventDefault();
-    switchFormat(ctx, cfg, clocks);
+    switchFormat(clockCtx, cfg, clocks);
     return;
   }
 
   if (e.key === "o") {
     e.preventDefault();
-    openToEditConfigFile(ctx);
+    openToEditConfigFile(clockCtx);
     return;
   }
 
@@ -84,7 +77,7 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   // toggle to display Epoch time
   if (e.key === "e" || e.key === "u") {
     e.preventDefault();
-    toggleEpochTime(ctx, clocks);
+    toggleEpochTime(clockCtx, clocks);
     return;
   }
 
@@ -96,8 +89,8 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
       // Ctrl + 1       --> start 1 min timer
       // Ctrl + Alt + 1 --> start 10 mins timer
       const coef = pressingAltKey(e) ? 600 : 60;
-      if (clocks.getTimerClocks().length < ctx.maxTimerClockNumber()) {
-        addTimerClock(ctx, cfg, clocks, input * coef);
+      if (clocks.getTimerClocks().length < clockCtx.maxTimerClockNumber()) {
+        addTimerClock(clockCtx, cfg, clocks, input * coef);
       }
       return;
     }
@@ -112,7 +105,7 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
         // Ctrl + 0 --> remove oldest timer (remove the clock on the far left)
         clocks.removeTimerLeft();
       }
-      adjustWindowSize(ctx, clocks);
+      adjustWindowSize(clockCtx, clocks);
       return;
     }
   }
@@ -121,27 +114,27 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   if (e.key === "p") {
     e.preventDefault();
     if (clocks.getTimerClocks().length > 0) {
-      if (ctx.lockKeyP()) {
+      if (clockCtx.lockKeyP()) {
         return;
       }
-      ctx.setLockKeyP(true);
-      ctx.setPauseTimer(!ctx.pauseTimer());
+      clockCtx.setLockKeyP(true);
+      clockCtx.setPauseTimer(!clockCtx.pauseTimer());
 
       for (const clock of clocks.getTimerClocks()) {
-        if (ctx.pauseTimer()) {
+        if (clockCtx.pauseTimer()) {
           // pause
           if (!clock.pauseStart) {
-            clock.pauseStart = ctx.cdateUTC().text();
+            clock.pauseStart = clockCtx.cdateUTC().text();
           }
         } else {
           // re-start
-          const pauseDiffMS = ctx.cdateUTC().t - ctx.cdateUTC(clock.pauseStart).t;
-          clock.target = ctx.cdateUTC(clock.target).add(pauseDiffMS, "ms").text();
+          const pauseDiffMS = clockCtx.cdateUTC().t - clockCtx.cdateUTC(clock.pauseStart).t;
+          clock.target = clockCtx.cdateUTC(clock.target).add(pauseDiffMS, "ms").text();
           clock.pauseStart = null;
         }
       }
 
-      ctx.setLockKeyP(false);
+      clockCtx.setLockKeyP(false);
       return;
     }
   }
@@ -152,7 +145,7 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
     const cls = [];
 
     for (const clock of clocks.getAllClocks()) {
-      if (clock.isEpoch && !ctx.displayEpoch()) {
+      if (clock.isEpoch && !clockCtx.displayEpoch()) {
         continue;
       }
       cls.push(clock.el.parentElement.innerText);
@@ -177,6 +170,6 @@ async function withBaseKey(e, pressedKeys, ctx, cfg, clocks) {
   // convert between epoch time and date-time to paste from the clipboard
   if (e.key === "v" || e.key === "V") {
     e.preventDefault();
-    await conversionHandler(e, pressedKeys, clocks, ctx.useTZ(), ctx.convTZ());
+    await conversionHandler(e, pressedKeys, clocks, clockCtx.useTZ(), clockCtx.convTZ());
   }
 }
