@@ -6,7 +6,6 @@ import { ClockCtx } from './clock_ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
 import { stickyEntry } from './sticky/sticky.js';
-import { createSticky } from './sticky/sticky_manager.js';
 
 /**
  * Default configuration for the application
@@ -36,15 +35,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     await stickyEntry(mainElement);
     return;
   }
-
-  window.addEventListener('keydown', async (event) => {
-    if ((event.ctrlKey || event.metaKey) && (event.key === "s" || event.key === "S")) {
-      event.preventDefault();
-      event.stopPropagation();
-      console.info('[sticky] hotkey: Ctrl/Meta+S (app capture)', { key: event.key, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey, altKey: event.altKey });
-      await createSticky();
-    }
-  }, true);
 
   const clockCtx = new ClockCtx(mainElement);
 

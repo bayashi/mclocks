@@ -26,13 +26,6 @@ async function openHelpPage() {
 }
 
 export async function operationKeysHandler(e, pressedKeys, clockCtx, cfg, clocks) {
-  if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
-    e.preventDefault();
-    console.info('[sticky] hotkey: Ctrl/Meta+S (keys handler)', { key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey });
-    await createSticky();
-    return;
-  }
-
   if (isWindowsOS()) {
     if (e.metaKey && e.key === "d") {
       e.preventDefault(); // ignore "Windows + D" to keep displaying mclocks
