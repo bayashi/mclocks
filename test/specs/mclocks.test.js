@@ -50,11 +50,11 @@ describe('mclocks Application Launch Test', () => {
         } catch (error) {
             console.warn('Failed to grant clipboard permissions via CDP:', error.message);
         }
-        // Set test config in both window.__defaultConfig and sessionStorage
+        // Set test config in both window.__defaultClockConfig and sessionStorage
         // sessionStorage persists across page reloads
         await browser.execute((config) => {
-            sessionStorage.setItem('__defaultConfig', JSON.stringify(config));
-            window.__defaultConfig = config;
+            sessionStorage.setItem('__defaultClockConfig', JSON.stringify(config));
+            window.__defaultClockConfig = config;
         }, testConfig);
         // Reload to ensure config is available when DOMContentLoaded fires
         await browser.refresh();

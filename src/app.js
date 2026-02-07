@@ -12,7 +12,7 @@ import { stickyEntry } from './sticky/sticky.js';
  * Used when config.json does not exist
  * @returns {Object} Default configuration object
  */
-const getDefaultConfig = () => {
+const getDefaultClockConfig = () => {
   return {
     clocks: [
       { name: 'UTC', timezone: 'UTC' }
@@ -153,27 +153,27 @@ const initClockConfig = async (clockCtx) => {
     // Fallback for testing environment where Tauri APIs are not available
     // Use default configuration
     console.warn('Could not load config from Tauri, using defaults:', error);
-    // Check sessionStorage first (for tests), then window.__defaultConfig, then getDefaultConfig()
-    let defaultConfig = null;
+    // Check sessionStorage first (for tests), then window.__defaultClockConfig, then getDefaultClockConfig()
+    let defaultClockConfig = null;
     try {
-      const stored = sessionStorage.getItem('__defaultConfig');
+      const stored = sessionStorage.getItem('__defaultClockConfig');
       if (stored) {
-        defaultConfig = JSON.parse(stored);
+        defaultClockConfig = JSON.parse(stored);
       }
     } catch {
       // Ignore sessionStorage errors
     }
-    defaultConfig = defaultConfig || window.__defaultConfig || getDefaultConfig();
+    defaultClockConfig = defaultClockConfig || window.__defaultClockConfig || getDefaultClockConfig();
 
-    clockCtx.setFormat(defaultConfig.format);
-    clockCtx.setTimerIcon(defaultConfig.timerIcon);
-    clockCtx.setWithoutNotification(defaultConfig.withoutNotification);
-    clockCtx.setMaxTimerClockNumber(defaultConfig.maxTimerClockNumber);
-    clockCtx.setUseTZ(defaultConfig.usetz);
-    clockCtx.setConvTZ(defaultConfig.convtz);
-    clockCtx.setDisableHover(defaultConfig.disableHover);
+    clockCtx.setFormat(defaultClockConfig.format);
+    clockCtx.setTimerIcon(defaultClockConfig.timerIcon);
+    clockCtx.setWithoutNotification(defaultClockConfig.withoutNotification);
+    clockCtx.setMaxTimerClockNumber(defaultClockConfig.maxTimerClockNumber);
+    clockCtx.setUseTZ(defaultClockConfig.usetz);
+    clockCtx.setConvTZ(defaultClockConfig.convtz);
+    clockCtx.setDisableHover(defaultClockConfig.disableHover);
 
-    return defaultConfig;
+    return defaultClockConfig;
   }
 };
 
