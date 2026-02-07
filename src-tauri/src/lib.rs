@@ -18,19 +18,19 @@ use util::open_text_in_editor;
 struct WindowStateSaveLock(Mutex<()>);
 
 impl Default for WindowStateSaveLock {
-fn default() -> Self {
-Self(Mutex::new(()))
-}
+	fn default() -> Self {
+		Self(Mutex::new(()))
+	}
 }
 
 #[tauri::command]
 fn save_window_state_exclusive(
-app: tauri::AppHandle,
-lock: tauri::State<'_, WindowStateSaveLock>,
+	app: tauri::AppHandle,
+	lock: tauri::State<'_, WindowStateSaveLock>,
 ) -> Result<(), String> {
-use tauri_plugin_window_state::{AppHandleExt, StateFlags};
-let _guard = lock.0.lock().map_err(|e| e.to_string())?;
-app.save_window_state(StateFlags::all()).map_err(|e| e.to_string())
+	use tauri_plugin_window_state::{AppHandleExt, StateFlags};
+	let _guard = lock.0.lock().map_err(|e| e.to_string())?;
+	app.save_window_state(StateFlags::all()).map_err(|e| e.to_string())
 }
 
 const IS_DEV: bool = tauri::is_dev();
