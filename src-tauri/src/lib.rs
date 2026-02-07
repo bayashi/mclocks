@@ -26,6 +26,7 @@ pub fn run() {
     });
     tbr = tbr.manage(context_config_clone);
     tbr = tbr.manage(sticky::StickyInitStore::default());
+    tbr = tbr.manage(sticky::StickyPersistStore::new(&identifier));
 
     let (web_error, web_config_for_startup) = match load_web_config(&identifier) {
         Ok(Some(config)) => (None, Some(config)),
@@ -102,6 +103,9 @@ pub fn run() {
             open_text_in_editor,
             sticky::create_sticky,
             sticky::sticky_take_init_text,
+            sticky::save_sticky_text,
+            sticky::delete_sticky_text,
+            sticky::restore_stickies,
         ])
         .run(context)
         .expect("error while running tauri application");

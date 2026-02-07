@@ -163,6 +163,7 @@ export async function stickyEntry(mainElement) {
 	let programmaticResizeUntil = 0;
 	let copyFeedbackTimerId = null;
 	let copyButtonDefaultText = null;
+	let saveDebouncerId = null;
 
 	const setProgrammaticSize = async (width, height) => {
 		programmaticResizeUntil = Date.now() + 1000;
@@ -296,6 +297,12 @@ export async function stickyEntry(mainElement) {
 
 	closeButton.addEventListener('click', async () => {
 		try {
+			if (saveDebouncerId != null) {
+				clearTimeout(saveDebouncerId);
+				saveDebouncerId = null;
+			}
+			await invoke('delete_sticky_text', { id: label });
+			debugLog('[sticky] deleted persistent data for %s', label);
 			await currentWindow.close();
 		} catch (error) {
 			await openMessageDialog(`Failed to close sticky: ${error}`, "mclocks Error", "error");
@@ -359,6 +366,20 @@ export async function stickyEntry(mainElement) {
 	}
 
 	textarea.addEventListener('input', async () => {
+		// Debounced save to persistent store
+		if (saveDebouncerId != null) {
+			clearTimeout(saveDebouncerId);
+		}
+		saveDebouncerId = setTimeout(async () => {
+			saveDebouncerId = null;
+			try {
+				await invoke('save_sticky_text', { id: label, text: textarea.value });
+				debugLog('[sticky] saved text for %s', label);
+			} catch (error) {
+				debugLog('[sticky] save failed:', error);
+			}
+		}, 500);
+
 		if (!isOpen || userResized) {
 			return;
 		}
