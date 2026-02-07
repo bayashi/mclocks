@@ -30,7 +30,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   try {
     windowLabel = getCurrentWindow().label;
   } catch {
-    windowLabel = null;
+    // windowLabel remains null
   }
 
   if (windowLabel?.startsWith('sticky-')) {
@@ -51,6 +51,13 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   await globalInit(ctx);
   await main(ctx);
+
+  // Restore persisted sticky notes
+  try {
+    await invoke('restore_stickies');
+  } catch (error) {
+    console.warn('[sticky] Failed to restore stickies:', error);
+  }
 });
 
 /**
