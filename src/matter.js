@@ -143,7 +143,7 @@ export async function openToEditConfigFile(ctx) {
     await openPath(config_path);
   } catch (e) {
     ctx.mainElement().textContent = `Err: ${e}`;
-    throw new Error(e);
+    throw new Error(e, { cause: e });
   }
 }
 
