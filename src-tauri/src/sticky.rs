@@ -9,6 +9,8 @@ use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
 use tauri::webview::Url;
 use uuid::Uuid;
 
+use serde::{Serialize, Deserialize};
+
 use crate::config::{ContextConfig, load_config};
 
 const IS_DEV: bool = tauri::is_dev();
@@ -20,6 +22,33 @@ macro_rules! debug_log {
 			eprintln!($($arg)*);
 		}
 	};
+}
+
+/// Persistent data for a single sticky note
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StickyData {
+	pub text: String,
+	#[serde(default)]
+	pub is_open: bool,
+	#[serde(default)]
+	pub open_width: Option<f64>,
+	#[serde(default)]
+	pub open_height: Option<f64>,
+}
+
+impl StickyData {
+	fn new(text: String) -> Self {
+		Self { text, is_open: false, open_width: None, open_height: None }
+	}
+}
+
+/// State info returned to JS
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StickyStateInfo {
+	pub is_open: bool,
+	pub open_width: Option<f64>,
+	pub open_height: Option<f64>,
 }
 
 pub struct StickyInitStore {
@@ -37,7 +66,7 @@ impl Default for StickyInitStore {
 /// Persistent file-backed store for sticky note contents
 pub struct StickyPersistStore {
 	file_path: PathBuf,
-	data: Mutex<HashMap<String, String>>,
+	data: Mutex<HashMap<String, StickyData>>,
 }
 
 impl StickyPersistStore {
@@ -47,7 +76,7 @@ impl StickyPersistStore {
 			.map(|bd| bd.config_dir().join(identifier).join(file_name))
 			.unwrap_or_else(|| PathBuf::from(file_name));
 
-		let data = if file_path.exists() {
+		let data: HashMap<String, StickyData> = if file_path.exists() {
 			fs::read_to_string(&file_path)
 				.ok()
 				.and_then(|content| serde_json::from_str(&content).ok())
@@ -64,7 +93,7 @@ impl StickyPersistStore {
 		}
 	}
 
-	fn write_file(&self, data: &HashMap<String, String>) -> Result<(), String> {
+	fn write_file(&self, data: &HashMap<String, StickyData>) -> Result<(), String> {
 		if let Some(parent) = self.file_path.parent() {
 			fs::create_dir_all(parent).map_err(|e| e.to_string())?;
 		}
@@ -158,7 +187,7 @@ pub fn create_sticky(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>, s
 	// Persist to file
 	{
 		let mut data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
-		data.insert(label.clone(), text);
+		data.insert(label.clone(), StickyData::new(text));
 		if let Err(e) = persist.write_file(&data) {
 			debug_log!("[sticky] create_sticky: persist failed: {}", e);
 		}
@@ -182,7 +211,8 @@ pub fn sticky_take_init_text(sticky_store: State<'_, StickyInitStore>, id: Strin
 #[tauri::command]
 pub fn save_sticky_text(persist: State<'_, StickyPersistStore>, id: String, text: String) -> Result<(), String> {
 	let mut data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
-	data.insert(id, text);
+	let entry = data.entry(id).or_insert_with(|| StickyData::new(String::new()));
+	entry.text = text;
 	persist.write_file(&data)
 }
 
@@ -192,6 +222,28 @@ pub fn delete_sticky_text(persist: State<'_, StickyPersistStore>, id: String) ->
 	let mut data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
 	data.remove(&id);
 	persist.write_file(&data)
+}
+
+/// Save sticky open/close state and open-mode size
+#[tauri::command]
+pub fn save_sticky_state(persist: State<'_, StickyPersistStore>, id: String, is_open: bool, open_width: Option<f64>, open_height: Option<f64>) -> Result<(), String> {
+	let mut data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
+	let entry = data.entry(id).or_insert_with(|| StickyData::new(String::new()));
+	entry.is_open = is_open;
+	entry.open_width = open_width;
+	entry.open_height = open_height;
+	persist.write_file(&data)
+}
+
+/// Load sticky open/close state and open-mode size
+#[tauri::command]
+pub fn load_sticky_state(persist: State<'_, StickyPersistStore>, id: String) -> Result<Option<StickyStateInfo>, String> {
+	let data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
+	Ok(data.get(&id).map(|d| StickyStateInfo {
+		is_open: d.is_open,
+		open_width: d.open_width,
+		open_height: d.open_height,
+	}))
 }
 
 /// Restore all persisted stickies by recreating their windows
@@ -213,8 +265,8 @@ pub fn restore_stickies(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>
 
 	{
 		let mut map = sticky_store.text_by_window_label.lock().map_err(|_| "Failed to lock sticky store".to_string())?;
-		for (label, text) in &notes {
-			map.insert(label.clone(), text.clone());
+		for (label, sticky_data) in &notes {
+			map.insert(label.clone(), sticky_data.text.clone());
 		}
 	}
 

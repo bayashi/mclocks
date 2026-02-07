@@ -153,6 +153,15 @@ export async function stickyEntry(mainElement) {
 		debugLog('[sticky] sticky_take_init_text: failed');
 	}
 
+	// Load persisted open/close state and open-mode size
+	let stickyState = null;
+	try {
+		stickyState = await invoke('load_sticky_state', { id: label });
+		debugLog('[sticky] load_sticky_state: %o', stickyState);
+	} catch {
+		debugLog('[sticky] load_sticky_state: failed');
+	}
+
 	let isOpen = false;
 	let savedOpenSize = null; // { width, height }
 	let savedWidth = null;
@@ -164,11 +173,42 @@ export async function stickyEntry(mainElement) {
 	let copyFeedbackTimerId = null;
 	let copyButtonDefaultText = null;
 	let saveDebouncerId = null;
+	let stateSaveDebouncerId = null;
+
+	// Restore open-mode size from persisted state
+	if (stickyState) {
+		if (stickyState.openWidth != null && stickyState.openHeight != null) {
+			savedOpenSize = { width: stickyState.openWidth, height: stickyState.openHeight };
+			savedWidth = stickyState.openWidth;
+			userResized = true;
+		}
+	}
 
 	const setProgrammaticSize = async (width, height) => {
 		programmaticResizeUntil = Date.now() + 1000;
 		lastProgrammaticSize = { width, height };
 		await setWindowSize(currentWindow, width, height);
+	};
+
+	// Debounced save of open/close state and open-mode size
+	const scheduleStateSave = () => {
+		if (stateSaveDebouncerId != null) {
+			clearTimeout(stateSaveDebouncerId);
+		}
+		stateSaveDebouncerId = setTimeout(async () => {
+			stateSaveDebouncerId = null;
+			try {
+				await invoke('save_sticky_state', {
+					id: label,
+					isOpen: isOpen,
+					openWidth: savedOpenSize?.width ?? null,
+					openHeight: savedOpenSize?.height ?? null,
+				});
+				debugLog('[sticky] saved state for %s', label);
+			} catch (error) {
+				debugLog('[sticky] save state failed:', error);
+			}
+		}, 500);
 	};
 
 	const measureContentHeight = async () => {
@@ -269,6 +309,7 @@ export async function stickyEntry(mainElement) {
 			} else {
 				await openSticky();
 			}
+			scheduleStateSave();
 		} catch (error) {
 			await openMessageDialog(`Failed to toggle sticky: ${error}`, "mclocks Error", "error");
 		}
@@ -300,6 +341,10 @@ export async function stickyEntry(mainElement) {
 			if (saveDebouncerId != null) {
 				clearTimeout(saveDebouncerId);
 				saveDebouncerId = null;
+			}
+			if (stateSaveDebouncerId != null) {
+				clearTimeout(stateSaveDebouncerId);
+				stateSaveDebouncerId = null;
 			}
 			await invoke('delete_sticky_text', { id: label });
 			debugLog('[sticky] deleted persistent data for %s', label);
@@ -351,6 +396,7 @@ export async function stickyEntry(mainElement) {
 			userResized = true;
 			savedOpenSize = { width: inner.width, height: inner.height };
 			savedWidth = inner.width;
+			scheduleStateSave();
 			if (resizeByHandleActive) {
 				if (resizeByHandleTimerId != null) {
 					clearTimeout(resizeByHandleTimerId);
@@ -396,6 +442,11 @@ export async function stickyEntry(mainElement) {
 		await setProgrammaticSize(width, needHeight);
 	});
 
-	await closeSticky();
+	// Restore open/close state from persisted data
+	if (stickyState?.isOpen) {
+		await openSticky();
+	} else {
+		await closeSticky();
+	}
 }
 

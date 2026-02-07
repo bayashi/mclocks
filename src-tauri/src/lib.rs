@@ -105,6 +105,8 @@ pub fn run() {
             sticky::sticky_take_init_text,
             sticky::save_sticky_text,
             sticky::delete_sticky_text,
+            sticky::save_sticky_state,
+            sticky::load_sticky_state,
             sticky::restore_stickies,
         ])
         .run(context)
