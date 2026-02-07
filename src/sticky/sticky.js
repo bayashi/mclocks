@@ -169,11 +169,11 @@ export async function stickyEntry(mainElement) {
 	let copyButtonDefaultText = null;
 	// saveDebouncerId is a pending debounce id for text save (save_sticky_text)
 	let saveDebouncerId = null;
-	// stickyStateLockId is a pending debounce id for open/close state save (save_sticky_state)
+	// stickyStateLockId is a lock id to debounce saveStickyState calls
 	let stickyStateLockId = null;
 	// ignoreSaveStickyWindowLocation is a flag to block subsequent onMoved triggers until save_window_state_exclusive completes
 	let ignoreSaveStickyWindowLocation = false;
-	// stickyWindowLocationLockId is a pending delay id for window-state plugin save, cancelled on close
+	// stickyWindowLocationLockId is a lock id for saveStickyWindowLocation, cancelled on close
 	let stickyWindowLocationLockId = null;
 
 	// Restore open-mode size from persisted state
