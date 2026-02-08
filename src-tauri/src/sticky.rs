@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::fs;
 
 use directories::BaseDirs;
-use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, State, WebviewUrl, WebviewWindowBuilder};
 use tauri::webview::Url;
 use uuid::Uuid;
 
@@ -25,11 +25,14 @@ pub struct StickyData {
 	pub open_width: Option<f64>,
 	#[serde(default)]
 	pub open_height: Option<f64>,
+	/// Per-sticky forefront override. None means inherit from main clock config.
+	#[serde(default)]
+	pub forefront: Option<bool>,
 }
 
 impl StickyData {
 	fn new(text: String) -> Self {
-		Self { text, is_open: false, open_width: None, open_height: None }
+		Self { text, is_open: false, open_width: None, open_height: None, forefront: None }
 	}
 }
 
@@ -40,6 +43,7 @@ pub struct StickyStateInfo {
 	pub is_open: bool,
 	pub open_width: Option<f64>,
 	pub open_height: Option<f64>,
+	pub forefront: Option<bool>,
 }
 
 pub struct StickyInitStore {
@@ -95,7 +99,7 @@ fn uuid_v4() -> String {
 	Uuid::new_v4().to_string()
 }
 
-/// Spawn a sticky window as a child of the main window
+/// Spawn a sticky window as an independent window (not a child of main)
 fn spawn_sticky_window(app: AppHandle, label: String, forefront: bool) {
 	let is_dev = tauri::is_dev();
 	thread::spawn(move || {
@@ -115,11 +119,6 @@ fn spawn_sticky_window(app: AppHandle, label: String, forefront: bool) {
 		let app_for_closure = app_for_main.clone();
 		let schedule_target = app_for_main.clone();
 		let result = schedule_target.run_on_main_thread(move || {
-			let main = match app_for_closure.get_webview_window("main") {
-				Some(w) => w,
-				None => return,
-			};
-
 			let w = WebviewWindowBuilder::new(&app_for_closure, label_for_build.clone(), url)
 				.title("mclocks")
 				.transparent(true)
@@ -128,13 +127,9 @@ fn spawn_sticky_window(app: AppHandle, label: String, forefront: bool) {
 				.resizable(true)
 				.minimizable(false)
 				.maximizable(false)
+				.skip_taskbar(true)
 				.inner_size(360.0, 100.0)
 				.always_on_top(forefront);
-
-			let w = match w.parent(&main) {
-				Ok(next) => next,
-				Err(_) => return,
-			};
 
 			let w = w.center();
 
@@ -192,14 +187,15 @@ pub fn delete_sticky_text(persist: State<'_, StickyPersistStore>, id: String) ->
 	persist.write_file(&data)
 }
 
-/// Save sticky open/close state and open-mode size
+/// Save sticky open/close state, open-mode size, and forefront override
 #[tauri::command]
-pub fn save_sticky_state(persist: State<'_, StickyPersistStore>, id: String, is_open: bool, open_width: Option<f64>, open_height: Option<f64>) -> Result<(), String> {
+pub fn save_sticky_state(persist: State<'_, StickyPersistStore>, id: String, is_open: bool, open_width: Option<f64>, open_height: Option<f64>, forefront: Option<bool>) -> Result<(), String> {
 	let mut data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
 	let entry = data.entry(id).or_insert_with(|| StickyData::new(String::new()));
 	entry.is_open = is_open;
 	entry.open_width = open_width;
 	entry.open_height = open_height;
+	entry.forefront = forefront;
 	persist.write_file(&data)
 }
 
@@ -211,6 +207,7 @@ pub fn load_sticky_state(persist: State<'_, StickyPersistStore>, id: String) -> 
 		is_open: d.is_open,
 		open_width: d.open_width,
 		open_height: d.open_height,
+		forefront: d.forefront,
 	}))
 }
 
@@ -235,8 +232,10 @@ pub fn restore_stickies(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>
 		}
 	}
 
-	for (label, _) in notes {
-		spawn_sticky_window(app.clone(), label, cfg.forefront);
+	for (label, sticky_data) in notes {
+		// Use per-sticky forefront if persisted, otherwise fall back to main clock config
+		let forefront = sticky_data.forefront.unwrap_or(cfg.forefront);
+		spawn_sticky_window(app.clone(), label, forefront);
 	}
 
 	Ok(())

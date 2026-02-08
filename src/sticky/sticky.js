@@ -96,6 +96,7 @@ export async function stickyEntry(mainElement) {
 <button id="sticky-toggle" type="button" aria-label="Toggle open">▸</button>
 <button id="sticky-copy" type="button" aria-label="Copy text">⧉</button>
 <div id="sticky-spacer"></div>
+<button id="sticky-forefront" type="button" aria-label="Toggle forefront" title="Keep forefront">⊤</button>
 <button id="sticky-close" type="button" aria-label="Close">✖</button>
 </div>
 <textarea id="sticky-text" spellcheck="false"></textarea>
@@ -107,6 +108,7 @@ export async function stickyEntry(mainElement) {
 	const stickyRoot = document.getElementById('sticky-root');
 	const toggleButton = document.getElementById('sticky-toggle');
 	const copyButton = document.getElementById('sticky-copy');
+	const forefrontButton = document.getElementById('sticky-forefront');
 	const closeButton = document.getElementById('sticky-close');
 	const textarea = document.getElementById('sticky-text');
 	const resizeHandle = document.getElementById('sticky-resize-handle');
@@ -122,13 +124,6 @@ export async function stickyEntry(mainElement) {
 		document.documentElement.style.fontFamily = cfg.font;
 		document.documentElement.style.fontSize = sizeToCssPx(cfg.size);
 		document.documentElement.style.color = cfg.color;
-		if (cfg.forefront) {
-			try {
-				await currentWindow.setAlwaysOnTop(true);
-			} catch {
-				// ignore
-			}
-		}
 	}
 
 	let label = '';
@@ -153,6 +148,9 @@ export async function stickyEntry(mainElement) {
 		// ignore
 	}
 
+	// forefront tracks whether this sticky is always on top of other windows
+	let forefront = cfg?.forefront ?? false;
+
 	// isOpen is true when the sticky is in expanded (open) state
 	let isOpen = false;
 	// savedOpenSize holds the last open-mode window size { width, height } to restore on re-open
@@ -176,13 +174,29 @@ export async function stickyEntry(mainElement) {
 	// stickyWindowLocationLockId is a lock id for saveStickyWindowLocation, cancelled on close
 	let stickyWindowLocationLockId = null;
 
-	// Restore open-mode size from persisted state
+	// Restore open-mode size and forefront from persisted state
 	if (stickyState) {
 		if (stickyState.openWidth != null && stickyState.openHeight != null) {
 			savedOpenSize = { width: stickyState.openWidth, height: stickyState.openHeight };
 			savedWidth = stickyState.openWidth;
 			userResized = true;
 		}
+		// Use per-sticky forefront if persisted, otherwise keep inherited config value
+		if (stickyState.forefront != null) {
+			forefront = stickyState.forefront;
+		}
+	}
+
+	// Apply forefront and update button visual
+	const updateForefrontButton = () => {
+		forefrontButton.textContent = forefront ? '⊥' : '⊤';
+		forefrontButton.title = forefront ? 'Behind others' : 'Keep forefront';
+	};
+	updateForefrontButton();
+	try {
+		await currentWindow.setAlwaysOnTop(forefront);
+	} catch {
+		// ignore
 	}
 
 	const setProgrammaticSize = async (width, height) => {
@@ -203,6 +217,7 @@ export async function stickyEntry(mainElement) {
 					isOpen: isOpen,
 					openWidth: savedOpenSize?.width ?? null,
 					openHeight: savedOpenSize?.height ?? null,
+					forefront: forefront,
 				});
 			} catch {
 				// ignore
@@ -335,6 +350,20 @@ export async function stickyEntry(mainElement) {
 			saveStickyState();
 		} catch (error) {
 			await openMessageDialog(`Failed to toggle sticky: ${error}`, "mclocks Error", "error");
+		}
+	});
+
+	forefrontButton.addEventListener('click', async () => {
+		try {
+			forefront = !forefront;
+			updateForefrontButton();
+			await currentWindow.setAlwaysOnTop(forefront);
+			saveStickyState();
+		} catch (error) {
+			// Revert on failure
+			forefront = !forefront;
+			updateForefrontButton();
+			await openMessageDialog(`Failed to toggle forefront: ${error}`, "mclocks Error", "error");
 		}
 	});
 
