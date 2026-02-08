@@ -10,6 +10,7 @@ Clock-related features:
 * Timer
 * Countdown timer
 * Epoch time and date-time convertor
+* Sticky note
 
 In addition, it also includes features useful for web developers:
 
@@ -182,6 +183,24 @@ Click `mclocks` app window, then push `Ctrl + 1` key, then start 1-minute timer.
 
 NOTE: Countdown clock and simple timer will send notification by default when the timer is complete. If you don't need notifications, set `withoutNotification: true` in `config.json`.
 
+## Sticky Note
+
+Click `mclocks` app window, then push `Ctrl + s` to create a sticky note from clipboard text. A small floating window opens with the clipboard content.
+
+Each sticky note has:
+
+* **Toggle button** (`▸` / `▾`): Expand or collapse the note. In collapsed mode only a single line is shown.
+* **Copy button** (`⧉`): Copy the note text to the clipboard.
+* **Close button** (`✖`): Delete the sticky note and close its window.
+* **Text area**: Freely edit the note content. Changes are auto-saved.
+* **Resize handle**: Drag the bottom-right corner to resize the note when expanded.
+
+Sticky notes inherit `font`, `size`, `color`, and `forefront` settings from `config.json`. Their position, size, and open/close state are persisted, and all notes are automatically restored when `mclocks` restarts.
+
+NOTE: On macOS, sticky note window positions are only saved when the application exits. On Windows, positions are saved automatically as you move or resize the windows.
+
+Only plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
+
 ## Display Epoch time
 
 ![epoch-time](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-epoch-time.png)
@@ -236,6 +255,12 @@ Empty lines are preserved as-is in all operations.
 | `Ctrl + p` | Pause / resume all timers |
 | `Ctrl + 0` | Delete the oldest timer (leftmost) |
 | `Ctrl + Alt + 0` | Delete the newest timer (rightmost) |
+
+### Sticky Note
+
+| Shortcut | Description |
+|----------|-------------|
+| `Ctrl + s` | Create a new sticky note from clipboard text |
 
 ### Clipboard datetime Operations
 
