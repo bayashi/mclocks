@@ -183,25 +183,6 @@ Click `mclocks` app window, then push `Ctrl + 1` key, then start 1-minute timer.
 
 NOTE: Countdown clock and simple timer will send notification by default when the timer is complete. If you don't need notifications, set `withoutNotification: true` in `config.json`.
 
-## Sticky Note
-
-Click `mclocks` app window, then push `Ctrl + s` to create a sticky note from clipboard text. A small floating window opens with the clipboard content.
-
-Each sticky note has:
-
-* **Toggle button** (`▸` / `▾`): Expand or collapse the note. In collapsed mode only a single line is shown.
-* **Copy button** (`⧉`): Copy the note text to the clipboard.
-* **Forefront button** (`⊤` / `⊥`): Toggle whether the note stays on top of other windows. This setting is saved per sticky note.
-* **Close button** (`✖`): Delete the sticky note and close its window.
-* **Text area**: Freely edit the note content. Changes are auto-saved.
-* **Resize handle**: Drag the bottom-right corner to resize the note when expanded.
-
-Sticky notes inherit `font`, `size`, `color`, and `forefront` settings from `config.json`. The forefront setting can be overridden per sticky note using the forefront button; if not overridden, the value from `config.json` is used. Their position, size, open/close state, and forefront override are persisted, and all notes are automatically restored when `mclocks` restarts.
-
-NOTE: On macOS, sticky note window positions are only saved when the application exits. On Windows, positions are saved automatically as you move or resize the windows.
-
-Only plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
-
 ## Display Epoch time
 
 ![epoch-time](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-epoch-time.png)
@@ -279,6 +260,25 @@ Empty lines are preserved as-is in all operations.
 |----------|-------------|
 | `Ctrl + i` | Quote each line of clipboard text with double quotes, append comma to the end (except the last line), and open in editor |
 | `Ctrl + Shift + i` | Append comma to the end of each line (no quotes) for INT list IN condition (except the last line), and open in editor |
+
+## Sticky Note
+
+Click `mclocks` app window, then push `Ctrl + s` to create a sticky note from clipboard text. A small floating window opens with the clipboard content.
+
+Each sticky note has:
+
+* **Toggle button** (`▸` / `▾`): Expand or collapse the note. In collapsed mode only a single line is shown.
+* **Copy button** (`⧉`): Copy the note text to the clipboard.
+* **Forefront button** (`⊤` / `⊥`): Toggle whether the note stays on top of other windows. This setting is saved per sticky note.
+* **Close button** (`✖`): Delete the sticky note and close its window.
+* **Text area**: Freely edit the note content. Changes are auto-saved.
+* **Resize handle**: Drag the bottom-right corner to resize the note when expanded.
+
+Sticky notes inherit `font`, `size`, `color`, and `forefront` settings from `config.json`. The forefront setting can be overridden per sticky note using the forefront button; if not overridden, the value from `config.json` is used. Their position, size, open/close state, and forefront override are persisted, and all notes are automatically restored when `mclocks` restarts.
+
+NOTE: On macOS, sticky note window positions are only saved when the application exits. On Windows, positions are saved automatically as you move or resize the windows.
+
+Only plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
 
 ## Web Server
 
