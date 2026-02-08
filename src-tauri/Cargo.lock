@@ -2234,6 +2234,7 @@ dependencies = [
  "tempfile",
  "tiny_http",
  "urlencoding",
+ "uuid",
 ]
 
 [[package]]

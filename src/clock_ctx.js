@@ -1,7 +1,7 @@
 import { platform } from '@tauri-apps/plugin-os';
 import { cdate } from 'cdate';
 
-export class Ctx {
+export class ClockCtx {
   #mainElement;
   #cdateUTC;
   #ignoreOnMoved = false;
