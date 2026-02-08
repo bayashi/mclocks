@@ -106,6 +106,7 @@ export async function stickyEntry(mainElement) {
 	const currentWindow = getCurrentWindow();
 
 	const stickyRoot = document.getElementById('sticky-root');
+	const stickyHeader = document.getElementById('sticky-header');
 	const toggleButton = document.getElementById('sticky-toggle');
 	const copyButton = document.getElementById('sticky-copy');
 	const forefrontButton = document.getElementById('sticky-forefront');
@@ -421,6 +422,20 @@ export async function stickyEntry(mainElement) {
 			await openMessageDialog(`Failed to start resize: ${error}`, "mclocks Error", "error");
 		}
 	});
+
+	// Enable window dragging on macOS (CSS -webkit-app-region: drag is unreliable)
+	if (isMacOS()) {
+		stickyHeader.addEventListener('mousedown', async (event) => {
+			if (event.target.closest('button')) {
+				return;
+			}
+			try {
+				await currentWindow.startDragging();
+			} catch {
+				// ignore
+			}
+		});
+	}
 
 	try {
 		await currentWindow.onResized(async () => {
