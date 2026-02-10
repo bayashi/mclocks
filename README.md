@@ -397,7 +397,7 @@ Add the following to your `web` configuration:
 
 * `reposDir`: Path to your local repositories directory. Supports `~` for home directory expansion (e.g., `"~/repos"` on macOS or `"C:/Users/username/repos"` on Windows). This directory must exist.
 * `includeHost`: If `true`, local path resolution includes the original host as a directory (e.g. `{reposDir}/{host}/{owner}/{repo}/...`). If `false`, it resolves to `{reposDir}/{owner}/{repo}/...` (default: `false`).
-* `command`: Command name or path to your editor executable (default: `code`)
+* `command`: Command name or path to your editor executable (default: `code`). If the command is not in your system PATH, it is recommended to specify the absolute path.
 * `args`: Arguments template array. Use `{file}` and `{line}` placeholders. If `#L...` is not present in URL, `{line}` uses 1.
 
 **How it works:**
