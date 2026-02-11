@@ -124,7 +124,7 @@ fn handle_post_request(
 			let message = "OK".to_string();
 			Response::from_string(message).with_status_code(StatusCode(200))
 		}
-		Err(e) => create_error_html_response_with_status(StatusCode(500), &format!("Failed to execute command: {}", e), owner_repo_for_link.as_deref(), href_for_link.as_deref(), Some(local_path.display().to_string()), Some(command_preview)),
+		Err(e) => create_error_html_response_with_status(StatusCode(500), &e, owner_repo_for_link.as_deref(), href_for_link.as_deref(), Some(local_path.display().to_string()), Some(command_preview)),
 	}
 }
 
@@ -535,7 +535,29 @@ fn find_unsafe_path_char(s: &str) -> Option<char> {
 	None
 }
 
+fn check_command_exists(command: &str) -> Result<(), String> {
+	let path = std::path::Path::new(command);
+	if path.is_absolute() {
+		// Absolute path: check file existence directly
+		if path.exists() {
+			return Ok(());
+		}
+		return Err(format!("Command not found: {}", command));
+	}
+
+	// Relative command name: use `where` (Windows) or `which` (macOS/Linux) to search PATH
+	let lookup = if cfg!(target_os = "windows") { "where" } else { "which" };
+	match Command::new(lookup)
+		.arg(command)
+		.output()
+	{
+		Ok(output) if output.status.success() => Ok(()),
+		_ => Err(format!("Command not found in PATH: {}", command)),
+	}
+}
+
 fn execute_command(command: &str, args: &[String]) -> Result<(), String> {
+	check_command_exists(command)?;
 	if cfg!(target_os = "windows") {
 		let mut cmd = Command::new("cmd");
 		cmd.args(&["/C", command]);
@@ -544,14 +566,14 @@ fn execute_command(command: &str, args: &[String]) -> Result<(), String> {
 		}
 		cmd
 			.spawn()
-			.map_err(|e| format!("Failed to execute command: {}", e))?;
+			.map_err(|e| format!("Failed to spawn command: {}", e))?;
 	} else {
 		let mut cmd = Command::new(command);
 		for a in args {
 			cmd.arg(a);
 		}
 		cmd.spawn()
-			.map_err(|e| format!("Failed to execute command: {}", e))?;
+			.map_err(|e| format!("Failed to spawn command: {}", e))?;
 	}
 	Ok(())
 }
@@ -614,6 +636,40 @@ mod tests {
 			assert_eq!(find_unsafe_path_char("C:\\safe\\path\\file.txt"), None);
 			assert_eq!(find_unsafe_path_char("C:\\bad&path\\file.txt"), Some('&'));
 			assert_eq!(find_unsafe_path_char("C:\\bad\\path\nfile.txt"), Some('\n'));
+		});
+	}
+
+	#[test]
+	fn test_check_command_exists_known_command() {
+		with_test_lock(|| {
+			// `cmd` on Windows, `sh` on macOS/Linux should always exist
+			let cmd = if cfg!(target_os = "windows") { "cmd" } else { "sh" };
+			assert!(check_command_exists(cmd).is_ok());
+		});
+	}
+
+	#[test]
+	fn test_check_command_exists_nonexistent_command() {
+		with_test_lock(|| {
+			let result = check_command_exists("nonexistent_command_xyz_999");
+			assert!(result.is_err());
+			let err = result.unwrap_err();
+			assert!(err.contains("Command not found in PATH"), "unexpected error: {}", err);
+		});
+	}
+
+	#[test]
+	fn test_check_command_exists_absolute_path_nonexistent() {
+		with_test_lock(|| {
+			let fake_path = if cfg!(target_os = "windows") {
+				"C:\\nonexistent_dir_xyz\\fake_editor.exe"
+			} else {
+				"/nonexistent_dir_xyz/fake_editor"
+			};
+			let result = check_command_exists(fake_path);
+			assert!(result.is_err());
+			let err = result.unwrap_err();
+			assert!(err.contains("Command not found"), "unexpected error: {}", err);
 		});
 	}
 }
