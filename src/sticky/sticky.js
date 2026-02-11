@@ -213,16 +213,24 @@ export async function stickyEntry(mainElement) {
 	}
 
 	// Set up image mode UI: hide textarea, show image
-	let imageLoadFailed = false;
 	if (isImageMode) {
 		textarea.style.display = 'none';
 		stickyImage.style.display = '';
-		// Load image data
+		// Load image data and adjust for display scaling (DPR)
 		try {
 			const imageBase64 = await invoke('load_sticky_image', { id: label });
 			stickyImage.src = `data:image/png;base64,${imageBase64}`;
+			await new Promise((resolve) => {
+				stickyImage.onload = resolve;
+				// In case the image is already cached
+				if (stickyImage.complete) resolve();
+			});
+			const dpr = window.devicePixelRatio || 1;
+			if (dpr > 1) {
+				stickyImage.style.width = `${Math.round(stickyImage.naturalWidth / dpr)}px`;
+				stickyImage.style.height = `${Math.round(stickyImage.naturalHeight / dpr)}px`;
+			}
 		} catch {
-			imageLoadFailed = true;
 			stickyImage.style.display = 'none';
 			textarea.style.display = '';
 			textarea.value = 'Error: Image file not found';
