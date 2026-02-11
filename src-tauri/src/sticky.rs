@@ -28,11 +28,14 @@ pub struct StickyData {
 	/// Per-sticky forefront override. None means inherit from main clock config.
 	#[serde(default)]
 	pub forefront: Option<bool>,
+	/// Per-sticky lock state. None means unlocked (default).
+	#[serde(default)]
+	pub locked: Option<bool>,
 }
 
 impl StickyData {
 	fn new(text: String) -> Self {
-		Self { text, is_open: false, open_width: None, open_height: None, forefront: None }
+		Self { text, is_open: false, open_width: None, open_height: None, forefront: None, locked: None }
 	}
 }
 
@@ -44,6 +47,7 @@ pub struct StickyStateInfo {
 	pub open_width: Option<f64>,
 	pub open_height: Option<f64>,
 	pub forefront: Option<bool>,
+	pub locked: Option<bool>,
 }
 
 pub struct StickyInitStore {
@@ -189,13 +193,14 @@ pub fn delete_sticky_text(persist: State<'_, StickyPersistStore>, id: String) ->
 
 /// Save sticky open/close state, open-mode size, and forefront override
 #[tauri::command]
-pub fn save_sticky_state(persist: State<'_, StickyPersistStore>, id: String, is_open: bool, open_width: Option<f64>, open_height: Option<f64>, forefront: Option<bool>) -> Result<(), String> {
+pub fn save_sticky_state(persist: State<'_, StickyPersistStore>, id: String, is_open: bool, open_width: Option<f64>, open_height: Option<f64>, forefront: Option<bool>, locked: Option<bool>) -> Result<(), String> {
 	let mut data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
 	let entry = data.entry(id).or_insert_with(|| StickyData::new(String::new()));
 	entry.is_open = is_open;
 	entry.open_width = open_width;
 	entry.open_height = open_height;
 	entry.forefront = forefront;
+	entry.locked = locked;
 	persist.write_file(&data)
 }
 
@@ -208,6 +213,7 @@ pub fn load_sticky_state(persist: State<'_, StickyPersistStore>, id: String) -> 
 		open_width: d.open_width,
 		open_height: d.open_height,
 		forefront: d.forefront,
+		locked: d.locked,
 	}))
 }
 
