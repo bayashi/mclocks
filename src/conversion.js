@@ -51,7 +51,7 @@ function determineEpochUnit(e, pressedKeys) {
   // nanosec:  -62167219200000000000
   // These are converted into "0000-01-01T00:00:00.000+00:00"
 
-  if (pressingAltKey(e) && e.shiftKey && pressedKeys["N"]) {
+  if (pressingAltKey(e) && e.shiftKey && pressedKeys.has("N")) {
     return { name: "nanoseconds", multiplier: 1 / 1000 / 1000 };
   } else if (pressingAltKey(e) && e.shiftKey) {
     return { name: "microseconds", multiplier: 1 / 1000 };
