@@ -21,7 +21,7 @@ reqwest = { version = "0.11", features = ["blocking", "json"] }
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["macos-private-api"] }
+tauri = { version = "2", features = ["macos-private-api", "image-png"] }
 serde = { version = "1", features = [
     "derive",
 ] }
@@ -41,3 +41,4 @@ urlencoding = "2.1"
 chardetng = "0.1.17"
 rand = "0.8"
 uuid = { version = "1", features = ["v4"] }
+base64 = "0.22"

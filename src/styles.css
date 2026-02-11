@@ -60,6 +60,7 @@ html.sticky #sticky-root {
   border: 0.5px solid currentColor;
   background: rgba(0, 0, 0, 0.75);
   padding: 3px;
+  overflow: hidden;
 }
 
 html.sticky #sticky-header {
@@ -158,6 +159,22 @@ html.sticky #sticky-text::-webkit-scrollbar-thumb {
 
 html.sticky #sticky-text::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
+}
+
+html.sticky #sticky-image {
+  -webkit-app-region: no-drag;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 4px;
+  flex: 0 0 auto;
+  align-self: center;
+  margin: auto 0;
+}
+
+html.sticky .sticky-closed #sticky-image {
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 0;
 }
 
 html.sticky #sticky-resize-handle {
