@@ -223,33 +223,4 @@ describe('Sticky Note - Ctrl+l lock/unlock behavior', () => {
 		expect(lastSave.locked).toBeNull();
 	});
 
-	// --- Click lock mark to unlock ---
-
-	it('should unlock when clicking the lock mark', async () => {
-		await setupStickyWindow(true);
-
-		const lockMark = await browser.$('#sticky-locked-mark');
-		await lockMark.click();
-		await browser.pause(100);
-
-		const state = await getUIState();
-		expect(state.closeVisible).toBe(true);
-		expect(state.lockVisible).toBe(false);
-		expect(state.textareaReadOnly).toBe(false);
-	});
-
-	it('should persist unlocked state after clicking lock mark', async () => {
-		await setupStickyWindow(true);
-
-		const lockMark = await browser.$('#sticky-locked-mark');
-		await lockMark.click();
-		// Wait for debounced save (500ms + buffer)
-		await browser.pause(1000);
-
-		const results = await getTestResults();
-		const saves = results.saveStateCalls;
-		expect(saves.length).toBeGreaterThan(0);
-		const lastSave = saves[saves.length - 1];
-		expect(lastSave.locked).toBeNull();
-	});
 });

@@ -98,7 +98,7 @@ export async function stickyEntry(mainElement) {
 <button id="sticky-copy" type="button" aria-label="Copy text">⧉</button>
 <div id="sticky-spacer"></div>
 <button id="sticky-forefront" type="button" aria-label="Toggle forefront" title="Keep forefront">⊤</button>
-<span id="sticky-close-area"><button id="sticky-close" type="button" aria-label="Close">✖</button><button id="sticky-locked-mark" type="button" aria-label="Locked" style="visibility:hidden">🔒</button></span>
+<span id="sticky-close-area"><button id="sticky-close" type="button" aria-label="Close">✖</button><button id="sticky-locked-mark" type="button" aria-label="Locked" style="visibility:hidden">🔒︎</button></span>
 </div>
 <textarea id="sticky-text" spellcheck="false"></textarea>
 <div id="sticky-resize-handle" aria-hidden="true"></div>
@@ -205,9 +205,11 @@ export async function stickyEntry(mainElement) {
 
 	// Toggle close button / locked mark visibility and textarea editability.
 	// Close button always occupies layout space (visibility, not display) so adjacent buttons never shift.
+	const unlockHint = isMacOS() ? 'Unlock: Cmd+L' : 'Unlock: Ctrl+L';
 	const updateLockedUI = () => {
 		closeButton.style.visibility = locked ? 'hidden' : '';
 		lockedMark.style.visibility = locked ? '' : 'hidden';
+		lockedMark.title = locked ? unlockHint : '';
 		textarea.readOnly = locked;
 	};
 	updateLockedUI();
@@ -406,13 +408,6 @@ export async function stickyEntry(mainElement) {
 		} catch (error) {
 			await openMessageDialog(`Failed to copy: ${error}`, "mclocks Error", "error");
 		}
-	});
-
-	// Click on lock mark to unlock
-	lockedMark.addEventListener('click', () => {
-		locked = false;
-		updateLockedUI();
-		saveStickyState();
 	});
 
 	closeButton.addEventListener('click', async () => {
