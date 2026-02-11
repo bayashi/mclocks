@@ -100,6 +100,16 @@ html.sticky #sticky-toggle {
   font-size: 1.2em;
 }
 
+html.sticky #sticky-close-area {
+  position: relative;
+  display: inline-flex;
+}
+
+html.sticky #sticky-locked-mark {
+  position: absolute;
+  inset: 0;
+}
+
 html.sticky #sticky-header button:active {
   opacity: 0.75;
 }

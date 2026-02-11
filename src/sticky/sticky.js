@@ -98,7 +98,7 @@ export async function stickyEntry(mainElement) {
 <button id="sticky-copy" type="button" aria-label="Copy text">⧉</button>
 <div id="sticky-spacer"></div>
 <button id="sticky-forefront" type="button" aria-label="Toggle forefront" title="Keep forefront">⊤</button>
-<button id="sticky-close" type="button" aria-label="Close">✖</button>
+<span id="sticky-close-area"><button id="sticky-close" type="button" aria-label="Close">✖</button><button id="sticky-locked-mark" type="button" aria-label="Locked" style="visibility:hidden">🔒︎</button></span>
 </div>
 <textarea id="sticky-text" spellcheck="false"></textarea>
 <div id="sticky-resize-handle" aria-hidden="true"></div>
@@ -112,6 +112,7 @@ export async function stickyEntry(mainElement) {
 	const copyButton = document.getElementById('sticky-copy');
 	const forefrontButton = document.getElementById('sticky-forefront');
 	const closeButton = document.getElementById('sticky-close');
+	const lockedMark = document.getElementById('sticky-locked-mark');
 	const textarea = document.getElementById('sticky-text');
 	const resizeHandle = document.getElementById('sticky-resize-handle');
 
@@ -175,6 +176,8 @@ export async function stickyEntry(mainElement) {
 	let ignoreSaveStickyWindowLocation = false;
 	// stickyWindowLocationLockId is a lock id for saveStickyWindowLocation, cancelled on close
 	let stickyWindowLocationLockId = null;
+	// locked prevents the sticky from being closed via the close button
+	let locked = false;
 
 	// Restore open-mode size and forefront from persisted state
 	if (stickyState) {
@@ -187,6 +190,10 @@ export async function stickyEntry(mainElement) {
 		if (stickyState.forefront != null) {
 			forefront = stickyState.forefront;
 		}
+		// Restore locked state; default to unlocked if not persisted
+		if (stickyState.locked) {
+			locked = true;
+		}
 	}
 
 	// Apply forefront and update button visual
@@ -195,6 +202,18 @@ export async function stickyEntry(mainElement) {
 		forefrontButton.title = forefront ? 'Behind others' : 'Keep forefront';
 	};
 	updateForefrontButton();
+
+	// Toggle close button / locked mark visibility and textarea editability.
+	// Close button always occupies layout space (visibility, not display) so adjacent buttons never shift.
+	const unlockHint = isMacOS() ? 'Unlock: Cmd+L' : 'Unlock: Ctrl+L';
+	const updateLockedUI = () => {
+		closeButton.style.visibility = locked ? 'hidden' : '';
+		lockedMark.style.visibility = locked ? '' : 'hidden';
+		lockedMark.title = locked ? unlockHint : '';
+		textarea.readOnly = locked;
+	};
+	updateLockedUI();
+
 	try {
 		await currentWindow.setAlwaysOnTop(forefront);
 	} catch {
@@ -220,6 +239,7 @@ export async function stickyEntry(mainElement) {
 					openWidth: savedOpenSize?.width ?? null,
 					openHeight: savedOpenSize?.height ?? null,
 					forefront: forefront,
+					locked: locked || null,
 				});
 			} catch {
 				// ignore
@@ -475,11 +495,18 @@ export async function stickyEntry(mainElement) {
 	}
 
 	// Ctrl+S (Cmd+S on macOS): Create a new sticky note from clipboard text
+	// Ctrl+L (Cmd+L on macOS): Toggle lock state
 	window.addEventListener('keydown', async (e) => {
 		const baseKey = isMacOS() ? e.metaKey : e.ctrlKey;
 		if (baseKey && (e.key === 's' || e.key === 'S')) {
 			e.preventDefault();
 			await createSticky();
+		}
+		if (baseKey && (e.key === 'l' || e.key === 'L')) {
+			e.preventDefault();
+			locked = !locked;
+			updateLockedUI();
+			saveStickyState();
 		}
 	});
 
