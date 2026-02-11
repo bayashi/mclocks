@@ -512,15 +512,18 @@ export async function stickyEntry(mainElement) {
 	});
 
 	resizeHandle.addEventListener('mousedown', async (event) => {
-		// On macOS, preventDefault() blocks window activation (key window),
-		// which prevents startResizeDragging from working on first click.
-		if (!isMacOS()) {
-			event.preventDefault();
-		}
+		event.preventDefault();
 		if (!isOpen) {
 			return;
 		}
 		try {
+			// On macOS, ensure the window is the key window before starting
+			// resize drag. Without this, startResizeDragging silently fails
+			// when the window hasn't received proper activation (e.g. image
+			// stickies that have no focusable content).
+			if (isMacOS()) {
+				await currentWindow.setFocus();
+			}
 			await currentWindow.startResizeDragging('SouthEast');
 		} catch (error) {
 			await openMessageDialog(`Failed to start resize: ${error}`, "mclocks Error", "error");
