@@ -103,7 +103,7 @@ export async function stickyEntry(mainElement) {
 <span id="sticky-close-area"><button id="sticky-close" type="button" aria-label="Close">✖</button><button id="sticky-locked-mark" type="button" aria-label="Locked" style="visibility:hidden">🔒︎</button></span>
 </div>
 <textarea id="sticky-text" spellcheck="false"></textarea>
-<img id="sticky-image" alt="" />
+<img id="sticky-image" alt="" draggable="false" />
 <div id="sticky-resize-handle" aria-hidden="true"></div>
 </div>`;
 
@@ -512,7 +512,11 @@ export async function stickyEntry(mainElement) {
 	});
 
 	resizeHandle.addEventListener('mousedown', async (event) => {
-		event.preventDefault();
+		// On macOS, preventDefault() blocks window activation (key window),
+		// which prevents startResizeDragging from working on first click.
+		if (!isMacOS()) {
+			event.preventDefault();
+		}
 		if (!isOpen) {
 			return;
 		}
