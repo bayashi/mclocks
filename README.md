@@ -242,7 +242,7 @@ Empty lines are preserved as-is in all operations.
 
 | Shortcut | Description |
 |----------|-------------|
-| `Ctrl + s` | Create a new sticky note from clipboard text |
+| `Ctrl + s` | Create a new sticky note from clipboard content (text or image) |
 | `Ctrl + l` | Toggle lock on a sticky note (hides close button, makes text read-only) |
 
 ### Clipboard datetime Operations
@@ -266,12 +266,12 @@ Empty lines are preserved as-is in all operations.
 
 ![sticky-note](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-sticky-note.png)
 
-Click `mclocks` app window, then push `Ctrl + s` to create a sticky note from clipboard text. A small floating window opens with the clipboard content.
+Click `mclocks` app window, then push `Ctrl + s` to create a sticky note from clipboard content (text or image). A small floating window opens with the clipboard content.
 
 Each sticky note has:
 
 * **Toggle button** (`▸` / `▾`): Expand or collapse the note. In collapsed mode only a single line is shown.
-* **Copy button** (`⧉`): Copy the note text to the clipboard.
+* **Copy button** (`⧉`): Copy the note content to the clipboard.
 * **Forefront button** (`⊤` / `⊥`): Toggle whether the note stays on top of other windows. This setting is saved per sticky note.
 * **Close button** (`✖`): Delete the sticky note and close its window. When the note is locked, this button is replaced with a lock indicator.
 * **Lock** (`Ctrl + L`): Toggle lock on the sticky note. When locked, the text becomes read-only. The lock state is persisted and restored on restart.
@@ -284,7 +284,7 @@ NOTE: On macOS, sticky note window positions are only saved when the application
 
 ### Text Sticky
 
-Only plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
+The plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
 
 ### Image Sticky
 
