@@ -243,6 +243,7 @@ Empty lines are preserved as-is in all operations.
 | Shortcut | Description |
 |----------|-------------|
 | `Ctrl + s` | Create a new sticky note from clipboard text |
+| `Ctrl + l` | Toggle lock on a sticky note (hides close button, makes text read-only) |
 
 ### Clipboard datetime Operations
 
@@ -270,7 +271,8 @@ Each sticky note has:
 * **Toggle button** (`▸` / `▾`): Expand or collapse the note. In collapsed mode only a single line is shown.
 * **Copy button** (`⧉`): Copy the note text to the clipboard.
 * **Forefront button** (`⊤` / `⊥`): Toggle whether the note stays on top of other windows. This setting is saved per sticky note.
-* **Close button** (`✖`): Delete the sticky note and close its window.
+* **Close button** (`✖`): Delete the sticky note and close its window. When the note is locked, this button is replaced with a lock indicator.
+* **Lock** (`Ctrl + L`): Toggle lock on the sticky note. When locked, the text becomes read-only. The lock state is persisted and restored on restart.
 * **Text area**: Freely edit the note content. Changes are auto-saved.
 * **Resize handle**: Drag the bottom-right corner to resize the note when expanded.
 
