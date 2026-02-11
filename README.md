@@ -160,7 +160,7 @@ Indicating 159 days, 12 hours, 34 minutes, and 56 seconds left until September 1
 
 ### Countdown format verbs
 
-The `countdown` fieled text accepts below template verbs:
+The `countdown` field text accepts below template verbs:
 
 * `%TG`: Target date-time string
 * `%D`: Remaining day count to target date-time
@@ -242,7 +242,7 @@ Empty lines are preserved as-is in all operations.
 
 | Shortcut | Description |
 |----------|-------------|
-| `Ctrl + s` | Create a new sticky note from clipboard text |
+| `Ctrl + s` | Create a new sticky note from clipboard content (text or image) |
 | `Ctrl + l` | Toggle lock on a sticky note (hides close button, makes text read-only) |
 
 ### Clipboard datetime Operations
@@ -264,12 +264,14 @@ Empty lines are preserved as-is in all operations.
 
 ## Sticky Note
 
-Click `mclocks` app window, then push `Ctrl + s` to create a sticky note from clipboard text. A small floating window opens with the clipboard content.
+![sticky-note](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-sticky-note.png)
+
+Click `mclocks` app window, then push `Ctrl + s` to create a sticky note from clipboard content (text or image). A small floating window opens with the clipboard content.
 
 Each sticky note has:
 
 * **Toggle button** (`▸` / `▾`): Expand or collapse the note. In collapsed mode only a single line is shown.
-* **Copy button** (`⧉`): Copy the note text to the clipboard.
+* **Copy button** (`⧉`): Copy the note content to the clipboard.
 * **Forefront button** (`⊤` / `⊥`): Toggle whether the note stays on top of other windows. This setting is saved per sticky note.
 * **Close button** (`✖`): Delete the sticky note and close its window. When the note is locked, this button is replaced with a lock indicator.
 * **Lock** (`Ctrl + L`): Toggle lock on the sticky note. When locked, the text becomes read-only. The lock state is persisted and restored on restart.
@@ -282,14 +284,14 @@ NOTE: On macOS, sticky note window positions are only saved when the application
 
 ### Text Sticky
 
-Only plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
+The plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
 
 ### Image Sticky
 
 When the clipboard contains an image (e.g. screenshot) and no text, `Ctrl + s` creates an **image sticky note** instead.
 
 * Images are saved as PNG files (regardless of the original format in the clipboard).
-* The image scales to fit the sticky window but never exceeds its original size. In collapsed mode, only a small strip at the top of the image is visible.
+* The image is displayed at its original size, adjusted for display scaling (DPR). In collapsed mode, only a small strip at the top of the image is visible.
 * Image stickies are not editable, but the **copy button** (`⧉`) copies the image back to the clipboard and the **lock** (`Ctrl + L`) prevents accidental closing.
 * The maximum image size is 10 MB.
 * Image files are stored in a `sticky_images` directory alongside the sticky data file.
