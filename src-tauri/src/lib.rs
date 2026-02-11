@@ -126,11 +126,13 @@ pub fn run() {
             open_text_in_editor,
             save_window_state_exclusive,
             sticky::create_sticky,
-            sticky::sticky_take_init_text,
+            sticky::create_sticky_image,
+            sticky::sticky_take_init_content,
             sticky::save_sticky_text,
             sticky::delete_sticky_text,
             sticky::save_sticky_state,
             sticky::load_sticky_state,
+            sticky::load_sticky_image,
             sticky::restore_stickies,
         ])
         .run(context)

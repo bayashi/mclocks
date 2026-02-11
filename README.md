@@ -280,7 +280,19 @@ Sticky notes inherit `font`, `size`, `color`, and `forefront` settings from `con
 
 NOTE: On macOS, sticky note window positions are only saved when the application exits. On Windows, positions are saved automatically as you move or resize the windows.
 
+### Text Sticky
+
 Only plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
+
+### Image Sticky
+
+When the clipboard contains an image (e.g. screenshot) and no text, `Ctrl + s` creates an **image sticky note** instead.
+
+* Images are saved as PNG files (regardless of the original format in the clipboard).
+* The image scales to fit the sticky window but never exceeds its original size. In collapsed mode, only a small strip at the top of the image is visible.
+* Image stickies are not editable, but the **copy button** (`⧉`) copies the image back to the clipboard and the **lock** (`Ctrl + L`) prevents accidental closing.
+* The maximum image size is 10 MB.
+* Image files are stored in a `sticky_images` directory alongside the sticky data file.
 
 ## Web Server
 

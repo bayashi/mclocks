@@ -4,6 +4,7 @@ use std::thread;
 use std::path::PathBuf;
 use std::fs;
 
+use base64::{Engine as _, engine::general_purpose};
 use directories::BaseDirs;
 use tauri::{AppHandle, State, WebviewUrl, WebviewWindowBuilder};
 use tauri::webview::Url;
@@ -15,10 +16,18 @@ use crate::config::{ContextConfig, load_config};
 
 const IS_DEV: bool = tauri::is_dev();
 
+const MAX_IMAGE_BYTES: usize = 10 * 1024 * 1024; // 10MB
+
 /// Persistent data for a single sticky note
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StickyData {
 	pub text: String,
+	/// Content type: None or "text" for text, "image" for image sticky
+	#[serde(default)]
+	pub content_type: Option<String>,
+	/// Image filename stored under sticky_images directory
+	#[serde(default)]
+	pub image_filename: Option<String>,
 	#[serde(default)]
 	pub is_open: bool,
 	#[serde(default)]
@@ -35,7 +44,15 @@ pub struct StickyData {
 
 impl StickyData {
 	fn new(text: String) -> Self {
-		Self { text, is_open: false, open_width: None, open_height: None, forefront: None, locked: None }
+		Self { text, content_type: None, image_filename: None, is_open: false, open_width: None, open_height: None, forefront: None, locked: None }
+	}
+
+	fn new_image(image_filename: String) -> Self {
+		Self { text: String::new(), content_type: Some("image".to_string()), image_filename: Some(image_filename), is_open: false, open_width: None, open_height: None, forefront: None, locked: None }
+	}
+
+	fn is_image(&self) -> bool {
+		self.content_type.as_deref() == Some("image")
 	}
 }
 
@@ -48,16 +65,25 @@ pub struct StickyStateInfo {
 	pub open_height: Option<f64>,
 	pub forefront: Option<bool>,
 	pub locked: Option<bool>,
+	pub content_type: Option<String>,
+}
+
+/// Init content returned to JS when a sticky window starts up
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StickyInitContent {
+	pub text: String,
+	pub content_type: Option<String>,
 }
 
 pub struct StickyInitStore {
-	pub	text_by_window_label: Mutex<HashMap<String, String>>,
+	pub init_by_window_label: Mutex<HashMap<String, StickyInitContent>>,
 }
 
 impl Default for StickyInitStore {
 	fn default() -> Self {
 		Self {
-			text_by_window_label: Mutex::new(HashMap::new()),
+			init_by_window_label: Mutex::new(HashMap::new()),
 		}
 	}
 }
@@ -65,15 +91,19 @@ impl Default for StickyInitStore {
 /// Persistent file-backed store for sticky note contents
 pub struct StickyPersistStore {
 	file_path: PathBuf,
+	images_dir: PathBuf,
 	data: Mutex<HashMap<String, StickyData>>,
 }
 
 impl StickyPersistStore {
 	pub fn new(identifier: &str) -> Self {
 		let file_name = if IS_DEV { "dev.sticky.json" } else { "sticky.json" };
-		let file_path = BaseDirs::new()
-			.map(|bd| bd.config_dir().join(identifier).join(file_name))
-			.unwrap_or_else(|| PathBuf::from(file_name));
+		let images_dir_name = if IS_DEV { "dev.sticky_images" } else { "sticky_images" };
+		let base = BaseDirs::new()
+			.map(|bd| bd.config_dir().join(identifier))
+			.unwrap_or_else(|| PathBuf::from("."));
+		let file_path = base.join(file_name);
+		let images_dir = base.join(images_dir_name);
 
 		let data: HashMap<String, StickyData> = if file_path.exists() {
 			fs::read_to_string(&file_path)
@@ -86,6 +116,7 @@ impl StickyPersistStore {
 
 		Self {
 			file_path,
+			images_dir,
 			data: Mutex::new(data),
 		}
 	}
@@ -96,6 +127,25 @@ impl StickyPersistStore {
 		}
 		let json = serde_json::to_string_pretty(data).map_err(|e| e.to_string())?;
 		fs::write(&self.file_path, json).map_err(|e| e.to_string())
+	}
+
+	fn save_image(&self, filename: &str, data: &[u8]) -> Result<(), String> {
+		fs::create_dir_all(&self.images_dir).map_err(|e| e.to_string())?;
+		let path = self.images_dir.join(filename);
+		fs::write(&path, data).map_err(|e| e.to_string())
+	}
+
+	fn load_image(&self, filename: &str) -> Result<Vec<u8>, String> {
+		let path = self.images_dir.join(filename);
+		fs::read(&path).map_err(|e| e.to_string())
+	}
+
+	fn delete_image(&self, filename: &str) -> Result<(), String> {
+		let path = self.images_dir.join(filename);
+		if path.exists() {
+			fs::remove_file(&path).map_err(|e| e.to_string())?;
+		}
+		Ok(())
 	}
 }
 
@@ -150,8 +200,8 @@ pub fn create_sticky(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>, s
 	let label = format!("sticky-{}", id);
 
 	{
-		let mut map = sticky_store.text_by_window_label.lock().map_err(|_| "Failed to lock sticky store".to_string())?;
-		map.insert(label.clone(), text.clone());
+		let mut map = sticky_store.init_by_window_label.lock().map_err(|_| "Failed to lock sticky store".to_string())?;
+		map.insert(label.clone(), StickyInitContent { text: text.clone(), content_type: None });
 	}
 
 	// Persist to file
@@ -169,9 +219,54 @@ pub fn create_sticky(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>, s
 }
 
 #[tauri::command]
-pub fn sticky_take_init_text(sticky_store: State<'_, StickyInitStore>, id: String) -> Result<String, String> {
-	let mut map = sticky_store.text_by_window_label.lock().map_err(|_| "Failed to lock sticky store".to_string())?;
-	Ok(map.remove(&id).unwrap_or_default())
+pub fn create_sticky_image(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>, sticky_store: State<'_, StickyInitStore>, persist: State<'_, StickyPersistStore>, image_base64: String) -> Result<String, String> {
+	let image_bytes = general_purpose::STANDARD.decode(&image_base64)
+		.map_err(|e| format!("Failed to decode base64: {}", e))?;
+
+	if image_bytes.len() > MAX_IMAGE_BYTES {
+		let size_mb = image_bytes.len() as f64 / (1024.0 * 1024.0);
+		return Err(format!("Image is too large ({:.1} MB). Maximum size is 10 MB.", size_mb));
+	}
+
+	let id = uuid_v4();
+	let label = format!("sticky-{}", id);
+	let image_filename = format!("{}.png", id);
+
+	// Save image file
+	persist.save_image(&image_filename, &image_bytes)?;
+
+	{
+		let mut map = sticky_store.init_by_window_label.lock().map_err(|_| "Failed to lock sticky store".to_string())?;
+		map.insert(label.clone(), StickyInitContent { text: String::new(), content_type: Some("image".to_string()) });
+	}
+
+	// Persist to file
+	{
+		let mut data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
+		data.insert(label.clone(), StickyData::new_image(image_filename));
+		let _ = persist.write_file(&data);
+	}
+
+	let cfg = load_config(cfg_state)?;
+
+	spawn_sticky_window(app, label.clone(), cfg.forefront);
+
+	Ok(label)
+}
+
+#[tauri::command]
+pub fn sticky_take_init_content(sticky_store: State<'_, StickyInitStore>, id: String) -> Result<StickyInitContent, String> {
+	let mut map = sticky_store.init_by_window_label.lock().map_err(|_| "Failed to lock sticky store".to_string())?;
+	Ok(map.remove(&id).unwrap_or_else(|| StickyInitContent { text: String::new(), content_type: None }))
+}
+
+#[tauri::command]
+pub fn load_sticky_image(persist: State<'_, StickyPersistStore>, id: String) -> Result<String, String> {
+	let data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
+	let sticky = data.get(&id).ok_or("Sticky not found")?;
+	let filename = sticky.image_filename.as_ref().ok_or("No image for this sticky")?;
+	let bytes = persist.load_image(filename)?;
+	Ok(general_purpose::STANDARD.encode(&bytes))
 }
 
 /// Save sticky text to persistent store (called on textarea input with debounce)
@@ -187,6 +282,14 @@ pub fn save_sticky_text(persist: State<'_, StickyPersistStore>, id: String, text
 #[tauri::command]
 pub fn delete_sticky_text(persist: State<'_, StickyPersistStore>, id: String) -> Result<(), String> {
 	let mut data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
+	// Delete associated image file if this is an image sticky
+	if let Some(sticky) = data.get(&id) {
+		if sticky.is_image() {
+			if let Some(filename) = &sticky.image_filename {
+				let _ = persist.delete_image(filename);
+			}
+		}
+	}
 	data.remove(&id);
 	persist.write_file(&data)
 }
@@ -214,6 +317,7 @@ pub fn load_sticky_state(persist: State<'_, StickyPersistStore>, id: String) -> 
 		open_height: d.open_height,
 		forefront: d.forefront,
 		locked: d.locked,
+		content_type: d.content_type.clone(),
 	}))
 }
 
@@ -232,9 +336,12 @@ pub fn restore_stickies(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>
 	let cfg = load_config(cfg_state)?;
 
 	{
-		let mut map = sticky_store.text_by_window_label.lock().map_err(|_| "Failed to lock sticky store".to_string())?;
+		let mut map = sticky_store.init_by_window_label.lock().map_err(|_| "Failed to lock sticky store".to_string())?;
 		for (label, sticky_data) in &notes {
-			map.insert(label.clone(), sticky_data.text.clone());
+			map.insert(label.clone(), StickyInitContent {
+				text: sticky_data.text.clone(),
+				content_type: sticky_data.content_type.clone(),
+			});
 		}
 	}
 

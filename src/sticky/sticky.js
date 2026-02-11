@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
+import { Image } from '@tauri-apps/api/image';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
+import { writeImage } from '@tauri-apps/plugin-clipboard-manager';
 
 import { writeClipboardText, openMessageDialog, isMacOS } from '../util.js';
 import { createSticky } from './sticky_manager.js';
@@ -101,6 +103,7 @@ export async function stickyEntry(mainElement) {
 <span id="sticky-close-area"><button id="sticky-close" type="button" aria-label="Close">✖</button><button id="sticky-locked-mark" type="button" aria-label="Locked" style="visibility:hidden">🔒︎</button></span>
 </div>
 <textarea id="sticky-text" spellcheck="false"></textarea>
+<img id="sticky-image" alt="" />
 <div id="sticky-resize-handle" aria-hidden="true"></div>
 </div>`;
 
@@ -114,6 +117,7 @@ export async function stickyEntry(mainElement) {
 	const closeButton = document.getElementById('sticky-close');
 	const lockedMark = document.getElementById('sticky-locked-mark');
 	const textarea = document.getElementById('sticky-text');
+	const stickyImage = document.getElementById('sticky-image');
 	const resizeHandle = document.getElementById('sticky-resize-handle');
 
 	let cfg = null;
@@ -136,9 +140,17 @@ export async function stickyEntry(mainElement) {
 		label = '';
 	}
 
+	// isImageMode is true when the sticky is an image sticky (no text editing)
+	let isImageMode = false;
+
 	try {
-		const initText = await invoke('sticky_take_init_text', { id: label });
-		textarea.value = initText ?? '';
+		const initContent = await invoke('sticky_take_init_content', { id: label });
+		if (initContent?.contentType === 'image') {
+			isImageMode = true;
+			textarea.value = '';
+		} else {
+			textarea.value = initContent?.text ?? '';
+		}
 	} catch {
 		textarea.value = '';
 	}
@@ -194,6 +206,38 @@ export async function stickyEntry(mainElement) {
 		if (stickyState.locked) {
 			locked = true;
 		}
+		// Restore content type from persisted state
+		if (stickyState.contentType === 'image') {
+			isImageMode = true;
+		}
+	}
+
+	// Set up image mode UI: hide textarea, show image
+	if (isImageMode) {
+		textarea.style.display = 'none';
+		stickyImage.style.display = '';
+		// Load image data and adjust for display scaling (DPR)
+		try {
+			const imageBase64 = await invoke('load_sticky_image', { id: label });
+			stickyImage.src = `data:image/png;base64,${imageBase64}`;
+			await new Promise((resolve) => {
+				stickyImage.onload = resolve;
+				// In case the image is already cached
+				if (stickyImage.complete) resolve();
+			});
+			const dpr = window.devicePixelRatio || 1;
+			if (dpr > 1) {
+				stickyImage.style.width = `${Math.round(stickyImage.naturalWidth / dpr)}px`;
+				stickyImage.style.height = `${Math.round(stickyImage.naturalHeight / dpr)}px`;
+			}
+		} catch {
+			stickyImage.style.display = 'none';
+			textarea.style.display = '';
+			textarea.value = 'Error: Image file not found';
+			textarea.readOnly = true;
+		}
+	} else {
+		stickyImage.style.display = 'none';
 	}
 
 	// Apply forefront and update button visual
@@ -296,14 +340,16 @@ export async function stickyEntry(mainElement) {
 		stickyRoot.classList.add('sticky-closed');
 		toggleButton.textContent = '▸';
 
-		textarea.style.overflowY = 'hidden';
+		if (!isImageMode) {
+			textarea.style.overflowY = 'hidden';
 
-		const lineHeight = measureSingleLineBoxHeightPx(textarea);
-		const padding = getVPaddingPx(textarea);
-		const border = getVBorderPx(textarea);
-		const oneLineTextHeight = Math.ceil(lineHeight + padding + border);
-		textarea.style.height = `${oneLineTextHeight}px`;
-		textarea.scrollTop = 0;
+			const lineHeight = measureSingleLineBoxHeightPx(textarea);
+			const padding = getVPaddingPx(textarea);
+			const border = getVBorderPx(textarea);
+			const oneLineTextHeight = Math.ceil(lineHeight + padding + border);
+			textarea.style.height = `${oneLineTextHeight}px`;
+			textarea.scrollTop = 0;
+		}
 
 		await new Promise((r) => requestAnimationFrame(r));
 
@@ -311,16 +357,26 @@ export async function stickyEntry(mainElement) {
 		const width = savedWidth ?? inner?.width ?? 360;
 		savedWidth = width;
 
-		const needHeight = await measureContentHeight();
-		await setProgrammaticSize(width, needHeight);
+		if (isImageMode) {
+			// Fixed closed height: header + small image peek
+			const headerHeight = stickyHeader.offsetHeight;
+			const closedHeight = headerHeight + 30;
+			await setProgrammaticSize(width, closedHeight);
+		} else {
+			const needHeight = await measureContentHeight();
+			await setProgrammaticSize(width, needHeight);
+		}
 	};
 
 	const ensureOpenSize = async () => {
 		stickyRoot.classList.remove('sticky-closed');
 		stickyRoot.classList.add('sticky-open');
 		toggleButton.textContent = '▾';
-		textarea.style.overflowY = 'auto';
-		textarea.style.height = '';
+
+		if (!isImageMode) {
+			textarea.style.overflowY = 'auto';
+			textarea.style.height = '';
+		}
 
 		await new Promise((r) => requestAnimationFrame(r));
 
@@ -328,6 +384,17 @@ export async function stickyEntry(mainElement) {
 			const width = savedOpenSize.width;
 			savedWidth = width;
 			await setProgrammaticSize(width, savedOpenSize.height);
+			return;
+		}
+
+		if (isImageMode) {
+			// Default open size for image stickies
+			const inner = await getInnerSize(currentWindow);
+			const width = savedWidth ?? inner?.width ?? 360;
+			savedWidth = width;
+			const height = 300;
+			savedOpenSize = { width, height };
+			await setProgrammaticSize(width, height);
 			return;
 		}
 
@@ -394,7 +461,19 @@ export async function stickyEntry(mainElement) {
 			if (copyButtonDefaultText == null) {
 				copyButtonDefaultText = copyButton.textContent;
 			}
-			await writeClipboardText(textarea.value ?? '');
+			if (isImageMode) {
+				// Copy image to clipboard: load PNG bytes -> Image.fromBytes -> writeImage
+				const imageBase64 = await invoke('load_sticky_image', { id: label });
+				const binaryStr = atob(imageBase64);
+				const bytes = new Uint8Array(binaryStr.length);
+				for (let i = 0; i < binaryStr.length; i++) {
+					bytes[i] = binaryStr.charCodeAt(i);
+				}
+				const img = await Image.fromBytes(bytes);
+				await writeImage(img);
+			} else {
+				await writeClipboardText(textarea.value ?? '');
+			}
 			copyButton.classList.add('is-copied');
 			copyButton.textContent = '✓';
 			if (copyFeedbackDelayId != null) {
@@ -494,7 +573,7 @@ export async function stickyEntry(mainElement) {
 		// ignore
 	}
 
-	// Ctrl+S (Cmd+S on macOS): Create a new sticky note from clipboard text
+	// Ctrl+S (Cmd+S on macOS): Create a new sticky note from clipboard text/image
 	// Ctrl+L (Cmd+L on macOS): Toggle lock state
 	window.addEventListener('keydown', async (e) => {
 		const baseKey = isMacOS() ? e.metaKey : e.ctrlKey;
@@ -510,35 +589,37 @@ export async function stickyEntry(mainElement) {
 		}
 	});
 
-	textarea.addEventListener('input', async () => {
-		// Debounced save to persistent store
-		if (saveDebouncerId != null) {
-			clearTimeout(saveDebouncerId);
-		}
-		saveDebouncerId = setTimeout(async () => {
-			saveDebouncerId = null;
-			try {
-				await invoke('save_sticky_text', { id: label, text: textarea.value });
-			} catch {
-				// ignore
+	if (!isImageMode) {
+		textarea.addEventListener('input', async () => {
+			// Debounced save to persistent store
+			if (saveDebouncerId != null) {
+				clearTimeout(saveDebouncerId);
 			}
-		}, 500);
+			saveDebouncerId = setTimeout(async () => {
+				saveDebouncerId = null;
+				try {
+					await invoke('save_sticky_text', { id: label, text: textarea.value });
+				} catch {
+					// ignore
+				}
+			}, 500);
 
-		if (!isOpen || userResized) {
-			return;
-		}
-		const textHeight = desiredOpenTextHeight();
-		textarea.style.height = `${textHeight}px`;
-		await new Promise((r) => requestAnimationFrame(r));
+			if (!isOpen || userResized) {
+				return;
+			}
+			const textHeight = desiredOpenTextHeight();
+			textarea.style.height = `${textHeight}px`;
+			await new Promise((r) => requestAnimationFrame(r));
 
-		const width = savedWidth ?? 360;
-		savedWidth = width;
+			const width = savedWidth ?? 360;
+			savedWidth = width;
 
-		const needHeight = await measureContentHeight();
-		textarea.style.height = '';
-		savedOpenSize = { width, height: needHeight };
-		await setProgrammaticSize(width, needHeight);
-	});
+			const needHeight = await measureContentHeight();
+			textarea.style.height = '';
+			savedOpenSize = { width, height: needHeight };
+			await setProgrammaticSize(width, needHeight);
+		});
+	}
 
 	// Restore open/close state from persisted data
 	if (stickyState?.isOpen) {
