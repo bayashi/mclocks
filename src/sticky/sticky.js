@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 
 import { writeClipboardText, openMessageDialog, isMacOS } from '../util.js';
+import { createSticky } from './sticky_manager.js';
 
 const MAX_OPEN_LINES = 12;
 
@@ -472,6 +473,15 @@ export async function stickyEntry(mainElement) {
 	} catch {
 		// ignore
 	}
+
+	// Ctrl+S (Cmd+S on macOS): Create a new sticky note from clipboard text
+	window.addEventListener('keydown', async (e) => {
+		const baseKey = isMacOS() ? e.metaKey : e.ctrlKey;
+		if (baseKey && (e.key === 's' || e.key === 'S')) {
+			e.preventDefault();
+			await createSticky();
+		}
+	});
 
 	textarea.addEventListener('input', async () => {
 		// Debounced save to persistent store
