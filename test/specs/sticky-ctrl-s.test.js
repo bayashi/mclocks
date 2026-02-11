@@ -74,7 +74,7 @@ describe('Sticky Note - Ctrl+s creates new sticky from sticky window', () => {
 						color: '#fff',
 					};
 				}
-				if (cmd === 'sticky_take_init_text') return 'Existing sticky text';
+				if (cmd === 'sticky_take_init_content') return { text: 'Existing sticky text', contentType: null };
 				if (cmd === 'load_sticky_state') return null;
 				if (cmd === 'save_sticky_state') return;
 				if (cmd === 'save_sticky_text') return;

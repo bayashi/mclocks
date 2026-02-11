@@ -53,7 +53,7 @@ describe('Sticky Note - Forefront button behavior', () => {
 						color: '#fff',
 					};
 				}
-				if (cmd === 'sticky_take_init_text') return 'Test text';
+				if (cmd === 'sticky_take_init_content') return { text: 'Test text', contentType: null };
 				if (cmd === 'load_sticky_state') {
 					if (persForefront !== null && persForefront !== undefined) {
 						return {

@@ -50,7 +50,7 @@ describe('Sticky Note - Ctrl+l lock/unlock behavior', () => {
 						color: '#fff',
 					};
 				}
-				if (cmd === 'sticky_take_init_text') return 'Test text';
+				if (cmd === 'sticky_take_init_content') return { text: 'Test text', contentType: null };
 				if (cmd === 'load_sticky_state') {
 					if (persLocked !== null && persLocked !== undefined) {
 						return {
