@@ -264,6 +264,8 @@ Empty lines are preserved as-is in all operations.
 
 ## Sticky Note
 
+![sticky-note](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-sticky-note.png)
+
 Click `mclocks` app window, then push `Ctrl + s` to create a sticky note from clipboard text. A small floating window opens with the clipboard content.
 
 Each sticky note has:
