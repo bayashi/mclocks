@@ -163,6 +163,7 @@ html.sticky #sticky-text::-webkit-scrollbar-thumb:hover {
 
 html.sticky #sticky-image {
   -webkit-app-region: no-drag;
+  -webkit-user-drag: none;
   box-sizing: border-box;
   border: none;
   border-radius: 4px;

@@ -103,7 +103,7 @@ export async function stickyEntry(mainElement) {
 <span id="sticky-close-area"><button id="sticky-close" type="button" aria-label="Close">✖</button><button id="sticky-locked-mark" type="button" aria-label="Locked" style="visibility:hidden">🔒︎</button></span>
 </div>
 <textarea id="sticky-text" spellcheck="false"></textarea>
-<img id="sticky-image" alt="" />
+<img id="sticky-image" alt="" draggable="false" />
 <div id="sticky-resize-handle" aria-hidden="true"></div>
 </div>`;
 
@@ -516,10 +516,51 @@ export async function stickyEntry(mainElement) {
 		if (!isOpen) {
 			return;
 		}
-		try {
-			await currentWindow.startResizeDragging('SouthEast');
-		} catch (error) {
-			await openMessageDialog(`Failed to start resize: ${error}`, "mclocks Error", "error");
+		if (isMacOS()) {
+			// Manual resize for macOS: startResizeDragging is unreliable for
+			// decoration-less always-on-top windows. Track mouse movement and
+			// resize the window directly instead.
+			const startX = event.screenX;
+			const startY = event.screenY;
+			const startSize = await getInnerSize(currentWindow);
+			if (!startSize) {
+				return;
+			}
+			let rafPending = false;
+			let lastX = startX;
+			let lastY = startY;
+			const onMouseMove = () => {
+				if (rafPending) {
+					return;
+				}
+				rafPending = true;
+				requestAnimationFrame(() => {
+					rafPending = false;
+					const dx = lastX - startX;
+					const dy = lastY - startY;
+					setWindowSize(currentWindow,
+						Math.max(100, startSize.width + dx),
+						Math.max(60, startSize.height + dy),
+					);
+				});
+			};
+			const cleanup = () => {
+				window.removeEventListener('mousemove', onMouseMoveCapture, true);
+				window.removeEventListener('mouseup', cleanup, true);
+			};
+			const onMouseMoveCapture = (e) => {
+				lastX = e.screenX;
+				lastY = e.screenY;
+				onMouseMove();
+			};
+			window.addEventListener('mousemove', onMouseMoveCapture, true);
+			window.addEventListener('mouseup', cleanup, true);
+		} else {
+			try {
+				await currentWindow.startResizeDragging('SouthEast');
+			} catch (error) {
+				await openMessageDialog(`Failed to start resize: ${error}`, "mclocks Error", "error");
+			}
 		}
 	});
 
