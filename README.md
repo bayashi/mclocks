@@ -160,7 +160,7 @@ Indicating 159 days, 12 hours, 34 minutes, and 56 seconds left until September 1
 
 ### Countdown format verbs
 
-The `countdown` fieled text accepts below template verbs:
+The `countdown` field text accepts below template verbs:
 
 * `%TG`: Target date-time string
 * `%D`: Remaining day count to target date-time
@@ -291,7 +291,7 @@ The plain text can be pasted from the clipboard into a sticky note. The maximum 
 When the clipboard contains an image (e.g. screenshot) and no text, `Ctrl + s` creates an **image sticky note** instead.
 
 * Images are saved as PNG files (regardless of the original format in the clipboard).
-* The image scales to fit the sticky window but never exceeds its original size. In collapsed mode, only a small strip at the top of the image is visible.
+* The image is displayed at its original size, adjusted for display scaling (DPR). In collapsed mode, only a small strip at the top of the image is visible.
 * Image stickies are not editable, but the **copy button** (`⧉`) copies the image back to the clipboard and the **lock** (`Ctrl + L`) prevents accidental closing.
 * The maximum image size is 10 MB.
 * Image files are stored in a `sticky_images` directory alongside the sticky data file.
