@@ -451,6 +451,73 @@ You can specify a line number using the hash fragment in the URL:
 
 ----------
 
+## mclocks MCP Server (AI Assistant Integration)
+
+`mclocks` includes an MCP (Model Context Protocol) server that enables AI assistants such as [Cursor](https://www.cursor.com/) to answer "What time is it now?" across multiple timezones, and to convert between datetime formats and epoch timestamps. The MCP server automatically uses your mclocks `config.json`, so the timezones you've configured in mclocks are reflected in the AI's responses.
+
+### Prerequisites
+
+* [Node.js](https://nodejs.org/) (v18 or later)
+
+If you don't have Node.js, install it from the official website.
+
+### Setup for Cursor
+
+Add the following to your Cursor MCP configuration file (`.cursor/mcp.json` in your project root, or global `~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "mclocks-datetime-util": {
+      "command": "npx",
+      "args": ["-y", "mclocks-datetime-util"]
+    }
+  }
+}
+```
+
+After saving, restart Cursor. The MCP server will be automatically downloaded and started. The following tools become available:
+
+* **`current-time`** - Get the current time in your configured timezones
+* **`convert-time`** - Convert a datetime string or epoch timestamp to multiple timezones
+
+### How it works with mclocks config
+
+The MCP server automatically reads your mclocks `config.json` and uses:
+
+* **`clocks`** - Timezones defined in your clocks are used as default conversion targets
+* **`convtz`** - Used as the default source timezone when converting datetime strings without timezone info
+* **`usetz`** - Controls whether strict timezone conversion is used
+
+If no `config.json` is found, the server falls back to a built-in set of common timezones (UTC, America/New_York, America/Los_Angeles, Europe/London, Europe/Berlin, Asia/Tokyo, Asia/Shanghai, Asia/Kolkata, Australia/Sydney).
+
+Optionally, you can override the config path by setting the `MCLOCKS_CONFIG_PATH` environment variable. This is not required in most cases, as the server auto-detects the config location:
+
+```json
+{
+  "mcpServers": {
+    "mclocks-datetime-util": {
+      "command": "npx",
+      "args": ["-y", "mclocks-datetime-util"],
+      "env": {
+        "MCLOCKS_CONFIG_PATH": "/path/to/your/config.json"
+      }
+    }
+  }
+}
+```
+
+### Example usage in Cursor
+
+Once configured, you can ask your AI assistant things like:
+
+* "What time is it now?" - Returns the current time in all your mclocks-configured timezones
+* "What time is it in Jakarta?" - Returns the current time in a specific timezone
+* "Convert 1705312200 epoch to datetime"
+* "Convert 2024-01-15T10:30:00Z to Asia/Tokyo"
+
+----------
+
 ## License
 
 [The Artistic License 2.0](https://github.com/bayashi/mclocks/blob/main/LICENSE)

@@ -1,0 +1,26 @@
+{
+  "name": "mclocks-datetime-util",
+  "version": "0.0.1",
+  "description": "MCP server for datetime and timezone conversion, powered by mclocks config",
+  "type": "module",
+  "bin": {
+    "mclocks-datetime-util": "server.js"
+  },
+  "files": [
+    "server.js"
+  ],
+  "keywords": [
+    "mcp",
+    "datetime",
+    "timezone",
+    "epoch",
+    "mclocks",
+    "model-context-protocol"
+  ],
+  "license": "Artistic-2.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "cdate": "0.0.7",
+    "zod": "^4.3.6"
+  }
+}

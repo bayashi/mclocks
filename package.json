@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "test": "wdio run wdio.conf.js",
-    "test:headless": "wdio run wdio.conf.js --headless"
+    "test:headless": "wdio run wdio.conf.js --headless",
+    "mcp": "node src-mcp/server.js"
   },
   "dependencies": {
     "@tauri-apps/api": "2.7.0",

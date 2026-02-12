@@ -28,5 +28,16 @@ export default [
     },
     rules: {},
   },
+  {
+    files: ['src-mcp/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {},
+  },
 ];
 
