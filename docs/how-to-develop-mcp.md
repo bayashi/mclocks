@@ -16,11 +16,10 @@ For end-user setup instructions, see the **MCP Server** section in the main [REA
 | `src-mcp/package.json` | npm package definition for `mclocks-datetime-util` |
 | `package.json` | Root package.json (`mcp` script for local dev) |
 | `eslint.config.js` | ESLint config (includes `src-mcp/**/*.js` entry with Node.js globals) |
-| `README.md` | End-user documentation (MCP Server section) |
 
 ## Dependencies
 
-The MCP server uses the following libraries (defined in `src-mcp/package.json`):
+The mclocks MCP server uses the following libraries (defined in `src-mcp/package.json`):
 
 | Package | Purpose |
 |---------|---------|
@@ -82,7 +81,7 @@ pnpm exec eslint .
 
 The ESLint config (`eslint.config.js`) includes a dedicated entry for `src-mcp/**/*.js` with Node.js globals enabled.
 
-## MCP Tools
+## mclocks MCP Tools
 
 The server exposes the following tools:
 
