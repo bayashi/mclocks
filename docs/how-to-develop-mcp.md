@@ -14,7 +14,8 @@ For end-user setup instructions, see the **MCP Server** section in the main [REA
 |------|-------------|
 | `src-mcp/server.js` | MCP server implementation (single file) |
 | `src-mcp/package.json` | npm package definition for `mclocks-datetime-util` |
-| `package.json` | Root package.json (`mcp` script for local dev) |
+| `src-mcp/test/mcp-tools.test.js` | MCP tool tests (Mocha + MCP Client) |
+| `package.json` | Root package.json (`mcp`, `test:mcp` scripts for local dev) |
 | `eslint.config.js` | ESLint config (includes `src-mcp/**/*.js` entry with Node.js globals) |
 
 ## Dependencies
@@ -23,9 +24,15 @@ The mclocks MCP server uses the following libraries (defined in `src-mcp/package
 
 | Package | Purpose |
 |---------|---------|
-| `@modelcontextprotocol/sdk` | MCP protocol SDK (stdio transport) |
+| `@modelcontextprotocol/sdk` | MCP protocol SDK (stdio transport, also used by tests as client) |
 | `cdate` | Datetime and timezone conversion |
 | `zod` | Input schema validation |
+
+Dev dependencies (for testing):
+
+| Package | Purpose |
+|---------|---------|
+| `mocha` | Test runner |
 
 These are independent from the root `package.json` dependencies. The root package.json does NOT include MCP-specific dependencies.
 
@@ -81,6 +88,21 @@ pnpm exec eslint .
 
 The ESLint config (`eslint.config.js`) includes a dedicated entry for `src-mcp/**/*.js` with Node.js globals enabled.
 
+### Test
+
+```bash
+pnpm test:mcp
+```
+
+Or directly:
+
+```bash
+cd src-mcp
+npm test
+```
+
+Tests use the MCP Client SDK to launch the server as a subprocess and call tools via stdio. The test environment sets `MCLOCKS_CONFIG_PATH` to a non-existent path to ensure consistent fallback defaults regardless of the developer's machine config.
+
 ## mclocks MCP Tools
 
 The server exposes the following tools:
@@ -102,13 +124,46 @@ Returns the current time in specified timezones.
 Parameters:
 - `timezones` (optional) - Target timezone array
 
+### `next-weekday`
+
+Finds the date of the next occurrence of a given weekday from today.
+
+Parameters:
+- `weekday` (required) - Day of the week in English (e.g. `"Monday"`, `"fri"`, `"tu"`)
+- `timezone` (optional) - Timezone to determine "today"
+
+### `date-to-weekday`
+
+Returns the day of the week for a given date.
+
+Parameters:
+- `date` (required) - Date string (e.g. `"2026-02-20"`, `"March 15, 2026"`)
+
+### `days-until`
+
+Counts the number of days from today until a specified date. Supports smart defaults when year/month/day are omitted.
+
+Parameters:
+- `year` (optional) - If omitted, uses current year (or next year if date has passed)
+- `month` (optional) - If omitted, defaults to January (or current month when only day is specified)
+- `day` (optional) - If omitted, defaults to 1
+- `timezone` (optional) - Timezone to determine "today"
+
+### `days-between`
+
+Counts the number of days between two dates. The start date is not included in the count.
+
+Parameters:
+- `from` (required) - Start date string
+- `to` (required) - End date string
+
 ### Config integration
 
 The server reads mclocks `config.json` automatically:
 
 - Config path: auto-detected from OS-specific location (Windows: `%APPDATA%`, macOS: `~/Library/Application Support`)
 - Override: set `MCLOCKS_CONFIG_PATH` environment variable
-- Fields used: `clocks` (default timezones), `convtz` (source timezone), `usetz` (strict TZ mode)
+- Fields used: `clocks` (default timezones), `convtz` (source timezone), `usetz` (strict TZ mode), `locale` (weekday name localization)
 - If no config is found, falls back to built-in timezone list
 
 ## Updating Dependencies

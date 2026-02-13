@@ -17,10 +17,16 @@
     "mclocks",
     "model-context-protocol"
   ],
+  "scripts": {
+    "test": "mocha test/**/*.test.js --timeout 10000"
+  },
   "license": "Artistic-2.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
     "cdate": "0.0.7",
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "mocha": "^11.0.0"
   }
 }

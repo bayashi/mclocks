@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "test": "wdio run wdio.conf.js",
     "test:headless": "wdio run wdio.conf.js --headless",
-    "mcp": "node src-mcp/server.js"
+    "mcp": "node src-mcp/server.js",
+    "test:mcp": "npm test --prefix src-mcp"
   },
   "dependencies": {
     "@tauri-apps/api": "2.7.0",
