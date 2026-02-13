@@ -339,6 +339,80 @@ server.tool(
   }
 );
 
+server.tool(
+  "days-until",
+  "Count the number of days from today until a specified date. " +
+  "If year is omitted, uses the current year (or next year if the date has already passed). " +
+  "If only day is specified, uses the current month (or next month if the day has already passed). " +
+  "If month is omitted, defaults to January. If day is omitted, defaults to the 1st.",
+  {
+    year: z.number().int().optional().describe(
+      "Target year (e.g. 2026). If omitted, uses current year or next year if the date has already passed this year."
+    ),
+    month: z.number().int().min(1).max(12).optional().describe(
+      "Target month (1-12). Defaults to 1 (January) if omitted."
+    ),
+    day: z.number().int().min(1).max(31).optional().describe(
+      "Target day of month (1-31). Defaults to 1 if omitted."
+    ),
+    timezone: z.string().optional().describe(
+      "Timezone to determine 'today' (e.g. 'Asia/Tokyo'). If omitted, uses convtz from mclocks config if available, otherwise UTC."
+    ),
+  },
+  async ({ year, month, day, timezone }) => {
+    const tz = timezone || configConvTZ || "UTC";
+    const cdt = cdate().locale(configLocale).cdateFn();
+    const offset = cdt().tz(tz).utcOffset();
+    const now = cdt().utcOffset(offset);
+    const [nowY, nowM, nowD] = ["YYYY", "M", "D"].map((f) => Number(now.format(f)));
+
+    let [y, m, d] = [year ?? nowY, month, day || 1];
+
+    if (year != null) {
+      m = m || 1;
+    } else if (month == null && day != null) {
+      // Only day specified: use current month, advance to next month if passed
+      m = nowM;
+      if (d < nowD) {
+        m++;
+        if (m > 12) { m = 1; y++; }
+      }
+    } else {
+      // Month specified (or both omitted): default month to 1, advance to next year if passed
+      m = m || 1;
+      if (m < nowM || (m === nowM && d < nowD)) { y++; }
+    }
+
+    // Validate the target date
+    const dateStr = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const dateObj = new Date(`${dateStr}T00:00:00Z`);
+    if (isNaN(dateObj.getTime()) || dateObj.getUTCDate() !== d) {
+      return {
+        content: [{ type: "text", text: `Error: Invalid date: ${dateStr}` }],
+        isError: true,
+      };
+    }
+
+    // Calculate days difference using UTC dates to avoid DST issues
+    const todayStr = now.format("YYYY-MM-DD");
+    const diffDays = Math.round((dateObj.getTime() - new Date(`${todayStr}T00:00:00Z`).getTime()) / 86400000);
+    const dayName = cdate(`${dateStr}T00:00:00Z`).locale(configLocale).format("dddd");
+
+    let label;
+    if (diffDays > 0) {
+      label = `${diffDays} day${diffDays !== 1 ? "s" : ""} from today`;
+    } else if (diffDays === 0) {
+      label = "Today";
+    } else {
+      label = `${-diffDays} day${diffDays !== -1 ? "s" : ""} ago`;
+    }
+
+    return {
+      content: [{ type: "text", text: `${dateStr} (${dayName}): ${label}\nToday: ${todayStr}\nTimezone: ${tz}` }],
+    };
+  }
+);
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
