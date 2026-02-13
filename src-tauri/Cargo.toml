@@ -42,3 +42,4 @@ chardetng = "0.1.17"
 rand = "0.8"
 uuid = { version = "1", features = ["v4"] }
 base64 = "0.22"
+tempfile = "3"
