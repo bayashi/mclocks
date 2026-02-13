@@ -39,5 +39,13 @@ export default [
     },
     rules: {},
   },
+  {
+    files: ['src-mcp/test/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.mocha,
+      },
+    },
+  },
 ];
 
