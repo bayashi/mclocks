@@ -29,6 +29,16 @@ const EPOCH_UNITS = {
   nanoseconds: 1 / 1000 / 1000,
 };
 
+const WEEKDAY_MAP = {
+  sunday: 0, sun: 0, su: 0,
+  monday: 1, mon: 1, mo: 1,
+  tuesday: 2, tue: 2, tu: 2,
+  wednesday: 3, wed: 3, we: 3,
+  thursday: 4, thu: 4, th: 4,
+  friday: 5, fri: 5, fr: 5,
+  saturday: 6, sat: 6, sa: 6,
+};
+
 // Return the OS-specific config directory (same as Rust `directories::BaseDirs::config_dir`)
 function configDir() {
   if (process.platform === "win32") {
@@ -82,6 +92,13 @@ const configTimezones = extractTimezones(mclocksConfig);
 const defaultTimezones = configTimezones || FALLBACK_TIMEZONES;
 const configUseTZ = mclocksConfig?.usetz ?? false;
 const configConvTZ = mclocksConfig?.convtz || "";
+const configLocale = mclocksConfig?.locale || "en";
+
+// Parse weekday name to day-of-week number (0=Sunday, 6=Saturday)
+function parseWeekday(input) {
+  const key = input.trim().toLowerCase();
+  return key in WEEKDAY_MAP ? WEEKDAY_MAP[key] : null;
+}
 
 // Normalize datetime strings for common formats that may fail to parse
 function normalizeDT(src) {
@@ -234,6 +251,90 @@ server.tool(
 
     return {
       content: [{ type: "text", text: lines.join("\n") }],
+    };
+  }
+);
+
+server.tool(
+  "next-weekday",
+  "Find the date of the next occurrence of a given weekday from today.",
+  {
+    weekday: z.string().describe(
+      "Day of the week (e.g. 'Monday', 'friday', 'mon', 'thu'). Case-insensitive. English only."
+    ),
+    timezone: z.string().optional().describe(
+      "Timezone to determine 'today' (e.g. 'Asia/Tokyo'). If omitted, uses convtz from mclocks config if available, otherwise UTC."
+    ),
+  },
+  async ({ weekday, timezone }) => {
+    const targetDow = parseWeekday(weekday);
+    if (targetDow === null) {
+      return {
+        content: [{ type: "text", text: `Error: Could not parse "${weekday}" as a weekday name. Use English names like "Monday", "Tue", "friday".` }],
+        isError: true,
+      };
+    }
+
+    const tz = timezone || configConvTZ || "UTC";
+    const cdt = cdate().locale(configLocale).cdateFn();
+    const offset = cdt().tz(tz).utcOffset();
+    const now = cdt().utcOffset(offset);
+    const todayDow = Number(now.format("d"));
+
+    let daysUntil = targetDow - todayDow;
+    if (daysUntil <= 0) daysUntil += 7;
+
+    const nextDate = now.add(daysUntil, "day");
+    const dateStr = nextDate.format("YYYY-MM-DD");
+    const dayName = nextDate.format("dddd");
+
+    const lines = [
+      `Next ${dayName}: ${dateStr}`,
+      `(${daysUntil} day${daysUntil !== 1 ? "s" : ""} from today, ${now.format("YYYY-MM-DD")})`,
+      `Timezone: ${tz}`,
+    ];
+
+    return {
+      content: [{ type: "text", text: lines.join("\n") }],
+    };
+  }
+);
+
+server.tool(
+  "date-to-weekday",
+  "Get the day of the week for a given date.",
+  {
+    date: z.string().describe(
+      "Date to check (e.g. '2026-02-20', '2026/3/15', 'March 15, 2026')."
+    ),
+  },
+  async ({ date }) => {
+    const src = date.trim();
+    let d;
+    try {
+      d = new Date(src);
+      if (isNaN(d.getTime())) {
+        return {
+          content: [{ type: "text", text: `Error: Could not parse "${src}" as a valid date.` }],
+          isError: true,
+        };
+      }
+    } catch (error) {
+      return {
+        content: [{ type: "text", text: `Error: Could not parse "${src}" as a valid date. ${error}` }],
+        isError: true,
+      };
+    }
+
+    // Use UTC-based date string to avoid timezone issues with date-only strings
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(d.getUTCDate()).padStart(2, "0");
+    const utcDateStr = `${y}-${m}-${dd}T00:00:00Z`;
+    const dayName = cdate(utcDateStr).locale(configLocale).format("dddd");
+
+    return {
+      content: [{ type: "text", text: `${y}-${m}-${dd}: ${dayName}` }],
     };
   }
 );
