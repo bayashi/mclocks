@@ -321,11 +321,64 @@ pub fn load_sticky_state(persist: State<'_, StickyPersistStore>, id: String) -> 
 	}))
 }
 
-/// Restore all persisted stickies by recreating their windows
+/// Restore all persisted stickies by recreating their windows.
+/// Also restores orphaned image files (present in sticky_images dir but not in sticky.json)
+/// as default-state image stickies.
 #[tauri::command]
 pub fn restore_stickies(app: AppHandle, cfg_state: State<'_, Arc<ContextConfig>>, sticky_store: State<'_, StickyInitStore>, persist: State<'_, StickyPersistStore>) -> Result<(), String> {
 	let notes = {
-		let data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
+		let mut data = persist.data.lock().map_err(|_| "Failed to lock persist store".to_string())?;
+
+		// Collect image filenames already tracked in sticky.json
+		let known_images: std::collections::HashSet<String> = data.values()
+			.filter_map(|s| s.image_filename.clone())
+			.collect();
+
+		// Scan sticky_images directory for orphaned image files
+		let mut orphans_added = false;
+		if persist.images_dir.exists() {
+			if let Ok(entries) = fs::read_dir(&persist.images_dir) {
+				for entry in entries.flatten() {
+					let path = entry.path();
+					if !path.is_file() {
+						continue;
+					}
+					// Validate: must be {UUIDv4}.png and within size limit
+					let stem = match path.file_stem().and_then(|s| s.to_str()) {
+						Some(s) => s,
+						None => continue,
+					};
+					let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+					if ext != "png" || Uuid::parse_str(stem).is_err() {
+						continue;
+					}
+					if let Ok(meta) = entry.metadata() {
+						if meta.len() as usize > MAX_IMAGE_BYTES {
+							continue;
+						}
+					} else {
+						continue;
+					}
+					let filename = format!("{}.png", stem);
+					if known_images.contains(&filename) {
+						continue;
+					}
+					let label = format!("sticky-{}", stem);
+					// Avoid collision with existing labels
+					if data.contains_key(&label) {
+						continue;
+					}
+					data.insert(label, StickyData::new_image(filename));
+					orphans_added = true;
+				}
+			}
+		}
+
+		// Persist newly added orphan entries so they appear in sticky.json
+		if orphans_added {
+			let _ = persist.write_file(&data);
+		}
+
 		data.clone()
 	};
 
