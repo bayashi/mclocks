@@ -10,6 +10,7 @@ on:
       - '**/*.md'
       - '**/.gitignore'
       - '**/dependabot.yml'
+      - 'src-mcp/**'
 
 jobs:
   setup:
