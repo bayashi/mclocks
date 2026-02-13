@@ -435,7 +435,7 @@ You can specify a line number using the hash fragment in the URL:
 
 ----------
 
-## mclocks MCP Server (AI Assistant Integration)
+## 🧠 mclocks MCP Server (AI Assistant Integration)
 
 `mclocks` includes an MCP (Model Context Protocol) server that enables AI assistants such as [Cursor](https://www.cursor.com/) and [Claude Desktop](https://claude.ai/download) to answer "What time is it now?" across multiple timezones, and to convert between datetime formats and epoch timestamps. The MCP server automatically uses your mclocks `config.json`, so the timezones you've configured in mclocks are reflected in the AI's responses.
 
