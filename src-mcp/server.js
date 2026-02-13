@@ -413,6 +413,47 @@ server.tool(
   }
 );
 
+server.tool(
+  "days-between",
+  "Count the number of days between two dates. The start date is not included in the count (e.g. Jan 1 to Jan 3 = 2 days).",
+  {
+    from: z.string().describe(
+      "Start date (e.g. '2026-01-01', '2026/3/15', 'March 15, 2026')."
+    ),
+    to: z.string().describe(
+      "End date (e.g. '2026-12-31', '2026/6/1', 'June 1, 2026')."
+    ),
+  },
+  async ({ from, to }) => {
+    const fromDate = new Date(from.trim());
+    const toDate = new Date(to.trim());
+
+    if (isNaN(fromDate.getTime())) {
+      return {
+        content: [{ type: "text", text: `Error: Could not parse "${from}" as a valid date.` }],
+        isError: true,
+      };
+    }
+    if (isNaN(toDate.getTime())) {
+      return {
+        content: [{ type: "text", text: `Error: Could not parse "${to}" as a valid date.` }],
+        isError: true,
+      };
+    }
+
+    const diffDays = Math.round((toDate.getTime() - fromDate.getTime()) / 86400000);
+    const abs = Math.abs(diffDays);
+    const fromStr = `${fromDate.getUTCFullYear()}-${String(fromDate.getUTCMonth() + 1).padStart(2, "0")}-${String(fromDate.getUTCDate()).padStart(2, "0")}`;
+    const toStr = `${toDate.getUTCFullYear()}-${String(toDate.getUTCMonth() + 1).padStart(2, "0")}-${String(toDate.getUTCDate()).padStart(2, "0")}`;
+    const fromDay = cdate(`${fromStr}T00:00:00Z`).locale(configLocale).format("dddd");
+    const toDay = cdate(`${toStr}T00:00:00Z`).locale(configLocale).format("dddd");
+
+    return {
+      content: [{ type: "text", text: `${fromStr} (${fromDay}) → ${toStr} (${toDay}): ${abs} day${abs !== 1 ? "s" : ""}` }],
+    };
+  }
+);
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
