@@ -381,3 +381,62 @@ describe("mclocks MCP Tools", function () {
     });
   });
 });
+
+describe("mclocks MCP env overrides", function () {
+  let client;
+
+  before(async function () {
+    const transport = new StdioClientTransport({
+      command: "node",
+      args: [serverPath],
+      env: {
+        ...process.env,
+        MCLOCKS_CONFIG_PATH: "__nonexistent__",
+        MCLOCKS_LOCALE: "pt",
+        MCLOCKS_CONVTZ: "Europe/Lisbon",
+      },
+    });
+    client = new Client({ name: "test-client-env", version: "1.0.0" });
+    await client.connect(transport);
+  });
+
+  after(async function () {
+    await client.close();
+  });
+
+  it("should use MCLOCKS_LOCALE for weekday names (date-to-weekday)", async function () {
+    const result = await client.callTool({
+      name: "date-to-weekday",
+      arguments: { date: "2026-02-20" },
+    });
+    const out = text(result);
+    // "sexta-feira" is Friday in Portuguese
+    assert.ok(out.includes("sexta-feira"), `expected Portuguese weekday but got: ${out}`);
+  });
+
+  it("should use MCLOCKS_LOCALE for weekday names (next-weekday)", async function () {
+    const result = await client.callTool({
+      name: "next-weekday",
+      arguments: { weekday: "Monday" },
+    });
+    const out = text(result);
+    // "segunda-feira" is Monday in Portuguese
+    assert.ok(out.includes("segunda-feira"), `expected Portuguese weekday but got: ${out}`);
+  });
+
+  it("should use MCLOCKS_CONVTZ as default timezone (next-weekday)", async function () {
+    const result = await client.callTool({
+      name: "next-weekday",
+      arguments: { weekday: "Monday" },
+    });
+    assert.ok(text(result).includes("Europe/Lisbon"), "should use MCLOCKS_CONVTZ as default");
+  });
+
+  it("should use MCLOCKS_CONVTZ as default timezone (days-until)", async function () {
+    const result = await client.callTool({
+      name: "days-until",
+      arguments: { year: 2030, month: 1, day: 1 },
+    });
+    assert.ok(text(result).includes("Europe/Lisbon"), "should use MCLOCKS_CONVTZ as default");
+  });
+});

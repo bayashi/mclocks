@@ -58,10 +58,19 @@ function autoDetectConfigPath() {
   return join(dir, APP_IDENTIFIER, CONFIG_FILE);
 }
 
+// Resolve config path from --config arg, MCLOCKS_CONFIG_PATH env, or auto-detect
+function resolveConfigPath() {
+  const argIdx = process.argv.indexOf("--config");
+  if (argIdx !== -1 && process.argv[argIdx + 1]) {
+    return process.argv[argIdx + 1];
+  }
+  return process.env.MCLOCKS_CONFIG_PATH || autoDetectConfigPath();
+}
+
 // Load mclocks config.json
-// Priority: MCLOCKS_CONFIG_PATH env > auto-detect > null
+// Priority: --config arg > MCLOCKS_CONFIG_PATH env > auto-detect > null
 function loadMclocksConfig() {
-  const configPath = process.env.MCLOCKS_CONFIG_PATH || autoDetectConfigPath();
+  const configPath = resolveConfigPath();
   if (!configPath) {
     return null;
   }
@@ -90,9 +99,10 @@ function extractTimezones(config) {
 const mclocksConfig = loadMclocksConfig();
 const configTimezones = extractTimezones(mclocksConfig);
 const defaultTimezones = configTimezones || FALLBACK_TIMEZONES;
-const configUseTZ = mclocksConfig?.usetz ?? false;
-const configConvTZ = mclocksConfig?.convtz || "";
-const configLocale = mclocksConfig?.locale || "en";
+// Per-field override: env > config.json > fallback
+const configUseTZ = process.env.MCLOCKS_USETZ === "true" || (mclocksConfig?.usetz ?? false);
+const configConvTZ = process.env.MCLOCKS_CONVTZ || mclocksConfig?.convtz || "";
+const configLocale = process.env.MCLOCKS_LOCALE || mclocksConfig?.locale || "en";
 
 // Parse weekday name to day-of-week number (0=Sunday, 6=Saturday)
 function parseWeekday(input) {

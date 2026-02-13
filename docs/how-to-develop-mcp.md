@@ -161,10 +161,39 @@ Parameters:
 
 The server reads mclocks `config.json` automatically:
 
-- Config path: auto-detected from OS-specific location (Windows: `%APPDATA%`, macOS: `~/Library/Application Support`)
-- Override: set `MCLOCKS_CONFIG_PATH` environment variable
-- Fields used: `clocks` (default timezones), `convtz` (source timezone), `usetz` (strict TZ mode), `locale` (weekday name localization)
-- If no config is found, falls back to built-in timezone list
+- Config path resolution (highest priority first):
+  1. `--config <path>` command-line argument
+  2. `MCLOCKS_CONFIG_PATH` environment variable
+  3. Auto-detect from OS-specific location (Windows: `%APPDATA%`, macOS: `~/Library/Application Support`)
+- Fields used from config: `clocks` (default timezones), `convtz` (source timezone), `usetz` (strict TZ mode), `locale` (weekday name localization)
+- If no config is found, falls back to built-in defaults
+
+#### Environment variable overrides
+
+The following environment variables override individual config fields (env > config.json > fallback):
+
+| Variable | Overrides | Default |
+|----------|-----------|---------|
+| `MCLOCKS_LOCALE` | `locale` | `"en"` |
+| `MCLOCKS_CONVTZ` | `convtz` | `""` |
+| `MCLOCKS_USETZ` | `usetz` | `false` (set `"true"` to enable) |
+
+This allows configuring the MCP server via `mcp.json` without requiring the mclocks app config:
+
+```json
+{
+  "mcpServers": {
+    "mclocks-datetime-util": {
+      "command": "npx",
+      "args": ["-y", "mclocks-datetime-util"],
+      "env": {
+        "MCLOCKS_LOCALE": "ja",
+        "MCLOCKS_CONVTZ": "Asia/Tokyo"
+      }
+    }
+  }
+}
+```
 
 ## Updating Dependencies
 
