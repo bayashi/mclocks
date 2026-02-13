@@ -490,6 +490,7 @@ After saving, restart the application. The MCP server will be automatically down
 * **`date-to-weekday`** - Get the day of the week for a given date
 * **`days-until`** - Count the number of days from today until a specified date
 * **`days-between`** - Count the number of days between two dates
+* **`date-offset`** - Calculate the date N days before or after a given date
 
 ### How it works with mclocks config
 
@@ -541,6 +542,7 @@ Once configured, you can ask your AI assistant things like:
 * "What day of the week is 2026-12-25?"
 * "How many days until Christmas?"
 * "How many days between 2026-01-01 and 2026-12-31?"
+* "What date is 90 days from 2026-04-01?"
 
 ----------
 

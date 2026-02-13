@@ -464,6 +464,40 @@ server.tool(
   }
 );
 
+server.tool(
+  "date-offset",
+  "Calculate the date that is N days before or after a given date. Use a positive number for future dates and a negative number for past dates.",
+  {
+    date: z.string().describe(
+      "Base date (e.g. '2026-01-01', '2026/3/15', 'March 15, 2026')."
+    ),
+    days: z.number().int().describe(
+      "Number of days to add (positive) or subtract (negative)."
+    ),
+  },
+  async ({ date, days }) => {
+    const baseDate = new Date(date.trim());
+    if (isNaN(baseDate.getTime())) {
+      return {
+        content: [{ type: "text", text: `Error: Could not parse "${date}" as a valid date.` }],
+        isError: true,
+      };
+    }
+
+    const resultDate = new Date(baseDate.getTime() + days * 86400000);
+    const baseStr = `${baseDate.getUTCFullYear()}-${String(baseDate.getUTCMonth() + 1).padStart(2, "0")}-${String(baseDate.getUTCDate()).padStart(2, "0")}`;
+    const resultStr = `${resultDate.getUTCFullYear()}-${String(resultDate.getUTCMonth() + 1).padStart(2, "0")}-${String(resultDate.getUTCDate()).padStart(2, "0")}`;
+    const baseDay = cdate(`${baseStr}T00:00:00Z`).locale(configLocale).format("dddd");
+    const resultDay = cdate(`${resultStr}T00:00:00Z`).locale(configLocale).format("dddd");
+    const abs = Math.abs(days);
+    const direction = days >= 0 ? "after" : "before";
+
+    return {
+      content: [{ type: "text", text: `${abs} day${abs !== 1 ? "s" : ""} ${direction} ${baseStr} (${baseDay}) → ${resultStr} (${resultDay})` }],
+    };
+  }
+);
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);

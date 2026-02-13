@@ -157,6 +157,14 @@ Parameters:
 - `from` (required) - Start date string
 - `to` (required) - End date string
 
+### `date-offset`
+
+Calculates the date that is N days before or after a given date.
+
+Parameters:
+- `date` (required) - Base date string (e.g. `"2026-01-01"`, `"March 15, 2026"`)
+- `days` (required) - Number of days to add (positive) or subtract (negative)
+
 ### Config integration
 
 The server reads mclocks `config.json` automatically:

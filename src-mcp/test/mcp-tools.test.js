@@ -380,6 +380,83 @@ describe("mclocks MCP Tools", function () {
       assert.ok(text(result).includes("Error"));
     });
   });
+
+  // ---- date-offset ----
+
+  describe("date-offset", function () {
+    it("should calculate 30 days after a date", async function () {
+      const result = await client.callTool({
+        name: "date-offset",
+        arguments: { date: "2026-01-01", days: 30 },
+      });
+      const out = text(result);
+      assert.ok(out.includes("2026-01-31"), `expected 2026-01-31 but got: ${out}`);
+      assert.ok(out.includes("30 days after"), `expected 'after' but got: ${out}`);
+    });
+
+    it("should calculate days before a date (negative)", async function () {
+      const result = await client.callTool({
+        name: "date-offset",
+        arguments: { date: "2026-01-31", days: -30 },
+      });
+      const out = text(result);
+      assert.ok(out.includes("2026-01-01"), `expected 2026-01-01 but got: ${out}`);
+      assert.ok(out.includes("30 days before"), `expected 'before' but got: ${out}`);
+    });
+
+    it("should return same date for 0 days", async function () {
+      const result = await client.callTool({
+        name: "date-offset",
+        arguments: { date: "2026-06-15", days: 0 },
+      });
+      const out = text(result);
+      assert.ok(out.includes("2026-06-15"), `expected same date but got: ${out}`);
+      assert.ok(out.includes("0 days after"), `expected '0 days' but got: ${out}`);
+    });
+
+    it("should handle year boundary", async function () {
+      const result = await client.callTool({
+        name: "date-offset",
+        arguments: { date: "2026-12-31", days: 1 },
+      });
+      assert.ok(text(result).includes("2027-01-01"), "should cross into next year");
+    });
+
+    it("should handle leap year (Feb 28 + 1 in 2024)", async function () {
+      const result = await client.callTool({
+        name: "date-offset",
+        arguments: { date: "2024-02-28", days: 1 },
+      });
+      assert.ok(text(result).includes("2024-02-29"), "2024 is a leap year");
+    });
+
+    it("should handle leap year (Feb 28 + 1 in 2026)", async function () {
+      const result = await client.callTool({
+        name: "date-offset",
+        arguments: { date: "2026-02-28", days: 1 },
+      });
+      assert.ok(text(result).includes("2026-03-01"), "2026 is not a leap year");
+    });
+
+    it("should include weekday names in output", async function () {
+      const result = await client.callTool({
+        name: "date-offset",
+        arguments: { date: "2026-01-01", days: 30 },
+      });
+      const out = text(result);
+      assert.ok(out.includes("Thursday"), "2026-01-01 should be Thursday");
+      assert.ok(out.includes("Saturday"), "2026-01-31 should be Saturday");
+    });
+
+    it("should return error for invalid date", async function () {
+      const result = await client.callTool({
+        name: "date-offset",
+        arguments: { date: "bad-date", days: 10 },
+      });
+      assert.ok(result.isError);
+      assert.ok(text(result).includes("Error"));
+    });
+  });
 });
 
 describe("mclocks MCP env overrides", function () {
