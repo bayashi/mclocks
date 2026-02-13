@@ -435,6 +435,101 @@ You can specify a line number using the hash fragment in the URL:
 
 ----------
 
+## 🧠 mclocks MCP Server (AI Assistant Integration)
+
+`mclocks` includes an MCP (Model Context Protocol) server that enables AI assistants such as [Cursor](https://www.cursor.com/) and [Claude Desktop](https://claude.ai/download) to answer "What time is it now?" across multiple timezones, and to convert between datetime formats and epoch timestamps. The MCP server automatically uses your mclocks `config.json`, so the timezones you've configured in mclocks are reflected in the AI's responses.
+
+### Prerequisites
+
+* [Node.js](https://nodejs.org/) (v18 or later)
+
+If you don't have Node.js, install it from the official website.
+
+### Setup
+
+Add the following JSON to your MCP configuration file:
+
+* **Cursor**: `.cursor/mcp.json` in your project root, or global `~/.cursor/mcp.json`
+* **Claude Desktop** (`claude_desktop_config.json`):
+  * Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+  * macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+  * Linux: `~/.config/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "mclocks-datetime-util": {
+      "command": "npx",
+      "args": ["-y", "mclocks-datetime-util"]
+    }
+  }
+}
+```
+
+After saving, restart the application. The MCP server will be automatically downloaded and started. The following tools become available:
+
+* **`current-time`** - Get the current time in your configured timezones
+* **`convert-time`** - Convert a datetime string or epoch timestamp to multiple timezones
+* **`next-weekday`** - Find the date of the next occurrence of a given weekday
+* **`date-to-weekday`** - Get the day of the week for a given date
+* **`days-until`** - Count the number of days from today until a specified date
+* **`days-between`** - Count the number of days between two dates
+* **`date-offset`** - Calculate the date N days before or after a given date
+
+### How it works with mclocks config
+
+The MCP server automatically reads your mclocks `config.json` and uses:
+
+* **`clocks`** - Timezones defined in your clocks are used as default conversion targets
+* **`convtz`** - Used as the default source timezone when converting datetime strings without timezone info
+* **`usetz`** - Controls whether strict timezone conversion is used
+
+If no `config.json` is found, the server falls back to a built-in set of common timezones (UTC, America/New_York, America/Los_Angeles, Europe/London, Europe/Berlin, Asia/Tokyo, Asia/Shanghai, Asia/Kolkata, Australia/Sydney).
+
+### Environment variables
+
+If you want to override `config.json` settings, or if you don't have a `config.json` at all, you can set environment variables in your MCP configuration. Environment variables take priority over values in `config.json`.
+
+| Variable | Description | Default |
+|---|---|---|
+| `MCLOCKS_CONFIG_PATH` | Path to `config.json`. Not required in most cases, as the server auto-detects the location. | auto-detect |
+| `MCLOCKS_LOCALE` | Locale for formatting weekday names, etc. (e.g. `ja`, `pt`, `de`) | `en` |
+| `MCLOCKS_CONVTZ` | Default source timezone for interpreting datetime strings without timezone info (e.g. `Asia/Tokyo`) | *(none)* |
+| `MCLOCKS_USETZ` | Set to `true` to enable strict timezone conversion | `false` |
+
+Example:
+
+```json
+{
+  "mcpServers": {
+    "mclocks-datetime-util": {
+      "command": "npx",
+      "args": ["-y", "mclocks-datetime-util"],
+      "env": {
+        "MCLOCKS_LOCALE": "ja",
+        "MCLOCKS_CONVTZ": "Asia/Tokyo"
+      }
+    }
+  }
+}
+```
+
+### Example usage
+
+Once configured, you can ask your AI assistant things like:
+
+* "What time is it now?" - Returns the current time in all your mclocks-configured timezones
+* "What time is it in Jakarta?" - Returns the current time in a specific timezone
+* "Convert 1705312200 epoch to datetime"
+* "Convert 2024-01-15T10:30:00Z to Asia/Tokyo"
+* "Next Friday is what date?"
+* "What day of the week is 2026-12-25?"
+* "How many days until Christmas?"
+* "How many days between 2026-01-01 and 2026-12-31?"
+* "What date is 90 days from 2026-04-01?"
+
+----------
+
 ## License
 
 [The Artistic License 2.0](https://github.com/bayashi/mclocks/blob/main/LICENSE)
