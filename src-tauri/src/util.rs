@@ -1,5 +1,4 @@
-use std::{fs, process::Command};
-use directories::BaseDirs;
+use std::process::Command;
 
 pub fn open_with_system_command(path_or_url: &str, error_context: &str) -> Result<(), String> {
     if cfg!(target_os = "windows") {
@@ -23,19 +22,21 @@ pub fn open_with_system_command(path_or_url: &str, error_context: &str) -> Resul
 }
 
 fn create_temp_file_with_text(text: String) -> Result<std::path::PathBuf, String> {
-    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
-    let temp_dir = base_dir.cache_dir();
+    // Create a temporary text file using tempfile crate
+    let named_file = tempfile::Builder::new()
+        .prefix("mclocks_tmp_")
+        .suffix(".txt")
+        .tempfile()
+        .map_err(|e| format!("Failed to create temp file: {}", e))?;
 
-    // Create a temporary text file
-    let temp_file = temp_dir.join(format!("mclocks_quote_{}.txt",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs()));
+    // Keep the file (prevent auto-deletion on drop) and get the path
+    let (mut file, path): (std::fs::File, std::path::PathBuf) = named_file.keep()
+        .map_err(|e| format!("Failed to persist temp file: {}", e))?;
 
-    fs::write(&temp_file, text).map_err(|e| format!("Failed to write temp file: {}", e))?;
+    std::io::Write::write_all(&mut file, text.as_bytes())
+        .map_err(|e| format!("Failed to write temp file: {}", e))?;
 
-    Ok(temp_file)
+    Ok(path)
 }
 
 #[tauri::command]
@@ -48,6 +49,7 @@ pub fn open_text_in_editor(text: String) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     #[test]
     fn test_create_temp_file_with_text() {
@@ -65,8 +67,8 @@ mod tests {
         // Verify the file name pattern
         let file_name = temp_file.file_name().unwrap().to_string_lossy();
         assert!(
-            file_name.starts_with("mclocks_quote_"),
-            "File name should start with 'mclocks_quote_'"
+            file_name.starts_with("mclocks_tmp_"),
+            "File name should start with 'mclocks_tmp_'"
         );
         assert!(
             file_name.ends_with(".txt"),

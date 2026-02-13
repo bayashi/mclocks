@@ -6,24 +6,24 @@ The desktop clock application for multiple time zones🕒🌍🕕
 
 Clock-related features:
 
-* Text clock for multiple time zones
-* Timer
-* Countdown timer
-* Epoch time and date-time convertor
-* Sticky note
+* 🕐 Text clock for multiple time zones
+* ⏱️ Timer
+* ⏳ Countdown timer
+* 🔄 Epoch time and date-time convertor
+* 📝 Sticky note
 
 In addition, it also includes features useful for web developers:
 
-* Simple text convertor
+* 🔀 Simple text convertor
     * such as easily creating SQL `IN` clauses
-* Web server
+* 🌐 Web server
     * serves static files
     * dump request and response server
     * slow endpoints for debugging
 
-`mclocks` doesn't need an internet connection — everything runs 100% locally.
+🔔 NOTE: `mclocks` doesn't need an internet connection — everything runs 100% locally.
 
-## Download
+## 📦 Download
 
 From https://github.com/bayashi/mclocks/releases
 
@@ -41,7 +41,7 @@ For macOS, you can get `.dmg` file to install.
 
 Binary distributions for Linux are not currently provided.
 
-## config.json
+## ⚙️ config.json
 
 The `config.json` file allows you to configure the clocks according to your preferences.
 
@@ -71,7 +71,7 @@ The `config.json` file should be formatted as JSON, as shown like below.
       "forefront": false
     }
 
-## The fields of config.json
+## 🔧 The fields of config.json
 
 #### clocks
 
@@ -140,7 +140,7 @@ bool: `false`
 
 If the `forefront` field is set to `true`, the mclocks application will always be displayed on top of other application windows. 
 
-## Countdown clock
+## ⏳ Countdown clock
 
 By setting up the config as shown below for the `clock`, it will be displayed as a countdown clock to a given `target` date-time.
 
@@ -160,7 +160,7 @@ Indicating 159 days, 12 hours, 34 minutes, and 56 seconds left until September 1
 
 ### Countdown format verbs
 
-The `countdown` field text accepts below template verbs:
+The `countdown` fieled text accepts below template verbs:
 
 * `%TG`: Target date-time string
 * `%D`: Remaining day count to target date-time
@@ -171,7 +171,7 @@ The `countdown` field text accepts below template verbs:
 * `%S`: Remaining time as second to target date-time
 * `%s`: A second(ss) of remaining time (hh:mm:ss)
 
-## Simple Timer
+## ⏱️ Simple Timer
 
 ![simple timer](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-timer.png)
 
@@ -181,15 +181,15 @@ Click `mclocks` app window, then push `Ctrl + 1` key, then start 1-minute timer.
 
 `Ctrl + 0` to delete the oldest timer. `Ctrl + Alt + 0` to delete the newest timer.
 
-NOTE: Countdown clock and simple timer will send notification by default when the timer is complete. If you don't need notifications, set `withoutNotification: true` in `config.json`.
+🔔 NOTE: Countdown clock and simple timer will send notification by default when the timer is complete. If you don't need notifications, set `withoutNotification: true` in `config.json`.
 
-## Display Epoch time
+## 🔢 Display Epoch time
 
 ![epoch-time](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-epoch-time.png)
 
 Click `mclocks` app window, then push `Ctrl + e` key, then toggle to display Epoch time.
 
-## Convert between date-time and Epoch time
+## 🔄 Convert between date-time and Epoch time
 
 Click `mclocks` app window, then paste a date-time or Epoch time, then a dialog appears to display conversion results. And it's able to copy the results to the clipboard. If you don't want to copy, then press `[No]` to just close the dialog.
 
@@ -203,7 +203,7 @@ When pasted date-time values do not include timezone information, they are treat
 
     "convtz": "UTC"
 
-## Convert Text Feature
+## 🔀 Convert Text Feature
 
 Click `mclocks` app window, then use the following keyboard shortcuts to process clipboard text and open it in an editor:
 
@@ -214,7 +214,7 @@ Empty lines are preserved as-is in all operations.
 
 (This Convert Text Feature has nothing to do with clocks or time, but software developers might find it handy! 😊)
 
-## Keyboard Shortcuts
+## ⌨️ Keyboard Shortcuts
 
 ### Show Help
 
@@ -242,8 +242,7 @@ Empty lines are preserved as-is in all operations.
 
 | Shortcut | Description |
 |----------|-------------|
-| `Ctrl + s` | Create a new sticky note from clipboard content (text or image) |
-| `Ctrl + l` | Toggle lock on a sticky note (hides close button, makes text read-only) |
+| `Ctrl + s` | Create a new sticky note from clipboard text |
 
 ### Clipboard datetime Operations
 
@@ -262,19 +261,16 @@ Empty lines are preserved as-is in all operations.
 | `Ctrl + i` | Quote each line of clipboard text with double quotes, append comma to the end (except the last line), and open in editor |
 | `Ctrl + Shift + i` | Append comma to the end of each line (no quotes) for INT list IN condition (except the last line), and open in editor |
 
-## Sticky Note
+## 📝 Sticky Note
 
-![sticky-note](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-sticky-note.png)
-
-Click `mclocks` app window, then push `Ctrl + s` to create a sticky note from clipboard content (text or image). A small floating window opens with the clipboard content.
+Click `mclocks` app window, then push `Ctrl + s` to create a sticky note from clipboard text. A small floating window opens with the clipboard content.
 
 Each sticky note has:
 
 * **Toggle button** (`▸` / `▾`): Expand or collapse the note. In collapsed mode only a single line is shown.
-* **Copy button** (`⧉`): Copy the note content to the clipboard.
+* **Copy button** (`⧉`): Copy the note text to the clipboard.
 * **Forefront button** (`⊤` / `⊥`): Toggle whether the note stays on top of other windows. This setting is saved per sticky note.
-* **Close button** (`✖`): Delete the sticky note and close its window. When the note is locked, this button is replaced with a lock indicator.
-* **Lock** (`Ctrl + L`): Toggle lock on the sticky note. When locked, the text becomes read-only. The lock state is persisted and restored on restart.
+* **Close button** (`✖`): Delete the sticky note and close its window.
 * **Text area**: Freely edit the note content. Changes are auto-saved.
 * **Resize handle**: Drag the bottom-right corner to resize the note when expanded.
 
@@ -282,21 +278,9 @@ Sticky notes inherit `font`, `size`, `color`, and `forefront` settings from `con
 
 NOTE: On macOS, sticky note window positions are only saved when the application exits. On Windows, positions are saved automatically as you move or resize the windows.
 
-### Text Sticky
+Only plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
 
-The plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
-
-### Image Sticky
-
-When the clipboard contains an image (e.g. screenshot) and no text, `Ctrl + s` creates an **image sticky note** instead.
-
-* Images are saved as PNG files (regardless of the original format in the clipboard).
-* The image is displayed at its original size, adjusted for display scaling (DPR). In collapsed mode, only a small strip at the top of the image is visible.
-* Image stickies are not editable, but the **copy button** (`⧉`) copies the image back to the clipboard and the **lock** (`Ctrl + L`) prevents accidental closing.
-* The maximum image size is 10 MB.
-* Image files are stored in a `sticky_images` directory alongside the sticky data file.
-
-## Web Server
+## 🌐 Web Server
 
 `mclocks` can serve static files via a built-in web server. This feature allows you to easily view your code snippets in a browser. Add a `web` field to your `config.json`:
 
@@ -413,7 +397,7 @@ Add the following to your `web` configuration:
 
 * `reposDir`: Path to your local repositories directory. Supports `~` for home directory expansion (e.g., `"~/repos"` on macOS or `"C:/Users/username/repos"` on Windows). This directory must exist.
 * `includeHost`: If `true`, local path resolution includes the original host as a directory (e.g. `{reposDir}/{host}/{owner}/{repo}/...`). If `false`, it resolves to `{reposDir}/{owner}/{repo}/...` (default: `false`).
-* `command`: Command name or path to your editor executable (default: `code`). If the command is not in your system PATH, it is recommended to specify the absolute path.
+* `command`: Command name or path to your editor executable (default: `code`)
 * `args`: Arguments template array. Use `{file}` and `{line}` placeholders. If `#L...` is not present in URL, `{line}` uses 1.
 
 **How it works:**
