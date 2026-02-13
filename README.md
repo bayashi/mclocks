@@ -453,7 +453,7 @@ You can specify a line number using the hash fragment in the URL:
 
 ## mclocks MCP Server (AI Assistant Integration)
 
-`mclocks` includes an MCP (Model Context Protocol) server that enables AI assistants such as [Cursor](https://www.cursor.com/) to answer "What time is it now?" across multiple timezones, and to convert between datetime formats and epoch timestamps. The MCP server automatically uses your mclocks `config.json`, so the timezones you've configured in mclocks are reflected in the AI's responses.
+`mclocks` includes an MCP (Model Context Protocol) server that enables AI assistants such as [Cursor](https://www.cursor.com/) and [Claude Desktop](https://claude.ai/download) to answer "What time is it now?" across multiple timezones, and to convert between datetime formats and epoch timestamps. The MCP server automatically uses your mclocks `config.json`, so the timezones you've configured in mclocks are reflected in the AI's responses.
 
 ### Prerequisites
 
@@ -461,9 +461,15 @@ You can specify a line number using the hash fragment in the URL:
 
 If you don't have Node.js, install it from the official website.
 
-### Setup for Cursor
+### Setup
 
-Add the following to your Cursor MCP configuration file (`.cursor/mcp.json` in your project root, or global `~/.cursor/mcp.json`):
+Add the following JSON to your MCP configuration file:
+
+* **Cursor**: `.cursor/mcp.json` in your project root, or global `~/.cursor/mcp.json`
+* **Claude Desktop** (`claude_desktop_config.json`):
+  * Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+  * macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+  * Linux: `~/.config/Claude/claude_desktop_config.json`
 
 ```json
 {
@@ -476,10 +482,14 @@ Add the following to your Cursor MCP configuration file (`.cursor/mcp.json` in y
 }
 ```
 
-After saving, restart Cursor. The MCP server will be automatically downloaded and started. The following tools become available:
+After saving, restart the application. The MCP server will be automatically downloaded and started. The following tools become available:
 
 * **`current-time`** - Get the current time in your configured timezones
 * **`convert-time`** - Convert a datetime string or epoch timestamp to multiple timezones
+* **`next-weekday`** - Find the date of the next occurrence of a given weekday
+* **`date-to-weekday`** - Get the day of the week for a given date
+* **`days-until`** - Count the number of days from today until a specified date
+* **`days-between`** - Count the number of days between two dates
 
 ### How it works with mclocks config
 
@@ -491,7 +501,18 @@ The MCP server automatically reads your mclocks `config.json` and uses:
 
 If no `config.json` is found, the server falls back to a built-in set of common timezones (UTC, America/New_York, America/Los_Angeles, Europe/London, Europe/Berlin, Asia/Tokyo, Asia/Shanghai, Asia/Kolkata, Australia/Sydney).
 
-Optionally, you can override the config path by setting the `MCLOCKS_CONFIG_PATH` environment variable. This is not required in most cases, as the server auto-detects the config location:
+### Environment variables
+
+If you want to override `config.json` settings, or if you don't have a `config.json` at all, you can set environment variables in your MCP configuration. Environment variables take priority over values in `config.json`.
+
+| Variable | Description | Default |
+|---|---|---|
+| `MCLOCKS_CONFIG_PATH` | Path to `config.json`. Not required in most cases, as the server auto-detects the location. | auto-detect |
+| `MCLOCKS_LOCALE` | Locale for formatting weekday names, etc. (e.g. `ja`, `pt`, `de`) | `en` |
+| `MCLOCKS_CONVTZ` | Default source timezone for interpreting datetime strings without timezone info (e.g. `Asia/Tokyo`) | *(none)* |
+| `MCLOCKS_USETZ` | Set to `true` to enable strict timezone conversion | `false` |
+
+Example:
 
 ```json
 {
@@ -500,14 +521,15 @@ Optionally, you can override the config path by setting the `MCLOCKS_CONFIG_PATH
       "command": "npx",
       "args": ["-y", "mclocks-datetime-util"],
       "env": {
-        "MCLOCKS_CONFIG_PATH": "/path/to/your/config.json"
+        "MCLOCKS_LOCALE": "ja",
+        "MCLOCKS_CONVTZ": "Asia/Tokyo"
       }
     }
   }
 }
 ```
 
-### Example usage in Cursor
+### Example usage
 
 Once configured, you can ask your AI assistant things like:
 
@@ -515,6 +537,10 @@ Once configured, you can ask your AI assistant things like:
 * "What time is it in Jakarta?" - Returns the current time in a specific timezone
 * "Convert 1705312200 epoch to datetime"
 * "Convert 2024-01-15T10:30:00Z to Asia/Tokyo"
+* "Next Friday is what date?"
+* "What day of the week is 2026-12-25?"
+* "How many days until Christmas?"
+* "How many days between 2026-01-01 and 2026-12-31?"
 
 ----------
 
