@@ -150,10 +150,10 @@ server.tool(
       "The source value to convert. Can be a datetime string (e.g. '2024-01-15T10:30:00Z', '2024-01-15 10:30:00 UTC') or an epoch number (e.g. '1705312200')."
     ),
     timezones: z.array(z.string()).optional().describe(
-      "Target timezones to convert to (e.g. ['Asia/Tokyo', 'America/New_York']). If omitted, uses timezones from mclocks config or built-in defaults."
+      "Target timezones in IANA tz database format. If omitted, uses timezones from mclocks config or built-in defaults. You should usually omit this parameter to use the user's mclocks configured timezones."
     ),
     source_timezone: z.string().optional().describe(
-      "Timezone of the source datetime for interpretation (e.g. 'Asia/Tokyo'). Only used when source is a datetime string without timezone info. If omitted, uses convtz from mclocks config if available."
+      "Timezone of the source datetime in IANA tz database format for interpretation. Only used when source is a datetime string without timezone info. If omitted, uses convtz from mclocks config if available."
     ),
     epoch_unit: z.enum(["seconds", "milliseconds", "microseconds", "nanoseconds"]).optional().describe(
       "Unit of the epoch timestamp. Defaults to 'seconds'. Only used when source is a numeric value."
@@ -235,7 +235,7 @@ server.tool(
   "Get the current time in specified timezones.",
   {
     timezones: z.array(z.string()).optional().describe(
-      "Timezones to show current time in (e.g. ['Asia/Tokyo', 'UTC']). If omitted, uses timezones from mclocks config or built-in defaults."
+      "Timezones in IANA tz database format. If omitted, uses timezones from mclocks config or built-in defaults. You should usually omit this parameter to use the user's mclocks configured timezones."
     ),
   },
   async ({ timezones }) => {
@@ -273,7 +273,7 @@ server.tool(
       "Day of the week (e.g. 'Monday', 'friday', 'mon', 'thu'). Case-insensitive. English only."
     ),
     timezone: z.string().optional().describe(
-      "Timezone to determine 'today' (e.g. 'Asia/Tokyo'). If omitted, uses convtz from mclocks config if available, otherwise UTC."
+      "Timezone in IANA tz database format to determine 'today'. If omitted, uses convtz from mclocks config if available, otherwise UTC."
     ),
   },
   async ({ weekday, timezone }) => {
@@ -366,7 +366,7 @@ server.tool(
       "Target day of month (1-31). Defaults to 1 if omitted."
     ),
     timezone: z.string().optional().describe(
-      "Timezone to determine 'today' (e.g. 'Asia/Tokyo'). If omitted, uses convtz from mclocks config if available, otherwise UTC."
+      "Timezone in IANA tz database format to determine 'today'. If omitted, uses convtz from mclocks config if available, otherwise UTC."
     ),
   },
   async ({ year, month, day, timezone }) => {
