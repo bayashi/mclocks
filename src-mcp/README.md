@@ -9,6 +9,7 @@ An MCP (Model Context Protocol) server that gives AI assistants the ability to a
 | Tool | Description |
 |------|-------------|
 | **`current-time`** | Get the current time in your configured timezones |
+| **`local-time`** | Get the current local time in the user's timezone (from `convtz` config or system default). Useful when other MCP tools or prompts need the user's local date/time |
 | **`convert-time`** | Convert a datetime string or epoch timestamp to multiple timezones |
 | **`next-weekday`** | Find the date of the next occurrence of a given weekday |
 | **`date-to-weekday`** | Get the day of the week for a given date |
@@ -54,7 +55,7 @@ If you use the [mclocks](https://github.com/bayashi/mclocks) desktop app, the MC
 
 - **`clocks`** — Timezones from your clocks become default conversion targets
 - **`convtz`** — Default source timezone for datetime strings without timezone info
-- **`usetz`** — Controls strict timezone conversion mode
+- **`usetz`** — Enables strict timezone conversion for historically accurate UTC offsets (e.g. JST was +09:18 before 1888)
 - **`locale`** — Language for weekday names (e.g. `ja`, `pt`, `de`)
 
 Config file locations:

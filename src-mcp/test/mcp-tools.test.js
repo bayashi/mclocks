@@ -125,6 +125,21 @@ describe("mclocks MCP Tools", function () {
     });
   });
 
+  // ---- local-time ----
+
+  describe("local-time", function () {
+    it("should return current local time with system timezone when convtz is not set", async function () {
+      const result = await client.callTool({
+        name: "local-time",
+        arguments: {},
+      });
+      const out = text(result);
+      assert.ok(out.includes("(source: system)"), `expected system source but got: ${out}`);
+      assert.match(out, /\d{4}-\d{2}-\d{2}/, "should contain a date");
+      assert.ok(out.includes(" in "), "should contain timezone info");
+    });
+  });
+
   // ---- next-weekday ----
 
   describe("next-weekday", function () {
@@ -499,6 +514,16 @@ describe("mclocks MCP env overrides", function () {
     const out = text(result);
     // "segunda-feira" is Monday in Portuguese
     assert.ok(out.includes("segunda-feira"), `expected Portuguese weekday but got: ${out}`);
+  });
+
+  it("should use MCLOCKS_CONVTZ for local-time", async function () {
+    const result = await client.callTool({
+      name: "local-time",
+      arguments: {},
+    });
+    const out = text(result);
+    assert.ok(out.includes("Europe/Lisbon"), `expected Europe/Lisbon but got: ${out}`);
+    assert.ok(out.includes("(source: config (convtz))"), `expected config source but got: ${out}`);
   });
 
   it("should use MCLOCKS_CONVTZ as default timezone (next-weekday)", async function () {

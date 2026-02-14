@@ -125,6 +125,8 @@ function convertToTimezone(cdt, src, tz, usetz) {
   try {
     let result;
     if (usetz) {
+      // Use strict timezone conversion for historically accurate UTC offsets.
+      // For example, before 1888/1/1 00:00:00 in JST, its utcOffset is 09:18.
       result = cdt(src).tz(tz).text();
     } else {
       const offset = cdt().tz(tz).utcOffset();
@@ -261,6 +263,23 @@ server.tool(
 
     return {
       content: [{ type: "text", text: lines.join("\n") }],
+    };
+  }
+);
+
+server.tool(
+  "local-time",
+  "Get the current local time in the user's timezone (from convtz config or system default). Use this when other MCP tools or prompts need the user's local date/time.",
+  {},
+  async () => {
+    const tz = configConvTZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const source = configConvTZ ? "config (convtz)" : "system";
+    const now = new Date();
+    const cdt = cdate().cdateFn();
+    const offset = cdt().tz(tz).utcOffset();
+    const result = cdt(now).utcOffset(offset).text();
+    return {
+      content: [{ type: "text", text: `${result} in ${tz} (source: ${source})` }],
     };
   }
 );

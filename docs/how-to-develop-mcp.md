@@ -173,7 +173,7 @@ The server reads mclocks `config.json` automatically:
   1. `--config <path>` command-line argument
   2. `MCLOCKS_CONFIG_PATH` environment variable
   3. Auto-detect from OS-specific location (Windows: `%APPDATA%`, macOS: `~/Library/Application Support`)
-- Fields used from config: `clocks` (default timezones), `convtz` (source timezone), `usetz` (strict TZ mode), `locale` (weekday name localization)
+- Fields used from config: `clocks` (default timezones), `convtz` (source timezone), `usetz` (strict TZ mode for historically accurate UTC offsets), `locale` (weekday name localization)
 - If no config is found, falls back to built-in defaults
 
 #### Environment variable overrides
@@ -184,7 +184,7 @@ The following environment variables override individual config fields (env > con
 |----------|-----------|---------|
 | `MCLOCKS_LOCALE` | `locale` | `"en"` |
 | `MCLOCKS_CONVTZ` | `convtz` | `""` |
-| `MCLOCKS_USETZ` | `usetz` | `false` (set `"true"` to enable) |
+| `MCLOCKS_USETZ` | `usetz` | `false` (set `"true"` to enable historically accurate timezone conversion) |
 
 This allows configuring the MCP server via `mcp.json` without requiring the mclocks app config:
 
