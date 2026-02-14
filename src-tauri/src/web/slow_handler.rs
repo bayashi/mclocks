@@ -4,6 +4,8 @@ use std::thread;
 
 use super::common::create_error_response;
 
+const MAX_SLOW_SECONDS: u64 = 901; // 15 minutes + 1 second
+
 pub fn handle_slow_request(request: &tiny_http::Request) -> Response<std::io::Cursor<Vec<u8>>> {
     let url = request.url();
     let path = url.split('?').next().unwrap_or("/");
@@ -27,6 +29,10 @@ pub fn handle_slow_request(request: &tiny_http::Request) -> Response<std::io::Cu
             }
         }
     };
+
+    if seconds > MAX_SLOW_SECONDS {
+        return create_error_response(StatusCode(400), &format!("Seconds exceeds maximum ({})", MAX_SLOW_SECONDS));
+    }
 
     thread::sleep(Duration::from_secs(seconds));
     Response::from_string("OK").with_status_code(StatusCode(200))
