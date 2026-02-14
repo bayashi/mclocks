@@ -471,6 +471,7 @@ Add the following JSON to your MCP configuration file:
 After saving, restart the application. The MCP server will be automatically downloaded and started. The following tools become available:
 
 * **`current-time`** - Get the current time in your configured timezones
+* **`local-time`** - Get the current local time in the user's timezone (from `convtz` config or system default)
 * **`convert-time`** - Convert a datetime string or epoch timestamp to multiple timezones
 * **`next-weekday`** - Find the date of the next occurrence of a given weekday
 * **`date-to-weekday`** - Get the day of the week for a given date

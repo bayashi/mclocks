@@ -268,6 +268,23 @@ server.tool(
 );
 
 server.tool(
+  "local-time",
+  "Get the current local time in the user's timezone (from convtz config or system default). Use this when other MCP tools or prompts need the user's local date/time.",
+  {},
+  async () => {
+    const tz = configConvTZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const source = configConvTZ ? "config (convtz)" : "system";
+    const now = new Date();
+    const cdt = cdate().cdateFn();
+    const offset = cdt().tz(tz).utcOffset();
+    const result = cdt(now).utcOffset(offset).text();
+    return {
+      content: [{ type: "text", text: `${result} in ${tz} (source: ${source})` }],
+    };
+  }
+);
+
+server.tool(
   "next-weekday",
   "Find the date of the next occurrence of a given weekday from today.",
   {
