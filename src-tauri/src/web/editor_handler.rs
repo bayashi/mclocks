@@ -528,7 +528,8 @@ fn quote_arg_for_display(arg: &str) -> String {
 
 fn find_unsafe_path_char(s: &str) -> Option<char> {
 	// Windows cmd metacharacters that can lead to command injection.
-	for ch in ['&', '|', '<', '>', '^', '"'] {
+	// '%' prevents environment variable expansion (e.g. %COMSPEC%) under cmd /C.
+	for ch in ['&', '|', '<', '>', '^', '"', '%'] {
 		if s.contains(ch) {
 			return Some(ch);
 		}
@@ -643,6 +644,7 @@ mod tests {
 			assert_eq!(find_unsafe_path_char("C:\\safe\\path\\file.txt"), None);
 			assert_eq!(find_unsafe_path_char("C:\\bad&path\\file.txt"), Some('&'));
 			assert_eq!(find_unsafe_path_char("C:\\bad\\path\nfile.txt"), Some('\n'));
+			assert_eq!(find_unsafe_path_char("C:\\bad\\%COMSPEC%\\file.txt"), Some('%'));
 		});
 	}
 
