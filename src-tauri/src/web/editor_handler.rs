@@ -56,11 +56,18 @@ fn handle_get_request(request: &tiny_http::Request) -> Response<std::io::Cursor<
 	let token = issue_one_time_token(&github_path);
 	let html = generate_editor_html(&github_path, &token);
 
-	if let Ok(header) = Header::from_bytes(b"Content-Type", b"text/html; charset=utf-8") {
-		Response::from_string(html).with_header(header).with_status_code(StatusCode(200))
-	} else {
-		Response::from_string(html).with_status_code(StatusCode(200))
+	let mut resp = Response::from_string(html).with_status_code(StatusCode(200));
+	if let Ok(h) = Header::from_bytes(b"Content-Type", b"text/html; charset=utf-8") {
+		resp = resp.with_header(h);
 	}
+	// Prevent iframe embedding to mitigate CSRF via cross-origin framing
+	if let Ok(h) = Header::from_bytes(b"X-Frame-Options", b"DENY") {
+		resp = resp.with_header(h);
+	}
+	if let Ok(h) = Header::from_bytes(b"Content-Security-Policy", b"frame-ancestors 'none'") {
+		resp = resp.with_header(h);
+	}
+	resp
 }
 
 fn handle_post_request(
