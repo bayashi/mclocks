@@ -352,6 +352,8 @@ fn html_escape(s: &str) -> String {
 		.collect()
 }
 
+// Minimal escape for embedding a value in a JS single-quoted string literal.
+// The input is limited to hex characters (0-9a-f)
 fn js_escape_single_quoted(s: &str) -> String {
 	s.replace('\\', "\\\\").replace('\'', "\\'")
 }
