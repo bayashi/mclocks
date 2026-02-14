@@ -336,6 +336,8 @@ The endpoint is accessible via any HTTP method (GET, POST, etc.) and supports th
 * `/slow`: Waits 30 seconds (default) and returns 200 OK
 * `/slow/120`: Waits 120 seconds (or any specified number of seconds) and returns 200 OK
 
+The maximum allowed value is 901 seconds (15 minutes + 1 second). Requests exceeding this limit return a 400 Bad Request error.
+
 This endpoint is useful for testing timeout behavior, connection handling, or simulating slow network conditions.
 
 If an invalid seconds parameter is provided (e.g., `/slow/abc`), the endpoint returns a 400 Bad Request error.

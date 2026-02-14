@@ -1,8 +1,11 @@
 use std::collections::HashMap;
+use std::io::Read;
 use serde::{Serialize, Deserialize};
 use tiny_http::{Response, StatusCode, Header};
 
 use super::common::create_error_response;
+
+const MAX_DUMP_BODY_BYTES: usize = 10 * 1024 * 1024; // 10MB
 
 #[derive(Serialize, Deserialize)]
 pub struct DumpResponse {
@@ -69,9 +72,12 @@ pub fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io
         })
         .collect();
 
-    // Read body if present
+    // Read body if present (capped at 10MB)
     let mut body_content = Vec::new();
-    let body = if request.as_reader().read_to_end(&mut body_content).is_ok() && !body_content.is_empty() {
+    let body = if request.as_reader().take(MAX_DUMP_BODY_BYTES as u64 + 1).read_to_end(&mut body_content).is_ok() && !body_content.is_empty() {
+        if body_content.len() > MAX_DUMP_BODY_BYTES {
+            return create_error_response(StatusCode(413), "Request body too large");
+        }
         String::from_utf8(body_content).ok()
     } else {
         None

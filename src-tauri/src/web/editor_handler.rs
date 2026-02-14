@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::Read;
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{Mutex, OnceLock};
@@ -56,12 +57,21 @@ fn handle_get_request(request: &tiny_http::Request) -> Response<std::io::Cursor<
 	let token = issue_one_time_token(&github_path);
 	let html = generate_editor_html(&github_path, &token);
 
-	if let Ok(header) = Header::from_bytes(b"Content-Type", b"text/html; charset=utf-8") {
-		Response::from_string(html).with_header(header).with_status_code(StatusCode(200))
-	} else {
-		Response::from_string(html).with_status_code(StatusCode(200))
+	let mut resp = Response::from_string(html).with_status_code(StatusCode(200));
+	if let Ok(h) = Header::from_bytes(b"Content-Type", b"text/html; charset=utf-8") {
+		resp = resp.with_header(h);
 	}
+	// Prevent iframe embedding to mitigate CSRF via cross-origin framing
+	if let Ok(h) = Header::from_bytes(b"X-Frame-Options", b"DENY") {
+		resp = resp.with_header(h);
+	}
+	if let Ok(h) = Header::from_bytes(b"Content-Security-Policy", b"frame-ancestors 'none'") {
+		resp = resp.with_header(h);
+	}
+	resp
 }
+
+const MAX_EDITOR_BODY_BYTES: usize = 1024 * 1024; // 1MB
 
 fn handle_post_request(
 	request: &mut tiny_http::Request,
@@ -71,8 +81,11 @@ fn handle_post_request(
 	editor_args: &[String],
 ) -> Response<std::io::Cursor<Vec<u8>>> {
 	let mut body = Vec::new();
-	if let Err(_) = request.as_reader().read_to_end(&mut body) {
+	if let Err(_) = request.as_reader().take(MAX_EDITOR_BODY_BYTES as u64 + 1).read_to_end(&mut body) {
 		return create_error_html_response_with_status(StatusCode(400), "Bad Request: Failed to read request body", None, None, None, None);
+	}
+	if body.len() > MAX_EDITOR_BODY_BYTES {
+		return create_error_html_response_with_status(StatusCode(413), "Request body too large", None, None, None, None);
 	}
 
 	let body_str = match String::from_utf8(body) {
@@ -249,7 +262,7 @@ fn create_error_html_response_with_status(status_code: StatusCode, message: &str
 	<p>If you don't have this repository locally, clone it first.</p>
 	<p>From <a href="{}" target="_blank">{}</a></p>
 </div>"#,
-			href, label
+			html_escape(&href), html_escape(label)
 		)
 	} else {
 		String::new()
@@ -339,6 +352,8 @@ fn html_escape(s: &str) -> String {
 		.collect()
 }
 
+// Minimal escape for embedding a value in a JS single-quoted string literal.
+// The input is limited to hex characters (0-9a-f)
 fn js_escape_single_quoted(s: &str) -> String {
 	s.replace('\\', "\\\\").replace('\'', "\\'")
 }
@@ -521,7 +536,8 @@ fn quote_arg_for_display(arg: &str) -> String {
 
 fn find_unsafe_path_char(s: &str) -> Option<char> {
 	// Windows cmd metacharacters that can lead to command injection.
-	for ch in ['&', '|', '<', '>', '^', '"'] {
+	// '%' prevents environment variable expansion (e.g. %COMSPEC%) under cmd /C.
+	for ch in ['&', '|', '<', '>', '^', '"', '%'] {
 		if s.contains(ch) {
 			return Some(ch);
 		}
@@ -636,6 +652,7 @@ mod tests {
 			assert_eq!(find_unsafe_path_char("C:\\safe\\path\\file.txt"), None);
 			assert_eq!(find_unsafe_path_char("C:\\bad&path\\file.txt"), Some('&'));
 			assert_eq!(find_unsafe_path_char("C:\\bad\\path\nfile.txt"), Some('\n'));
+			assert_eq!(find_unsafe_path_char("C:\\bad\\%COMSPEC%\\file.txt"), Some('%'));
 		});
 	}
 
