@@ -1799,4 +1799,412 @@ describe('mclocks Application Launch Test', () => {
 
         console.log('Successfully verified: Ctrl+v converts epoch time from clipboard and opens result in editor')
     })
+
+    it('should convert epoch time in milliseconds from clipboard with Ctrl+Alt+v and open result in editor', async () => {
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Set up mock for openTextInEditor and clipboard
+        await browser.execute(() => {
+            window.__editorText = null
+            window.__editorCalled = false
+            window.__clipboardText = null
+
+            const createInvokeWrapper = (originalInvoke) => {
+                return async function(cmd, args) {
+                    if (cmd && typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read'))) {
+                        if (window.__clipboardText) return window.__clipboardText
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.readText) return await navigator.clipboard.readText()
+                            return ''
+                        } catch (error) { return '' }
+                    }
+                    if (cmd === 'open_text_in_editor') {
+                        window.__editorText = args.text
+                        window.__editorCalled = true
+                        return Promise.resolve()
+                    }
+                    if (originalInvoke) {
+                        try { return await originalInvoke.call(this, cmd, args) }
+                        catch (error) { return Promise.resolve(null) }
+                    }
+                    return Promise.resolve(null)
+                }
+            }
+
+            if (window.__TAURI_INTERNALS__) {
+                const originalInvoke = window.__TAURI_INTERNALS__.invoke
+                window.__TAURI_INTERNALS__.invoke = createInvokeWrapper(originalInvoke)
+            } else {
+                window.__TAURI_INTERNALS__ = { invoke: createInvokeWrapper(null) }
+            }
+        })
+
+        // Set clipboard to epoch time in milliseconds: 1704067200000 = 2024-01-01 00:00:00 UTC
+        const epochMs = '1704067200000'
+        await browser.execute((text) => { window.__clipboardText = text }, epochMs)
+
+        // Press Ctrl+Alt+v to convert clipboard content as milliseconds
+        console.log('Pressing Ctrl+Alt+v to convert epoch time in milliseconds...')
+        await browser.keys(['Control', 'Alt', 'v'])
+        await browser.pause(2000)
+
+        const editorResult = await browser.execute(() => ({
+            called: window.__editorCalled || false,
+            text: window.__editorText || null
+        }))
+
+        console.log(`Editor called: ${editorResult.called}`)
+        if (editorResult.text) console.log(`Editor text (first 200 chars): ${editorResult.text.substring(0, 200)}`)
+
+        expect(editorResult.called).toBe(true, 'Editor should be opened with conversion result')
+        expect(editorResult.text).not.toBe(null, 'Editor text should not be null')
+        expect(editorResult.text).toContain(epochMs, 'Editor text should contain original epoch time')
+        expect(editorResult.text).toContain('in milliseconds', 'Editor text should indicate epoch time is in milliseconds')
+        expect(editorResult.text).toMatch(/UTC/, 'Editor text should contain UTC timezone conversion')
+
+        console.log('Successfully verified: Ctrl+Alt+v converts epoch time in milliseconds')
+    })
+
+    it('should convert epoch time in microseconds from clipboard with Ctrl+Alt+Shift+v and open result in editor', async () => {
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Set up mock for openTextInEditor and clipboard
+        await browser.execute(() => {
+            window.__editorText = null
+            window.__editorCalled = false
+            window.__clipboardText = null
+
+            const createInvokeWrapper = (originalInvoke) => {
+                return async function(cmd, args) {
+                    if (cmd && typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read'))) {
+                        if (window.__clipboardText) return window.__clipboardText
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.readText) return await navigator.clipboard.readText()
+                            return ''
+                        } catch (error) { return '' }
+                    }
+                    if (cmd === 'open_text_in_editor') {
+                        window.__editorText = args.text
+                        window.__editorCalled = true
+                        return Promise.resolve()
+                    }
+                    if (originalInvoke) {
+                        try { return await originalInvoke.call(this, cmd, args) }
+                        catch (error) { return Promise.resolve(null) }
+                    }
+                    return Promise.resolve(null)
+                }
+            }
+
+            if (window.__TAURI_INTERNALS__) {
+                const originalInvoke = window.__TAURI_INTERNALS__.invoke
+                window.__TAURI_INTERNALS__.invoke = createInvokeWrapper(originalInvoke)
+            } else {
+                window.__TAURI_INTERNALS__ = { invoke: createInvokeWrapper(null) }
+            }
+        })
+
+        // Set clipboard to epoch time in microseconds: 1704067200000000 = 2024-01-01 00:00:00 UTC
+        const epochUs = '1704067200000000'
+        await browser.execute((text) => { window.__clipboardText = text }, epochUs)
+
+        // Press Ctrl+Alt+Shift+v to convert clipboard content as microseconds
+        console.log('Pressing Ctrl+Alt+Shift+v to convert epoch time in microseconds...')
+        await browser.keys(['Control', 'Alt', 'Shift', 'v'])
+        await browser.pause(2000)
+
+        const editorResult = await browser.execute(() => ({
+            called: window.__editorCalled || false,
+            text: window.__editorText || null
+        }))
+
+        console.log(`Editor called: ${editorResult.called}`)
+        if (editorResult.text) console.log(`Editor text (first 200 chars): ${editorResult.text.substring(0, 200)}`)
+
+        expect(editorResult.called).toBe(true, 'Editor should be opened with conversion result')
+        expect(editorResult.text).not.toBe(null, 'Editor text should not be null')
+        expect(editorResult.text).toContain(epochUs, 'Editor text should contain original epoch time')
+        expect(editorResult.text).toContain('in microseconds', 'Editor text should indicate epoch time is in microseconds')
+        expect(editorResult.text).toMatch(/UTC/, 'Editor text should contain UTC timezone conversion')
+
+        console.log('Successfully verified: Ctrl+Alt+Shift+v converts epoch time in microseconds')
+    })
+
+    it('should convert epoch time in nanoseconds from clipboard with Ctrl+Alt+Shift+n+v and open result in editor', async () => {
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Set up mock for openTextInEditor and clipboard
+        await browser.execute(() => {
+            window.__editorText = null
+            window.__editorCalled = false
+            window.__clipboardText = null
+
+            const createInvokeWrapper = (originalInvoke) => {
+                return async function(cmd, args) {
+                    if (cmd && typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read'))) {
+                        if (window.__clipboardText) return window.__clipboardText
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.readText) return await navigator.clipboard.readText()
+                            return ''
+                        } catch (error) { return '' }
+                    }
+                    if (cmd === 'open_text_in_editor') {
+                        window.__editorText = args.text
+                        window.__editorCalled = true
+                        return Promise.resolve()
+                    }
+                    if (originalInvoke) {
+                        try { return await originalInvoke.call(this, cmd, args) }
+                        catch (error) { return Promise.resolve(null) }
+                    }
+                    return Promise.resolve(null)
+                }
+            }
+
+            if (window.__TAURI_INTERNALS__) {
+                const originalInvoke = window.__TAURI_INTERNALS__.invoke
+                window.__TAURI_INTERNALS__.invoke = createInvokeWrapper(originalInvoke)
+            } else {
+                window.__TAURI_INTERNALS__ = { invoke: createInvokeWrapper(null) }
+            }
+        })
+
+        // Set clipboard to epoch time in nanoseconds
+        // Use a value within safe integer range for precision: 1704067200 seconds = 1704067200000000000 ns
+        // Note: JavaScript loses precision for numbers > 2^53, but the string is preserved in the editor output
+        const epochNs = '1704067200000000000'
+        await browser.execute((text) => { window.__clipboardText = text }, epochNs)
+
+        // Press Ctrl+Alt+Shift+n+v to convert clipboard content as nanoseconds
+        // The 'n' key must be pressed before 'v' so that pressedKeys contains 'N' when 'v' handler fires
+        console.log('Pressing Ctrl+Alt+Shift+n+v to convert epoch time in nanoseconds...')
+        await browser.keys(['Control', 'Alt', 'Shift', 'n', 'v'])
+        await browser.pause(2000)
+
+        const editorResult = await browser.execute(() => ({
+            called: window.__editorCalled || false,
+            text: window.__editorText || null
+        }))
+
+        console.log(`Editor called: ${editorResult.called}`)
+        if (editorResult.text) console.log(`Editor text (first 200 chars): ${editorResult.text.substring(0, 200)}`)
+
+        expect(editorResult.called).toBe(true, 'Editor should be opened with conversion result')
+        expect(editorResult.text).not.toBe(null, 'Editor text should not be null')
+        expect(editorResult.text).toContain(epochNs, 'Editor text should contain original epoch time')
+        expect(editorResult.text).toContain('in nanoseconds', 'Editor text should indicate epoch time is in nanoseconds')
+        expect(editorResult.text).toMatch(/UTC/, 'Editor text should contain UTC timezone conversion')
+
+        console.log('Successfully verified: Ctrl+Alt+Shift+n+v converts epoch time in nanoseconds')
+    })
+
+    it('should quote each line with double quotes and append comma with Ctrl+i and open in editor', async () => {
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Set up mock for openTextInEditor and clipboard
+        await browser.execute(() => {
+            window.__editorText = null
+            window.__editorCalled = false
+            window.__clipboardText = null
+
+            const createInvokeWrapper = (originalInvoke) => {
+                return async function(cmd, args) {
+                    if (cmd && typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read'))) {
+                        if (window.__clipboardText) return window.__clipboardText
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.readText) return await navigator.clipboard.readText()
+                            return ''
+                        } catch (error) { return '' }
+                    }
+                    if (cmd === 'open_text_in_editor') {
+                        window.__editorText = args.text
+                        window.__editorCalled = true
+                        return Promise.resolve()
+                    }
+                    if (originalInvoke) {
+                        try { return await originalInvoke.call(this, cmd, args) }
+                        catch (error) { return Promise.resolve(null) }
+                    }
+                    return Promise.resolve(null)
+                }
+            }
+
+            if (window.__TAURI_INTERNALS__) {
+                const originalInvoke = window.__TAURI_INTERNALS__.invoke
+                window.__TAURI_INTERNALS__.invoke = createInvokeWrapper(originalInvoke)
+            } else {
+                window.__TAURI_INTERNALS__ = { invoke: createInvokeWrapper(null) }
+            }
+        })
+
+        // Set clipboard to multi-line text
+        const clipboardText = 'apple\nbanana\ncherry'
+        await browser.execute((text) => { window.__clipboardText = text }, clipboardText)
+
+        // Press Ctrl+i to quote each line with double quotes and append comma
+        console.log('Pressing Ctrl+i to quote and append comma...')
+        await browser.keys(['Control', 'i'])
+        await browser.pause(2000)
+
+        const editorResult = await browser.execute(() => ({
+            called: window.__editorCalled || false,
+            text: window.__editorText || null
+        }))
+
+        console.log(`Editor called: ${editorResult.called}`)
+        if (editorResult.text) console.log(`Editor text: ${editorResult.text}`)
+
+        expect(editorResult.called).toBe(true, 'Editor should be opened with transformed text')
+        expect(editorResult.text).not.toBe(null, 'Editor text should not be null')
+
+        // Expected output: "apple",\n"banana",\n"cherry" (last line has no comma)
+        expect(editorResult.text).toContain('"apple",', 'First line should be quoted with trailing comma')
+        expect(editorResult.text).toContain('"banana",', 'Middle line should be quoted with trailing comma')
+        expect(editorResult.text).toMatch(/"cherry"(?!,)/, 'Last line should be quoted without trailing comma')
+
+        console.log('Successfully verified: Ctrl+i quotes each line and appends comma')
+    })
+
+    it('should append comma to each line without quotes with Ctrl+Shift+i and open in editor', async () => {
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        // Set up mock for openTextInEditor and clipboard
+        await browser.execute(() => {
+            window.__editorText = null
+            window.__editorCalled = false
+            window.__clipboardText = null
+
+            const createInvokeWrapper = (originalInvoke) => {
+                return async function(cmd, args) {
+                    if (cmd && typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read'))) {
+                        if (window.__clipboardText) return window.__clipboardText
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.readText) return await navigator.clipboard.readText()
+                            return ''
+                        } catch (error) { return '' }
+                    }
+                    if (cmd === 'open_text_in_editor') {
+                        window.__editorText = args.text
+                        window.__editorCalled = true
+                        return Promise.resolve()
+                    }
+                    if (originalInvoke) {
+                        try { return await originalInvoke.call(this, cmd, args) }
+                        catch (error) { return Promise.resolve(null) }
+                    }
+                    return Promise.resolve(null)
+                }
+            }
+
+            if (window.__TAURI_INTERNALS__) {
+                const originalInvoke = window.__TAURI_INTERNALS__.invoke
+                window.__TAURI_INTERNALS__.invoke = createInvokeWrapper(originalInvoke)
+            } else {
+                window.__TAURI_INTERNALS__ = { invoke: createInvokeWrapper(null) }
+            }
+        })
+
+        // Set clipboard to multi-line numeric text (typical INT list for SQL IN condition)
+        const clipboardText = '100\n200\n300'
+        await browser.execute((text) => { window.__clipboardText = text }, clipboardText)
+
+        // Press Ctrl+Shift+i to append comma to each line without quotes
+        console.log('Pressing Ctrl+Shift+i to append comma without quotes...')
+        await browser.keys(['Control', 'Shift', 'i'])
+        await browser.pause(2000)
+
+        const editorResult = await browser.execute(() => ({
+            called: window.__editorCalled || false,
+            text: window.__editorText || null
+        }))
+
+        console.log(`Editor called: ${editorResult.called}`)
+        if (editorResult.text) console.log(`Editor text: ${editorResult.text}`)
+
+        expect(editorResult.called).toBe(true, 'Editor should be opened with transformed text')
+        expect(editorResult.text).not.toBe(null, 'Editor text should not be null')
+
+        // Expected output: 100,\n200,\n300 (last line has no comma, no quotes anywhere)
+        expect(editorResult.text).toContain('100,', 'First line should have trailing comma')
+        expect(editorResult.text).toContain('200,', 'Middle line should have trailing comma')
+        expect(editorResult.text).toMatch(/300(?!,)/, 'Last line should not have trailing comma')
+        expect(editorResult.text).not.toMatch(/"/, 'No lines should have double quotes')
+
+        console.log('Successfully verified: Ctrl+Shift+i appends comma without quotes')
+    })
 })
