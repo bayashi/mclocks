@@ -274,7 +274,7 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
         None => "/",
     };
 
-    // Security: Check for directory traversal attempts
+    // Security: Check for directory traversal attempts (pre-decode)
     if url_path.contains("..") || url_path.contains("//") {
         return create_error_response(StatusCode(400), "Bad Request");
     }
@@ -291,7 +291,13 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
         let mut decoded_segments = Vec::new();
         for segment in relative_path.split('/') {
             match decode(segment) {
-                Ok(decoded) => decoded_segments.push(decoded.into_owned()),
+                Ok(decoded) => {
+                    // Security: Reject traversal after URL decoding (%2e%2e bypass)
+                    if decoded.contains("..") {
+                        return create_error_response(StatusCode(400), "Bad Request");
+                    }
+                    decoded_segments.push(decoded.into_owned());
+                },
                 Err(_) => return create_error_response(StatusCode(400), "Bad Request"),
             }
         }
@@ -327,11 +333,15 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
             }
             // Check if it's a file
             if file_path.exists() && file_path.is_file() {
+                // Security: Verify file is within root_path
+                if !file_path.starts_with(root_path) {
+                    return create_error_response(StatusCode(404), "Not Found");
+                }
                 return create_file_response(&file_path);
             }
             // Check if it's a directory request
             if file_path.exists() && file_path.is_dir() {
-                // Check if directory is within root_path
+                // Security: Verify directory is within root_path
                 if !file_path.starts_with(root_path) {
                     return create_error_response(StatusCode(404), "Not Found");
                 }
