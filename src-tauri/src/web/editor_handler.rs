@@ -249,7 +249,7 @@ fn create_error_html_response_with_status(status_code: StatusCode, message: &str
 	<p>If you don't have this repository locally, clone it first.</p>
 	<p>From <a href="{}" target="_blank">{}</a></p>
 </div>"#,
-			href, label
+			html_escape(&href), html_escape(label)
 		)
 	} else {
 		String::new()
