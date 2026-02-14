@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::Read;
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::{Mutex, OnceLock};
@@ -70,6 +71,8 @@ fn handle_get_request(request: &tiny_http::Request) -> Response<std::io::Cursor<
 	resp
 }
 
+const MAX_EDITOR_BODY_BYTES: usize = 1024 * 1024; // 1MB
+
 fn handle_post_request(
 	request: &mut tiny_http::Request,
 	repos_dir: &Option<String>,
@@ -78,8 +81,11 @@ fn handle_post_request(
 	editor_args: &[String],
 ) -> Response<std::io::Cursor<Vec<u8>>> {
 	let mut body = Vec::new();
-	if let Err(_) = request.as_reader().read_to_end(&mut body) {
+	if let Err(_) = request.as_reader().take(MAX_EDITOR_BODY_BYTES as u64 + 1).read_to_end(&mut body) {
 		return create_error_html_response_with_status(StatusCode(400), "Bad Request: Failed to read request body", None, None, None, None);
+	}
+	if body.len() > MAX_EDITOR_BODY_BYTES {
+		return create_error_html_response_with_status(StatusCode(413), "Request body too large", None, None, None, None);
 	}
 
 	let body_str = match String::from_utf8(body) {
