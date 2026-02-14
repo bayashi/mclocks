@@ -484,7 +484,7 @@ The MCP server automatically reads your mclocks `config.json` and uses:
 
 * **`clocks`** - Timezones defined in your clocks are used as default conversion targets
 * **`convtz`** - Used as the default source timezone when converting datetime strings without timezone info
-* **`usetz`** - Controls whether strict timezone conversion is used
+* **`usetz`** - Enables strict timezone conversion for historically accurate UTC offsets (e.g. JST was +09:18 before 1888). Set to `true` when you need to convert historical datetimes accurately
 
 If no `config.json` is found, the server falls back to a built-in set of common timezones (UTC, America/New_York, America/Los_Angeles, Europe/London, Europe/Berlin, Asia/Tokyo, Asia/Shanghai, Asia/Kolkata, Australia/Sydney).
 

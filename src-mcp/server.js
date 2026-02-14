@@ -125,6 +125,8 @@ function convertToTimezone(cdt, src, tz, usetz) {
   try {
     let result;
     if (usetz) {
+      // Use strict timezone conversion for historically accurate UTC offsets.
+      // For example, before 1888/1/1 00:00:00 in JST, its utcOffset is 09:18.
       result = cdt(src).tz(tz).text();
     } else {
       const offset = cdt().tz(tz).utcOffset();

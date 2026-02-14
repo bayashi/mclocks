@@ -54,7 +54,7 @@ If you use the [mclocks](https://github.com/bayashi/mclocks) desktop app, the MC
 
 - **`clocks`** — Timezones from your clocks become default conversion targets
 - **`convtz`** — Default source timezone for datetime strings without timezone info
-- **`usetz`** — Controls strict timezone conversion mode
+- **`usetz`** — Enables strict timezone conversion for historically accurate UTC offsets (e.g. JST was +09:18 before 1888)
 - **`locale`** — Language for weekday names (e.g. `ja`, `pt`, `de`)
 
 Config file locations:
