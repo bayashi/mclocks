@@ -10,9 +10,12 @@ Clock-related features:
 * ⏱️ Timer
 * ⏳ Countdown timer
 * 🔄 Epoch time and date-time convertor
+
+Time waits for no one:
+
 * 📝 Sticky note
 
-In addition, it also includes features useful for web developers:
+A developer is never without a clock:
 
 * 🔀 Simple text convertor
     * such as easily creating SQL `IN` clauses
@@ -20,6 +23,7 @@ In addition, it also includes features useful for web developers:
     * serves static files
     * dump request and response server
     * slow endpoints for debugging
+    * open files in your editor from GitHub URLs
 
 🔔 NOTE: `mclocks` doesn't need an internet connection — everything runs 100% locally.
 
@@ -36,10 +40,6 @@ For Windows, you can get the installer `.msi` file, or `.exe` the executable fil
 For macOS, you can get `.dmg` file to install.
 
 (The shortcut keys in this document are for Windows OS. If you are using macOS, please interpret them accordingly, replacing keys such as `Ctrl` with `Ctrl + Command` and `Alt` with `Option` where appropriate.)
-
-### Linux
-
-Binary distributions for Linux are not currently provided.
 
 ## ⚙️ config.json
 
@@ -276,9 +276,9 @@ Each sticky note has:
 
 Sticky notes inherit `font`, `size`, `color`, and `forefront` settings from `config.json`. The forefront setting can be overridden per sticky note using the forefront button; if not overridden, the value from `config.json` is used. Their position, size, open/close state, and forefront override are persisted, and all notes are automatically restored when `mclocks` restarts.
 
-NOTE: On macOS, sticky note window positions are only saved when the application exits. On Windows, positions are saved automatically as you move or resize the windows.
+🔔 NOTE: On macOS, sticky note window positions are only saved when the application exits. On Windows, positions are saved automatically as you move or resize the windows.
 
-Only plain text can be pasted from the clipboard into a sticky note. The maximum text size per sticky note is 128 KB.
+The maximum text size per sticky note is 128 KB.
 
 ## 🌐 Web Server
 
@@ -437,7 +437,7 @@ You can specify a line number using the hash fragment in the URL:
 
 ----------
 
-## 🧠 mclocks MCP Server (AI Assistant Integration)
+## 🧠 mclocks MCP Server
 
 `mclocks` includes an MCP (Model Context Protocol) server that enables AI assistants such as [Cursor](https://www.cursor.com/) and [Claude Desktop](https://claude.ai/download) to answer "What time is it now?" across multiple timezones, and to convert between datetime formats and epoch timestamps. The MCP server automatically uses your mclocks `config.json`, so the timezones you've configured in mclocks are reflected in the AI's responses.
 
