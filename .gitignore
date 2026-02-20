@@ -25,3 +25,4 @@ dist-ssr
 
 # using pnpm workspace. no need this
 package-lock.json
+.pnpm-store
