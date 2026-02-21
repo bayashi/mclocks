@@ -39,7 +39,7 @@ For Windows, you can get the installer `.msi` file, or `.exe` the executable fil
 
 For macOS, you can get `.dmg` file to install.
 
-(The shortcut keys in this document are for Windows OS. If you are using macOS, please interpret them accordingly, replacing keys such as `Ctrl` with `Ctrl + Command` and `Alt` with `Option` where appropriate.)
+(The shortcut keys in this document are for Windows OS. If you are using macOS, please interpret them accordingly, replacing keys such as `Ctrl` with `Command` and `Alt` with `Option` where appropriate.)
 
 ## ⚙️ config.json
 
