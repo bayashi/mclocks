@@ -1,5 +1,22 @@
 # mclocks
 
+<p align="center">
+README in
+<a href="docs/i18n/README.ja.md">日本語</a> /
+<a href="docs/i18n/README.zh.md">中文</a> /
+<a href="docs/i18n/README.hi.md">हिन्दी</a> /
+<a href="docs/i18n/README.ar.md">العربية</a> /
+<a href="docs/i18n/README.es.md">Español</a> /
+<a href="docs/i18n/README.fr.md">Français</a> /
+<a href="docs/i18n/README.pt.md">Português</a> /
+<a href="docs/i18n/README.de.md">Deutsch</a> /
+<a href="docs/i18n/README.tr.md">Türkçe</a> /
+<a href="docs/i18n/README.id.md">Bahasa Indonesia</a> /
+<a href="docs/i18n/README.kr.md">한국어</a>
+</p>
+
+----------
+
 The desktop clock application for multiple time zones🕒🌍🕕 
 
 ![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png)
