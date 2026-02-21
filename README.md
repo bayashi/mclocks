@@ -1,5 +1,21 @@
 # mclocks
 
+<p align="center">
+<a href="docs/i18n/README.ja.md">日本語</a> /
+<a href="docs/i18n/README.zh.md">中文</a> /
+<a href="docs/i18n/README.hi.md">हिन्दी</a> /
+<a href="docs/i18n/README.ar.md">العربية</a> /
+<a href="docs/i18n/README.es.md">Español</a> /
+<a href="docs/i18n/README.fr.md">Français</a> /
+<a href="docs/i18n/README.pt.md">Português</a> /
+<a href="docs/i18n/README.de.md">Deutsch</a> /
+<a href="docs/i18n/README.tr.md">Türkçe</a> /
+<a href="docs/i18n/README.id.md">Bahasa Indonesia</a> /
+<a href="docs/i18n/README.kr.md">한국어</a>
+</p>
+
+----------
+
 The desktop clock application for multiple time zones🕒🌍🕕 
 
 ![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png)
@@ -39,7 +55,7 @@ For Windows, you can get the installer `.msi` file, or `.exe` the executable fil
 
 For macOS, you can get `.dmg` file to install.
 
-(The shortcut keys in this document are for Windows OS. If you are using macOS, please interpret them accordingly, replacing keys such as `Ctrl` with `Ctrl + Command` and `Alt` with `Option` where appropriate.)
+(The shortcut keys in this document are for Windows OS. If you are using macOS, please interpret them accordingly, replacing keys such as `Ctrl` with `Command` and `Alt` with `Option` where appropriate.)
 
 ## ⚙️ config.json
 
