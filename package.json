@@ -26,6 +26,7 @@
     "diff": "8.0.3",
     "fast-xml-parser": "5.3.8",
     "lodash": "4.17.23",
+    "minimatch": "9.0.6",
     "undici": "6.23.0"
   },
   "devDependencies": {
