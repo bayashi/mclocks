@@ -27,7 +27,6 @@
     "fast-xml-parser": "5.3.8",
     "lodash": "4.17.23",
     "minimatch": "9.0.7",
-    "serialize-javascript": "7.0.3",
     "undici": "6.23.0"
   },
   "devDependencies": {
@@ -51,7 +50,8 @@
       "minimatch@^10": "10.2.1",
       "ajv@^6": "6.14.0",
       "ajv@^8": "8.18.0",
-      "hono@^4": "4.11.10"
+      "hono@^4": "4.11.10",
+      "serialize-javascript": "7.0.3"
     }
   }
 }
