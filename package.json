@@ -21,6 +21,7 @@
     "@tauri-apps/plugin-opener": "2.4.0",
     "@tauri-apps/plugin-os": "2.3.0",
     "@tauri-apps/plugin-window-state": "2.4.0",
+    "basic-ftp": "5.2.0",
     "cdate": "0.0.7",
     "diff": "8.0.3",
     "fast-xml-parser": "5.3.8",
