@@ -1,15 +1,19 @@
 use std::fs;
 use std::path::{PathBuf, Path};
-use tiny_http::{Response, StatusCode, Header};
 use encoding_rs::{Encoding, UTF_8};
+use tiny_http::{Header, Response, StatusCode};
 use chardetng::EncodingDetector;
-use urlencoding::{encode, decode};
+use urlencoding::{decode, encode};
 
 use super::common::create_error_response;
 use super::status_handler::handle_status_request;
 use super::slow_handler::handle_slow_request;
 use super::dump_handler::handle_dump_request;
 use super::editor_handler::handle_editor_request;
+use super::file_md::{
+    build_raw_toggle_href, create_markdown_response, is_markdown_file,
+    should_serve_raw_markdown,
+};
 
 fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
     // Decode URL path for display (each segment separately)
@@ -191,9 +195,24 @@ fn detect_encoding(content: &[u8]) -> &'static Encoding {
     encoding
 }
 
-fn create_file_response(file_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>>> {
+fn create_file_response(
+    file_path: &PathBuf,
+    allow_html_in_md: bool,
+    serve_raw_markdown: bool,
+    raw_toggle_href: &str,
+) -> Response<std::io::Cursor<Vec<u8>>> {
     match fs::read(file_path) {
         Ok(content) => {
+            if is_markdown_file(file_path.as_path()) && !serve_raw_markdown {
+                let encoding = detect_encoding(&content);
+                let (decoded, _, _) = encoding.decode(&content);
+                return create_markdown_response(
+                    file_path.as_path(),
+                    &decoded,
+                    allow_html_in_md,
+                    raw_toggle_href,
+                );
+            }
             let base_content_type = get_content_type(file_path);
             let content_type = if is_text_type(&base_content_type) {
                 let encoding = detect_encoding(&content);
@@ -202,21 +221,25 @@ fn create_file_response(file_path: &PathBuf) -> Response<std::io::Cursor<Vec<u8>
             } else {
                 base_content_type
             };
-            if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
-                Response::from_data(content).with_header(header).with_status_code(StatusCode(200))
+            if let Ok(header) =
+                Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes())
+            {
+                Response::from_data(content)
+                    .with_header(header)
+                    .with_status_code(StatusCode(200))
             } else {
                 Response::from_data(content).with_status_code(StatusCode(200))
             }
         }
-        Err(_) => create_error_response(StatusCode(500), "Internal Server Error")
+        Err(_) => create_error_response(StatusCode(500), "Internal Server Error"),
     }
 }
 
 fn is_text_type(content_type: &str) -> bool {
-    content_type.starts_with("text/") ||
-    content_type == "application/javascript" ||
-    content_type == "application/json" ||
-    content_type == "image/svg+xml"
+    content_type.starts_with("text/")
+        || content_type == "application/javascript"
+        || content_type == "application/json"
+        || content_type == "image/svg+xml"
 }
 
 pub fn get_content_type(path: &PathBuf) -> String {
@@ -233,17 +256,37 @@ pub fn get_content_type(path: &PathBuf) -> String {
         Some("ico") => "image/x-icon",
         Some("txt") => "text/plain",
         _ => "application/octet-stream",
-    }.to_string()
+    }
+    .to_string()
 }
 
-pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf, dump_enabled: bool, slow_enabled: bool, status_enabled: bool, editor_repos_dir: &Option<String>, editor_include_host: bool, editor_command: &str, editor_args: &[String]) -> Response<std::io::Cursor<Vec<u8>>> {
+pub fn handle_web_request(
+    request: &mut tiny_http::Request,
+    root_path: &PathBuf,
+    dump_enabled: bool,
+    slow_enabled: bool,
+    status_enabled: bool,
+    allow_html_in_md: bool,
+    editor_repos_dir: &Option<String>,
+    editor_include_host: bool,
+    editor_command: &str,
+    editor_args: &[String],
+) -> Response<std::io::Cursor<Vec<u8>>> {
     let url = request.url();
     let path = url.split('?').next().unwrap_or("/");
+    let serve_raw_markdown = should_serve_raw_markdown(url);
+    let raw_toggle_href = build_raw_toggle_href(url);
 
     // Check if this is a /editor request
     if editor_repos_dir.is_some() {
         if path == "/editor" || path.starts_with("/editor/") {
-            return handle_editor_request(request, editor_repos_dir, editor_include_host, editor_command, editor_args);
+            return handle_editor_request(
+                request,
+                editor_repos_dir,
+                editor_include_host,
+                editor_command,
+                editor_args,
+            );
         }
     }
 
@@ -323,7 +366,12 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
             if url_path == "/" {
                 let index_path = root_path.join("index.html");
                 if index_path.exists() && index_path.is_file() {
-                    return create_file_response(&index_path);
+                    return create_file_response(
+                        &index_path,
+                        allow_html_in_md,
+                        serve_raw_markdown,
+                        &raw_toggle_href,
+                    );
                 }
                 // If index.html doesn't exist, show directory listing
                 if root_path.exists() && root_path.is_dir() {
@@ -337,7 +385,12 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
                 if !file_path.starts_with(root_path) {
                     return create_error_response(StatusCode(404), "Not Found");
                 }
-                return create_file_response(&file_path);
+                return create_file_response(
+                    &file_path,
+                    allow_html_in_md,
+                    serve_raw_markdown,
+                    &raw_toggle_href,
+                );
             }
             // Check if it's a directory request
             if file_path.exists() && file_path.is_dir() {
@@ -348,7 +401,12 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
                 // Check for index.html in the directory
                 let index_path = file_path.join("index.html");
                 if index_path.exists() && index_path.is_file() {
-                    return create_file_response(&index_path);
+                    return create_file_response(
+                        &index_path,
+                        allow_html_in_md,
+                        serve_raw_markdown,
+                        &raw_toggle_href,
+                    );
                 }
                 // Generate directory listing
                 return create_directory_listing(&file_path, url_path);
@@ -361,12 +419,22 @@ pub fn handle_web_request(request: &mut tiny_http::Request, root_path: &PathBuf,
     if normalized_path.is_dir() {
         let index_path = normalized_path.join("index.html");
         if index_path.exists() {
-            return create_file_response(&index_path);
+            return create_file_response(
+                &index_path,
+                allow_html_in_md,
+                serve_raw_markdown,
+                &raw_toggle_href,
+            );
         }
         // Generate directory listing
         return create_directory_listing(&normalized_path, url_path);
     }
 
     // It's a file, serve it
-    create_file_response(&normalized_path)
+    create_file_response(
+        &normalized_path,
+        allow_html_in_md,
+        serve_raw_markdown,
+        &raw_toggle_href,
+    )
 }

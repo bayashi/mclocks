@@ -5,3 +5,4 @@ pub mod slow_handler;
 pub mod dump_handler;
 pub mod editor_handler;
 pub mod file;
+pub mod file_md;
