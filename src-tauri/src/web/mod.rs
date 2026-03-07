@@ -3,7 +3,7 @@ pub mod dd_publish;
 pub mod handler_dump;
 pub mod handler_editor;
 pub mod handler_static;
-pub mod file_md;
+pub mod static_md;
 pub mod handler_slow;
 pub mod status_code;
 pub mod handler_status;

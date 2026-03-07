@@ -9,7 +9,7 @@ use urlencoding::{decode, encode};
 use super::common::create_error_response;
 use super::handler_dump::handle_dump_request;
 use super::handler_editor::handle_editor_request;
-use super::file_md::{
+use super::static_md::{
     build_raw_toggle_href, create_markdown_response, is_markdown_file, should_serve_raw_markdown,
 };
 use super::handler_slow::handle_slow_request;
