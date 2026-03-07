@@ -1,9 +1,9 @@
 pub mod common;
 pub mod dd_publish;
-pub mod dump_handler;
-pub mod editor_handler;
-pub mod static_handler;
+pub mod handler_dump;
+pub mod handler_editor;
+pub mod handler_static;
 pub mod file_md;
-pub mod slow_handler;
+pub mod handler_slow;
 pub mod status_code;
-pub mod status_handler;
+pub mod handler_status;

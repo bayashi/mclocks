@@ -5,7 +5,7 @@ use tiny_http::Server;
 
 use crate::config::{AppConfig, get_config_app_path};
 use crate::util::open_with_system_command;
-use crate::web::static_handler::handle_web_request;
+use crate::web::handler_static::handle_web_request;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -242,7 +242,7 @@ fn normalize_editor_repos_dir(repos_dir: &str) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::web::static_handler::{get_content_type, handle_web_request};
+    use crate::web::handler_static::{get_content_type, handle_web_request};
     use std::fs;
     use std::path::PathBuf;
     use std::thread;
