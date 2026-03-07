@@ -290,6 +290,11 @@ Yapışkan not başına maksimum metin boyutu 128 KB'dir.
         "dump": true,
         "slow": true,
         "status": true,
+        "content": {
+          "markdown": {
+            "allowRawHTML": false
+          }
+        },
         "editor": {
           "reposDir": "/path/to/your/repos"
         }
@@ -302,6 +307,7 @@ Yapışkan not başına maksimum metin boyutu 128 KB'dir.
 * `dump`: `true` olarak ayarlanırsa, istek ayrıntılarını JSON olarak döndüren `/dump` uç noktasını etkinleştirir (varsayılan: `false`)
 * `slow`: `true` olarak ayarlanırsa, yanıtı geciktiren `/slow` uç noktasını etkinleştirir (varsayılan: `false`)
 * `status`: `true` olarak ayarlanırsa, rastgele HTTP durum kodları döndüren `/status/{code}` uç noktasını etkinleştirir (varsayılan: `false`)
+* `content.markdown.allowRawHTML`: `true` olarak ayarlanırsa Markdown işleme sırasında ham HTML'e izin verir; `false` ise Markdown içindeki ham HTML metin olarak escape edilir (varsayılan: `false`)
 * `editor`: Ayarlanmışsa ve `reposDir` içeriyorsa, tarayıcıdaki GitHub URL'lerinden editörünüzde yerel dosyaları açan `/editor` uç noktasını etkinleştirir (varsayılan: ayarlanmamış)
 
 `config.json`'unuzda `web` alanı yapılandırılmışsa, `mclocks` başlatıldığında web sunucusu otomatik olarak başlar. Dosyalara `http://127.0.0.1:3030` adresinden erişin. Web sunucusu yalnızca `127.0.0.1` (localhost) üzerinde dinler, bu nedenle yalnızca yerel makinenizden erişilebilir.

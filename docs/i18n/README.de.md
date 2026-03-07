@@ -290,6 +290,11 @@ Die maximale Textgröße pro Haftnotiz beträgt 128 KB.
         "dump": true,
         "slow": true,
         "status": true,
+        "content": {
+          "markdown": {
+            "allowRawHTML": false
+          }
+        },
         "editor": {
           "reposDir": "/path/to/your/repos"
         }
@@ -302,6 +307,7 @@ Die maximale Textgröße pro Haftnotiz beträgt 128 KB.
 * `dump`: Wenn auf `true` gesetzt, aktiviert den `/dump`-Endpunkt, der Anforderungsdetails als JSON zurückgibt (Standard: `false`)
 * `slow`: Wenn auf `true` gesetzt, aktiviert den `/slow`-Endpunkt, der die Antwort verzögert (Standard: `false`)
 * `status`: Wenn auf `true` gesetzt, aktiviert den `/status/{code}`-Endpunkt, der beliebige HTTP-Statuscodes zurückgibt (Standard: `false`)
+* `content.markdown.allowRawHTML`: Wenn auf `true` gesetzt, wird rohes HTML beim Markdown-Rendering zugelassen; bei `false` wird rohes HTML in Markdown als Text escaped (Standard: `false`)
 * `editor`: Wenn gesetzt und `reposDir` enthält, aktiviert den `/editor`-Endpunkt, der lokale Dateien in Ihrem Editor über GitHub-URLs im Browser öffnet (Standard: nicht gesetzt)
 
 Wenn das `web`-Feld in Ihrer `config.json` konfiguriert ist, startet der Webserver automatisch beim Start von `mclocks`. Greifen Sie auf Dateien unter `http://127.0.0.1:3030` zu. Der Webserver lauscht nur auf `127.0.0.1` (localhost) und ist daher nur von Ihrem lokalen Rechner aus erreichbar.

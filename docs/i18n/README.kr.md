@@ -290,6 +290,11 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
         "dump": true,
         "slow": true,
         "status": true,
+        "content": {
+          "markdown": {
+            "allowRawHTML": false
+          }
+        },
         "editor": {
           "reposDir": "/path/to/your/repos"
         }
@@ -302,6 +307,7 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
 * `dump`: `true`로 설정하면 요청 세부 정보를 JSON으로 반환하는 `/dump` 엔드포인트가 활성화됩니다 (기본값: `false`)
 * `slow`: `true`로 설정하면 응답을 지연시키는 `/slow` 엔드포인트가 활성화됩니다 (기본값: `false`)
 * `status`: `true`로 설정하면 임의의 HTTP 상태 코드를 반환하는 `/status/{code}` 엔드포인트가 활성화됩니다 (기본값: `false`)
+* `content.markdown.allowRawHTML`: `true`로 설정하면 Markdown 렌더링에서 raw HTML을 허용하고, `false`이면 Markdown 내 raw HTML을 텍스트로 이스케이프합니다 (기본값: `false`)
 * `editor`: 설정되어 있고 `reposDir`을 포함하면 브라우저의 GitHub URL에서 편집기로 로컬 파일을 여는 `/editor` 엔드포인트가 활성화됩니다 (기본값: 미설정)
 
 `config.json`에 `web` 필드가 구성되어 있으면 `mclocks` 시작 시 웹 서버가 자동으로 시작됩니다. `http://127.0.0.1:3030`에서 파일에 접근할 수 있습니다. 웹 서버는 `127.0.0.1` (localhost)에서만 수신하므로 로컬 머신에서만 접근 가능합니다.

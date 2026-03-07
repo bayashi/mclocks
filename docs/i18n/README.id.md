@@ -290,6 +290,11 @@ Ukuran teks maksimum per catatan tempel adalah 128 KB.
         "dump": true,
         "slow": true,
         "status": true,
+        "content": {
+          "markdown": {
+            "allowRawHTML": false
+          }
+        },
         "editor": {
           "reposDir": "/path/to/your/repos"
         }
@@ -302,6 +307,7 @@ Ukuran teks maksimum per catatan tempel adalah 128 KB.
 * `dump`: Jika diatur ke `true`, mengaktifkan endpoint `/dump` yang mengembalikan detail permintaan sebagai JSON (default: `false`)
 * `slow`: Jika diatur ke `true`, mengaktifkan endpoint `/slow` yang menunda respons (default: `false`)
 * `status`: Jika diatur ke `true`, mengaktifkan endpoint `/status/{code}` yang mengembalikan kode status HTTP arbitrer (default: `false`)
+* `content.markdown.allowRawHTML`: Jika diatur ke `true`, mengizinkan HTML mentah dalam rendering Markdown; jika `false`, HTML mentah dalam Markdown di-escape sebagai teks (default: `false`)
 * `editor`: Jika diatur dan berisi `reposDir`, mengaktifkan endpoint `/editor` yang membuka file lokal di editor Anda dari URL GitHub di browser (default: tidak diatur)
 
 Jika field `web` dikonfigurasi di `config.json` Anda, server web dimulai secara otomatis saat `mclocks` diluncurkan. Akses file di `http://127.0.0.1:3030`. Server web hanya mendengarkan di `127.0.0.1` (localhost), jadi hanya dapat diakses dari mesin lokal Anda.

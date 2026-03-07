@@ -290,6 +290,11 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
         "dump": true,
         "slow": true,
         "status": true,
+        "content": {
+          "markdown": {
+            "allowRawHTML": false
+          }
+        },
         "editor": {
           "reposDir": "/path/to/your/repos"
         }
@@ -302,6 +307,7 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 * `dump`：如果设置为 `true`，启用以 JSON 返回请求详情的 `/dump` 端点（默认：`false`）
 * `slow`：如果设置为 `true`，启用延迟响应的 `/slow` 端点（默认：`false`）
 * `status`：如果设置为 `true`，启用返回任意 HTTP 状态码的 `/status/{code}` 端点（默认：`false`）
+* `content.markdown.allowRawHTML`：如果设置为 `true`，允许在 Markdown 渲染中使用原始 HTML；如果为 `false`，Markdown 中的原始 HTML 会被转义为文本（默认：`false`）
 * `editor`：如果设置并包含 `reposDir`，启用从浏览器的 GitHub URL 在编辑器中打开本地文件的 `/editor` 端点（默认：未设置）
 
 如果 `config.json` 中配置了 `web` 字段，Web 服务器将在 `mclocks` 启动时自动开始。通过 `http://127.0.0.1:3030` 访问文件。Web 服务器仅在 `127.0.0.1`（localhost）上监听，因此只能从本地机器访问。
