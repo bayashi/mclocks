@@ -347,7 +347,7 @@ mod tests {
             "Should show directory listing"
         );
         assert!(body.contains("file.txt"), "Should list file.txt");
-        assert!(body.contains("../"), "Should show parent directory link");
+        assert!(body.contains(". . /"), "Should show parent directory link");
     }
 
     #[test]
