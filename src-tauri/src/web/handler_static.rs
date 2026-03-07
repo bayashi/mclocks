@@ -42,19 +42,31 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
     html.push_str(&html_escape(&decoded_path));
     html.push_str("</title>\n");
     html.push_str("<style>\n");
-    html.push_str("body { font-family: monospace; margin: 20px; }\n");
-    html.push_str("h1 { color: #333; }\n");
-    html.push_str("ul { list-style-type: none; padding-left: 0; }\n");
-    html.push_str("li { padding: 5px 0; }\n");
-    html.push_str("a { text-decoration: none; color: #0066cc; }\n");
-    html.push_str("a:hover { text-decoration: underline; }\n");
-    html.push_str(".dir::before { content: '📁'; }\n");
-    html.push_str(".file::before { content: '📄'; }\n");
+    html.push_str("* { box-sizing: border-box; }\n");
+    html.push_str("body { color: #aaa; background: #000; margin: 0; font-family: \"Segoe UI\", \"Yu Gothic UI\", \"Meiryo\", \"Hiragino Kaku Gothic ProN\", sans-serif; line-height: 1.6; }\n");
+    html.push_str("#main { padding: 16px 24px; max-width: 960px; overflow-wrap: anywhere; word-break: break-word; }\n");
+    html.push_str("h1 { color: #ddd; font-size: 26px; margin: 0 0 16px; }\n");
+    html.push_str(".path { color: #666; margin-bottom: 16px; }\n");
+    html.push_str("ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid #222; }\n");
+    html.push_str("li { border-bottom: 1px solid #161616; }\n");
+    html.push_str("a { display: block; color: #ccc; text-decoration: none; padding: 8px 4px; border-radius: 2px; }\n");
+    html.push_str("a:hover { color: #fff; background: #1a1a1a; }\n");
+    html.push_str(".entry-label { display: inline-block; min-width: 1.3em; color: #666; }\n");
+    html.push_str(".dir .entry-label { color: #777; }\n");
+    html.push_str(".back .entry-label { color: #555; }\n");
+    html.push_str(".empty { color: #666; font-style: italic; padding: 8px 4px; }\n");
+    html.push_str(".error { color: #ff6b6b; padding: 8px 4px; }\n");
     html.push_str("</style>\n");
     html.push_str("</head>\n<body>\n");
+    html.push_str("<div id=\"main\">\n");
     html.push_str("<h1>Index of ");
     html.push_str(&html_escape(&decoded_path));
-    html.push_str("</h1>\n<ul>\n");
+    html.push_str("</h1>\n");
+    html.push_str("<div class=\"path\">");
+    html.push_str(&html_escape(&decoded_path));
+    html.push_str("</div>\n");
+    html.push_str("<ul>\n");
+    let mut has_entries = false;
 
     // Add parent directory link if not at root
     if url_path != "/" {
@@ -74,9 +86,10 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
                 None => "/".to_string(),
             }
         };
-        html.push_str("<li><a href=\"");
+        html.push_str("<li class=\"back\"><a href=\"");
         html.push_str(&html_escape(&parent_url));
-        html.push_str("\">../</a></li>\n");
+        html.push_str("\"><span class=\"entry-label\">..</span>../</a></li>\n");
+        has_entries = true;
     }
 
     // Read directory entries
@@ -120,9 +133,10 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
                 };
                 html.push_str("<li class=\"dir\"><a href=\"");
                 html.push_str(&html_escape(&dir_url));
-                html.push_str("\">");
+                html.push_str("\"><span class=\"entry-label\">D</span>");
                 html.push_str(&html_escape(&dir));
                 html.push_str("/</a></li>\n");
+                has_entries = true;
             }
 
             // Add file entries
@@ -136,17 +150,21 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
                 };
                 html.push_str("<li class=\"file\"><a href=\"");
                 html.push_str(&html_escape(&file_url));
-                html.push_str("\">");
+                html.push_str("\"><span class=\"entry-label\">F</span>");
                 html.push_str(&html_escape(&file));
                 html.push_str("</a></li>\n");
+                has_entries = true;
             }
         }
         Err(_) => {
-            html.push_str("<li>Error reading directory</li>\n");
+            html.push_str("<li class=\"error\">Error reading directory</li>\n");
         }
     }
 
-    html.push_str("</ul>\n</body>\n</html>");
+    if !has_entries {
+        html.push_str("<li class=\"empty\">(empty)</li>\n");
+    }
+    html.push_str("</ul>\n</div>\n</body>\n</html>");
 
     let content_type = "text/html; charset=utf-8";
     if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
