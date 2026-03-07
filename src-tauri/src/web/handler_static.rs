@@ -1,19 +1,18 @@
-use std::fs;
-use std::path::{PathBuf, Path};
-use encoding_rs::{Encoding, UTF_8};
-use tiny_http::{Header, Response, StatusCode};
-use chardetng::EncodingDetector;
-use urlencoding::{decode, encode};
 use super::dd_publish::{resolve_temp_file, resolve_temp_share};
+use chardetng::EncodingDetector;
+use encoding_rs::{Encoding, UTF_8};
+use std::fs;
+use std::path::{Path, PathBuf};
+use tiny_http::{Header, Response, StatusCode};
+use urlencoding::{decode, encode};
 
 use super::common::create_error_response;
-use super::status_handler::handle_status_request;
-use super::slow_handler::handle_slow_request;
-use super::dump_handler::handle_dump_request;
-use super::editor_handler::handle_editor_request;
-use super::file_md::{
-    build_raw_toggle_href, create_markdown_response, is_markdown_file,
-    should_serve_raw_markdown,
+use super::handler_dump::handle_dump_request;
+use super::handler_editor::handle_editor_request;
+use super::handler_slow::handle_slow_request;
+use super::handler_status::handle_status_request;
+use super::static_md::{
+    build_raw_toggle_href, create_markdown_response, is_markdown_file, should_serve_raw_markdown,
 };
 
 fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -151,7 +150,9 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
 
     let content_type = "text/html; charset=utf-8";
     if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
-        Response::from_string(html).with_header(header).with_status_code(StatusCode(200))
+        Response::from_string(html)
+            .with_header(header)
+            .with_status_code(StatusCode(200))
     } else {
         Response::from_string(html).with_status_code(StatusCode(200))
     }
@@ -222,9 +223,7 @@ fn create_file_response(
             } else {
                 base_content_type
             };
-            if let Ok(header) =
-                Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes())
-            {
+            if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
                 Response::from_data(content)
                     .with_header(header)
                     .with_status_code(StatusCode(200))
@@ -358,7 +357,7 @@ pub fn handle_web_request(
                         return create_error_response(StatusCode(400), "Bad Request");
                     }
                     decoded_segments.push(decoded.into_owned());
-                },
+                }
                 Err(_) => return create_error_response(StatusCode(400), "Bad Request"),
             }
         }
@@ -393,7 +392,10 @@ pub fn handle_web_request(
                 }
                 // If index.html doesn't exist, show directory listing
                 if active_root_path.exists() && active_root_path.is_dir() {
-                    return create_directory_listing(active_root_path.as_path(), public_url_path.as_str());
+                    return create_directory_listing(
+                        active_root_path.as_path(),
+                        public_url_path.as_str(),
+                    );
                 }
                 return create_error_response(StatusCode(404), "Not Found");
             }

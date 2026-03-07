@@ -106,6 +106,12 @@ jobs:
         run: |
           pnpm exec eslint .
 
+      - name: verify formatting
+        run: |
+          cargo fmt --manifest-path src-tauri/Cargo.toml
+          pnpm exec eslint --fix "src/**/*.js" "*.config.js" "src-mcp/**/*.js"
+          git diff --exit-code
+
       - name: run Rust tests
         run: |
           cd src-tauri

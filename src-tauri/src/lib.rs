@@ -1,17 +1,19 @@
-mod web_server;
 mod config;
+mod sticky;
 mod util;
 mod web;
-mod sticky;
+mod web_server;
 
+use config::{get_config_path, load_config};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::Manager;
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
-use web_server::{start_web_server, open_url_in_browser, load_web_config};
-use config::{get_config_path, load_config};
 use util::open_text_in_editor;
-use web::dd_publish::{build_temp_file_url, build_temp_share_url, register_temp_file, register_temp_root};
+use web::dd_publish::{
+    build_temp_file_url, build_temp_share_url, register_temp_file, register_temp_root,
+};
+use web_server::{load_web_config, open_url_in_browser, start_web_server};
 
 /// Global lock to serialize all saveWindowState calls across windows.
 /// Prevents potential deadlocks in the window-state plugin when multiple
@@ -19,19 +21,20 @@ use web::dd_publish::{build_temp_file_url, build_temp_share_url, register_temp_f
 struct WindowStateSaveLock(Mutex<()>);
 
 impl Default for WindowStateSaveLock {
-	fn default() -> Self {
-		Self(Mutex::new(()))
-	}
+    fn default() -> Self {
+        Self(Mutex::new(()))
+    }
 }
 
 #[tauri::command]
 fn save_window_state_exclusive(
-	app: tauri::AppHandle,
-	lock: tauri::State<'_, WindowStateSaveLock>,
+    app: tauri::AppHandle,
+    lock: tauri::State<'_, WindowStateSaveLock>,
 ) -> Result<(), String> {
-	use tauri_plugin_window_state::{AppHandleExt, StateFlags};
-	let _guard = lock.0.lock().map_err(|e| e.to_string())?;
-	app.save_window_state(StateFlags::all()).map_err(|e| e.to_string())
+    use tauri_plugin_window_state::{AppHandleExt, StateFlags};
+    let _guard = lock.0.lock().map_err(|e| e.to_string())?;
+    app.save_window_state(StateFlags::all())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -80,14 +83,28 @@ pub fn run() {
         Err(e) => (Some(e), None),
     };
 
-    let port_to_open = web_config_for_startup.as_ref().map(|config| {
-        start_web_server(config.root.clone(), config.port, config.dump, config.slow, config.status, config.allow_html_in_md, config.editor_repos_dir.clone(), config.editor_include_host, config.editor_command.clone(), config.editor_args.clone());
-        if config.open_browser_at_start {
-            Some(config.port)
-        } else {
-            None
-        }
-    }).flatten();
+    let port_to_open = web_config_for_startup
+        .as_ref()
+        .map(|config| {
+            start_web_server(
+                config.root.clone(),
+                config.port,
+                config.dump,
+                config.slow,
+                config.status,
+                config.allow_html_in_md,
+                config.editor_repos_dir.clone(),
+                config.editor_include_host,
+                config.editor_command.clone(),
+                config.editor_args.clone(),
+            );
+            if config.open_browser_at_start {
+                Some(config.port)
+            } else {
+                None
+            }
+        })
+        .flatten();
 
     let error_msg = web_error.clone();
     tbr = tbr.setup(move |app| {
@@ -136,7 +153,8 @@ pub fn run() {
         ws = tauri_plugin_window_state::Builder::with_filename(ws, filename);
     }
 
-    tbr = tbr.plugin(tauri_plugin_os::init())
+    tbr = tbr
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
@@ -144,21 +162,21 @@ pub fn run() {
         .plugin(ws.build());
 
     tbr.invoke_handler(tauri::generate_handler![
-            load_config,
-            get_config_path,
-            open_text_in_editor,
-            register_temp_web_root,
-            save_window_state_exclusive,
-            sticky::create_sticky,
-            sticky::create_sticky_image,
-            sticky::sticky_take_init_content,
-            sticky::save_sticky_text,
-            sticky::delete_sticky_text,
-            sticky::save_sticky_state,
-            sticky::load_sticky_state,
-            sticky::load_sticky_image,
-            sticky::restore_stickies,
-        ])
-        .run(context)
-        .expect("error while running tauri application");
+        load_config,
+        get_config_path,
+        open_text_in_editor,
+        register_temp_web_root,
+        save_window_state_exclusive,
+        sticky::create_sticky,
+        sticky::create_sticky_image,
+        sticky::sticky_take_init_content,
+        sticky::save_sticky_text,
+        sticky::delete_sticky_text,
+        sticky::save_sticky_state,
+        sticky::load_sticky_state,
+        sticky::load_sticky_image,
+        sticky::restore_stickies,
+    ])
+    .run(context)
+    .expect("error while running tauri application");
 }
