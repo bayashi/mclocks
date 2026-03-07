@@ -308,6 +308,11 @@ The maximum text size per sticky note is 128 KB.
         "dump": true,
         "slow": true,
         "status": true,
+        "content": {
+          "markdown": {
+            "allowRawHTML": false
+          }
+        },
         "editor": {
           "reposDir": "/path/to/your/repos"
         }
@@ -320,6 +325,7 @@ The maximum text size per sticky note is 128 KB.
 * `dump`: If set to `true`, enables the `/dump` endpoint that returns request details as JSON (default: `false`)
 * `slow`: If set to `true`, enables the `/slow` endpoint that delays the response (default: `false`)
 * `status`: If set to `true`, enables the `/status/{code}` endpoint that returns arbitrary HTTP status codes (default: `false`)
+* `content.markdown.allowRawHTML`: If set to `true`, allows raw HTML inside Markdown rendering; if `false`, raw HTML in Markdown is escaped as text (default: `false`)
 * `editor`: If set and contains `reposDir`, enables the `/editor` endpoint that opens local files in your editor from browser's GitHub URLs (default: not set)
 
 If the `web` field is configured in your `config.json`, the web server starts automatically when `mclocks` launches. Access files at `http://127.0.0.1:3030`. The web server only listens on `127.0.0.1` (localhost), so it is only accessible from your local machine.

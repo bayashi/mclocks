@@ -22,6 +22,20 @@ pub struct EditorConfig {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct WebMarkdownConfig {
+    #[serde(default = "df_allow_html_in_md", rename = "allowRawHTML", alias = "allowRawHtml")]
+    pub allow_raw_html: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct WebContentConfig {
+    #[serde(default)]
+    pub markdown: Option<WebMarkdownConfig>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct WebConfig {
     pub root: String,
     #[serde(default = "df_web_port")]
@@ -35,6 +49,8 @@ pub struct WebConfig {
     #[serde(default = "df_status")]
     pub status: bool,
     #[serde(default)]
+    pub content: Option<WebContentConfig>,
+    #[serde(default)]
     pub editor: Option<EditorConfig>,
 }
 
@@ -46,6 +62,7 @@ pub struct WebServerConfig {
     pub dump: bool,
     pub slow: bool,
     pub status: bool,
+    pub allow_html_in_md: bool,
     pub editor_repos_dir: Option<String>,
     pub editor_include_host: bool,
     pub editor_command: String,
@@ -57,8 +74,20 @@ fn df_open_browser_at_start() -> bool { false }
 fn df_dump() -> bool { false }
 fn df_slow() -> bool { false }
 fn df_status() -> bool { false }
+fn df_allow_html_in_md() -> bool { false }
 
-pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool, editor_repos_dir: Option<String>, editor_include_host: bool, editor_command: String, editor_args: Vec<String>) {
+pub fn start_web_server(
+    root: String,
+    port: u16,
+    dump_enabled: bool,
+    slow_enabled: bool,
+    status_enabled: bool,
+    allow_html_in_md: bool,
+    editor_repos_dir: Option<String>,
+    editor_include_host: bool,
+    editor_command: String,
+    editor_args: Vec<String>,
+) {
     thread::spawn(move || {
         let server = match Server::http(format!("127.0.0.1:{}", port)) {
             Ok(s) => s,
@@ -77,7 +106,18 @@ pub fn start_web_server(root: String, port: u16, dump_enabled: bool, slow_enable
         println!("Web server started on http://localhost:{}", port);
 
         for mut request in server.incoming_requests() {
-            let response = handle_web_request(&mut request, &root_path, dump_enabled, slow_enabled, status_enabled, &editor_repos_dir, editor_include_host, &editor_command, &editor_args);
+            let response = handle_web_request(
+                &mut request,
+                &root_path,
+                dump_enabled,
+                slow_enabled,
+                status_enabled,
+                allow_html_in_md,
+                &editor_repos_dir,
+                editor_include_host,
+                &editor_command,
+                &editor_args,
+            );
             if let Err(e) = request.respond(response) {
                 eprintln!("Failed to send response: {}", e);
             }
@@ -115,12 +155,29 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         Some(repos_dir) => Some(normalize_editor_repos_dir(repos_dir)?),
         None => None,
     };
-    let editor_include_host = web_config.editor.as_ref().map(|e| e.include_host).unwrap_or(false);
-    let editor_command = web_config.editor.as_ref().and_then(|e| e.command.as_ref()).cloned().unwrap_or("code".to_string());
-    let editor_args = web_config.editor.as_ref().and_then(|e| e.args.as_ref()).cloned().unwrap_or(vec![
-        "-g".to_string(),
-        "{file}:{line}".to_string(),
-    ]);
+    let allow_html_in_md = web_config
+        .content
+        .as_ref()
+        .and_then(|c| c.markdown.as_ref())
+        .map(|m| m.allow_raw_html)
+        .unwrap_or(false);
+    let editor_include_host = web_config
+        .editor
+        .as_ref()
+        .map(|e| e.include_host)
+        .unwrap_or(false);
+    let editor_command = web_config
+        .editor
+        .as_ref()
+        .and_then(|e| e.command.as_ref())
+        .cloned()
+        .unwrap_or("code".to_string());
+    let editor_args = web_config
+        .editor
+        .as_ref()
+        .and_then(|e| e.args.as_ref())
+        .cloned()
+        .unwrap_or(vec!["-g".to_string(), "{file}:{line}".to_string()]);
 
     Ok(Some(WebServerConfig {
         root: web_config.root,
@@ -129,6 +186,7 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         dump: web_config.dump,
         slow: web_config.slow,
         status: web_config.status,
+        allow_html_in_md,
         editor_repos_dir,
         editor_include_host,
         editor_command,
@@ -317,6 +375,96 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         assert_eq!(response.text().unwrap(), "<html>test</html>");
+    }
+
+    #[test]
+    fn test_handle_web_request_markdown_file_renders_html() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let md_file = root_path.join("readme.md");
+        fs::write(
+            &md_file,
+            "# Title\n\n## Section\n\n```js\nconsole.log('hello')\n```\n",
+        )
+        .expect("Failed to create readme.md");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/readme.md", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "Markdown response should be HTML, got: {}",
+            content_type
+        );
+
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            !body.contains("marked.min.js"),
+            "Rendered markdown page should not depend on CDN"
+        );
+        assert!(
+            body.contains("<h1 id=\"") && body.contains("<h2 id=\""),
+            "Rendered markdown page should include heading ids"
+        );
+        assert!(
+            body.contains("id=\"toc-list\"") && body.contains("Index"),
+            "Rendered markdown page should include TOC"
+        );
+        assert!(
+            body.contains("id=\"raw-toggle\"") && body.contains("href=\"/readme.md?raw=1\""),
+            "Rendered markdown page should include raw toggle link"
+        );
+        assert!(
+            body.contains("document.querySelectorAll(\"pre code\")"),
+            "Rendered markdown page should include copy button script"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_markdown_file_raw_query_returns_markdown_text() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let md_file = root_path.join("raw.md");
+        fs::write(&md_file, "# Raw Title\n\n<script>alert('x')</script>\n").expect("Failed to create raw.md");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/raw.md?raw=1", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/markdown"),
+            "Raw markdown response should be text/markdown, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(body, "# Raw Title\n\n<script>alert('x')</script>\n");
     }
 
     #[test]
@@ -550,24 +698,81 @@ mod tests {
         30000
     }
 
-    fn start_test_server(root: PathBuf, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) -> std::thread::JoinHandle<()> {
+    fn start_test_server_with_options(root: PathBuf, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool, allow_html_in_md: bool) -> std::thread::JoinHandle<()> {
         thread::spawn(move || {
             let server = match Server::http(format!("127.0.0.1:{}", port)) {
                 Ok(s) => s,
                 Err(_) => return,
             };
-
-            let editor_command = "code";
-            let editor_args = vec![
+            let editor_args: Vec<String> = vec![
                 "-g".to_string(),
                 "{file}:{line}".to_string(),
             ];
+            let editor_command = "code".to_string();
 
             for mut request in server.incoming_requests() {
-                let response = handle_web_request(&mut request, &root, dump_enabled, slow_enabled, status_enabled, &None, false, editor_command, &editor_args);
+                let response = handle_web_request(
+                    &mut request,
+                    &root,
+                    dump_enabled,
+                    slow_enabled,
+                    status_enabled,
+                    allow_html_in_md,
+                    &None,
+                    false,
+                    &editor_command,
+                    &editor_args
+                );
                 let _ = request.respond(response);
             }
         })
+    }
+
+    fn start_test_server(root: PathBuf, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) -> std::thread::JoinHandle<()> {
+        start_test_server_with_options(root, port, dump_enabled, slow_enabled, status_enabled, false)
+    }
+
+    #[test]
+    fn test_handle_web_request_markdown_file_blocks_raw_html_by_default() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let md_file = root_path.join("raw-html.md");
+        fs::write(&md_file, "# Title\n\n<script>alert('x')</script>\n").expect("Failed to create raw-html.md");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/raw-html.md", port))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(body.contains("&lt;script&gt;alert("), "Raw HTML should be escaped by default");
+        assert!(!body.contains("<script>alert("), "Raw HTML script tag should not be rendered");
+    }
+
+    #[test]
+    fn test_handle_web_request_markdown_file_allows_raw_html_when_enabled() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let md_file = root_path.join("raw-html.md");
+        fs::write(&md_file, "# Title\n\n<script>alert('x')</script>\n").expect("Failed to create raw-html.md");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server_with_options(root_path, port, false, false, false, true);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/raw-html.md", port))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(body.contains("<script>alert('x')</script>"), "Raw HTML should be rendered when enabled");
     }
 
     #[test]

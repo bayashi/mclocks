@@ -290,6 +290,11 @@ macOS 向けには、インストール用の `.dmg` ファイルを入手でき
         "dump": true,
         "slow": true,
         "status": true,
+        "content": {
+          "markdown": {
+            "allowRawHTML": false
+          }
+        },
         "editor": {
           "reposDir": "/path/to/your/repos"
         }
@@ -302,6 +307,7 @@ macOS 向けには、インストール用の `.dmg` ファイルを入手でき
 * `dump`: `true` に設定すると、リクエストの詳細を JSON で返す `/dump` エンドポイントが有効になります（デフォルト: `false`）
 * `slow`: `true` に設定すると、レスポンスを遅延させる `/slow` エンドポイントが有効になります（デフォルト: `false`）
 * `status`: `true` に設定すると、任意の HTTP ステータスコードを返す `/status/{code}` エンドポイントが有効になります（デフォルト: `false`）
+* `content.markdown.allowRawHTML`: `true` に設定すると Markdown レンダリング時に生の HTML を許可します。`false` の場合は Markdown 内の生 HTML はテキストとしてエスケープ表示されます（デフォルト: `false`）
 * `editor`: `reposDir` を含む場合、ブラウザの GitHub URL からローカルファイルをエディタで開く `/editor` エンドポイントが有効になります（デフォルト: 未設定）
 
 `config.json` に `web` フィールドが設定されている場合、`mclocks` の起動時に Web サーバーが自動的に開始されます。`http://127.0.0.1:3030` でファイルにアクセスできます。Web サーバーは `127.0.0.1`（localhost）のみでリッスンするため、ローカルマシンからのみアクセス可能です。
