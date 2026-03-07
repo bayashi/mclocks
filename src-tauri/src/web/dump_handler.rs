@@ -1,7 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::Read;
-use serde::{Serialize, Deserialize};
-use tiny_http::{Response, StatusCode, Header};
+use tiny_http::{Header, Response, StatusCode};
 
 use super::common::create_error_response;
 
@@ -59,7 +59,8 @@ pub fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io
     });
 
     // Collect headers as array of objects (order preserved)
-    let headers: Vec<HashMap<String, String>> = request.headers()
+    let headers: Vec<HashMap<String, String>> = request
+        .headers()
         .iter()
         .filter_map(|header| {
             if let Ok(value) = std::str::from_utf8(header.value.as_bytes()) {
@@ -74,7 +75,13 @@ pub fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io
 
     // Read body if present (capped at 10MB)
     let mut body_content = Vec::new();
-    let body = if request.as_reader().take(MAX_DUMP_BODY_BYTES as u64 + 1).read_to_end(&mut body_content).is_ok() && !body_content.is_empty() {
+    let body = if request
+        .as_reader()
+        .take(MAX_DUMP_BODY_BYTES as u64 + 1)
+        .read_to_end(&mut body_content)
+        .is_ok()
+        && !body_content.is_empty()
+    {
         if body_content.len() > MAX_DUMP_BODY_BYTES {
             return create_error_response(StatusCode(413), "Request body too large");
         }
@@ -93,9 +100,10 @@ pub fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io
         if is_json {
             match serde_json::from_str(body_str) {
                 Ok(value) => Some(value),
-                Err(e) => {
-                    Some(serde_json::Value::String(format!("ERROR: Failed to parse JSON body: {}", e)))
-                }
+                Err(e) => Some(serde_json::Value::String(format!(
+                    "ERROR: Failed to parse JSON body: {}",
+                    e
+                ))),
             }
         } else {
             None
@@ -116,7 +124,9 @@ pub fn handle_dump_request(request: &mut tiny_http::Request) -> Response<std::io
     match serde_json::to_string_pretty(&dump_data) {
         Ok(json) => {
             if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], b"application/json") {
-                Response::from_string(json).with_header(header).with_status_code(StatusCode(200))
+                Response::from_string(json)
+                    .with_header(header)
+                    .with_status_code(StatusCode(200))
             } else {
                 Response::from_string(json).with_status_code(StatusCode(200))
             }

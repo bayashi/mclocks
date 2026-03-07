@@ -1,6 +1,6 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, io::Write, sync::Arc, path::PathBuf};
+use std::{fs, io::Write, path::PathBuf, sync::Arc};
 use tauri::State;
 
 use crate::web_server::WebConfig;
@@ -17,8 +17,12 @@ pub struct Clock {
     pub target: Option<String>,
 }
 
-fn df_name() -> String { "UTC".to_string() }
-fn df_timezone() -> String { "UTC".to_string() }
+fn df_name() -> String {
+    "UTC".to_string()
+}
+fn df_timezone() -> String {
+    "UTC".to_string()
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
@@ -29,7 +33,12 @@ pub enum InFontSize {
 
 fn df_clocks() -> Vec<Clock> {
     let mut cls: Vec<Clock> = Vec::new();
-    cls.push(Clock {name: df_name(), timezone: df_timezone(), countdown: None, target: None});
+    cls.push(Clock {
+        name: df_name(),
+        timezone: df_timezone(),
+        countdown: None,
+        target: None,
+    });
 
     cls
 }
@@ -78,16 +87,36 @@ pub struct AppConfig {
     pub web: Option<WebConfig>,
 }
 
-fn df_font() -> String { "Courier, monospace".to_string() }
-fn df_size() -> InFontSize { InFontSize::Int(14) }
-fn df_color() -> String { "#fff".to_string() }
-fn df_format() -> String { "MM-DD ddd HH:mm".to_string() }
-fn df_locale() -> String { "en".to_string() }
-fn df_margin() -> String { "1.65em".to_string() }
-fn df_timer_icon() -> String { "⧖ ".to_string() }
-fn df_max_timer_clock_number() -> i32 { 5 }
-fn df_epoch_clock_name() -> String { "Epoch".to_string() }
-fn df_disable_hover() -> bool { true }
+fn df_font() -> String {
+    "Courier, monospace".to_string()
+}
+fn df_size() -> InFontSize {
+    InFontSize::Int(14)
+}
+fn df_color() -> String {
+    "#fff".to_string()
+}
+fn df_format() -> String {
+    "MM-DD ddd HH:mm".to_string()
+}
+fn df_locale() -> String {
+    "en".to_string()
+}
+fn df_margin() -> String {
+    "1.65em".to_string()
+}
+fn df_timer_icon() -> String {
+    "⧖ ".to_string()
+}
+fn df_max_timer_clock_number() -> i32 {
+    5
+}
+fn df_epoch_clock_name() -> String {
+    "Epoch".to_string()
+}
+fn df_disable_hover() -> bool {
+    true
+}
 
 fn get_config_file() -> String {
     let config_file = "config.json";
@@ -111,7 +140,9 @@ pub fn get_config_app_path(identifier: &String) -> String {
 #[tauri::command]
 pub fn get_config_path(state: State<'_, Arc<ContextConfig>>) -> Result<String, String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
-    let config_path = base_dir.config_dir().join(get_config_app_path(&state.app_identifier));
+    let config_path = base_dir
+        .config_dir()
+        .join(get_config_app_path(&state.app_identifier));
     // config_path is just a path string if it doesn't exist, and no matter there is the old config file.
     // It's only to open new config file path on frontend.
     Ok(config_path.to_string_lossy().to_string())
@@ -131,14 +162,18 @@ fn ensure_config_file_exists(config_path: &PathBuf, config_json: &str) -> Result
     fs::create_dir_all(config_path.parent().ok_or("Invalid config path")?)
         .map_err(|e| e.to_string())?;
     let mut config_file = fs::File::create(config_path).map_err(|e| e.to_string())?;
-    config_file.write_all(config_json.as_bytes()).map_err(|e| e.to_string())?;
+    config_file
+        .write_all(config_json.as_bytes())
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
 pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
-    let config_path = base_dir.config_dir().join(get_config_app_path(&state.app_identifier));
+    let config_path = base_dir
+        .config_dir()
+        .join(get_config_app_path(&state.app_identifier));
     let old_config_path = base_dir.config_dir().join(get_old_config_app_path());
     let config_json = read_config_file(&config_path, &old_config_path)?;
     if !config_path.exists() {
@@ -164,17 +199,25 @@ mod tests {
 
         // Should contain identifier and config file name
         assert!(path.contains(&identifier), "Path should contain identifier");
-        assert!(path.contains("config.json") || path.contains("dev.config.json"),
-                "Path should contain config file name");
+        assert!(
+            path.contains("config.json") || path.contains("dev.config.json"),
+            "Path should contain config file name"
+        );
 
         // Should use forward slash as separator
-        assert!(path.contains("/"), "Path should use forward slash separator");
+        assert!(
+            path.contains("/"),
+            "Path should use forward slash separator"
+        );
 
         // Should have format: identifier/config_file
         let parts: Vec<&str> = path.split('/').collect();
         assert_eq!(parts.len(), 2, "Path should have exactly 2 parts");
         assert_eq!(parts[0], identifier, "First part should be identifier");
-        assert!(parts[1].contains("config.json"), "Second part should contain config.json");
+        assert!(
+            parts[1].contains("config.json"),
+            "Second part should contain config.json"
+        );
     }
 
     #[test]
@@ -213,7 +256,11 @@ mod tests {
 
         let result = read_config_file(&config_path, &old_config_path);
         assert!(result.is_ok(), "Should return default empty JSON");
-        assert_eq!(result.unwrap(), "{\n  \n}\n", "Should return default empty JSON");
+        assert_eq!(
+            result.unwrap(),
+            "{\n  \n}\n",
+            "Should return default empty JSON"
+        );
     }
 
     #[test]
@@ -238,11 +285,17 @@ mod tests {
         let config_json = r#"{"font": "Arial"}"#;
 
         let result = ensure_config_file_exists(&config_path, config_json);
-        assert!(result.is_ok(), "Should successfully create config file with subdirectory");
+        assert!(
+            result.is_ok(),
+            "Should successfully create config file with subdirectory"
+        );
 
         // Verify file exists and subdirectory was created
         assert!(config_path.exists(), "Config file should exist");
-        assert!(config_path.parent().unwrap().exists(), "Subdirectory should exist");
+        assert!(
+            config_path.parent().unwrap().exists(),
+            "Subdirectory should exist"
+        );
 
         let content = fs::read_to_string(&config_path).expect("Failed to read config file");
         assert_eq!(content, config_json, "File content should match");
@@ -255,8 +308,10 @@ mod tests {
 
         let result = ensure_config_file_exists(&config_path, config_json);
         assert!(result.is_err(), "Should fail with invalid path");
-        assert!(result.unwrap_err().contains("Invalid config path"),
-                "Error message should indicate invalid path");
+        assert!(
+            result.unwrap_err().contains("Invalid config path"),
+            "Error message should indicate invalid path"
+        );
     }
 
     #[test]
@@ -269,19 +324,43 @@ mod tests {
 
         // Check default values
         assert_eq!(config.clocks.len(), 1, "Should have default clock");
-        assert_eq!(config.clocks[0].name, "UTC", "Default clock name should be UTC");
-        assert_eq!(config.clocks[0].timezone, "UTC", "Default clock timezone should be UTC");
-        assert_eq!(config.font, "Courier, monospace", "Default font should be Courier, monospace");
+        assert_eq!(
+            config.clocks[0].name, "UTC",
+            "Default clock name should be UTC"
+        );
+        assert_eq!(
+            config.clocks[0].timezone, "UTC",
+            "Default clock timezone should be UTC"
+        );
+        assert_eq!(
+            config.font, "Courier, monospace",
+            "Default font should be Courier, monospace"
+        );
         assert_eq!(config.color, "#fff", "Default color should be #fff");
-        assert_eq!(config.format, "MM-DD ddd HH:mm", "Default format should match");
+        assert_eq!(
+            config.format, "MM-DD ddd HH:mm",
+            "Default format should match"
+        );
         assert_eq!(config.locale, "en", "Default locale should be en");
         assert_eq!(config.margin, "1.65em", "Default margin should be 1.65em");
         assert_eq!(config.timer_icon, "⧖ ", "Default timer icon should match");
-        assert_eq!(config.max_timer_clock_number, 5, "Default max timer clock number should be 5");
-        assert_eq!(config.epoch_clock_name, "Epoch", "Default epoch clock name should be Epoch");
-        assert_eq!(config.disable_hover, true, "Default disable_hover should be true");
+        assert_eq!(
+            config.max_timer_clock_number, 5,
+            "Default max timer clock number should be 5"
+        );
+        assert_eq!(
+            config.epoch_clock_name, "Epoch",
+            "Default epoch clock name should be Epoch"
+        );
+        assert_eq!(
+            config.disable_hover, true,
+            "Default disable_hover should be true"
+        );
         assert_eq!(config.forefront, false, "Default forefront should be false");
-        assert_eq!(config.without_notification, false, "Default without_notification should be false");
+        assert_eq!(
+            config.without_notification, false,
+            "Default without_notification should be false"
+        );
         assert_eq!(config.usetz, false, "Default usetz should be false");
         assert_eq!(config.convtz, "", "Default convtz should be empty");
         assert!(config.format2.is_none(), "Default format2 should be None");
@@ -303,12 +382,18 @@ mod tests {
         // Check specified values
         assert_eq!(config.clocks.len(), 1, "Should have one clock");
         assert_eq!(config.clocks[0].name, "JST", "Clock name should be JST");
-        assert_eq!(config.clocks[0].timezone, "Asia/Tokyo", "Clock timezone should be Asia/Tokyo");
+        assert_eq!(
+            config.clocks[0].timezone, "Asia/Tokyo",
+            "Clock timezone should be Asia/Tokyo"
+        );
         assert_eq!(config.font, "Arial", "Font should be Arial");
         assert_eq!(config.color, "#000", "Color should be #000");
 
         // Check default values are still applied
-        assert_eq!(config.format, "MM-DD ddd HH:mm", "Default format should still apply");
+        assert_eq!(
+            config.format, "MM-DD ddd HH:mm",
+            "Default format should still apply"
+        );
         assert_eq!(config.locale, "en", "Default locale should still apply");
     }
 
@@ -344,14 +429,27 @@ mod tests {
         assert_eq!(config.font, "Courier New", "Font should match");
         assert_eq!(config.color, "#ff0000", "Color should match");
         assert_eq!(config.format, "HH:mm:ss", "Format should match");
-        assert_eq!(config.format2, Some("YYYY-MM-DD".to_string()), "Format2 should match");
+        assert_eq!(
+            config.format2,
+            Some("YYYY-MM-DD".to_string()),
+            "Format2 should match"
+        );
         assert_eq!(config.locale, "ja", "Locale should match");
         assert_eq!(config.forefront, true, "Forefront should be true");
         assert_eq!(config.margin, "2em", "Margin should match");
         assert_eq!(config.timer_icon, "⏱", "Timer icon should match");
-        assert_eq!(config.without_notification, true, "Without notification should be true");
-        assert_eq!(config.max_timer_clock_number, 10, "Max timer clock number should match");
-        assert_eq!(config.epoch_clock_name, "Unix Time", "Epoch clock name should match");
+        assert_eq!(
+            config.without_notification, true,
+            "Without notification should be true"
+        );
+        assert_eq!(
+            config.max_timer_clock_number, 10,
+            "Max timer clock number should match"
+        );
+        assert_eq!(
+            config.epoch_clock_name, "Unix Time",
+            "Epoch clock name should match"
+        );
         assert_eq!(config.usetz, true, "Usetz should be true");
         assert_eq!(config.convtz, "Asia/Tokyo", "Convtz should match");
         assert_eq!(config.disable_hover, false, "Disable hover should be false");
@@ -388,7 +486,10 @@ mod tests {
         let clock = result.unwrap();
 
         assert_eq!(clock.name, "JST", "Name should be JST");
-        assert_eq!(clock.timezone, "UTC", "Default timezone should still be UTC");
+        assert_eq!(
+            clock.timezone, "UTC",
+            "Default timezone should still be UTC"
+        );
         assert!(clock.countdown.is_none(), "Countdown should be None");
         assert!(clock.target.is_none(), "Target should be None");
     }
@@ -408,8 +509,16 @@ mod tests {
 
         assert_eq!(clock.name, "EST", "Name should match");
         assert_eq!(clock.timezone, "America/New_York", "Timezone should match");
-        assert_eq!(clock.countdown, Some("10:00".to_string()), "Countdown should match");
-        assert_eq!(clock.target, Some("2024-01-01 12:00:00".to_string()), "Target should match");
+        assert_eq!(
+            clock.countdown,
+            Some("10:00".to_string()),
+            "Countdown should match"
+        );
+        assert_eq!(
+            clock.target,
+            Some("2024-01-01 12:00:00".to_string()),
+            "Target should match"
+        );
     }
 
     #[test]
@@ -472,4 +581,3 @@ mod tests {
         }
     }
 }
-

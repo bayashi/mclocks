@@ -1,9 +1,12 @@
-use tiny_http::{Response, StatusCode, Header};
+use tiny_http::{Header, Response, StatusCode};
 
-use crate::web::status_code::{get_status_phrase, should_have_response_body, apply_status_headers};
 use super::common::create_error_response;
+use crate::web::status_code::{apply_status_headers, get_status_phrase, should_have_response_body};
 
-pub fn handle_status_request(_request: &tiny_http::Request, path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
+pub fn handle_status_request(
+    _request: &tiny_http::Request,
+    path: &str,
+) -> Response<std::io::Cursor<Vec<u8>>> {
     // Extract status code from path: /status/{code}
     if !path.starts_with("/status/") {
         return create_error_response(StatusCode(404), "Not Found");
@@ -36,7 +39,10 @@ pub fn handle_status_request(_request: &tiny_http::Request, path: &str) -> Respo
     let response = if has_body {
         let mut resp = Response::from_string(body_content).with_status_code(status);
         // Helper function to add header
-        let add_header = |response: Response<std::io::Cursor<Vec<u8>>>, name: &[u8], value: &[u8]| -> Response<std::io::Cursor<Vec<u8>>> {
+        let add_header = |response: Response<std::io::Cursor<Vec<u8>>>,
+                          name: &[u8],
+                          value: &[u8]|
+         -> Response<std::io::Cursor<Vec<u8>>> {
             if let Ok(header) = Header::from_bytes(name, value) {
                 response.with_header(header)
             } else {

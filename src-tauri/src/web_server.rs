@@ -23,7 +23,11 @@ pub struct EditorConfig {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct WebMarkdownConfig {
-    #[serde(default = "df_allow_html_in_md", rename = "allowRawHTML", alias = "allowRawHtml")]
+    #[serde(
+        default = "df_allow_html_in_md",
+        rename = "allowRawHTML",
+        alias = "allowRawHtml"
+    )]
     pub allow_raw_html: bool,
 }
 
@@ -69,12 +73,24 @@ pub struct WebServerConfig {
     pub editor_args: Vec<String>,
 }
 
-fn df_web_port() -> u16 { 3030 }
-fn df_open_browser_at_start() -> bool { false }
-fn df_dump() -> bool { false }
-fn df_slow() -> bool { false }
-fn df_status() -> bool { false }
-fn df_allow_html_in_md() -> bool { false }
+fn df_web_port() -> u16 {
+    3030
+}
+fn df_open_browser_at_start() -> bool {
+    false
+}
+fn df_dump() -> bool {
+    false
+}
+fn df_slow() -> bool {
+    false
+}
+fn df_status() -> bool {
+    false
+}
+fn df_allow_html_in_md() -> bool {
+    false
+}
 
 pub fn start_web_server(
     root: String,
@@ -137,9 +153,10 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         return Ok(None);
     }
 
-    let config_json = fs::read_to_string(&config_path).map_err(|e| format!("Failed to read config: {}", e))?;
-    let config: AppConfig = serde_json::from_str(&config_json)
-        .map_err(|e| format!("Failed to parse config: {}", e))?;
+    let config_json =
+        fs::read_to_string(&config_path).map_err(|e| format!("Failed to read config: {}", e))?;
+    let config: AppConfig =
+        serde_json::from_str(&config_json).map_err(|e| format!("Failed to parse config: {}", e))?;
 
     let web_config = match config.web {
         Some(wc) => wc,
@@ -151,7 +168,11 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         return Err(format!("web.root not exists: {}", root_path.display()));
     }
 
-    let editor_repos_dir = match web_config.editor.as_ref().and_then(|e| e.repos_dir.as_ref()) {
+    let editor_repos_dir = match web_config
+        .editor
+        .as_ref()
+        .and_then(|e| e.repos_dir.as_ref())
+    {
         Some(repos_dir) => Some(normalize_editor_repos_dir(repos_dir)?),
         None => None,
     };
@@ -209,7 +230,10 @@ fn normalize_editor_repos_dir(repos_dir: &str) -> Result<String, String> {
         return Err(format!("web.editor.reposDir not exists: {}", normalized));
     }
     if !path.is_dir() {
-        return Err(format!("web.editor.reposDir is not a directory: {}", normalized));
+        return Err(format!(
+            "web.editor.reposDir is not a directory: {}",
+            normalized
+        ));
     }
 
     Ok(normalized)
@@ -218,12 +242,12 @@ fn normalize_editor_repos_dir(repos_dir: &str) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
+    use crate::web::file::{get_content_type, handle_web_request};
     use std::fs;
     use std::path::PathBuf;
     use std::thread;
+    use tempfile::TempDir;
     use tiny_http::Server;
-    use crate::web::file::{handle_web_request, get_content_type};
     use urlencoding::encode;
 
     #[test]
@@ -238,7 +262,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/", port))
             .send()
             .expect("Failed to send request");
 
@@ -252,7 +277,8 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         // Create some files and directories
         fs::write(root_path.join("file1.txt"), "content1").expect("Failed to create file1.txt");
-        fs::write(root_path.join("file2.html"), "<html>content2</html>").expect("Failed to create file2.html");
+        fs::write(root_path.join("file2.html"), "<html>content2</html>")
+            .expect("Failed to create file2.html");
         fs::create_dir_all(root_path.join("subdir")).expect("Failed to create subdir");
         let port = 3054;
 
@@ -260,7 +286,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/", port))
             .send()
             .expect("Failed to send request");
 
@@ -286,7 +313,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/subdir/", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/subdir/", port))
             .send()
             .expect("Failed to send request");
 
@@ -307,13 +335,17 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/subdir/", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/subdir/", port))
             .send()
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(body.contains("Index of /subdir/"), "Should show directory listing");
+        assert!(
+            body.contains("Index of /subdir/"),
+            "Should show directory listing"
+        );
         assert!(body.contains("file.txt"), "Should list file.txt");
         assert!(body.contains("../"), "Should show parent directory link");
     }
@@ -332,12 +364,15 @@ mod tests {
         // Test double slash which should be rejected
         // Note: HTTP clients normalize /../ to /, so we can't test that directly
         // But we can test double slash which is also a security concern
-        let response = client.get(&format!("http://127.0.0.1:{}/test//file.html", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/test//file.html", port))
             .send()
             .expect("Failed to send request");
         // The client might normalize // to /, so we check for either 400 or 404
-        assert!(response.status() == 400 || response.status() == 404,
-                "Double slash should be rejected or not found");
+        assert!(
+            response.status() == 400 || response.status() == 404,
+            "Double slash should be rejected or not found"
+        );
     }
 
     #[test]
@@ -350,7 +385,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/test//file.html", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/test//file.html", port))
             .send()
             .expect("Failed to send request");
 
@@ -369,7 +405,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/test.html", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/test.html", port))
             .send()
             .expect("Failed to send request");
 
@@ -439,7 +476,8 @@ mod tests {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let md_file = root_path.join("raw.md");
-        fs::write(&md_file, "# Raw Title\n\n<script>alert('x')</script>\n").expect("Failed to create raw.md");
+        fs::write(&md_file, "# Raw Title\n\n<script>alert('x')</script>\n")
+            .expect("Failed to create raw.md");
         let port = find_available_port();
 
         let _server_handle = start_test_server(root_path, port, false, false, false);
@@ -479,7 +517,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/test.html?key=value", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/test.html?key=value", port))
             .send()
             .expect("Failed to send request");
 
@@ -497,7 +536,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/nonexistent.html", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/nonexistent.html", port))
             .send()
             .expect("Failed to send request");
 
@@ -509,7 +549,8 @@ mod tests {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let test_file = root_path.join("美乳雀のソーダ.txt");
-        fs::write(&test_file, "マルチバイト文字のテスト").expect("Failed to create file with multibyte name");
+        fs::write(&test_file, "マルチバイト文字のテスト")
+            .expect("Failed to create file with multibyte name");
         let port = find_available_port();
 
         let _server_handle = start_test_server(root_path, port, false, false, false);
@@ -518,7 +559,8 @@ mod tests {
         let client = reqwest::blocking::Client::new();
         // URL encode the filename
         let encoded_filename = encode("美乳雀のソーダ.txt");
-        let response = client.get(&format!("http://127.0.0.1:{}/{}", port, encoded_filename))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/{}", port, encoded_filename))
             .send()
             .expect("Failed to send request");
 
@@ -541,14 +583,18 @@ mod tests {
         let client = reqwest::blocking::Client::new();
         // URL encode the directory name
         let encoded_dir = encode("美乳雀のソーダ");
-        let response = client.get(&format!("http://127.0.0.1:{}/{}/", port, encoded_dir))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/{}/", port, encoded_dir))
             .send()
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
         assert!(body.contains("Index of /"), "Should show directory listing");
-        assert!(body.contains("美乳雀のソーダ"), "Should show decoded directory name in title");
+        assert!(
+            body.contains("美乳雀のソーダ"),
+            "Should show decoded directory name in title"
+        );
         assert!(body.contains("test.txt"), "Should list test.txt");
     }
 
@@ -558,7 +604,8 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf();
         let multibyte_file = root_path.join("日本語ファイル.txt");
         let multibyte_dir = root_path.join("日本語ディレクトリ");
-        fs::write(&multibyte_file, "日本語ファイルの内容").expect("Failed to create file with multibyte name");
+        fs::write(&multibyte_file, "日本語ファイルの内容")
+            .expect("Failed to create file with multibyte name");
         fs::create_dir_all(&multibyte_dir).expect("Failed to create directory with multibyte name");
         let port = find_available_port();
 
@@ -566,7 +613,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/", port))
             .send()
             .expect("Failed to send request");
 
@@ -574,13 +622,25 @@ mod tests {
         let body = response.text().unwrap();
         assert!(body.contains("Index of /"), "Should show directory listing");
         // Check that multibyte characters are displayed correctly (not URL encoded)
-        assert!(body.contains("日本語ファイル.txt"), "Should show decoded filename");
-        assert!(body.contains("日本語ディレクトリ"), "Should show decoded directory name");
+        assert!(
+            body.contains("日本語ファイル.txt"),
+            "Should show decoded filename"
+        );
+        assert!(
+            body.contains("日本語ディレクトリ"),
+            "Should show decoded directory name"
+        );
         // Check that links are URL encoded
         let encoded_file = encode("日本語ファイル.txt");
         let encoded_dir = encode("日本語ディレクトリ");
-        assert!(body.contains(encoded_file.as_ref()), "Should contain URL encoded filename in link");
-        assert!(body.contains(&format!("{}/", encoded_dir.as_ref())), "Should contain URL encoded directory name in link");
+        assert!(
+            body.contains(encoded_file.as_ref()),
+            "Should contain URL encoded filename in link"
+        );
+        assert!(
+            body.contains(&format!("{}/", encoded_dir.as_ref())),
+            "Should contain URL encoded directory name in link"
+        );
     }
 
     #[test]
@@ -674,9 +734,9 @@ mod tests {
     }
 
     fn find_available_port() -> u16 {
-        use std::net::TcpListener;
-        use std::hash::{Hash, Hasher};
         use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        use std::net::TcpListener;
 
         let mut hasher = DefaultHasher::new();
         // Current time with nanosecond precision
@@ -698,16 +758,20 @@ mod tests {
         30000
     }
 
-    fn start_test_server_with_options(root: PathBuf, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool, allow_html_in_md: bool) -> std::thread::JoinHandle<()> {
+    fn start_test_server_with_options(
+        root: PathBuf,
+        port: u16,
+        dump_enabled: bool,
+        slow_enabled: bool,
+        status_enabled: bool,
+        allow_html_in_md: bool,
+    ) -> std::thread::JoinHandle<()> {
         thread::spawn(move || {
             let server = match Server::http(format!("127.0.0.1:{}", port)) {
                 Ok(s) => s,
                 Err(_) => return,
             };
-            let editor_args: Vec<String> = vec![
-                "-g".to_string(),
-                "{file}:{line}".to_string(),
-            ];
+            let editor_args: Vec<String> = vec!["-g".to_string(), "{file}:{line}".to_string()];
             let editor_command = "code".to_string();
 
             for mut request in server.incoming_requests() {
@@ -721,15 +785,28 @@ mod tests {
                     &None,
                     false,
                     &editor_command,
-                    &editor_args
+                    &editor_args,
                 );
                 let _ = request.respond(response);
             }
         })
     }
 
-    fn start_test_server(root: PathBuf, port: u16, dump_enabled: bool, slow_enabled: bool, status_enabled: bool) -> std::thread::JoinHandle<()> {
-        start_test_server_with_options(root, port, dump_enabled, slow_enabled, status_enabled, false)
+    fn start_test_server(
+        root: PathBuf,
+        port: u16,
+        dump_enabled: bool,
+        slow_enabled: bool,
+        status_enabled: bool,
+    ) -> std::thread::JoinHandle<()> {
+        start_test_server_with_options(
+            root,
+            port,
+            dump_enabled,
+            slow_enabled,
+            status_enabled,
+            false,
+        )
     }
 
     #[test]
@@ -737,7 +814,8 @@ mod tests {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let md_file = root_path.join("raw-html.md");
-        fs::write(&md_file, "# Title\n\n<script>alert('x')</script>\n").expect("Failed to create raw-html.md");
+        fs::write(&md_file, "# Title\n\n<script>alert('x')</script>\n")
+            .expect("Failed to create raw-html.md");
         let port = find_available_port();
 
         let _server_handle = start_test_server(root_path, port, false, false, false);
@@ -750,8 +828,14 @@ mod tests {
             .expect("Failed to send request");
         assert_eq!(response.status(), 200);
         let body = response.text().expect("Body should be readable");
-        assert!(body.contains("&lt;script&gt;alert("), "Raw HTML should be escaped by default");
-        assert!(!body.contains("<script>alert("), "Raw HTML script tag should not be rendered");
+        assert!(
+            body.contains("&lt;script&gt;alert("),
+            "Raw HTML should be escaped by default"
+        );
+        assert!(
+            !body.contains("<script>alert("),
+            "Raw HTML script tag should not be rendered"
+        );
     }
 
     #[test]
@@ -759,10 +843,12 @@ mod tests {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let md_file = root_path.join("raw-html.md");
-        fs::write(&md_file, "# Title\n\n<script>alert('x')</script>\n").expect("Failed to create raw-html.md");
+        fs::write(&md_file, "# Title\n\n<script>alert('x')</script>\n")
+            .expect("Failed to create raw-html.md");
         let port = find_available_port();
 
-        let _server_handle = start_test_server_with_options(root_path, port, false, false, false, true);
+        let _server_handle =
+            start_test_server_with_options(root_path, port, false, false, false, true);
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
@@ -772,7 +858,10 @@ mod tests {
             .expect("Failed to send request");
         assert_eq!(response.status(), 200);
         let body = response.text().expect("Body should be readable");
-        assert!(body.contains("<script>alert('x')</script>"), "Raw HTML should be rendered when enabled");
+        assert!(
+            body.contains("<script>alert('x')</script>"),
+            "Raw HTML should be rendered when enabled"
+        );
     }
 
     #[test]
@@ -785,12 +874,21 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/dump", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/dump", port))
             .send()
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 200);
-        assert_eq!(response.headers().get("content-type").unwrap().to_str().unwrap(), "application/json");
+        assert_eq!(
+            response
+                .headers()
+                .get("content-type")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "application/json"
+        );
 
         let json: serde_json::Value = response.json().expect("Failed to parse JSON");
         assert_eq!(json["method"], "GET");
@@ -808,7 +906,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/dump/test/path", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/dump/test/path", port))
             .send()
             .expect("Failed to send request");
 
@@ -828,7 +927,11 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/dump?key1=value1&key2=value2", port))
+        let response = client
+            .get(&format!(
+                "http://127.0.0.1:{}/dump?key1=value1&key2=value2",
+                port
+            ))
             .send()
             .expect("Failed to send request");
 
@@ -851,7 +954,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/dump", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/dump", port))
             .header("X-Custom-Header", "custom-value")
             .header("User-Agent", "test-agent")
             .send()
@@ -860,7 +964,9 @@ mod tests {
         assert_eq!(response.status(), 200);
         let json: serde_json::Value = response.json().expect("Failed to parse JSON");
 
-        let headers = json["headers"].as_array().expect("Headers should be an array");
+        let headers = json["headers"]
+            .as_array()
+            .expect("Headers should be an array");
         assert!(headers.len() > 0);
     }
 
@@ -875,7 +981,8 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let body = serde_json::json!({"test": "value"});
-        let response = client.post(&format!("http://127.0.0.1:{}/dump", port))
+        let response = client
+            .post(&format!("http://127.0.0.1:{}/dump", port))
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
@@ -889,7 +996,9 @@ mod tests {
         assert!(body_str.contains("test"));
         assert!(body_str.contains("value"));
 
-        let parsed_body = json["parsed_body"].as_object().expect("Parsed body should be an object");
+        let parsed_body = json["parsed_body"]
+            .as_object()
+            .expect("Parsed body should be an object");
         assert_eq!(parsed_body["test"], "value");
     }
 
@@ -903,7 +1012,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.post(&format!("http://127.0.0.1:{}/dump", port))
+        let response = client
+            .post(&format!("http://127.0.0.1:{}/dump", port))
             .header("Content-Type", "application/json")
             .body("{ invalid json }")
             .send()
@@ -911,7 +1021,9 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let json: serde_json::Value = response.json().expect("Failed to parse JSON");
-        let parsed_body = json["parsed_body"].as_str().expect("Parsed body should be error string");
+        let parsed_body = json["parsed_body"]
+            .as_str()
+            .expect("Parsed body should be error string");
         assert!(parsed_body.contains("ERROR"));
     }
 
@@ -925,7 +1037,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.post(&format!("http://127.0.0.1:{}/dump", port))
+        let response = client
+            .post(&format!("http://127.0.0.1:{}/dump", port))
             .header("Content-Type", "text/plain")
             .body("plain text body")
             .send()
@@ -949,7 +1062,8 @@ mod tests {
 
         let start = std::time::Instant::now();
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/slow/3", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/slow/3", port))
             .send()
             .expect("Failed to send request");
         let elapsed = start.elapsed();
@@ -972,7 +1086,8 @@ mod tests {
 
         let start = std::time::Instant::now();
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/slow/5", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/slow/5", port))
             .send()
             .expect("Failed to send request");
         let elapsed = start.elapsed();
@@ -995,7 +1110,8 @@ mod tests {
 
         let start = std::time::Instant::now();
         let client = reqwest::blocking::Client::new();
-        let response = client.post(&format!("http://127.0.0.1:{}/slow/3", port))
+        let response = client
+            .post(&format!("http://127.0.0.1:{}/slow/3", port))
             .send()
             .expect("Failed to send request");
         let elapsed = start.elapsed();
@@ -1017,7 +1133,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/slow/abc", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/slow/abc", port))
             .send()
             .expect("Failed to send request");
 
@@ -1037,7 +1154,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/slow/3", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/slow/3", port))
             .send()
             .expect("Failed to send request");
 
@@ -1050,8 +1168,14 @@ mod tests {
     fn test_load_web_config_no_config_file() {
         let identifier = "test.app.nonexistent".to_string();
         let result = load_web_config(&identifier);
-        assert!(result.is_ok(), "Should return Ok when config file doesn't exist");
-        assert!(result.unwrap().is_none(), "Should return None when config file doesn't exist");
+        assert!(
+            result.is_ok(),
+            "Should return Ok when config file doesn't exist"
+        );
+        assert!(
+            result.unwrap().is_none(),
+            "Should return None when config file doesn't exist"
+        );
     }
 
     #[test]
@@ -1074,7 +1198,10 @@ mod tests {
         let identifier = "test.app.noweb".to_string();
         let result = load_web_config(&identifier);
         assert!(result.is_ok(), "Should return Ok when web field is missing");
-        assert!(result.unwrap().is_none(), "Should return None when web field is missing");
+        assert!(
+            result.unwrap().is_none(),
+            "Should return None when web field is missing"
+        );
 
         // Cleanup
         let _ = fs::remove_file(&config_path);
@@ -1101,19 +1228,29 @@ mod tests {
         } else {
             "/nonexistent/path/that/does/not/exist"
         };
-        let config_json = format!(r#"{{
+        let config_json = format!(
+            r#"{{
             "web": {{
                 "root": "{}"
             }}
-        }}"#, nonexistent_path);
+        }}"#,
+            nonexistent_path
+        );
         fs::write(&config_path, config_json).expect("Failed to write config file");
 
         let identifier = "test.app.badroot".to_string();
         let result = load_web_config(&identifier);
-        assert!(result.is_err(), "Should return error when root path doesn't exist. Got: {:?}", result);
+        assert!(
+            result.is_err(),
+            "Should return error when root path doesn't exist. Got: {:?}",
+            result
+        );
         let err_msg = result.unwrap_err();
-        assert!(err_msg.contains("web.root not exists") || err_msg.contains("not exists"),
-                "Error message should indicate root doesn't exist. Got: {}", err_msg);
+        assert!(
+            err_msg.contains("web.root not exists") || err_msg.contains("not exists"),
+            "Error message should indicate root doesn't exist. Got: {}",
+            err_msg
+        );
 
         // Cleanup
         let _ = fs::remove_file(&config_path);
@@ -1139,25 +1276,43 @@ mod tests {
         };
         let config_path = test_config_dir.join(config_file_name);
         // Use absolute path for web.root, escape backslashes for JSON
-        let web_root_str = web_root.canonicalize().unwrap().to_string_lossy().replace('\\', "/");
-        let config_json = format!(r#"{{
+        let web_root_str = web_root
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .replace('\\', "/");
+        let config_json = format!(
+            r#"{{
             "web": {{
                 "root": "{}",
                 "port": 8080,
                 "openBrowserAtStart": true,
                 "dump": true
             }}
-        }}"#, web_root_str);
+        }}"#,
+            web_root_str
+        );
         fs::write(&config_path, config_json).expect("Failed to write config file");
 
         let identifier = "test.app.success".to_string();
         let result = load_web_config(&identifier);
-        assert!(result.is_ok(), "Should successfully load web config. Got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Should successfully load web config. Got: {:?}",
+            result
+        );
         let web_config = result.unwrap();
-        assert!(web_config.is_some(), "Should return Some(WebServerConfig). Got: {:?}", web_config);
+        assert!(
+            web_config.is_some(),
+            "Should return Some(WebServerConfig). Got: {:?}",
+            web_config
+        );
         let config = web_config.unwrap();
         assert_eq!(config.port, 8080, "Port should match");
-        assert_eq!(config.open_browser_at_start, true, "open_browser_at_start should be true");
+        assert_eq!(
+            config.open_browser_at_start, true,
+            "open_browser_at_start should be true"
+        );
         assert_eq!(config.dump, true, "dump should be true");
 
         // Cleanup
@@ -1184,22 +1339,40 @@ mod tests {
         };
         let config_path = test_config_dir.join(config_file_name);
         // Use absolute path for web.root, escape backslashes for JSON
-        let web_root_str = web_root.canonicalize().unwrap().to_string_lossy().replace('\\', "/");
-        let config_json = format!(r#"{{
+        let web_root_str = web_root
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .replace('\\', "/");
+        let config_json = format!(
+            r#"{{
             "web": {{
                 "root": "{}"
             }}
-        }}"#, web_root_str);
+        }}"#,
+            web_root_str
+        );
         fs::write(&config_path, config_json).expect("Failed to write config file");
 
         let identifier = "test.app.defaults".to_string();
         let result = load_web_config(&identifier);
-        assert!(result.is_ok(), "Should successfully load web config with defaults. Got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Should successfully load web config with defaults. Got: {:?}",
+            result
+        );
         let web_config = result.unwrap();
-        assert!(web_config.is_some(), "Should return Some(WebServerConfig). Got: {:?}", web_config);
+        assert!(
+            web_config.is_some(),
+            "Should return Some(WebServerConfig). Got: {:?}",
+            web_config
+        );
         let config = web_config.unwrap();
         assert_eq!(config.port, 3030, "Default port should be 3030");
-        assert_eq!(config.open_browser_at_start, false, "Default open_browser_at_start should be false");
+        assert_eq!(
+            config.open_browser_at_start, false,
+            "Default open_browser_at_start should be false"
+        );
         assert_eq!(config.dump, false, "Default dump should be false");
 
         // Cleanup
@@ -1219,7 +1392,10 @@ mod tests {
         // Check default values
         assert_eq!(config.root, "/test", "Root should match");
         assert_eq!(config.port, 3030, "Default port should be 3030");
-        assert_eq!(config.open_browser_at_start, false, "Default open_browser_at_start should be false");
+        assert_eq!(
+            config.open_browser_at_start, false,
+            "Default open_browser_at_start should be false"
+        );
         assert_eq!(config.dump, false, "Default dump should be false");
     }
 
@@ -1236,7 +1412,10 @@ mod tests {
         assert_eq!(config.port, 8080, "Port should match");
 
         // Check default values are still applied
-        assert_eq!(config.open_browser_at_start, false, "Default open_browser_at_start should still apply");
+        assert_eq!(
+            config.open_browser_at_start, false,
+            "Default open_browser_at_start should still apply"
+        );
         assert_eq!(config.dump, false, "Default dump should still apply");
     }
 
@@ -1255,7 +1434,10 @@ mod tests {
 
         assert_eq!(config.root, "/path/to/root", "Root should match");
         assert_eq!(config.port, 8080, "Port should match");
-        assert_eq!(config.open_browser_at_start, true, "open_browser_at_start should be true");
+        assert_eq!(
+            config.open_browser_at_start, true,
+            "open_browser_at_start should be true"
+        );
         assert_eq!(config.dump, true, "dump should be true");
     }
 
@@ -1270,7 +1452,10 @@ mod tests {
         assert!(result.is_ok(), "Should deserialize camelCase field names");
         let config = result.unwrap();
         assert_eq!(config.root, "/test", "Root should match");
-        assert_eq!(config.open_browser_at_start, true, "openBrowserAtStart should map to open_browser_at_start");
+        assert_eq!(
+            config.open_browser_at_start, true,
+            "openBrowserAtStart should map to open_browser_at_start"
+        );
     }
 
     #[test]
@@ -1291,7 +1476,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/status/200", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/200", port))
             .send()
             .expect("Failed to send request");
 
@@ -1309,7 +1495,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/status/418", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/418", port))
             .send()
             .expect("Failed to send request");
 
@@ -1327,7 +1514,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/status/204", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/204", port))
             .send()
             .expect("Failed to send request");
 
@@ -1348,13 +1536,22 @@ mod tests {
             .redirect(reqwest::redirect::Policy::none())
             .build()
             .expect("Failed to create client");
-        let response = client.get(&format!("http://127.0.0.1:{}/status/301", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/301", port))
             .send()
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 301);
         assert!(response.headers().contains_key("location"));
-        assert_eq!(response.headers().get("location").unwrap().to_str().unwrap(), "/");
+        assert_eq!(
+            response
+                .headers()
+                .get("location")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "/"
+        );
     }
 
     #[test]
@@ -1367,13 +1564,22 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/status/401", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/401", port))
             .send()
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 401);
         assert!(response.headers().contains_key("www-authenticate"));
-        assert_eq!(response.headers().get("www-authenticate").unwrap().to_str().unwrap(), "Basic realm=\"test\"");
+        assert_eq!(
+            response
+                .headers()
+                .get("www-authenticate")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "Basic realm=\"test\""
+        );
     }
 
     #[test]
@@ -1386,13 +1592,17 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/status/405", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/405", port))
             .send()
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 405);
         assert!(response.headers().contains_key("allow"));
-        assert_eq!(response.headers().get("allow").unwrap().to_str().unwrap(), "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS");
+        assert_eq!(
+            response.headers().get("allow").unwrap().to_str().unwrap(),
+            "GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS"
+        );
     }
 
     #[test]
@@ -1405,7 +1615,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/status/99", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/99", port))
             .send()
             .expect("Failed to send request");
 
@@ -1423,7 +1634,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/status/600", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/600", port))
             .send()
             .expect("Failed to send request");
 
@@ -1443,7 +1655,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/status/200", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/200", port))
             .send()
             .expect("Failed to send request");
 
@@ -1460,7 +1673,8 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/status/500", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/500", port))
             .send()
             .expect("Failed to send request");
 
@@ -1478,12 +1692,21 @@ mod tests {
         thread::sleep(std::time::Duration::from_millis(100));
 
         let client = reqwest::blocking::Client::new();
-        let response = client.get(&format!("http://127.0.0.1:{}/status/429", port))
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/status/429", port))
             .send()
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 429);
         assert!(response.headers().contains_key("retry-after"));
-        assert_eq!(response.headers().get("retry-after").unwrap().to_str().unwrap(), "60");
+        assert_eq!(
+            response
+                .headers()
+                .get("retry-after")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "60"
+        );
     }
 }

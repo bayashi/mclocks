@@ -68,6 +68,26 @@ const restoreStickies = async () => {
   }
 };
 
+const onDropTempWebRoot = async (payload) => {
+  if (!payload || payload.type !== 'drop') {
+    return;
+  }
+
+  const droppedPaths = payload.paths || [];
+  if (droppedPaths.length === 0) {
+    return;
+  }
+
+  try {
+    const openedUrl = await invoke('register_temp_web_root', {
+      droppedPath: droppedPaths[0]
+    });
+    console.info(`[web] Temporary root shared: ${openedUrl}`);
+  } catch (error) {
+    console.warn('[web] Failed to share dropped directory:', error);
+  }
+};
+
 /**
  * Initialize global event handlers and window behavior
  * @param {ClockCtx} clockCtx - Application context
@@ -119,6 +139,15 @@ const clockGlobalInit = async (clockCtx) => {
       }
     }
   });
+
+  try {
+    await currentClockWindow.onDragDropEvent((event) => {
+      onDropTempWebRoot(event.payload);
+    });
+  } catch (error) {
+    // Ignore error in testing environment
+    console.warn('Could not set up drag and drop handler:', error);
+  }
 };
 
 /**
