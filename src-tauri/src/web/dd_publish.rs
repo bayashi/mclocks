@@ -105,10 +105,10 @@ pub fn resolve_temp_share(path: &str) -> Option<(PathBuf, String, String)> {
     } else {
         suffix_path
     };
-    let public_prefix = format!("/tmpdir-{}", hash);
+    let public_prefix = format!("{}{}", TEMP_DIR_PREFIX, hash);
     Some((root, relative_path.to_string(), public_prefix))
 }
 
 pub fn build_temp_share_url(port: u16, hash: &str) -> String {
-    format!("http://127.0.0.1:{}/tmpdir-{}/", port, hash)
+    format!("http://127.0.0.1:{}{}{}/", port, TEMP_DIR_PREFIX, hash)
 }
