@@ -102,6 +102,17 @@ jobs:
         run: |
           pnpm tauri info
 
+      - name: verify LF line endings
+        shell: bash
+        run: |
+          set -euo pipefail
+          crlf_lines="$(git ls-files --eol | awk '$2 == "w/crlf" { print }')"
+          if [[ -n "${crlf_lines}" ]]; then
+            echo "CRLF detected in tracked files:"
+            echo "${crlf_lines}"
+            exit 1
+          fi
+
       - name: run ESLint
         run: |
           pnpm exec eslint .
