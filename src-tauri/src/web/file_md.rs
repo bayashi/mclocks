@@ -1,4 +1,4 @@
-use pulldown_cmark::{html, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
 use std::collections::HashMap;
 use std::path::Path;
 use tiny_http::{Header, Response, StatusCode};

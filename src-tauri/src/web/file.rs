@@ -4,6 +4,7 @@ use encoding_rs::{Encoding, UTF_8};
 use tiny_http::{Header, Response, StatusCode};
 use chardetng::EncodingDetector;
 use urlencoding::{decode, encode};
+use super::dd_publish::resolve_temp_share;
 
 use super::common::create_error_response;
 use super::status_handler::handle_status_request;
@@ -274,12 +275,23 @@ pub fn handle_web_request(
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let url = request.url();
     let path = url.split('?').next().unwrap_or("/");
+    let (active_root_path, active_path, public_url_path) = match resolve_temp_share(path) {
+        Some((temp_root, temp_relative_path, temp_public_prefix)) => {
+            let public_path = if temp_relative_path == "/" {
+                format!("{}/", temp_public_prefix)
+            } else {
+                format!("{}{}", temp_public_prefix, temp_relative_path)
+            };
+            (temp_root, temp_relative_path, public_path)
+        }
+        None => (root_path.clone(), path.to_string(), path.to_string()),
+    };
     let serve_raw_markdown = should_serve_raw_markdown(url);
     let raw_toggle_href = build_raw_toggle_href(url);
 
     // Check if this is a /editor request
     if editor_repos_dir.is_some() {
-        if path == "/editor" || path.starts_with("/editor/") {
+        if active_path == "/editor" || active_path.starts_with("/editor/") {
             return handle_editor_request(
                 request,
                 editor_repos_dir,
@@ -292,30 +304,26 @@ pub fn handle_web_request(
 
     // Check if this is a /status request (including /status/ and any subpaths)
     if status_enabled {
-        if path.starts_with("/status/") {
-            return handle_status_request(request, path);
+        if active_path.starts_with("/status/") {
+            return handle_status_request(request, active_path.as_str());
         }
     }
 
     // Check if this is a /slow request (including /slow/ and any subpaths)
     if slow_enabled {
-        if path == "/slow" || path.starts_with("/slow/") {
+        if active_path == "/slow" || active_path.starts_with("/slow/") {
             return handle_slow_request(request);
         }
     }
 
     // Check if this is a /dump request (including /dump/ and any subpaths)
     if dump_enabled {
-        if path == "/dump" || path.starts_with("/dump/") {
+        if active_path == "/dump" || active_path.starts_with("/dump/") {
             return handle_dump_request(request);
         }
     }
 
-    // Parse URL to get path component (remove query string and fragment)
-    let url_path = match url.split('?').next() {
-        Some(p) => p.split('#').next().unwrap_or(p),
-        None => "/",
-    };
+    let url_path = active_path.as_str();
 
     // Security: Check for directory traversal attempts (pre-decode)
     if url_path.contains("..") || url_path.contains("//") {
@@ -324,7 +332,7 @@ pub fn handle_web_request(
 
     // Determine the actual file path
     let file_path = if url_path == "/" {
-        root_path.join("index.html")
+        active_root_path.join("index.html")
     } else {
         let relative_path = url_path.trim_start_matches('/');
         if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
@@ -344,13 +352,13 @@ pub fn handle_web_request(
                 Err(_) => return create_error_response(StatusCode(400), "Bad Request"),
             }
         }
-        root_path.join(decoded_segments.join("/"))
+        active_root_path.join(decoded_segments.join("/"))
     };
 
     // Check if the path exists and is within root_path
-    let normalized_root = match root_path.canonicalize() {
+    let normalized_root = match active_root_path.canonicalize() {
         Ok(p) => p,
-        Err(_) => root_path.clone(),
+        Err(_) => active_root_path.clone(),
     };
 
     let normalized_path = match file_path.canonicalize() {
@@ -364,7 +372,7 @@ pub fn handle_web_request(
             // canonicalize() failed, check if file_path exists
             // Special case: if url_path is "/", check for index.html first
             if url_path == "/" {
-                let index_path = root_path.join("index.html");
+                let index_path = active_root_path.join("index.html");
                 if index_path.exists() && index_path.is_file() {
                     return create_file_response(
                         &index_path,
@@ -374,15 +382,15 @@ pub fn handle_web_request(
                     );
                 }
                 // If index.html doesn't exist, show directory listing
-                if root_path.exists() && root_path.is_dir() {
-                    return create_directory_listing(root_path, url_path);
+                if active_root_path.exists() && active_root_path.is_dir() {
+                    return create_directory_listing(active_root_path.as_path(), public_url_path.as_str());
                 }
                 return create_error_response(StatusCode(404), "Not Found");
             }
             // Check if it's a file
             if file_path.exists() && file_path.is_file() {
                 // Security: Verify file is within root_path
-                if !file_path.starts_with(root_path) {
+                if !file_path.starts_with(active_root_path.as_path()) {
                     return create_error_response(StatusCode(404), "Not Found");
                 }
                 return create_file_response(
@@ -395,7 +403,7 @@ pub fn handle_web_request(
             // Check if it's a directory request
             if file_path.exists() && file_path.is_dir() {
                 // Security: Verify directory is within root_path
-                if !file_path.starts_with(root_path) {
+                if !file_path.starts_with(active_root_path.as_path()) {
                     return create_error_response(StatusCode(404), "Not Found");
                 }
                 // Check for index.html in the directory
@@ -409,7 +417,7 @@ pub fn handle_web_request(
                     );
                 }
                 // Generate directory listing
-                return create_directory_listing(&file_path, url_path);
+                return create_directory_listing(&file_path, public_url_path.as_str());
             }
             return create_error_response(StatusCode(404), "Not Found");
         }
@@ -427,7 +435,7 @@ pub fn handle_web_request(
             );
         }
         // Generate directory listing
-        return create_directory_listing(&normalized_path, url_path);
+        return create_directory_listing(&normalized_path, public_url_path.as_str());
     }
 
     // It's a file, serve it

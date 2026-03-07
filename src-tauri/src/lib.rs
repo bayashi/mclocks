@@ -11,6 +11,7 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use web_server::{start_web_server, open_url_in_browser, load_web_config};
 use config::{get_config_path, load_config};
 use util::open_text_in_editor;
+use web::dd_publish::{build_temp_share_url, register_temp_root};
 
 /// Global lock to serialize all saveWindowState calls across windows.
 /// Prevents potential deadlocks in the window-state plugin when multiple
@@ -31,6 +32,20 @@ fn save_window_state_exclusive(
 	use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 	let _guard = lock.0.lock().map_err(|e| e.to_string())?;
 	app.save_window_state(StateFlags::all()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn register_temp_web_root(
+    dropped_path: String,
+    state: tauri::State<'_, Arc<config::ContextConfig>>,
+) -> Result<String, String> {
+    let web_config = load_web_config(&state.app_identifier)?
+        .ok_or("Web server is not configured. Set web.root in config.json first.".to_string())?;
+
+    let hash = register_temp_root(std::path::Path::new(&dropped_path))?;
+    let url = build_temp_share_url(web_config.port, &hash);
+    open_url_in_browser(&url)?;
+    Ok(url)
 }
 
 const IS_DEV: bool = tauri::is_dev();
@@ -124,6 +139,7 @@ pub fn run() {
             load_config,
             get_config_path,
             open_text_in_editor,
+            register_temp_web_root,
             save_window_state_exclusive,
             sticky::create_sticky,
             sticky::create_sticky_image,

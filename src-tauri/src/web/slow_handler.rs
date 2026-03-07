@@ -1,6 +1,6 @@
+use std::thread;
 use std::time::Duration;
 use tiny_http::{Response, StatusCode};
-use std::thread;
 
 use super::common::create_error_response;
 
@@ -31,7 +31,10 @@ pub fn handle_slow_request(request: &tiny_http::Request) -> Response<std::io::Cu
     };
 
     if seconds > MAX_SLOW_SECONDS {
-        return create_error_response(StatusCode(400), &format!("Seconds exceeds maximum ({})", MAX_SLOW_SECONDS));
+        return create_error_response(
+            StatusCode(400),
+            &format!("Seconds exceeds maximum ({})", MAX_SLOW_SECONDS),
+        );
     }
 
     thread::sleep(Duration::from_secs(seconds));

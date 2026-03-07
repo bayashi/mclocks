@@ -30,7 +30,8 @@ fn create_temp_file_with_text(text: String) -> Result<std::path::PathBuf, String
         .map_err(|e| format!("Failed to create temp file: {}", e))?;
 
     // Keep the file (prevent auto-deletion on drop) and get the path
-    let (mut file, path): (std::fs::File, std::path::PathBuf) = named_file.keep()
+    let (mut file, path): (std::fs::File, std::path::PathBuf) = named_file
+        .keep()
         .map_err(|e| format!("Failed to persist temp file: {}", e))?;
 
     std::io::Write::write_all(&mut file, text.as_bytes())
@@ -76,12 +77,10 @@ mod tests {
         );
 
         // Verify the content
-        let content = fs::read_to_string(&temp_file)
-            .expect("Failed to read temp file");
+        let content = fs::read_to_string(&temp_file).expect("Failed to read temp file");
         assert_eq!(content, test_text, "File content should match input text");
 
         // Clean up: remove the test file
         let _ = fs::remove_file(&temp_file);
     }
 }
-

@@ -1,5 +1,5 @@
-use tiny_http::{Response, StatusCode, Header};
 use std::io::Cursor;
+use tiny_http::{Header, Response, StatusCode};
 
 pub fn get_status_phrase(code: u16) -> &'static str {
     match code {
@@ -83,7 +83,10 @@ pub fn apply_status_headers(
     _has_body: bool,
 ) -> Response<Cursor<Vec<u8>>> {
     // Helper function to add header
-    let add_header = |response: Response<Cursor<Vec<u8>>>, name: &[u8], value: &[u8]| -> Response<Cursor<Vec<u8>>> {
+    let add_header = |response: Response<Cursor<Vec<u8>>>,
+                      name: &[u8],
+                      value: &[u8]|
+     -> Response<Cursor<Vec<u8>>> {
         if let Ok(header) = Header::from_bytes(name, value) {
             response.with_header(header)
         } else {
@@ -96,106 +99,109 @@ pub fn apply_status_headers(
         // 3xx Redirection - Location header required
         301 | 302 | 303 | 305 | 307 | 308 => {
             response = add_header(response, b"Location", b"/");
-        },
+        }
         // 401 Unauthorized - WWW-Authenticate required
         401 => {
             response = add_header(response, b"WWW-Authenticate", b"Basic realm=\"test\"");
-        },
+        }
         // 402 Payment Required - no special header
-        402 => {},
+        402 => {}
         // 405 Method Not Allowed - Allow header required
         405 => {
-            response = add_header(response, b"Allow", b"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS");
-        },
+            response = add_header(
+                response,
+                b"Allow",
+                b"GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS",
+            );
+        }
         // 407 Proxy Authentication Required - Proxy-Authenticate required
         407 => {
             response = add_header(response, b"Proxy-Authenticate", b"Basic realm=\"proxy\"");
-        },
+        }
         // 408 Request Timeout - no special header
-        408 => {},
+        408 => {}
         // 409 Conflict - no special header
-        409 => {},
+        409 => {}
         // 410 Gone - no special header
-        410 => {},
+        410 => {}
         // 411 Length Required - no special header
-        411 => {},
+        411 => {}
         // 412 Precondition Failed - no special header
-        412 => {},
+        412 => {}
         // 413 Payload Too Large - no special header
-        413 => {},
+        413 => {}
         // 414 URI Too Long - no special header
-        414 => {},
+        414 => {}
         // 415 Unsupported Media Type - no special header
-        415 => {},
+        415 => {}
         // 416 Range Not Satisfiable - Content-Range required
         416 => {
             response = add_header(response, b"Content-Range", b"bytes */0");
-        },
+        }
         // 417 Expectation Failed - no special header
-        417 => {},
+        417 => {}
         // 418 I'm a teapot - special body already set in handle_status_request
-        418 => {},
+        418 => {}
         // 421 Misdirected Request - no special header
-        421 => {},
+        421 => {}
         // 422 Unprocessable Entity - no special header
-        422 => {},
+        422 => {}
         // 423 Locked - no special header
-        423 => {},
+        423 => {}
         // 424 Failed Dependency - no special header
-        424 => {},
+        424 => {}
         // 425 Too Early - no special header
-        425 => {},
+        425 => {}
         // 426 Upgrade Required - Upgrade header required
         426 => {
             response = add_header(response, b"Upgrade", b"TLS/1.0, HTTP/1.1");
-        },
+        }
         // 428 Precondition Required - no special header
-        428 => {},
+        428 => {}
         // 429 Too Many Requests - Retry-After recommended
         429 => {
             response = add_header(response, b"Retry-After", b"60");
-        },
+        }
         // 431 Request Header Fields Too Large - no special header
-        431 => {},
+        431 => {}
         // 451 Unavailable For Legal Reasons - no special header
-        451 => {},
+        451 => {}
         // 500 Internal Server Error - no special header
-        500 => {},
+        500 => {}
         // 501 Not Implemented - no special header
-        501 => {},
+        501 => {}
         // 502 Bad Gateway - no special header
-        502 => {},
+        502 => {}
         // 503 Service Unavailable - Retry-After recommended
         503 => {
             response = add_header(response, b"Retry-After", b"60");
-        },
+        }
         // 504 Gateway Timeout - no special header
-        504 => {},
+        504 => {}
         // 505 HTTP Version Not Supported - no special header
-        505 => {},
+        505 => {}
         // 506 Variant Also Negotiates - no special header
-        506 => {},
+        506 => {}
         // 507 Insufficient Storage - no special header
-        507 => {},
+        507 => {}
         // 508 Loop Detected - no special header
-        508 => {},
+        508 => {}
         // 510 Not Extended - no special header
-        510 => {},
+        510 => {}
         // 511 Network Authentication Required - WWW-Authenticate required
         511 => {
             response = add_header(response, b"WWW-Authenticate", b"Basic realm=\"network\"");
-        },
+        }
         // 1xx Informational
-        100..=199 => {},
+        100..=199 => {}
         // 2xx Success
-        200..=299 => {},
+        200..=299 => {}
         // 4xx Client Error (already handled above or default)
-        400..=499 => {},
+        400..=499 => {}
         // 5xx Server Error (already handled above or default)
-        500..=599 => {},
-        _ => {},
+        500..=599 => {}
+        _ => {}
     }
 
     response
 }
-
