@@ -242,6 +242,7 @@ fn normalize_editor_repos_dir(repos_dir: &str) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::web::dd_publish::{TEMP_DIR_PREFIX, register_temp_root};
     use crate::web::handler_static::{get_content_type, handle_web_request};
     use std::fs;
     use std::path::PathBuf;
@@ -348,6 +349,154 @@ mod tests {
         );
         assert!(body.contains("file.txt"), "Should list file.txt");
         assert!(body.contains(". . /"), "Should show parent directory link");
+    }
+
+    #[test]
+    fn test_handle_web_request_directory_listing_shows_hidden_without_links() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let subdir = root_path.join("subdir");
+        fs::create_dir_all(&subdir).expect("Failed to create subdir");
+        fs::create_dir_all(subdir.join(".hidden-dir")).expect("Failed to create hidden dir");
+        fs::write(subdir.join(".hidden.txt"), "hidden").expect("Failed to create hidden file");
+        fs::write(subdir.join("visible.txt"), "visible").expect("Failed to create visible file");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/subdir/", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().unwrap();
+        assert!(body.contains(".hidden.txt"), "Should show hidden file name");
+        assert!(body.contains(".hidden-dir/"), "Should show hidden dir name");
+        assert!(
+            !body.contains("href=\"/subdir/.hidden.txt\""),
+            "Hidden file should not be linked"
+        );
+        assert!(
+            !body.contains("href=\"/subdir/.hidden-dir/\""),
+            "Hidden directory should not be linked"
+        );
+        assert!(
+            body.contains("href=\"/subdir/visible.txt\""),
+            "Visible file should be linked"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_hidden_file_access_is_rejected() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        fs::write(root_path.join(".secret.txt"), "secret").expect("Failed to create hidden file");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/.secret.txt", port))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(response.status(), 400);
+    }
+
+    #[test]
+    fn test_resource_meta_rejects_hidden_path() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        fs::write(root_path.join(".secret.txt"), "secret").expect("Failed to create hidden file");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!(
+                "http://127.0.0.1:{}/.resource-meta?path=.secret.txt",
+                port
+            ))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(response.status(), 400);
+    }
+
+    #[test]
+    fn test_resource_meta_directory_preview_counts_entries() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let target = root_path.join("target");
+        fs::create_dir_all(target.join("dir-a")).expect("Failed to create dir-a");
+        fs::create_dir_all(target.join("dir-b")).expect("Failed to create dir-b");
+        fs::write(target.join("a.txt"), "a").expect("Failed to create a.txt");
+        fs::write(target.join("b.bin"), [1_u8, 2_u8]).expect("Failed to create b.bin");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!(
+                "http://127.0.0.1:{}/.resource-meta?path=target",
+                port
+            ))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(response.status(), 200);
+        let json: serde_json::Value = response.json().expect("Failed to parse JSON");
+        assert_eq!(json["preview"], "files: 2, dirs: 2");
+        assert_eq!(json["size_hr"], "-");
+    }
+
+    #[test]
+    fn test_tmpdir_root_hides_parent_link_and_subdir_shows_it() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let subdir = root_path.join("subdir");
+        fs::create_dir_all(&subdir).expect("Failed to create subdir");
+        fs::write(subdir.join("file.txt"), "content").expect("Failed to create file.txt");
+        let share_hash = register_temp_root(root_path.as_path()).expect("Failed to register temp root");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path.clone(), port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let root_listing = client
+            .get(&format!(
+                "http://127.0.0.1:{}{}{}/",
+                port, TEMP_DIR_PREFIX, share_hash
+            ))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(root_listing.status(), 200);
+        let root_body = root_listing.text().expect("Failed to read body");
+        assert!(
+            !root_body.contains(". . /"),
+            "tmpdir root should not show parent link"
+        );
+
+        let subdir_listing = client
+            .get(&format!(
+                "http://127.0.0.1:{}{}{}/subdir/",
+                port, TEMP_DIR_PREFIX, share_hash
+            ))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(subdir_listing.status(), 200);
+        let subdir_body = subdir_listing.text().expect("Failed to read body");
+        assert!(
+            subdir_body.contains(". . /"),
+            "tmpdir subdir should show parent link"
+        );
     }
 
     #[test]
