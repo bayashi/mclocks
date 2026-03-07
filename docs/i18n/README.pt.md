@@ -290,6 +290,11 @@ O `mclocks` pode servir arquivos estáticos por meio de um servidor web integrad
         "dump": true,
         "slow": true,
         "status": true,
+        "content": {
+          "markdown": {
+            "allowRawHTML": false
+          }
+        },
         "editor": {
           "reposDir": "/path/to/your/repos"
         }
@@ -302,6 +307,7 @@ O `mclocks` pode servir arquivos estáticos por meio de um servidor web integrad
 * `dump`: Se definido como `true`, habilita o endpoint `/dump` que retorna detalhes da requisição como JSON (padrão: `false`)
 * `slow`: Se definido como `true`, habilita o endpoint `/slow` que atrasa a resposta (padrão: `false`)
 * `status`: Se definido como `true`, habilita o endpoint `/status/{code}` que retorna códigos de status HTTP arbitrários (padrão: `false`)
+* `content.markdown.allowRawHTML`: Se definido como `true`, permite HTML bruto na renderização de Markdown; se `false`, o HTML bruto no Markdown é escapado como texto (padrão: `false`)
 * `editor`: Se definido e contém `reposDir`, habilita o endpoint `/editor` que abre arquivos locais no seu editor a partir de URLs do GitHub no navegador (padrão: não definido)
 
 Se o campo `web` estiver configurado no seu `config.json`, o servidor web inicia automaticamente quando o `mclocks` é lançado. Acesse arquivos em `http://127.0.0.1:3030`. O servidor web escuta apenas em `127.0.0.1` (localhost), portanto só é acessível a partir da sua máquina local.

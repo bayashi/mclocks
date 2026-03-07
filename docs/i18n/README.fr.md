@@ -290,6 +290,11 @@ La taille maximale de texte par note adhésive est de 128 Ko.
         "dump": true,
         "slow": true,
         "status": true,
+        "content": {
+          "markdown": {
+            "allowRawHTML": false
+          }
+        },
         "editor": {
           "reposDir": "/path/to/your/repos"
         }
@@ -302,6 +307,7 @@ La taille maximale de texte par note adhésive est de 128 Ko.
 * `dump` : Si défini sur `true`, active le endpoint `/dump` qui retourne les détails de la requête en JSON (par défaut : `false`)
 * `slow` : Si défini sur `true`, active le endpoint `/slow` qui retarde la réponse (par défaut : `false`)
 * `status` : Si défini sur `true`, active le endpoint `/status/{code}` qui retourne des codes de statut HTTP arbitraires (par défaut : `false`)
+* `content.markdown.allowRawHTML` : Si défini sur `true`, autorise le HTML brut dans le rendu Markdown ; si `false`, le HTML brut dans Markdown est échappé comme texte (par défaut : `false`)
 * `editor` : Si défini et contient `reposDir`, active le endpoint `/editor` qui ouvre des fichiers locaux dans votre éditeur depuis des URLs GitHub du navigateur (par défaut : non défini)
 
 Si le champ `web` est configuré dans votre `config.json`, le serveur web démarre automatiquement au lancement de `mclocks`. Accédez aux fichiers à `http://127.0.0.1:3030`. Le serveur web n'écoute que sur `127.0.0.1` (localhost), il n'est donc accessible que depuis votre machine locale.
