@@ -1,6 +1,7 @@
-use super::dd_publish::{resolve_temp_file, resolve_temp_share};
+use super::dd_publish::{TEMP_DIR_PREFIX, resolve_temp_file, resolve_temp_share};
 use chardetng::EncodingDetector;
 use encoding_rs::{Encoding, UTF_8};
+use std::fmt::Write;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tiny_http::{Header, Response, StatusCode};
@@ -9,11 +10,222 @@ use urlencoding::{decode, encode};
 use super::common::create_error_response;
 use super::handler_dump::handle_dump_request;
 use super::handler_editor::handle_editor_request;
+use super::handler_resource_meta::{handle_resource_meta_request, is_resource_meta_request};
 use super::handler_slow::handle_slow_request;
 use super::handler_status::handle_status_request;
 use super::static_md::{
     build_raw_toggle_href, create_markdown_response, is_markdown_file, should_serve_raw_markdown,
 };
+
+const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Index of __PAGE_TITLE__</title>
+<style>
+* { box-sizing: border-box; }
+body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; }
+#main { padding: 16px 24px; max-width: 960px; overflow-wrap: anywhere; word-break: break-word; }
+h1 { color: #ddd; font-size: 26px; margin: 0 0 16px; }
+.path { color: #666; margin-bottom: 16px; }
+ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid #222; }
+li { border-bottom: 1px solid #161616; }
+a { display: block; color: #ccc; text-decoration: none; padding: 8px 4px; border-radius: 2px; }
+a:hover { color: #fff; background: #1a1a1a; }
+.entry-label { display: inline-block; min-width: calc(1.7em - 2px); color: #666; }
+.dir .entry-label { color: #777; }
+.back .entry-label { color: #555; }
+.no-link { display: block; color: #666; padding: 8px 4px; cursor: default; }
+.empty { color: #666; font-style: italic; padding: 8px 4px; }
+.error { color: #ff6b6b; padding: 8px 4px; }
+#meta-tooltip { position: fixed; z-index: 9999; pointer-events: none; background: #101010; color: #ddd; border: 1px solid #333; border-radius: 4px; padding: 8px 10px; font-size: 12px; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,0.45); width: min(840px, calc(100vw - 16px)); max-width: 840px; }
+#meta-tooltip.hidden { display: none; }
+#meta-tooltip table { border-collapse: collapse; border-spacing: 0; width: 100%; }
+#meta-tooltip th { color: #777; text-align: left; font-weight: 400; padding: 0 8px 0 0; white-space: nowrap; width: 1%; }
+#meta-tooltip td { padding: 0; }
+#meta-tooltip .value { font-variant-numeric: tabular-nums; font-family: "Consolas", "Cascadia Code", "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace; white-space: nowrap; }
+#meta-tooltip .value.preview { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+#meta-tooltip tr.preview-row th, #meta-tooltip tr.preview-row td { vertical-align: top; }
+</style>
+</head>
+<body>
+<div id="main">
+<h1>Index of __DISPLAY_PATH__</h1>
+<div class="path">__DISPLAY_PATH__</div>
+<ul>
+__LIST_ITEMS__
+</ul>
+</div>
+<div id="meta-tooltip" class="hidden"></div>
+<script>
+const metaEndpoint = "__METADATA_ENDPOINT__";
+const tooltip = document.getElementById("meta-tooltip");
+const metaCache = new Map();
+let activeAnchor = null;
+let hoverTimerId = null;
+const HOVER_DELAY_MS = 750;
+const escapeHtml = (s) => String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
+const pad2 = (n) => String(n).padStart(2, "0");
+const toLocalTime = (value) => {
+	if (value === null || value === undefined) {
+		return "-";
+	}
+	const n = Number(value);
+	if (!Number.isFinite(n)) {
+		return "-";
+	}
+	const d = new Date(n);
+	const y = d.getFullYear();
+	const mo = pad2(d.getMonth() + 1);
+	const da = pad2(d.getDate());
+	const h = pad2(d.getHours());
+	const mi = pad2(d.getMinutes());
+	const s = pad2(d.getSeconds());
+	return `${y}-${mo}-${da} ${h}:${mi}:${s}`;
+};
+const renderTooltip = (meta) => {
+	const size = meta?.size_hr ?? "-";
+	const preview = meta?.preview ?? "-";
+	const modified = toLocalTime(meta?.modified_ms);
+	const created = toLocalTime(meta?.created_ms);
+	tooltip.innerHTML = `<table><tbody><tr><th scope="row">Size</th><td class="value">${escapeHtml(size)}</td></tr><tr><th scope="row">Modified</th><td class="value">${escapeHtml(modified)}</td></tr><tr><th scope="row">Created</th><td class="value">${escapeHtml(created)}</td></tr><tr class="preview-row"><th scope="row">Preview</th><td class="value preview">${escapeHtml(preview)}</td></tr></tbody></table>`;
+};
+const positionTooltip = (e) => {
+	const pad = 14;
+	const width = tooltip.offsetWidth || 220;
+	const height = tooltip.offsetHeight || 72;
+	let x = e.clientX + pad;
+	let y = e.clientY + pad;
+	if (x + width + 8 > window.innerWidth) {
+		x = e.clientX - width - pad;
+	}
+	if (y + height + 8 > window.innerHeight) {
+		y = e.clientY - height - pad;
+	}
+	tooltip.style.left = `${Math.max(8, x)}px`;
+	tooltip.style.top = `${Math.max(8, y)}px`;
+};
+const clearHoverTimer = () => {
+	if (hoverTimerId !== null) {
+		clearTimeout(hoverTimerId);
+		hoverTimerId = null;
+	}
+};
+const hideTooltip = () => {
+	clearHoverTimer();
+	tooltip.classList.add("hidden");
+	activeAnchor = null;
+};
+const loadMetadata = async (entryName) => {
+	if (metaCache.has(entryName)) {
+		return metaCache.get(entryName);
+	}
+	const res = await fetch(`${metaEndpoint}?path=${encodeURIComponent(entryName)}`, { headers: { "Accept": "application/json" } });
+	if (!res.ok) {
+		throw new Error(`HTTP ${res.status}`);
+	}
+	const data = await res.json();
+	metaCache.set(entryName, data);
+	return data;
+};
+document.querySelectorAll("a[data-meta-path]").forEach((a) => {
+	a.addEventListener("mouseenter", (e) => {
+		activeAnchor = a;
+		clearHoverTimer();
+		const mouseX = e.clientX;
+		const mouseY = e.clientY;
+		hoverTimerId = setTimeout(async () => {
+			if (activeAnchor !== a) {
+				return;
+			}
+			const entryName = a.getAttribute("data-meta-path") || "";
+			try {
+				const meta = await loadMetadata(entryName);
+				if (activeAnchor !== a) {
+					return;
+				}
+				renderTooltip(meta);
+				tooltip.classList.remove("hidden");
+				positionTooltip({ clientX: mouseX, clientY: mouseY });
+			} catch (_) {
+				if (activeAnchor !== a) {
+					return;
+				}
+				tooltip.textContent = "Failed to load metadata";
+				tooltip.classList.remove("hidden");
+				positionTooltip({ clientX: mouseX, clientY: mouseY });
+			} finally {
+				hoverTimerId = null;
+			}
+		}, HOVER_DELAY_MS);
+	});
+	a.addEventListener("mousemove", (e) => {
+		if (activeAnchor === a && !tooltip.classList.contains("hidden")) {
+			positionTooltip(e);
+		}
+	});
+	a.addEventListener("mouseleave", hideTooltip);
+});
+</script>
+</body>
+</html>
+"##;
+
+fn append_parent_entry(list_items: &mut String, parent_url: &str) {
+    let _ = write!(
+        list_items,
+        "<li class=\"back\"><a href=\"{}\"><span class=\"entry-label\">↩️</span>. . /</a></li>\n",
+        html_escape(parent_url)
+    );
+}
+
+fn append_directory_entry(list_items: &mut String, dir_url: &str, dir_name: &str) {
+    let _ = write!(
+        list_items,
+        "<li class=\"dir\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📁</span>{}/</a></li>\n",
+        html_escape(dir_url),
+        html_escape(dir_name),
+        html_escape(dir_name)
+    );
+}
+
+fn append_directory_entry_no_link(list_items: &mut String, dir_name: &str) {
+    let _ = write!(
+        list_items,
+        "<li class=\"dir\"><span class=\"no-link\"><span class=\"entry-label\">📁</span>{}/</span></li>\n",
+        html_escape(dir_name)
+    );
+}
+
+fn append_file_entry(list_items: &mut String, file_url: &str, file_name: &str) {
+    let _ = write!(
+        list_items,
+        "<li class=\"file\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📄</span>{}</a></li>\n",
+        html_escape(file_url),
+        html_escape(file_name),
+        html_escape(file_name)
+    );
+}
+
+fn append_file_entry_no_link(list_items: &mut String, file_name: &str) {
+    let _ = write!(
+        list_items,
+        "<li class=\"file\"><span class=\"no-link\"><span class=\"entry-label\">📄</span>{}</span></li>\n",
+        html_escape(file_name)
+    );
+}
+
+fn is_tmpdir_root_listing(url_path: &str) -> bool {
+    if !url_path.starts_with(TEMP_DIR_PREFIX) {
+        return false;
+    }
+    let trimmed = url_path.trim_end_matches('/');
+    let suffix = &trimmed[TEMP_DIR_PREFIX.len()..];
+    if suffix.is_empty() {
+        return false;
+    }
+    !suffix.contains('/')
+}
 
 fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
     // Decode URL path for display (each segment separately)
@@ -35,29 +247,17 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
             .collect();
         segments.join("/")
     };
+    let metadata_endpoint = if url_path == "/" {
+        "/.resource-meta".to_string()
+    } else {
+        format!("{}/.resource-meta", url_path.trim_end_matches('/'))
+    };
 
-    let mut html = String::from("<!DOCTYPE html>\n<html>\n<head>\n");
-    html.push_str("<meta charset=\"utf-8\">\n");
-    html.push_str("<title>Index of ");
-    html.push_str(&html_escape(&decoded_path));
-    html.push_str("</title>\n");
-    html.push_str("<style>\n");
-    html.push_str("body { font-family: monospace; margin: 20px; }\n");
-    html.push_str("h1 { color: #333; }\n");
-    html.push_str("ul { list-style-type: none; padding-left: 0; }\n");
-    html.push_str("li { padding: 5px 0; }\n");
-    html.push_str("a { text-decoration: none; color: #0066cc; }\n");
-    html.push_str("a:hover { text-decoration: underline; }\n");
-    html.push_str(".dir::before { content: '📁'; }\n");
-    html.push_str(".file::before { content: '📄'; }\n");
-    html.push_str("</style>\n");
-    html.push_str("</head>\n<body>\n");
-    html.push_str("<h1>Index of ");
-    html.push_str(&html_escape(&decoded_path));
-    html.push_str("</h1>\n<ul>\n");
+    let mut list_items = String::new();
+    let mut has_entries = false;
 
     // Add parent directory link if not at root
-    if url_path != "/" {
+    if url_path != "/" && !is_tmpdir_root_listing(url_path) {
         let trimmed = url_path.trim_end_matches('/');
         let parent_url = if trimmed == "" {
             "/".to_string()
@@ -74,9 +274,8 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
                 None => "/".to_string(),
             }
         };
-        html.push_str("<li><a href=\"");
-        html.push_str(&html_escape(&parent_url));
-        html.push_str("\">../</a></li>\n");
+        append_parent_entry(&mut list_items, &parent_url);
+        has_entries = true;
     }
 
     // Read directory entries
@@ -89,10 +288,6 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
                 if let Ok(entry) = entry {
                     let file_name = entry.file_name();
                     if let Some(name) = file_name.to_str() {
-                        // Skip hidden files (starting with .)
-                        if name.starts_with('.') {
-                            continue;
-                        }
                         let metadata = entry.metadata();
                         if let Ok(meta) = metadata {
                             if meta.is_dir() {
@@ -118,11 +313,12 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
                     let base = url_path.trim_end_matches('/');
                     format!("{}/{}/", base, encoded_dir)
                 };
-                html.push_str("<li class=\"dir\"><a href=\"");
-                html.push_str(&html_escape(&dir_url));
-                html.push_str("\">");
-                html.push_str(&html_escape(&dir));
-                html.push_str("/</a></li>\n");
+                if dir.starts_with('.') {
+                    append_directory_entry_no_link(&mut list_items, &dir);
+                } else {
+                    append_directory_entry(&mut list_items, &dir_url, &dir);
+                }
+                has_entries = true;
             }
 
             // Add file entries
@@ -134,19 +330,27 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
                     let base = url_path.trim_end_matches('/');
                     format!("{}/{}", base, encoded_file)
                 };
-                html.push_str("<li class=\"file\"><a href=\"");
-                html.push_str(&html_escape(&file_url));
-                html.push_str("\">");
-                html.push_str(&html_escape(&file));
-                html.push_str("</a></li>\n");
+                if file.starts_with('.') {
+                    append_file_entry_no_link(&mut list_items, &file);
+                } else {
+                    append_file_entry(&mut list_items, &file_url, &file);
+                }
+                has_entries = true;
             }
         }
         Err(_) => {
-            html.push_str("<li>Error reading directory</li>\n");
+            list_items.push_str("<li class=\"error\">Error reading directory</li>\n");
         }
     }
 
-    html.push_str("</ul>\n</body>\n</html>");
+    if !has_entries {
+        list_items.push_str("<li class=\"empty\">(empty)</li>\n");
+    }
+    let html = DIRECTORY_LISTING_TEMPLATE
+        .replace("__PAGE_TITLE__", &html_escape(&decoded_path))
+        .replace("__DISPLAY_PATH__", &html_escape(&decoded_path))
+        .replace("__LIST_ITEMS__", &list_items)
+        .replace("__METADATA_ENDPOINT__", &html_escape(&metadata_endpoint));
 
     let content_type = "text/html; charset=utf-8";
     if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
@@ -298,6 +502,10 @@ pub fn handle_web_request(
     let serve_raw_markdown = should_serve_raw_markdown(url);
     let raw_toggle_href = build_raw_toggle_href(url);
 
+    if is_resource_meta_request(active_path.as_str()) {
+        return handle_resource_meta_request(url, &active_root_path, active_path.as_str());
+    }
+
     // Check if this is a /editor request
     if editor_repos_dir.is_some() {
         if active_path == "/editor" || active_path.starts_with("/editor/") {
@@ -353,7 +561,7 @@ pub fn handle_web_request(
             match decode(segment) {
                 Ok(decoded) => {
                     // Security: Reject traversal after URL decoding (%2e%2e bypass)
-                    if decoded.contains("..") {
+                    if decoded.contains("..") || decoded.starts_with('.') {
                         return create_error_response(StatusCode(400), "Bad Request");
                     }
                     decoded_segments.push(decoded.into_owned());
