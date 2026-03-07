@@ -11,7 +11,7 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use web_server::{start_web_server, open_url_in_browser, load_web_config};
 use config::{get_config_path, load_config};
 use util::open_text_in_editor;
-use web::dd_publish::{build_temp_share_url, register_temp_root};
+use web::dd_publish::{build_temp_file_url, build_temp_share_url, register_temp_file, register_temp_root};
 
 /// Global lock to serialize all saveWindowState calls across windows.
 /// Prevents potential deadlocks in the window-state plugin when multiple
@@ -42,8 +42,16 @@ fn register_temp_web_root(
     let web_config = load_web_config(&state.app_identifier)?
         .ok_or("Web server is not configured. Set web.root in config.json first.".to_string())?;
 
-    let hash = register_temp_root(std::path::Path::new(&dropped_path))?;
-    let url = build_temp_share_url(web_config.port, &hash);
+    let dropped = std::path::Path::new(&dropped_path);
+    let url = if dropped.is_dir() {
+        let hash = register_temp_root(dropped)?;
+        build_temp_share_url(web_config.port, &hash)
+    } else if dropped.is_file() {
+        let hash = register_temp_file(dropped)?;
+        build_temp_file_url(web_config.port, &hash, dropped)?
+    } else {
+        return Err(format!("Invalid drop target: {}", dropped.display()));
+    };
     open_url_in_browser(&url)?;
     Ok(url)
 }

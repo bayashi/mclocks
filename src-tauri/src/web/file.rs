@@ -4,7 +4,7 @@ use encoding_rs::{Encoding, UTF_8};
 use tiny_http::{Header, Response, StatusCode};
 use chardetng::EncodingDetector;
 use urlencoding::{decode, encode};
-use super::dd_publish::resolve_temp_share;
+use super::dd_publish::{resolve_temp_file, resolve_temp_share};
 
 use super::common::create_error_response;
 use super::status_handler::handle_status_request;
@@ -275,6 +275,16 @@ pub fn handle_web_request(
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let url = request.url();
     let path = url.split('?').next().unwrap_or("/");
+    if let Some(shared_file_path) = resolve_temp_file(path) {
+        let serve_raw_markdown = should_serve_raw_markdown(url);
+        let raw_toggle_href = build_raw_toggle_href(url);
+        return create_file_response(
+            &shared_file_path,
+            allow_html_in_md,
+            serve_raw_markdown,
+            &raw_toggle_href,
+        );
+    }
     let (active_root_path, active_path, public_url_path) = match resolve_temp_share(path) {
         Some((temp_root, temp_relative_path, temp_public_prefix)) => {
             let public_path = if temp_relative_path == "/" {
