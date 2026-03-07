@@ -463,7 +463,8 @@ mod tests {
         let subdir = root_path.join("subdir");
         fs::create_dir_all(&subdir).expect("Failed to create subdir");
         fs::write(subdir.join("file.txt"), "content").expect("Failed to create file.txt");
-        let share_hash = register_temp_root(root_path.as_path()).expect("Failed to register temp root");
+        let share_hash =
+            register_temp_root(root_path.as_path()).expect("Failed to register temp root");
         let port = find_available_port();
 
         let _server_handle = start_test_server(root_path.clone(), port, false, false, false);
