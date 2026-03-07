@@ -37,6 +37,8 @@ A developer is never without a clock:
     * such as easily creating SQL `IN` clauses
 * 🌐 Web server
     * serves static files
+        * richly render markdown
+        * drag-and-drop based content viewer
     * dump request and response server
     * slow endpoints for debugging
     * open files in your editor from GitHub URLs
@@ -336,6 +338,11 @@ The web server supports the following file types:
 
 * Text: `html`, `css`, `js`, `json`, `md`, `txt`
 * Images: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+
+### drag-and-drop based content viewer
+
+In addition to static file hosting, the web server also includes a drag-and-drop based content viewer workflow: when you drag and drop a file or directory onto the mclocks clock window, it can be opened and viewed through temporary local URLs.
+These temporary URLs are discarded when mclocks exits.
 
 ### /dump endpoint
 
