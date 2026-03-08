@@ -21,8 +21,8 @@ Un desarrollador nunca está sin reloj:
     * como crear fácilmente cláusulas SQL `IN`
 * 🌐 Servidor web
     * sirve archivos estáticos
-    * renderiza Markdown de forma enriquecida
-    * visor de contenido basado en arrastrar y soltar
+        * renderiza Markdown de forma enriquecida
+        * visor de contenido basado en arrastrar y soltar
     * servidor de volcado de solicitudes y respuestas
     * endpoints lentos para depuración
     * abrir archivos en tu editor desde URLs de GitHub

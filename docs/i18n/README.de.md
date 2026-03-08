@@ -21,8 +21,8 @@ Ein Entwickler ist nie ohne Uhr:
     * wie das einfache Erstellen von SQL `IN`-Klauseln
 * 🌐 Webserver
     * stellt statische Dateien bereit
-    * rendert Markdown im Rich-Format
-    * Drag-and-drop-basierter Content-Viewer
+        * rendert Markdown im Rich-Format
+        * Drag-and-drop-basierter Content-Viewer
     * Request- und Response-Dump-Server
     * langsame Endpunkte zum Debuggen
     * Dateien im Editor über GitHub-URLs öffnen

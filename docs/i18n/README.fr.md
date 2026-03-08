@@ -21,8 +21,8 @@ Un développeur n'est jamais sans horloge :
     * comme la création facile de clauses SQL `IN`
 * 🌐 Serveur web
     * sert des fichiers statiques
-    * rendu Markdown enrichi
-    * visionneuse de contenu basée sur glisser-déposer
+        * rendu Markdown enrichi
+        * visionneuse de contenu basée sur glisser-déposer
     * serveur de vidage des requêtes et réponses
     * endpoints lents pour le débogage
     * ouvrir des fichiers dans votre éditeur depuis des URLs GitHub

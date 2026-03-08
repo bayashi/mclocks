@@ -21,8 +21,8 @@ Um desenvolvedor nunca fica sem relógio:
     * como criar facilmente cláusulas SQL `IN`
 * 🌐 Servidor web
     * serve arquivos estáticos
-    * renderiza Markdown de forma avançada
-    * visualizador de conteúdo baseado em arrastar e soltar
+        * renderiza Markdown de forma avançada
+        * visualizador de conteúdo baseado em arrastar e soltar
     * servidor de dump de requisições e respostas
     * endpoints lentos para depuração
     * abrir arquivos no seu editor a partir de URLs do GitHub

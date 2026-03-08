@@ -21,8 +21,8 @@ Bir geliştirici asla saatsiz kalmaz:
     * SQL `IN` cümlelerini kolayca oluşturma gibi
 * 🌐 Web sunucusu
     * statik dosyalar sunar
-    * Markdown'ı zengin şekilde işler
-    * sürükle-bırak tabanlı içerik görüntüleyici
+        * Markdown'ı zengin şekilde işler
+        * sürükle-bırak tabanlı içerik görüntüleyici
     * istek ve yanıt döküm sunucusu
     * hata ayıklama için yavaş uç noktalar
     * GitHub URL'lerinden editörünüzde dosya açma

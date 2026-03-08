@@ -21,8 +21,8 @@ Seorang pengembang tidak pernah tanpa jam:
     * seperti membuat klausa SQL `IN` dengan mudah
 * 🌐 Server web
     * menyajikan file statis
-    * merender Markdown secara kaya
-    * penampil konten berbasis drag-and-drop
+        * merender Markdown secara kaya
+        * penampil konten berbasis drag-and-drop
     * server dump permintaan dan respons
     * endpoint lambat untuk debugging
     * membuka file di editor Anda dari URL GitHub
