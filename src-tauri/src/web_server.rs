@@ -854,8 +854,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/markdown"),
-            "Raw markdown response should be text/markdown, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw markdown response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -933,8 +933,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/markdown"),
-            "Raw markdown(.markdown) response should be text/markdown, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw markdown(.markdown) response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1057,8 +1057,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("application/json"),
-            "Raw JSON response should be application/json, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw JSON response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1143,8 +1143,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("application/yaml"),
-            "Raw YAML response should be application/yaml, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw YAML response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
