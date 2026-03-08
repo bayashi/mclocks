@@ -14,7 +14,8 @@ use super::handler_resource_meta::{handle_resource_meta_request, is_resource_met
 use super::handler_slow::handle_slow_request;
 use super::handler_status::handle_status_request;
 use super::static_md::{
-    build_raw_toggle_href, create_markdown_response, is_markdown_file, should_serve_raw_markdown,
+    build_raw_content_toggle_href, create_markdown_response, is_markdown_file,
+    should_serve_raw_content,
 };
 
 const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
@@ -404,19 +405,19 @@ fn detect_encoding(content: &[u8]) -> &'static Encoding {
 fn create_file_response(
     file_path: &PathBuf,
     allow_html_in_md: bool,
-    serve_raw_markdown: bool,
-    raw_toggle_href: &str,
+    serve_raw_content: bool,
+    raw_content_toggle_href: &str,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     match fs::read(file_path) {
         Ok(content) => {
-            if is_markdown_file(file_path.as_path()) && !serve_raw_markdown {
+            if is_markdown_file(file_path.as_path()) && !serve_raw_content {
                 let encoding = detect_encoding(&content);
                 let (decoded, _, _) = encoding.decode(&content);
                 return create_markdown_response(
                     file_path.as_path(),
                     &decoded,
                     allow_html_in_md,
-                    raw_toggle_href,
+                    raw_content_toggle_href,
                 );
             }
             let base_content_type = get_content_type(file_path);
@@ -479,13 +480,13 @@ pub fn handle_web_request(
     let url = request.url();
     let path = url.split('?').next().unwrap_or("/");
     if let Some(shared_file_path) = resolve_temp_file(path) {
-        let serve_raw_markdown = should_serve_raw_markdown(url);
-        let raw_toggle_href = build_raw_toggle_href(url);
+        let serve_raw_content = should_serve_raw_content(url);
+        let raw_content_toggle_href = build_raw_content_toggle_href(url);
         return create_file_response(
             &shared_file_path,
             allow_html_in_md,
-            serve_raw_markdown,
-            &raw_toggle_href,
+            serve_raw_content,
+            &raw_content_toggle_href,
         );
     }
     let (active_root_path, active_path, public_url_path) = match resolve_temp_share(path) {
@@ -499,8 +500,8 @@ pub fn handle_web_request(
         }
         None => (root_path.clone(), path.to_string(), path.to_string()),
     };
-    let serve_raw_markdown = should_serve_raw_markdown(url);
-    let raw_toggle_href = build_raw_toggle_href(url);
+    let serve_raw_content = should_serve_raw_content(url);
+    let raw_content_toggle_href = build_raw_content_toggle_href(url);
 
     if is_resource_meta_request(active_path.as_str()) {
         return handle_resource_meta_request(url, &active_root_path, active_path.as_str());
@@ -594,8 +595,8 @@ pub fn handle_web_request(
                     return create_file_response(
                         &index_path,
                         allow_html_in_md,
-                        serve_raw_markdown,
-                        &raw_toggle_href,
+                        serve_raw_content,
+                        &raw_content_toggle_href,
                     );
                 }
                 // If index.html doesn't exist, show directory listing
@@ -616,8 +617,8 @@ pub fn handle_web_request(
                 return create_file_response(
                     &file_path,
                     allow_html_in_md,
-                    serve_raw_markdown,
-                    &raw_toggle_href,
+                    serve_raw_content,
+                    &raw_content_toggle_href,
                 );
             }
             // Check if it's a directory request
@@ -632,8 +633,8 @@ pub fn handle_web_request(
                     return create_file_response(
                         &index_path,
                         allow_html_in_md,
-                        serve_raw_markdown,
-                        &raw_toggle_href,
+                        serve_raw_content,
+                        &raw_content_toggle_href,
                     );
                 }
                 // Generate directory listing
@@ -650,8 +651,8 @@ pub fn handle_web_request(
             return create_file_response(
                 &index_path,
                 allow_html_in_md,
-                serve_raw_markdown,
-                &raw_toggle_href,
+                serve_raw_content,
+                &raw_content_toggle_href,
             );
         }
         // Generate directory listing
@@ -662,7 +663,7 @@ pub fn handle_web_request(
     create_file_response(
         &normalized_path,
         allow_html_in_md,
-        serve_raw_markdown,
-        &raw_toggle_href,
+        serve_raw_content,
+        &raw_content_toggle_href,
     )
 }

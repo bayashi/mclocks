@@ -404,7 +404,7 @@ pub fn is_markdown_file(path: &Path) -> bool {
     }
 }
 
-pub fn should_serve_raw_markdown(url: &str) -> bool {
+pub fn should_serve_raw_content(url: &str) -> bool {
     let query = match url.split('?').nth(1) {
         Some(q) => q.split('#').next().unwrap_or(q),
         None => return false,
@@ -423,7 +423,7 @@ pub fn should_serve_raw_markdown(url: &str) -> bool {
     false
 }
 
-pub fn build_raw_toggle_href(url: &str) -> String {
+pub fn build_raw_content_toggle_href(url: &str) -> String {
     let no_fragment = url.split('#').next().unwrap_or(url);
     let mut parts = no_fragment.splitn(2, '?');
     let path = parts.next().unwrap_or("/");
