@@ -103,7 +103,11 @@ pub struct WebServerConfig {
 }
 
 fn df_web_port() -> u16 {
-    3030
+    if cfg!(debug_assertions) && tauri::is_dev() {
+        3028
+    } else {
+        3030
+    }
 }
 fn df_open_browser_at_start() -> bool {
     false
@@ -121,7 +125,11 @@ fn df_allow_html_in_md() -> bool {
     false
 }
 fn df_assets_port() -> u16 {
-    3029
+    if cfg!(debug_assertions) && tauri::is_dev() {
+        3027
+    } else {
+        3029
+    }
 }
 
 const EMBEDDED_HIGHLIGHT_JS: &str = include_str!("../../web-assets/highlight/highlight.min.js");
@@ -2120,7 +2128,11 @@ mod tests {
             web_config
         );
         let config = web_config.unwrap();
-        assert_eq!(config.port, 3030, "Default port should be 3030");
+        assert_eq!(
+            config.port,
+            df_web_port(),
+            "Default port should follow environment default"
+        );
         assert_eq!(
             config.open_browser_at_start, false,
             "Default open_browser_at_start should be false"
@@ -2143,7 +2155,11 @@ mod tests {
 
         // Check default values
         assert_eq!(config.root, "/test", "Root should match");
-        assert_eq!(config.port, 3030, "Default port should be 3030");
+        assert_eq!(
+            config.port,
+            df_web_port(),
+            "Default port should follow environment default"
+        );
         assert_eq!(
             config.open_browser_at_start, false,
             "Default open_browser_at_start should be false"
