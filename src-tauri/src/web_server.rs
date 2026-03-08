@@ -33,6 +33,13 @@ pub struct WebMarkdownConfig {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct WebAssetsConfig {
+    #[serde(default = "df_assets_port")]
+    pub port: u16,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct WebContentConfig {
     #[serde(default)]
     pub markdown: Option<WebMarkdownConfig>,
@@ -55,7 +62,27 @@ pub struct WebConfig {
     #[serde(default)]
     pub content: Option<WebContentConfig>,
     #[serde(default)]
+    pub assets: Option<WebAssetsConfig>,
+    #[serde(default)]
     pub editor: Option<EditorConfig>,
+}
+
+#[derive(Debug, Clone)]
+pub struct WebMarkdownHighlightConfig {
+    pub main_css_url: String,
+    pub main_js_url: String,
+    pub static_md_css_url: String,
+    pub static_md_js_url: String,
+    pub static_json_css_url: String,
+    pub static_json_js_url: String,
+    pub css_url: String,
+    pub js_url: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct WebAssetsServerConfig {
+    pub root: String,
+    pub port: u16,
 }
 
 #[derive(Debug)]
@@ -67,6 +94,8 @@ pub struct WebServerConfig {
     pub slow: bool,
     pub status: bool,
     pub allow_html_in_md: bool,
+    pub markdown_highlight: Option<WebMarkdownHighlightConfig>,
+    pub assets_server: Option<WebAssetsServerConfig>,
     pub editor_repos_dir: Option<String>,
     pub editor_include_host: bool,
     pub editor_command: String,
@@ -91,6 +120,29 @@ fn df_status() -> bool {
 fn df_allow_html_in_md() -> bool {
     false
 }
+fn df_assets_port() -> u16 {
+    3029
+}
+
+const EMBEDDED_HIGHLIGHT_JS: &str = include_str!("../../web-assets/highlight/highlight.min.js");
+const EMBEDDED_HIGHLIGHT_CSS: &str = include_str!("../../web-assets/highlight/github-dark.min.css");
+const EMBEDDED_MCLOCKS_MAIN_CSS: &str = include_str!("../../web-assets/mclocks/main.css");
+const EMBEDDED_MCLOCKS_MAIN_JS: &str = include_str!("../../web-assets/mclocks/main.js");
+const EMBEDDED_MCLOCKS_STATIC_MD_CSS: &str = include_str!("../../web-assets/mclocks/static-md.css");
+const EMBEDDED_MCLOCKS_STATIC_MD_JS: &str = include_str!("../../web-assets/mclocks/static-md.js");
+const EMBEDDED_MCLOCKS_STATIC_JSON_CSS: &str =
+    include_str!("../../web-assets/mclocks/static-json.css");
+const EMBEDDED_MCLOCKS_STATIC_JSON_JS: &str =
+    include_str!("../../web-assets/mclocks/static-json.js");
+const HIGHLIGHT_JS_REL_PATH: &str = "highlight/highlight.min.js";
+const HIGHLIGHT_CSS_REL_PATH: &str = "highlight/github-dark.min.css";
+const MCLOCKS_MAIN_JS_REL_PATH: &str = "mclocks/main.js";
+const MCLOCKS_MAIN_CSS_REL_PATH: &str = "mclocks/main.css";
+const MCLOCKS_STATIC_MD_JS_REL_PATH: &str = "mclocks/static-md.js";
+const MCLOCKS_STATIC_MD_CSS_REL_PATH: &str = "mclocks/static-md.css";
+const MCLOCKS_STATIC_JSON_JS_REL_PATH: &str = "mclocks/static-json.js";
+const MCLOCKS_STATIC_JSON_CSS_REL_PATH: &str = "mclocks/static-json.css";
+const MCLOCKS_ASSETS_VERSION: &str = "20260308-7";
 
 pub fn start_web_server(
     root: String,
@@ -99,6 +151,7 @@ pub fn start_web_server(
     slow_enabled: bool,
     status_enabled: bool,
     allow_html_in_md: bool,
+    markdown_highlight: Option<WebMarkdownHighlightConfig>,
     editor_repos_dir: Option<String>,
     editor_include_host: bool,
     editor_command: String,
@@ -129,6 +182,7 @@ pub fn start_web_server(
                 slow_enabled,
                 status_enabled,
                 allow_html_in_md,
+                markdown_highlight.as_ref(),
                 &editor_repos_dir,
                 editor_include_host,
                 &editor_command,
@@ -143,6 +197,60 @@ pub fn start_web_server(
 
 pub fn open_url_in_browser(url: &str) -> Result<(), String> {
     open_with_system_command(url, "Failed to open URL in browser")
+}
+
+fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let assets_root = base_dir
+        .config_dir()
+        .join(identifier)
+        .join("web-assets")
+        .to_path_buf();
+    fs::create_dir_all(assets_root.join("highlight"))
+        .map_err(|e| format!("Failed to create markdown assets dir: {}", e))?;
+    fs::create_dir_all(assets_root.join("mclocks"))
+        .map_err(|e| format!("Failed to create mclocks assets dir: {}", e))?;
+    fs::write(
+        assets_root.join(HIGHLIGHT_JS_REL_PATH),
+        EMBEDDED_HIGHLIGHT_JS,
+    )
+    .map_err(|e| format!("Failed to write embedded highlight.js: {}", e))?;
+    fs::write(
+        assets_root.join(HIGHLIGHT_CSS_REL_PATH),
+        EMBEDDED_HIGHLIGHT_CSS,
+    )
+    .map_err(|e| format!("Failed to write embedded highlight.css: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_MAIN_JS_REL_PATH),
+        EMBEDDED_MCLOCKS_MAIN_JS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks main.js: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_MAIN_CSS_REL_PATH),
+        EMBEDDED_MCLOCKS_MAIN_CSS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks main.css: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_MD_JS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_MD_JS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks static-md.js: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_MD_CSS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_MD_CSS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks static-md.css: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_JSON_JS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_JSON_JS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks static-json.js: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_JSON_CSS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_JSON_CSS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks static-json.css: {}", e))?;
+    Ok(assets_root.to_string_lossy().to_string())
 }
 
 pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, String> {
@@ -182,6 +290,50 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         .and_then(|c| c.markdown.as_ref())
         .map(|m| m.allow_raw_html)
         .unwrap_or(false);
+    let assets_port = web_config
+        .assets
+        .as_ref()
+        .map(|assets| assets.port)
+        .unwrap_or_else(df_assets_port);
+    let assets_root = prepare_markdown_assets_root(identifier)?;
+    let assets_server = Some(WebAssetsServerConfig {
+        root: assets_root,
+        port: assets_port,
+    });
+    let markdown_highlight = Some(WebMarkdownHighlightConfig {
+        main_css_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_MAIN_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        main_js_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_MAIN_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_md_css_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_MD_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_md_js_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_MD_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_json_css_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_JSON_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_json_js_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_JSON_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        css_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, HIGHLIGHT_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        js_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, HIGHLIGHT_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+    });
     let editor_include_host = web_config
         .editor
         .as_ref()
@@ -208,6 +360,8 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         slow: web_config.slow,
         status: web_config.status,
         allow_html_in_md,
+        markdown_highlight,
+        assets_server,
         editor_repos_dir,
         editor_include_host,
         editor_command,
@@ -616,8 +770,8 @@ mod tests {
             "Rendered markdown page should include raw toggle link"
         );
         assert!(
-            body.contains("document.querySelectorAll(\"pre code\")"),
-            "Rendered markdown page should include copy button script"
+            !body.contains("<style>") && !body.contains("mclocks-md-toc-width"),
+            "Rendered markdown page should not embed inline markdown CSS/JS"
         );
     }
 
@@ -705,6 +859,36 @@ mod tests {
         assert!(
             body.contains("json-key") && body.contains("json-string"),
             "JSON view should include colorized tokens"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_json_array_object_hover_wrap_includes_opening_brace_line() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let json_file = root_path.join("array-obj.json");
+        fs::write(&json_file, r#"{"items":[{"name":"alice"},{"name":"bob"}]}"#)
+            .expect("Failed to create array-obj.json");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/array-obj.json", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("data-path=\"items.0\">    {"),
+            "Array object node should include opening brace line inside hover target"
+        );
+        assert!(
+            body.contains("data-path=\"items.0.name\""),
+            "Nested path under array object should keep full path"
         );
     }
 
@@ -1074,6 +1258,7 @@ mod tests {
                     slow_enabled,
                     status_enabled,
                     allow_html_in_md,
+                    None,
                     &None,
                     false,
                     &editor_command,
@@ -1608,6 +1793,97 @@ mod tests {
         assert_eq!(config.dump, true, "dump should be true");
 
         // Cleanup
+        let _ = fs::remove_file(&config_path);
+        let _ = fs::remove_dir(&test_config_dir);
+    }
+
+    #[test]
+    fn test_load_web_config_with_assets_for_markdown_highlight() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let web_root = temp_dir.path().join("webroot");
+        fs::create_dir_all(&web_root).expect("Failed to create web root");
+
+        let base_dir = BaseDirs::new().expect("Failed to get base dir");
+        let config_dir = base_dir.config_dir();
+        let test_config_dir = config_dir.join("test.app.assets");
+        fs::create_dir_all(&test_config_dir).expect("Failed to create config dir");
+
+        let config_file_name = if cfg!(debug_assertions) && tauri::is_dev() {
+            "dev.config.json"
+        } else {
+            "config.json"
+        };
+        let config_path = test_config_dir.join(config_file_name);
+        let web_root_str = web_root
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .replace('\\', "/");
+        let config_json = format!(
+            r#"{{
+            "web": {{
+                "root": "{}",
+                "assets": {{
+                    "port": 4040
+                }}
+            }}
+        }}"#,
+            web_root_str
+        );
+        fs::write(&config_path, config_json).expect("Failed to write config file");
+
+        let identifier = "test.app.assets".to_string();
+        let result = load_web_config(&identifier);
+        assert!(
+            result.is_ok(),
+            "Should load config with assets: {:?}",
+            result
+        );
+        let config = result
+            .unwrap()
+            .expect("Should return Some(WebServerConfig)");
+        let assets_server = config
+            .assets_server
+            .expect("assets server should be configured");
+        let markdown_highlight = config
+            .markdown_highlight
+            .expect("markdown highlight should be configured");
+
+        assert_eq!(assets_server.port, 4040);
+        assert!(
+            assets_server.root.ends_with("web-assets"),
+            "assets root should be auto-managed: {}",
+            assets_server.root
+        );
+        assert_eq!(
+            markdown_highlight.main_js_url,
+            format!(
+                "http://127.0.0.1:4040/mclocks/main.js?v={}",
+                MCLOCKS_ASSETS_VERSION
+            )
+        );
+        assert_eq!(
+            markdown_highlight.main_css_url,
+            format!(
+                "http://127.0.0.1:4040/mclocks/main.css?v={}",
+                MCLOCKS_ASSETS_VERSION
+            )
+        );
+        assert_eq!(
+            markdown_highlight.js_url,
+            format!(
+                "http://127.0.0.1:4040/highlight/highlight.min.js?v={}",
+                MCLOCKS_ASSETS_VERSION
+            )
+        );
+        assert_eq!(
+            markdown_highlight.css_url,
+            format!(
+                "http://127.0.0.1:4040/{}?v={}",
+                HIGHLIGHT_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+            )
+        );
+
         let _ = fs::remove_file(&config_path);
         let _ = fs::remove_dir(&test_config_dir);
     }

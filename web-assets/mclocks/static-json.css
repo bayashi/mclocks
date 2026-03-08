@@ -1,0 +1,177 @@
+body{
+	display:flex;
+	line-height:1.5;
+	--sidebar-width:200px;
+}
+
+#sidebar{
+	position:fixed;
+	top:0;
+	left:0;
+	width:var(--sidebar-width);
+	height:100vh;
+	background:#0a0a0a;
+	border-right:1px solid #222;
+	padding:12px 12px 14px;
+	overflow-y:auto;
+}
+
+#sidebar h2{
+	margin:0 0 8px;
+	font-size:11px;
+	letter-spacing:.1em;
+	text-transform:uppercase;
+	color:#666;
+}
+
+#summary-list,
+#outline-list{
+	list-style:none;
+	margin:0;
+	padding:0;
+}
+
+#summary-list li{
+	display:flex;
+	gap:8px;
+	margin:0 0 6px;
+	font-size:12px;
+}
+
+.label{
+	color:#777;
+	min-width:72px;
+}
+
+.value{
+	color:#ccc;
+	overflow-wrap:anywhere;
+	word-break:break-word;
+}
+
+#notices{
+	margin:0 0 12px;
+}
+
+.notice{
+	margin:0 0 8px;
+	padding:8px 10px;
+	border:1px solid #333;
+	background:#101010;
+	color:#ddd;
+	font-size:12px;
+	overflow-wrap:anywhere;
+	word-break:break-word;
+}
+
+.notice.error{
+	border-color:#563232;
+	background:#1a0f0f;
+	color:#ffadad;
+}
+
+#outline-list li{
+	margin:0 0 4px;
+	font-size:12px;
+	color:#aaa;
+	white-space:normal;
+	overflow-wrap:anywhere;
+	word-break:break-word;
+}
+
+#outline-list ul{
+	list-style:none;
+	margin:4px 0 0;
+	padding-left:14px;
+	border-left:1px solid #1c1c1c;
+}
+
+#sidebar-footer{
+	margin-top:12px;
+	padding-top:10px;
+	border-top:1px solid #222;
+}
+
+#resizer{
+	position:fixed;
+	top:0;
+	left:calc(var(--sidebar-width) - 3px);
+	width:6px;
+	height:100vh;
+	cursor:col-resize;
+	background:transparent;
+	z-index:20;
+}
+
+#resizer:hover{
+	background:#222;
+}
+
+#resizer.is-dragging{
+	background:#333;
+}
+
+#main{
+	margin-left:var(--sidebar-width);
+	width:calc(100vw - var(--sidebar-width));
+	padding:16px 24px;
+}
+
+#json-view{
+	margin:0;
+	white-space:pre-wrap;
+	overflow-wrap:anywhere;
+	word-break:break-word;
+	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;
+	line-height:1.45;
+	color:#ddd;
+}
+
+.json-key{
+	color:#93c5fd;
+	font-weight:700;
+}
+
+.json-string{
+	color:#86efac;
+}
+
+.json-number{
+	color:#fdba74;
+}
+
+.json-bool{
+	color:#c4b5fd;
+}
+
+.json-null{
+	color:#9ca3af;
+}
+
+.json-node.is-hovered{
+	background:rgba(62,208,255,.2);
+	color:#fff;
+	font-weight:700;
+	text-shadow:0 0 8px rgba(56,189,248,.55);
+	border-radius:2px;
+}
+
+#outline-list li.is-hovered>.value{
+	display:inline-block;
+	background:rgba(56,189,248,.2);
+	padding:1px 4px;
+	margin:0 1px;
+	color:#fff;
+	font-weight:700;
+	text-shadow:0 0 8px rgba(56,189,248,.55);
+	border-radius:2px;
+}
+
+#outline-list li.is-hovered>.value strong{
+	font-weight:800;
+}
+
+.json-node.is-hovered .json-key{
+	font-weight:800;
+	text-shadow:0 0 8px rgba(147,197,253,.5);
+}

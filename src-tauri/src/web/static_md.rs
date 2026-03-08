@@ -1,3 +1,4 @@
+use crate::web_server::WebMarkdownHighlightConfig;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
 use std::collections::HashMap;
 use std::path::Path;
@@ -9,158 +10,11 @@ const MARKDOWN_RENDER_TEMPLATE: &str = r##"<!doctype html>
 <head>
 <meta charset="UTF-8" />
 <title>__PAGE_TITLE__</title>
-<style>
-:root {
-	--toc-width: 240px;
-}
-* {
-	box-sizing: border-box;
-}
-body {
-	color: #aaa;
-	background: #000;
-	margin: 0;
-	display: flex;
-	font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif;
-	line-height: 1.6;
-}
-#toc {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: var(--toc-width);
-	height: 100vh;
-	overflow-y: auto;
-	background: #0a0a0a;
-	border-right: 1px solid #222;
-	padding: 16px 12px;
-	font-size: 13px;
-	scrollbar-width: thin;
-	scrollbar-color: #333 transparent;
-}
-#toc h2 {
-	color: #666;
-	font-size: 11px;
-	letter-spacing: 0.1em;
-	text-transform: uppercase;
-	margin: 0 0 12px 4px;
-}
-#toc ul {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-#toc li a {
-	display: block;
-	color: #555;
-	text-decoration: none;
-	padding: 3px 4px;
-	border-radius: 3px;
-	line-height: 1.4;
-	transition: color 0.15s, background 0.15s;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-#toc li a:hover {
-	color: #ccc;
-	background: #1a1a1a;
-}
-#toc li a.active {
-	color: #fff;
-	background: #1e1e1e;
-}
-#toc li[data-level="1"] a {
-	padding-left: 4px;
-	font-weight: 600;
-	color: #777;
-}
-#toc li[data-level="2"] a {
-	padding-left: 12px;
-}
-#toc li[data-level="3"] a {
-	padding-left: 24px;
-	font-size: 12px;
-}
-#toc li[data-level="4"] a {
-	padding-left: 36px;
-	font-size: 11px;
-}
-#toc-footer {
-	padding-top: 12px;
-	margin-top: 12px;
-	border-top: 1px solid #222;
-}
-#raw-toggle {
-	display: inline-block;
-	color: #ccc;
-	text-decoration: none;
-	font-size: 12px;
-	padding: 4px 8px;
-	border: 1px solid #444;
-	border-radius: 2px;
-}
-#raw-toggle:hover {
-	background: #1a1a1a;
-	color: #fff;
-}
-#toc-resizer {
-	position: fixed;
-	top: 0;
-	left: calc(var(--toc-width) - 3px);
-	width: 6px;
-	height: 100vh;
-	cursor: col-resize;
-	background: transparent;
-	z-index: 20;
-}
-#toc-resizer:hover {
-	background: #222;
-}
-#toc-resizer.is-dragging {
-	background: #333;
-}
-#main {
-	margin-left: var(--toc-width);
-	padding: 16px 24px;
-	max-width: none;
-	width: calc(100vw - var(--toc-width));
-	overflow-wrap: anywhere;
-	word-break: break-word;
-}
-pre {
-	font-family: "Consolas", "Cascadia Code", "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace;
-	color: #fff;
-	padding-left: 16px;
-	margin-bottom: 0;
-	white-space: pre-wrap;
-	overflow-wrap: anywhere;
-	word-break: break-word;
-}
-code {
-	font-family: "Consolas", "Cascadia Code", "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace;
-	overflow-wrap: anywhere;
-	word-break: break-word;
-}
-.copy-btn {
-	display: block;
-	margin-top: 6px;
-	margin-left: 16px;
-	padding: 4px 8px;
-	background: #333;
-	color: #fff;
-	border: 1px solid #555;
-	border-radius: 2px;
-	cursor: pointer;
-	font-size: 10px;
-	width: fit-content;
-}
-.copy-btn:hover {
-	background: #ccc;
-}
-</style>
+__MAIN_CSS_LINK__
+__STATIC_MD_CSS_LINK__
+__HIGHLIGHT_CSS_LINK__
 </head>
-<body>
+<body class="mclocks-md">
 <nav id="toc">
 <h2>Index</h2>
 <ul id="toc-list">__TOC_ITEMS__</ul>
@@ -172,84 +26,9 @@ code {
 <div id="main">
 <div id="content">__RENDERED_HTML__</div>
 </div>
-<script>
-const root = document.documentElement;
-const resizer = document.getElementById("toc-resizer");
-const MIN_TOC_WIDTH = 160;
-const MAX_TOC_WIDTH = 560;
-const TOC_WIDTH_STORAGE_KEY = "mclocks-md-toc-width";
-
-const storedWidthRaw = localStorage.getItem(TOC_WIDTH_STORAGE_KEY);
-if (storedWidthRaw !== null) {
-	const storedWidth = Number(storedWidthRaw);
-	if (Number.isFinite(storedWidth)) {
-		const clamped = Math.max(MIN_TOC_WIDTH, Math.min(MAX_TOC_WIDTH, storedWidth));
-		root.style.setProperty("--toc-width", `${clamped}px`);
-	}
-}
-
-let isResizing = false;
-const setTocWidth = (rawWidth) => {
-	const clamped = Math.max(MIN_TOC_WIDTH, Math.min(MAX_TOC_WIDTH, rawWidth));
-	root.style.setProperty("--toc-width", `${clamped}px`);
-	localStorage.setItem(TOC_WIDTH_STORAGE_KEY, String(clamped));
-};
-
-resizer.addEventListener("mousedown", (e) => {
-	e.preventDefault();
-	isResizing = true;
-	resizer.classList.add("is-dragging");
-});
-
-window.addEventListener("mousemove", (e) => {
-	if (!isResizing) {
-		return;
-	}
-	setTocWidth(e.clientX);
-});
-
-window.addEventListener("mouseup", () => {
-	if (!isResizing) {
-		return;
-	}
-	isResizing = false;
-	resizer.classList.remove("is-dragging");
-});
-
-document.querySelectorAll("pre code").forEach((code) => {
-	const pre = code.parentElement;
-	if (pre.nextElementSibling?.classList.contains("copy-btn")) {
-		return;
-	}
-	const btn = document.createElement("button");
-	btn.textContent = "Copy";
-	btn.className = "copy-btn";
-	btn.onclick = () => {
-		navigator.clipboard.writeText(code.textContent);
-		btn.textContent = "Copied!";
-		setTimeout(() => (btn.textContent = "Copy"), 2000);
-	};
-	pre.parentNode.insertBefore(btn, pre.nextSibling);
-});
-
-const tocList = document.getElementById("toc-list");
-const links = tocList.querySelectorAll("a");
-const headings = document.querySelectorAll("#content h1, #content h2, #content h3, #content h4");
-const observer = new IntersectionObserver(
-	(entries) => {
-		entries.forEach((entry) => {
-			if (entry.isIntersecting) {
-				const id = entry.target.id;
-				links.forEach((a) => {
-					a.classList.toggle("active", a.getAttribute("href") === `#${id}`);
-				});
-			}
-		});
-	},
-	{ rootMargin: "0px 0px -80% 0px", threshold: 0 }
-);
-headings.forEach((h) => observer.observe(h));
-</script>
+__HIGHLIGHT_JS_SCRIPT__
+__MAIN_JS_SCRIPT__
+__STATIC_MD_JS_SCRIPT__
 </body>
 </html>
 "##;
@@ -447,6 +226,7 @@ pub fn create_markdown_response(
     file_path: &Path,
     markdown_source: &str,
     allow_html_in_md: bool,
+    markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     raw_toggle_href: &str,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let headings = extract_markdown_headings(markdown_source);
@@ -458,10 +238,56 @@ pub fn create_markdown_response(
         .and_then(|s| s.to_str())
         .map(html_escape)
         .unwrap_or_else(|| "Markdown".to_string());
+    let (
+        main_css_link,
+        static_md_css_link,
+        main_js_script,
+        static_md_js_script,
+        highlight_css_link,
+        highlight_js_script,
+    ) = match markdown_highlight {
+        Some(cfg) => (
+            format!(
+                "<link rel=\"stylesheet\" href=\"{}\" />",
+                html_escape(&cfg.main_css_url)
+            ),
+            format!(
+                "<link rel=\"stylesheet\" href=\"{}\" />",
+                html_escape(&cfg.static_md_css_url)
+            ),
+            format!(
+                "<script src=\"{}\"></script>",
+                html_escape(&cfg.main_js_url)
+            ),
+            format!(
+                "<script src=\"{}\"></script>",
+                html_escape(&cfg.static_md_js_url)
+            ),
+            format!(
+                "<link rel=\"stylesheet\" href=\"{}\" />",
+                html_escape(&cfg.css_url)
+            ),
+            format!("<script src=\"{}\"></script>", html_escape(&cfg.js_url)),
+        ),
+        None => (
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+        ),
+    };
     let html = MARKDOWN_RENDER_TEMPLATE
         .replace("__PAGE_TITLE__", &page_title)
         .replace("__TOC_ITEMS__", &toc_items_html)
         .replace("__RAW_TOGGLE_HREF__", &html_escape(raw_toggle_href))
+        .replace("__MAIN_CSS_LINK__", &main_css_link)
+        .replace("__STATIC_MD_CSS_LINK__", &static_md_css_link)
+        .replace("__MAIN_JS_SCRIPT__", &main_js_script)
+        .replace("__STATIC_MD_JS_SCRIPT__", &static_md_js_script)
+        .replace("__HIGHLIGHT_CSS_LINK__", &highlight_css_link)
+        .replace("__HIGHLIGHT_JS_SCRIPT__", &highlight_js_script)
         .replace("__RENDERED_HTML__", &rendered_html);
     let content_type = "text/html; charset=utf-8";
     if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {

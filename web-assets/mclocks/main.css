@@ -1,0 +1,25 @@
+*{
+	box-sizing:border-box;
+}
+
+body{
+	margin:0;
+	background:#000;
+	color:#bbb;
+	font-family:"Segoe UI","Yu Gothic UI","Meiryo","Hiragino Kaku Gothic ProN",sans-serif;
+}
+
+#raw-toggle{
+	display:inline-block;
+	color:#ccc;
+	text-decoration:none;
+	font-size:12px;
+	padding:4px 8px;
+	border:1px solid #444;
+	border-radius:2px;
+}
+
+#raw-toggle:hover{
+	background:#1a1a1a;
+	color:#fff;
+}

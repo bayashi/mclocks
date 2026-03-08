@@ -18,6 +18,7 @@ use super::static_md::{
     build_raw_content_toggle_href, create_markdown_response, is_markdown_file,
     should_serve_raw_content,
 };
+use crate::web_server::WebMarkdownHighlightConfig;
 
 const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
 <html>
@@ -406,6 +407,7 @@ fn detect_encoding(content: &[u8]) -> &'static Encoding {
 fn create_file_response(
     file_path: &PathBuf,
     allow_html_in_md: bool,
+    markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     serve_raw_content: bool,
     raw_content_toggle_href: &str,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -418,6 +420,7 @@ fn create_file_response(
                     file_path.as_path(),
                     &decoded,
                     allow_html_in_md,
+                    markdown_highlight,
                     raw_content_toggle_href,
                 );
             }
@@ -427,6 +430,7 @@ fn create_file_response(
                 return create_json_response(
                     file_path.as_path(),
                     &decoded,
+                    markdown_highlight,
                     raw_content_toggle_href,
                     content.len(),
                 );
@@ -483,6 +487,7 @@ pub fn handle_web_request(
     slow_enabled: bool,
     status_enabled: bool,
     allow_html_in_md: bool,
+    markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     editor_repos_dir: &Option<String>,
     editor_include_host: bool,
     editor_command: &str,
@@ -496,6 +501,7 @@ pub fn handle_web_request(
         return create_file_response(
             &shared_file_path,
             allow_html_in_md,
+            markdown_highlight,
             serve_raw_content,
             &raw_content_toggle_href,
         );
@@ -606,6 +612,7 @@ pub fn handle_web_request(
                     return create_file_response(
                         &index_path,
                         allow_html_in_md,
+                        markdown_highlight,
                         serve_raw_content,
                         &raw_content_toggle_href,
                     );
@@ -628,6 +635,7 @@ pub fn handle_web_request(
                 return create_file_response(
                     &file_path,
                     allow_html_in_md,
+                    markdown_highlight,
                     serve_raw_content,
                     &raw_content_toggle_href,
                 );
@@ -644,6 +652,7 @@ pub fn handle_web_request(
                     return create_file_response(
                         &index_path,
                         allow_html_in_md,
+                        markdown_highlight,
                         serve_raw_content,
                         &raw_content_toggle_href,
                     );
@@ -662,6 +671,7 @@ pub fn handle_web_request(
             return create_file_response(
                 &index_path,
                 allow_html_in_md,
+                markdown_highlight,
                 serve_raw_content,
                 &raw_content_toggle_href,
             );
@@ -674,6 +684,7 @@ pub fn handle_web_request(
     create_file_response(
         &normalized_path,
         allow_html_in_md,
+        markdown_highlight,
         serve_raw_content,
         &raw_content_toggle_href,
     )
