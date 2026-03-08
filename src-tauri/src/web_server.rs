@@ -857,8 +857,7 @@ mod tests {
             "Rendered markdown(.markdown) page should include TOC"
         );
         assert!(
-            body.contains("id=\"raw-toggle\"")
-                && body.contains("href=\"/readme.markdown?raw=1\""),
+            body.contains("id=\"raw-toggle\"") && body.contains("href=\"/readme.markdown?raw=1\""),
             "Rendered markdown(.markdown) page should include raw toggle link"
         );
     }
