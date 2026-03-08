@@ -21,6 +21,8 @@ Ein Entwickler ist nie ohne Uhr:
     * wie das einfache Erstellen von SQL `IN`-Klauseln
 * 🌐 Webserver
     * stellt statische Dateien bereit
+    * rendert Markdown im Rich-Format
+    * Drag-and-drop-basierter Content-Viewer
     * Request- und Response-Dump-Server
     * langsame Endpunkte zum Debuggen
     * Dateien im Editor über GitHub-URLs öffnen
@@ -318,6 +320,11 @@ Der Webserver unterstützt die folgenden Dateitypen:
 
 * Text: `html`, `css`, `js`, `json`, `md`, `txt`
 * Bilder: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+
+### Drag-and-drop-basierter Content-Viewer
+
+Zusätzlich zur statischen Dateibereitstellung enthält der Webserver auch einen Drag-and-drop-basierten Content-Viewer-Workflow: Wenn Sie eine Datei oder ein Verzeichnis auf das mclocks-Uhrfenster ziehen und ablegen, kann es über temporäre lokale URLs geöffnet und angezeigt werden.
+Diese temporären URLs werden verworfen, wenn mclocks beendet wird.
 
 ### /dump-Endpunkt
 

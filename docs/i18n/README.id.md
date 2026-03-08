@@ -21,6 +21,8 @@ Seorang pengembang tidak pernah tanpa jam:
     * seperti membuat klausa SQL `IN` dengan mudah
 * 🌐 Server web
     * menyajikan file statis
+    * merender Markdown secara kaya
+    * penampil konten berbasis drag-and-drop
     * server dump permintaan dan respons
     * endpoint lambat untuk debugging
     * membuka file di editor Anda dari URL GitHub
@@ -318,6 +320,11 @@ Server web mendukung tipe file berikut:
 
 * Teks: `html`, `css`, `js`, `json`, `md`, `txt`
 * Gambar: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+
+### penampil konten berbasis drag-and-drop
+
+Selain penyajian file statis, server web juga mencakup alur penampil konten berbasis drag-and-drop: ketika Anda menyeret dan menjatuhkan file atau direktori ke jendela jam mclocks, konten tersebut dapat dibuka dan dilihat melalui URL lokal sementara.
+URL sementara ini dibuang saat mclocks ditutup.
 
 ### Endpoint /dump
 
