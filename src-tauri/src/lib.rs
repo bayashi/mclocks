@@ -20,9 +20,18 @@ use web_server::{load_web_config, open_url_in_browser, start_web_server};
 /// windows (main + stickies) attempt to save state simultaneously.
 struct WindowStateSaveLock(Mutex<()>);
 
+/// Stores resolved web main port selected at startup.
+struct WebMainPortStore(Mutex<Option<u16>>);
+
 impl Default for WindowStateSaveLock {
     fn default() -> Self {
         Self(Mutex::new(()))
+    }
+}
+
+impl Default for WebMainPortStore {
+    fn default() -> Self {
+        Self(Mutex::new(None))
     }
 }
 
@@ -40,18 +49,21 @@ fn save_window_state_exclusive(
 #[tauri::command]
 fn register_temp_web_root(
     dropped_path: String,
-    state: tauri::State<'_, Arc<config::ContextConfig>>,
+    web_main_port: tauri::State<'_, WebMainPortStore>,
 ) -> Result<String, String> {
-    let web_config = load_web_config(&state.app_identifier)?
-        .ok_or("Web server is not configured. Set web.root in config.json first.".to_string())?;
+    let port = {
+        let guard = web_main_port.0.lock().map_err(|e| e.to_string())?;
+        guard
+            .ok_or("Web server is not configured. Set web.root in config.json first.".to_string())?
+    };
 
     let dropped = std::path::Path::new(&dropped_path);
     let url = if dropped.is_dir() {
         let hash = register_temp_root(dropped)?;
-        build_temp_share_url(web_config.port, &hash)
+        build_temp_share_url(port, &hash)
     } else if dropped.is_file() {
         let hash = register_temp_file(dropped)?;
-        build_temp_file_url(web_config.port, &hash, dropped)?
+        build_temp_file_url(port, &hash, dropped)?
     } else {
         return Err(format!("Invalid drop target: {}", dropped.display()));
     };
@@ -76,6 +88,7 @@ pub fn run() {
     tbr = tbr.manage(sticky::StickyInitStore::default());
     tbr = tbr.manage(sticky::StickyPersistStore::new(&identifier));
     tbr = tbr.manage(WindowStateSaveLock::default());
+    tbr = tbr.manage(WebMainPortStore::default());
 
     let (web_error, web_config_for_startup) = match load_web_config(&identifier) {
         Ok(Some(config)) => (None, Some(config)),
@@ -123,7 +136,12 @@ pub fn run() {
         .flatten();
 
     let error_msg = web_error.clone();
+    let web_main_port_at_startup = web_config_for_startup.as_ref().map(|c| c.port);
     tbr = tbr.setup(move |app| {
+        let store = app.state::<WebMainPortStore>();
+        if let Ok(mut guard) = store.0.lock() {
+            *guard = web_main_port_at_startup;
+        }
         if IS_DEV {
             let _window = app.get_webview_window(WINDOW_NAME).unwrap();
             #[cfg(debug_assertions)]
