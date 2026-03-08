@@ -470,6 +470,7 @@ pub fn get_content_type(path: &PathBuf) -> String {
         Some("js") => "application/javascript",
         Some("json") => "application/json",
         Some("yaml") | Some("yml") => "application/yaml",
+        Some("toml") => "text/plain",
         Some("md") | Some("markdown") => "text/markdown",
         Some("png") => "image/png",
         Some("jpg") | Some("jpeg") => "image/jpeg",

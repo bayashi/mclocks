@@ -90,6 +90,7 @@ fn is_supported_file(path: &Path) -> bool {
         Some("js") => true,
         Some("json") => true,
         Some("yaml") | Some("yml") => true,
+        Some("toml") => true,
         Some("md") | Some("markdown") => true,
         Some("png") => true,
         Some("jpg") | Some("jpeg") => true,
@@ -214,4 +215,25 @@ pub fn build_temp_file_url(port: u16, hash: &str, path: &Path) -> Result<String,
         "http://127.0.0.1:{}{}{}/{}",
         port, TEMP_FILE_PREFIX, hash, encoded_name
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::register_temp_file;
+    use std::fs;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_register_temp_file_accepts_toml() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let file_path = temp_dir.path().join("bar.toml");
+        fs::write(&file_path, "name = \"bar\"\n").expect("Failed to write TOML file");
+
+        let result = register_temp_file(&file_path);
+
+        assert!(
+            result.is_ok(),
+            "TOML file should be accepted for temp sharing"
+        );
+    }
 }

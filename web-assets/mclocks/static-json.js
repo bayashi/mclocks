@@ -13,6 +13,7 @@
 	const outlineItems = document.querySelectorAll("#outline-list li[data-path]");
 	let activeOutlineItem = null;
 	let activeJsonNodes = [];
+	let activeJsonEntryKeys = [];
 
 	const clearHover = () => {
 		if (activeOutlineItem) {
@@ -21,6 +22,8 @@
 		}
 		activeJsonNodes.forEach((node) => node.classList.remove("is-hovered"));
 		activeJsonNodes = [];
+		activeJsonEntryKeys.forEach((node) => node.classList.remove("is-hovered"));
+		activeJsonEntryKeys = [];
 	};
 
 	outlineItems.forEach((item) => {
@@ -35,11 +38,14 @@
 			if (nodes.length === 0) {
 				return;
 			}
+			const entryKeys = document.querySelectorAll(`#json-view [data-key-path="${cssEscape(path)}"]`);
 
 			activeOutlineItem = item;
 			activeOutlineItem.classList.add("is-hovered");
 			activeJsonNodes = Array.from(nodes);
 			activeJsonNodes.forEach((node) => node.classList.add("is-hovered"));
+			activeJsonEntryKeys = Array.from(entryKeys);
+			activeJsonEntryKeys.forEach((node) => node.classList.add("is-hovered"));
 		});
 		item.addEventListener("mouseleave", clearHover);
 	});
