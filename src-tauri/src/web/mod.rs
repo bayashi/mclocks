@@ -6,5 +6,6 @@ pub mod handler_resource_meta;
 pub mod handler_slow;
 pub mod handler_static;
 pub mod handler_status;
+pub mod static_json;
 pub mod static_md;
 pub mod status_code;

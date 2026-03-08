@@ -656,6 +656,148 @@ mod tests {
     }
 
     #[test]
+    fn test_handle_web_request_json_file_renders_html_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let json_file = root_path.join("data.json");
+        fs::write(
+            &json_file,
+            r#"{"user":{"name":"alice","enabled":true},"items":[1,2,3]}"#,
+        )
+        .expect("Failed to create data.json");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/data.json", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "JSON view response should be HTML, got: {}",
+            content_type
+        );
+
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("id=\"summary-list\""),
+            "JSON view should include summary pane"
+        );
+        assert!(
+            body.contains("id=\"outline-list\""),
+            "JSON view should include outline pane"
+        );
+        assert!(
+            body.contains("id=\"raw-toggle\"") && body.contains("href=\"/data.json?raw=1\""),
+            "JSON view should include raw toggle link"
+        );
+        assert!(
+            body.contains("json-key") && body.contains("json-string"),
+            "JSON view should include colorized tokens"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_json_file_raw_query_returns_raw_json() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let json_file = root_path.join("raw.json");
+        fs::write(&json_file, r#"{"name":"raw","count":1}"#).expect("Failed to create raw.json");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/raw.json?raw=1", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("application/json"),
+            "Raw JSON response should be application/json, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(body, r#"{"name":"raw","count":1}"#);
+    }
+
+    #[test]
+    fn test_handle_web_request_invalid_json_file_shows_error_and_raw_content() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let json_file = root_path.join("invalid.json");
+        fs::write(&json_file, r#"{"name": }"#).expect("Failed to create invalid.json");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/invalid.json", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("Invalid JSON:"),
+            "Invalid JSON view should show parse error"
+        );
+        assert!(
+            body.contains("&quot;name&quot;"),
+            "Invalid JSON view should show escaped raw content"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_large_json_disables_colorization() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let json_file = root_path.join("large.json");
+        let large_text = "x".repeat(10 * 1024 * 1024 + 64);
+        let large_json = format!(r#"{{"payload":"{}"}}"#, large_text);
+        fs::write(&json_file, large_json).expect("Failed to create large.json");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/large.json", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("Status") && body.contains("Parse OK (Colorize: disabled &gt;10 MB)"),
+            "Large JSON view should show colorization status in summary"
+        );
+    }
+
+    #[test]
     fn test_handle_web_request_with_query_string() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();

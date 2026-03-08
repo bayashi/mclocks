@@ -1,6 +1,6 @@
 # mclocks
 
-<p align="center" style="font-size: 0.8em;">
+<p align="center"><small>
 <a href="docs/i18n/README.ja.md">日本語</a> /
 <a href="docs/i18n/README.zh.md">中文</a> /
 <a href="docs/i18n/README.hi.md">हिन्दी</a> /
@@ -12,7 +12,7 @@
 <a href="docs/i18n/README.tr.md">Türkçe</a> /
 <a href="docs/i18n/README.id.md">Bahasa Indonesia</a> /
 <a href="docs/i18n/README.kr.md">한국어</a>
-</p>
+</small></p>
 
 ----------
 
