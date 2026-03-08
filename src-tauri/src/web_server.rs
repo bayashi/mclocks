@@ -970,8 +970,16 @@ mod tests {
         assert_eq!(response.status(), 200);
         let body = response.text().expect("Body should be readable");
         assert!(
-            body.contains("data-path=\"items.0\">    {"),
+            body.contains("data-key-path=\"items\""),
+            "Container key should be annotated for hover consistency"
+        );
+        assert!(
+            body.contains("data-path=\"items.0\">    <span class=\"json-delim\">{</span>"),
             "Array object node should include opening brace line inside hover target"
+        );
+        assert!(
+            body.contains("<span class=\"json-delim\">}</span>"),
+            "Array object node should include closing brace line inside hover target"
         );
         assert!(
             body.contains("data-path=\"items.0.name\""),
@@ -1096,6 +1104,100 @@ mod tests {
         );
         let body = response.text().expect("Body should be readable");
         assert_eq!(body, "name: raw\ncount: 1\n");
+    }
+
+    #[test]
+    fn test_handle_web_request_toml_file_renders_html_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let toml_file = root_path.join("data.toml");
+        fs::write(
+            &toml_file,
+            "[user]\nname = \"alice\"\nenabled = true\nitems = [1, 2, 3]\n[owner]\ndob = 1979-05-27T07:32:00-08:00\n",
+        )
+        .expect("Failed to create data.toml");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/data.toml", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "TOML view response should be HTML, got: {}",
+            content_type
+        );
+
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("id=\"summary-list\""),
+            "TOML view should include summary pane"
+        );
+        assert!(
+            body.contains("id=\"outline-list\""),
+            "TOML view should include outline pane"
+        );
+        assert!(
+            body.contains("id=\"raw-toggle\"") && body.contains("href=\"/data.toml?raw=1\""),
+            "TOML view should include raw toggle link"
+        );
+        assert!(
+            body.contains("json-key") && body.contains("json-bool"),
+            "TOML view should include colorized tokens"
+        );
+        assert!(
+            body.contains("1979-05-27T07:32:00-08:00"),
+            "TOML datetime should be rendered as plain string"
+        );
+        assert!(
+            !body.contains("$__toml_private_datetime"),
+            "TOML internal datetime marker must not be exposed"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_toml_file_raw_query_returns_raw_toml() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let toml_file = root_path.join("raw.toml");
+        fs::write(&toml_file, "name = \"raw\"\ncount = 1\n").expect("Failed to create raw.toml");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/raw.toml?raw=1", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("application/toml"),
+            "Raw TOML response should be application/toml, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(body, "name = \"raw\"\ncount = 1\n");
     }
 
     #[test]
@@ -1326,6 +1428,12 @@ mod tests {
     fn test_get_content_type_yml() {
         let path = PathBuf::from("data.yml");
         assert_eq!(get_content_type(&path), "application/yaml");
+    }
+
+    #[test]
+    fn test_get_content_type_toml() {
+        let path = PathBuf::from("data.toml");
+        assert_eq!(get_content_type(&path), "application/toml");
     }
 
     #[test]

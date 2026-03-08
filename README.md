@@ -338,7 +338,7 @@ If the `web` field is configured in your `config.json`, the web server starts au
 
 The web server supports the following file types:
 
-* Text: `html`, `css`, `js`, `json`, `yaml(yml)`, `md(markdown)`, `txt`
+* Text: `html`, `css`, `js`, `json`, `yaml(yml)`, `toml`, `md(markdown)`, `txt`
 * Images: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
 
 ### drag-and-drop based content viewer

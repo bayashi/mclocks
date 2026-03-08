@@ -27,6 +27,7 @@ serde = { version = "1", features = [
 ] }
 serde_json = "1"
 serde_yaml = "0.9"
+toml = "0.9"
 directories = "6.0.0"
 tauri-plugin-os = "2"
 tauri-plugin-notification = "2.3.1"

@@ -460,6 +460,7 @@ fn is_text_type(content_type: &str) -> bool {
         || content_type == "application/javascript"
         || content_type == "application/json"
         || content_type == "application/yaml"
+        || content_type == "application/toml"
         || content_type == "image/svg+xml"
 }
 
@@ -470,6 +471,7 @@ pub fn get_content_type(path: &PathBuf) -> String {
         Some("js") => "application/javascript",
         Some("json") => "application/json",
         Some("yaml") | Some("yml") => "application/yaml",
+        Some("toml") => "application/toml",
         Some("md") | Some("markdown") => "text/markdown",
         Some("png") => "image/png",
         Some("jpg") | Some("jpeg") => "image/jpeg",

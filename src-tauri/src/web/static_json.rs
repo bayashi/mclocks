@@ -7,6 +7,7 @@ use tiny_http::{Header, Response, StatusCode};
 enum StructuredDataFormat {
     Json,
     Yaml,
+    Toml,
 }
 
 impl StructuredDataFormat {
@@ -14,6 +15,7 @@ impl StructuredDataFormat {
         match self {
             StructuredDataFormat::Json => "JSON",
             StructuredDataFormat::Yaml => "YAML",
+            StructuredDataFormat::Toml => "TOML",
         }
     }
 
@@ -21,6 +23,7 @@ impl StructuredDataFormat {
         match self {
             StructuredDataFormat::Json => "Invalid JSON",
             StructuredDataFormat::Yaml => "Invalid YAML",
+            StructuredDataFormat::Toml => "Invalid TOML",
         }
     }
 }
@@ -166,13 +169,17 @@ fn wrap_json_node(path: &str, inner_html: String) -> String {
     )
 }
 
+fn render_delimiter(delimiter: &str) -> String {
+    format!("<span class=\"json-delim\">{}</span>", delimiter)
+}
+
 fn render_colorized_json_with_indent(value: &Value, path: &str, indent: usize, out: &mut String) {
     match value {
         Value::Object(map) => {
             let mut inner = String::new();
-            inner.push('{');
+            inner.push_str(&render_delimiter("{"));
             if map.is_empty() {
-                inner.push('}');
+                inner.push_str(&render_delimiter("}"));
                 out.push_str(&wrap_json_node(path, inner));
                 return;
             }
@@ -182,10 +189,12 @@ fn render_colorized_json_with_indent(value: &Value, path: &str, indent: usize, o
                 push_indent(&mut inner, indent + 2);
                 let escaped_key =
                     serde_json::to_string(key).unwrap_or_else(|_| "\"<key>\"".to_string());
-                inner.push_str("<span class=\"json-key\">");
-                inner.push_str(&html_escape(&escaped_key));
-                inner.push_str("</span>: ");
                 let child_path = child_path(path, key);
+                inner.push_str("<span class=\"json-entry-key\" data-key-path=\"");
+                inner.push_str(&html_escape(&child_path));
+                inner.push_str("\"><span class=\"json-key\">");
+                inner.push_str(&html_escape(&escaped_key));
+                inner.push_str("</span>:</span> ");
                 render_colorized_json_with_indent(child, &child_path, indent + 2, &mut inner);
                 if idx + 1 < len {
                     inner.push(',');
@@ -193,14 +202,14 @@ fn render_colorized_json_with_indent(value: &Value, path: &str, indent: usize, o
                 inner.push('\n');
             }
             push_indent(&mut inner, indent);
-            inner.push('}');
+            inner.push_str(&render_delimiter("}"));
             out.push_str(&wrap_json_node(path, inner));
         }
         Value::Array(arr) => {
             let mut inner = String::new();
-            inner.push('[');
+            inner.push_str(&render_delimiter("["));
             if arr.is_empty() {
-                inner.push(']');
+                inner.push_str(&render_delimiter("]"));
                 out.push_str(&wrap_json_node(path, inner));
                 return;
             }
@@ -227,7 +236,7 @@ fn render_colorized_json_with_indent(value: &Value, path: &str, indent: usize, o
                 inner.push('\n');
             }
             push_indent(&mut inner, indent);
-            inner.push(']');
+            inner.push_str(&render_delimiter("]"));
             out.push_str(&wrap_json_node(path, inner));
         }
         Value::String(s) => {
@@ -385,13 +394,22 @@ pub fn is_yaml_file(path: &Path) -> bool {
     }
 }
 
+pub fn is_toml_file(path: &Path) -> bool {
+    match path.extension().and_then(|s| s.to_str()) {
+        Some(ext) => ext.eq_ignore_ascii_case("toml"),
+        None => false,
+    }
+}
+
 pub fn is_structured_data_file(path: &Path) -> bool {
-    is_json_file(path) || is_yaml_file(path)
+    is_json_file(path) || is_yaml_file(path) || is_toml_file(path)
 }
 
 fn detect_structured_data_format(path: &Path) -> StructuredDataFormat {
     if is_yaml_file(path) {
         StructuredDataFormat::Yaml
+    } else if is_toml_file(path) {
+        StructuredDataFormat::Toml
     } else {
         StructuredDataFormat::Json
     }
@@ -411,6 +429,36 @@ fn parse_structured_data(
                 Err(serde_json::Error::io(io_err))
             }
         },
+        StructuredDataFormat::Toml => match toml::from_str::<toml::Value>(source) {
+            Ok(value) => Ok(convert_toml_to_json(value)),
+            Err(err) => {
+                let message = format!("{}: {}", format.invalid_prefix(), err);
+                let io_err = std::io::Error::new(std::io::ErrorKind::InvalidData, message);
+                Err(serde_json::Error::io(io_err))
+            }
+        },
+    }
+}
+
+fn convert_toml_to_json(value: toml::Value) -> Value {
+    match value {
+        toml::Value::String(s) => Value::String(s),
+        toml::Value::Integer(n) => Value::Number(n.into()),
+        toml::Value::Float(f) => serde_json::Number::from_f64(f)
+            .map(Value::Number)
+            .unwrap_or(Value::Null),
+        toml::Value::Boolean(b) => Value::Bool(b),
+        toml::Value::Datetime(dt) => Value::String(dt.to_string()),
+        toml::Value::Array(items) => {
+            Value::Array(items.into_iter().map(convert_toml_to_json).collect())
+        }
+        toml::Value::Table(table) => {
+            let mut map = serde_json::Map::new();
+            for (key, item) in table {
+                map.insert(key, convert_toml_to_json(item));
+            }
+            Value::Object(map)
+        }
     }
 }
 
