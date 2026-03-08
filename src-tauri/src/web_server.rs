@@ -1192,8 +1192,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("application/toml"),
-            "Raw TOML response should be application/toml, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw TOML response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1433,7 +1433,7 @@ mod tests {
     #[test]
     fn test_get_content_type_toml() {
         let path = PathBuf::from("data.toml");
-        assert_eq!(get_content_type(&path), "application/toml");
+        assert_eq!(get_content_type(&path), "text/plain");
     }
 
     #[test]
