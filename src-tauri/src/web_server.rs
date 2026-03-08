@@ -1,6 +1,6 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf, thread};
+use std::{fs, net::TcpListener, path::PathBuf, thread};
 use tiny_http::Server;
 
 use crate::config::{AppConfig, get_config_app_path};
@@ -34,7 +34,7 @@ pub struct WebMarkdownConfig {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct WebAssetsConfig {
-    #[serde(default = "df_assets_port")]
+    #[serde(default)]
     pub port: u16,
 }
 
@@ -49,7 +49,7 @@ pub struct WebContentConfig {
 #[serde(rename_all = "camelCase")]
 pub struct WebConfig {
     pub root: String,
-    #[serde(default = "df_web_port")]
+    #[serde(default = "df_web_port", deserialize_with = "deserialize_web_port")]
     pub port: u16,
     #[serde(default = "df_open_browser_at_start")]
     pub open_browser_at_start: bool,
@@ -103,11 +103,7 @@ pub struct WebServerConfig {
 }
 
 fn df_web_port() -> u16 {
-    if cfg!(debug_assertions) && tauri::is_dev() {
-        3028
-    } else {
-        3030
-    }
+    3030
 }
 fn df_open_browser_at_start() -> bool {
     false
@@ -124,12 +120,48 @@ fn df_status() -> bool {
 fn df_allow_html_in_md() -> bool {
     false
 }
-fn df_assets_port() -> u16 {
-    if cfg!(debug_assertions) && tauri::is_dev() {
-        3027
-    } else {
-        3029
+
+const MIN_WEB_PORT: u16 = 2000;
+
+fn deserialize_web_port<'de, D>(deserializer: D) -> Result<u16, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let port = u16::deserialize(deserializer)?;
+    if port < MIN_WEB_PORT {
+        return Err(serde::de::Error::custom(format!(
+            "web.port must be >= {}",
+            MIN_WEB_PORT
+        )));
     }
+    Ok(port)
+}
+
+fn is_local_port_available(port: u16) -> bool {
+    TcpListener::bind(("127.0.0.1", port)).is_ok()
+}
+
+fn find_available_port_downward(start_port: u16, min_port: u16, role: &str) -> Result<u16, String> {
+    if start_port < min_port {
+        return Err(format!(
+            "Failed to resolve {} port: start port {} is below minimum {}",
+            role, start_port, min_port
+        ));
+    }
+    let mut candidate = start_port;
+    loop {
+        if is_local_port_available(candidate) {
+            return Ok(candidate);
+        }
+        if candidate == min_port {
+            break;
+        }
+        candidate -= 1;
+    }
+    Err(format!(
+        "Failed to resolve {} port: no available port in range {}..={}",
+        role, min_port, start_port
+    ))
 }
 
 const EMBEDDED_HIGHLIGHT_JS: &str = include_str!("../../web-assets/highlight/highlight.min.js");
@@ -271,6 +303,8 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
 
     let config_json =
         fs::read_to_string(&config_path).map_err(|e| format!("Failed to read config: {}", e))?;
+    let config_value: serde_json::Value =
+        serde_json::from_str(&config_json).map_err(|e| format!("Failed to parse config: {}", e))?;
     let config: AppConfig =
         serde_json::from_str(&config_json).map_err(|e| format!("Failed to parse config: {}", e))?;
 
@@ -298,11 +332,22 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         .and_then(|c| c.markdown.as_ref())
         .map(|m| m.allow_raw_html)
         .unwrap_or(false);
-    let assets_port = web_config
-        .assets
-        .as_ref()
-        .map(|assets| assets.port)
-        .unwrap_or_else(df_assets_port);
+    let has_explicit_web_port = config_value.pointer("/web/port").is_some();
+    let main_port = if has_explicit_web_port {
+        if !is_local_port_available(web_config.port) {
+            return Err(format!(
+                "web.port {} is already in use. Please free the port or change web.port.",
+                web_config.port
+            ));
+        }
+        web_config.port
+    } else {
+        find_available_port_downward(web_config.port, MIN_WEB_PORT, "main web")?
+    };
+    let assets_start_port = main_port
+        .checked_sub(1)
+        .ok_or("Failed to resolve assets port: main web port is too low to derive assets port")?;
+    let assets_port = find_available_port_downward(assets_start_port, MIN_WEB_PORT, "assets")?;
     let assets_root = prepare_markdown_assets_root(identifier)?;
     let assets_server = Some(WebAssetsServerConfig {
         root: assets_root,
@@ -362,7 +407,7 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
 
     Ok(Some(WebServerConfig {
         root: web_config.root,
-        port: web_config.port,
+        port: main_port,
         open_browser_at_start: web_config.open_browser_at_start,
         dump: web_config.dump,
         slow: web_config.slow,
@@ -809,8 +854,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/markdown"),
-            "Raw markdown response should be text/markdown, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw markdown response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -888,8 +933,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/markdown"),
-            "Raw markdown(.markdown) response should be text/markdown, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw markdown(.markdown) response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1012,8 +1057,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("application/json"),
-            "Raw JSON response should be application/json, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw JSON response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1098,8 +1143,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("application/yaml"),
-            "Raw YAML response should be application/yaml, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw YAML response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -2147,8 +2192,11 @@ mod tests {
         let markdown_highlight = config
             .markdown_highlight
             .expect("markdown highlight should be configured");
-
-        assert_eq!(assets_server.port, 4040);
+        let expected_assets_port = config
+            .port
+            .checked_sub(1)
+            .expect("resolved main port should allow assets offset");
+        assert_eq!(assets_server.port, expected_assets_port);
         assert!(
             assets_server.root.ends_with("web-assets"),
             "assets root should be auto-managed: {}",
@@ -2157,34 +2205,127 @@ mod tests {
         assert_eq!(
             markdown_highlight.main_js_url,
             format!(
-                "http://127.0.0.1:4040/mclocks/main.js?v={}",
-                MCLOCKS_ASSETS_VERSION
+                "http://127.0.0.1:{}/mclocks/main.js?v={}",
+                expected_assets_port, MCLOCKS_ASSETS_VERSION
             )
         );
         assert_eq!(
             markdown_highlight.main_css_url,
             format!(
-                "http://127.0.0.1:4040/mclocks/main.css?v={}",
-                MCLOCKS_ASSETS_VERSION
+                "http://127.0.0.1:{}/mclocks/main.css?v={}",
+                expected_assets_port, MCLOCKS_ASSETS_VERSION
             )
         );
         assert_eq!(
             markdown_highlight.js_url,
             format!(
-                "http://127.0.0.1:4040/highlight/highlight.min.js?v={}",
-                MCLOCKS_ASSETS_VERSION
+                "http://127.0.0.1:{}/highlight/highlight.min.js?v={}",
+                expected_assets_port, MCLOCKS_ASSETS_VERSION
             )
         );
         assert_eq!(
             markdown_highlight.css_url,
             format!(
-                "http://127.0.0.1:4040/{}?v={}",
-                HIGHLIGHT_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+                "http://127.0.0.1:{}/{}?v={}",
+                expected_assets_port, HIGHLIGHT_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
             )
         );
 
         let _ = fs::remove_file(&config_path);
         let _ = fs::remove_dir(&test_config_dir);
+    }
+
+    #[test]
+    fn test_load_web_config_explicit_port_in_use_returns_error() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let web_root = temp_dir.path().join("webroot");
+        fs::create_dir_all(&web_root).expect("Failed to create web root");
+        let occupied_port = find_available_port();
+        let _busy_listener =
+            TcpListener::bind(("127.0.0.1", occupied_port)).expect("Failed to occupy port");
+
+        let base_dir = BaseDirs::new().expect("Failed to get base dir");
+        let config_dir = base_dir.config_dir();
+        let test_config_dir = config_dir.join("test.app.explicit-port-busy");
+        fs::create_dir_all(&test_config_dir).expect("Failed to create config dir");
+
+        let config_file_name = if cfg!(debug_assertions) && tauri::is_dev() {
+            "dev.config.json"
+        } else {
+            "config.json"
+        };
+        let config_path = test_config_dir.join(config_file_name);
+        let web_root_str = web_root
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .replace('\\', "/");
+        let config_json = format!(
+            r#"{{
+            "web": {{
+                "root": "{}",
+                "port": {}
+            }}
+        }}"#,
+            web_root_str, occupied_port
+        );
+        fs::write(&config_path, config_json).expect("Failed to write config file");
+
+        let identifier = "test.app.explicit-port-busy".to_string();
+        let result = load_web_config(&identifier);
+        assert!(
+            result.is_err(),
+            "Should fail when explicit web.port is already in use"
+        );
+        let err_msg = result.unwrap_err();
+        assert!(
+            err_msg.contains("already in use"),
+            "Error message should indicate port conflict. Got: {}",
+            err_msg
+        );
+
+        let _ = fs::remove_file(&config_path);
+        let _ = fs::remove_dir(&test_config_dir);
+    }
+
+    #[test]
+    fn test_find_available_port_downward_for_assets_fallback_when_adjacent_busy() {
+        let main_port = find_available_port();
+        let busy_assets_port = main_port
+            .checked_sub(1)
+            .expect("main_port should be >= 2 for this test");
+        let _busy_listener =
+            TcpListener::bind(("127.0.0.1", busy_assets_port)).expect("Failed to occupy port");
+        let resolved_assets_port =
+            find_available_port_downward(busy_assets_port, MIN_WEB_PORT, "assets")
+                .expect("Should resolve fallback assets port");
+        assert_eq!(
+            resolved_assets_port,
+            busy_assets_port - 1,
+            "Should fallback to the next lower available port"
+        );
+    }
+
+    #[test]
+    fn test_find_available_port_downward_for_main_port_when_preferred_busy() {
+        let preferred_port = find_available_port();
+        let _busy_listener =
+            TcpListener::bind(("127.0.0.1", preferred_port)).expect("Failed to occupy port");
+        let resolved_main_port =
+            find_available_port_downward(preferred_port, MIN_WEB_PORT, "main web")
+                .expect("Should resolve fallback main port");
+        assert_eq!(
+            resolved_main_port,
+            preferred_port - 1,
+            "Should fallback to next lower available port"
+        );
+    }
+
+    #[test]
+    fn test_web_config_deserialize_rejects_too_small_port() {
+        let json = r#"{"root": "/test", "port": 1999}"#;
+        let result: Result<WebConfig, _> = serde_json::from_str(json);
+        assert!(result.is_err(), "Should reject port smaller than 2000");
     }
 
     #[test]
@@ -2235,10 +2376,9 @@ mod tests {
             web_config
         );
         let config = web_config.unwrap();
-        assert_eq!(
-            config.port,
-            df_web_port(),
-            "Default port should follow environment default"
+        assert!(
+            config.port <= df_web_port() && config.port >= MIN_WEB_PORT,
+            "Default port should be resolved from preferred port downward in allowed range"
         );
         assert_eq!(
             config.open_browser_at_start, false,

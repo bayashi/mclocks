@@ -435,7 +435,14 @@ fn create_file_response(
                     content.len(),
                 );
             }
-            let base_content_type = get_content_type(file_path);
+            let base_content_type = if serve_raw_content
+                && (is_structured_data_file(file_path.as_path())
+                    || is_markdown_file(file_path.as_path()))
+            {
+                "text/plain".to_string()
+            } else {
+                get_content_type(file_path)
+            };
             let content_type = if is_text_type(&base_content_type) {
                 let encoding = detect_encoding(&content);
                 let charset = encoding.name();
