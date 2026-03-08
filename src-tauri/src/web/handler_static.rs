@@ -13,6 +13,7 @@ use super::handler_editor::handle_editor_request;
 use super::handler_resource_meta::{handle_resource_meta_request, is_resource_meta_request};
 use super::handler_slow::handle_slow_request;
 use super::handler_status::handle_status_request;
+use super::static_json::{create_json_response, is_json_file};
 use super::static_md::{
     build_raw_content_toggle_href, create_markdown_response, is_markdown_file,
     should_serve_raw_content,
@@ -418,6 +419,16 @@ fn create_file_response(
                     &decoded,
                     allow_html_in_md,
                     raw_content_toggle_href,
+                );
+            }
+            if is_json_file(file_path.as_path()) && !serve_raw_content {
+                let encoding = detect_encoding(&content);
+                let (decoded, _, _) = encoding.decode(&content);
+                return create_json_response(
+                    file_path.as_path(),
+                    &decoded,
+                    raw_content_toggle_href,
+                    content.len(),
                 );
             }
             let base_content_type = get_content_type(file_path);
