@@ -89,6 +89,7 @@ fn is_supported_file(path: &Path) -> bool {
         Some("css") => true,
         Some("js") => true,
         Some("json") => true,
+        Some("yaml") | Some("yml") => true,
         Some("md") => true,
         Some("png") => true,
         Some("jpg") | Some("jpeg") => true,
