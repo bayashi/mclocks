@@ -21,6 +21,8 @@ Un desarrollador nunca está sin reloj:
     * como crear fácilmente cláusulas SQL `IN`
 * 🌐 Servidor web
     * sirve archivos estáticos
+        * renderiza Markdown de forma enriquecida
+        * visor de contenido basado en arrastrar y soltar
     * servidor de volcado de solicitudes y respuestas
     * endpoints lentos para depuración
     * abrir archivos en tu editor desde URLs de GitHub
@@ -318,6 +320,11 @@ El servidor web soporta los siguientes tipos de archivo:
 
 * Texto: `html`, `css`, `js`, `json`, `md`, `txt`
 * Imágenes: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+
+### visor de contenido basado en arrastrar y soltar
+
+Además del alojamiento de archivos estáticos, el servidor web también incluye un flujo de visor de contenido basado en arrastrar y soltar: cuando arrastras y sueltas un archivo o directorio sobre la ventana del reloj de mclocks, se puede abrir y visualizar mediante URLs locales temporales.
+Estas URLs temporales se eliminan cuando mclocks se cierra.
 
 ### Endpoint /dump
 

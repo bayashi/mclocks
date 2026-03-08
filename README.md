@@ -1,6 +1,6 @@
 # mclocks
 
-<p align="center">
+<p align="center" style="font-size: 0.8em;">
 <a href="docs/i18n/README.ja.md">日本語</a> /
 <a href="docs/i18n/README.zh.md">中文</a> /
 <a href="docs/i18n/README.hi.md">हिन्दी</a> /
@@ -16,9 +16,11 @@
 
 ----------
 
-The desktop clock application for multiple time zones🕒🌍🕕 
+<p align="center">The desktop clock application for multiple time zones🕒🌍🕕</p>
 
-![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png)
+<p align="center">
+<img src="https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png" alt="screenshot" />
+</p>
 
 Clock-related features:
 
@@ -37,6 +39,8 @@ A developer is never without a clock:
     * such as easily creating SQL `IN` clauses
 * 🌐 Web server
     * serves static files
+        * richly render markdown
+        * drag-and-drop based content viewer
     * dump request and response server
     * slow endpoints for debugging
     * open files in your editor from GitHub URLs
@@ -336,6 +340,11 @@ The web server supports the following file types:
 
 * Text: `html`, `css`, `js`, `json`, `md`, `txt`
 * Images: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+
+### drag-and-drop based content viewer
+
+In addition to static file hosting, the web server also includes a drag-and-drop based content viewer workflow: when you drag and drop a file or directory onto the mclocks clock window, it can be opened and viewed through temporary local URLs.
+These temporary URLs are discarded when mclocks exits.
 
 ### /dump endpoint
 

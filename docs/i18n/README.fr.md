@@ -21,6 +21,8 @@ Un développeur n'est jamais sans horloge :
     * comme la création facile de clauses SQL `IN`
 * 🌐 Serveur web
     * sert des fichiers statiques
+        * rendu Markdown enrichi
+        * visionneuse de contenu basée sur glisser-déposer
     * serveur de vidage des requêtes et réponses
     * endpoints lents pour le débogage
     * ouvrir des fichiers dans votre éditeur depuis des URLs GitHub
@@ -318,6 +320,11 @@ Le serveur web supporte les types de fichiers suivants :
 
 * Texte : `html`, `css`, `js`, `json`, `md`, `txt`
 * Images : `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+
+### visionneuse de contenu basée sur glisser-déposer
+
+En plus de l'hébergement de fichiers statiques, le serveur web inclut aussi un flux de visionneuse de contenu basé sur glisser-déposer : lorsque vous faites glisser-déposer un fichier ou un répertoire sur la fenêtre d'horloge mclocks, il peut être ouvert et consulté via des URLs locales temporaires.
+Ces URLs temporaires sont supprimées lorsque mclocks se ferme.
 
 ### Endpoint /dump
 

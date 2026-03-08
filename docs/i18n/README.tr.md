@@ -21,6 +21,8 @@ Bir geliştirici asla saatsiz kalmaz:
     * SQL `IN` cümlelerini kolayca oluşturma gibi
 * 🌐 Web sunucusu
     * statik dosyalar sunar
+        * Markdown'ı zengin şekilde işler
+        * sürükle-bırak tabanlı içerik görüntüleyici
     * istek ve yanıt döküm sunucusu
     * hata ayıklama için yavaş uç noktalar
     * GitHub URL'lerinden editörünüzde dosya açma
@@ -318,6 +320,11 @@ Web sunucusu aşağıdaki dosya türlerini destekler:
 
 * Metin: `html`, `css`, `js`, `json`, `md`, `txt`
 * Görüntüler: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+
+### sürükle-bırak tabanlı içerik görüntüleyici
+
+Statik dosya barındırmaya ek olarak, web sunucusu sürükle-bırak tabanlı bir içerik görüntüleyici iş akışını da içerir: mclocks saat penceresine bir dosya veya dizin sürükleyip bıraktığınızda, geçici yerel URL'ler üzerinden açılıp görüntülenebilir.
+Bu geçici URL'ler mclocks kapandığında atılır.
 
 ### /dump uç noktası
 
