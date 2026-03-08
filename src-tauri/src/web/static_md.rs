@@ -178,7 +178,7 @@ fn render_markdown_html(markdown_source: &str, allow_html_in_md: bool) -> String
 
 pub fn is_markdown_file(path: &Path) -> bool {
     match path.extension().and_then(|s| s.to_str()) {
-        Some(ext) => ext.eq_ignore_ascii_case("md"),
+        Some(ext) => ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("markdown"),
         None => false,
     }
 }

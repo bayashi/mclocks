@@ -810,6 +810,86 @@ mod tests {
     }
 
     #[test]
+    fn test_handle_web_request_markdown_extension_renders_html() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let md_file = root_path.join("readme.markdown");
+        fs::write(
+            &md_file,
+            "# Title\n\n## Section\n\n```js\nconsole.log('hello')\n```\n",
+        )
+        .expect("Failed to create readme.markdown");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/readme.markdown", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "Markdown(.markdown) response should be HTML, got: {}",
+            content_type
+        );
+
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("id=\"toc-list\"") && body.contains("Index"),
+            "Rendered markdown(.markdown) page should include TOC"
+        );
+        assert!(
+            body.contains("id=\"raw-toggle\"")
+                && body.contains("href=\"/readme.markdown?raw=1\""),
+            "Rendered markdown(.markdown) page should include raw toggle link"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_markdown_extension_raw_query_returns_markdown_text() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let md_file = root_path.join("raw.markdown");
+        fs::write(&md_file, "# Raw Title\n\n<script>alert('x')</script>\n")
+            .expect("Failed to create raw.markdown");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/raw.markdown?raw=1", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/markdown"),
+            "Raw markdown(.markdown) response should be text/markdown, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(body, "# Raw Title\n\n<script>alert('x')</script>\n");
+    }
+
+    #[test]
     fn test_handle_web_request_json_file_renders_html_view() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
@@ -1244,6 +1324,12 @@ mod tests {
     #[test]
     fn test_get_content_type_md() {
         let path = PathBuf::from("readme.md");
+        assert_eq!(get_content_type(&path), "text/markdown");
+    }
+
+    #[test]
+    fn test_get_content_type_markdown() {
+        let path = PathBuf::from("readme.markdown");
         assert_eq!(get_content_type(&path), "text/markdown");
     }
 
