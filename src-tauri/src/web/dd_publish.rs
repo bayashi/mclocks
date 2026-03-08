@@ -231,6 +231,9 @@ mod tests {
 
         let result = register_temp_file(&file_path);
 
-        assert!(result.is_ok(), "TOML file should be accepted for temp sharing");
+        assert!(
+            result.is_ok(),
+            "TOML file should be accepted for temp sharing"
+        );
     }
 }
