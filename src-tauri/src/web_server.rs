@@ -124,18 +124,12 @@ fn df_assets_port() -> u16 {
     3029
 }
 
-const EMBEDDED_HIGHLIGHT_JS: &str =
-    include_str!("../../web-assets/highlight/highlight.min.js");
-const EMBEDDED_HIGHLIGHT_CSS: &str =
-    include_str!("../../web-assets/highlight/github-dark.min.css");
-const EMBEDDED_MCLOCKS_MAIN_CSS: &str =
-    include_str!("../../web-assets/mclocks/main.css");
-const EMBEDDED_MCLOCKS_MAIN_JS: &str =
-    include_str!("../../web-assets/mclocks/main.js");
-const EMBEDDED_MCLOCKS_STATIC_MD_CSS: &str =
-    include_str!("../../web-assets/mclocks/static-md.css");
-const EMBEDDED_MCLOCKS_STATIC_MD_JS: &str =
-    include_str!("../../web-assets/mclocks/static-md.js");
+const EMBEDDED_HIGHLIGHT_JS: &str = include_str!("../../web-assets/highlight/highlight.min.js");
+const EMBEDDED_HIGHLIGHT_CSS: &str = include_str!("../../web-assets/highlight/github-dark.min.css");
+const EMBEDDED_MCLOCKS_MAIN_CSS: &str = include_str!("../../web-assets/mclocks/main.css");
+const EMBEDDED_MCLOCKS_MAIN_JS: &str = include_str!("../../web-assets/mclocks/main.js");
+const EMBEDDED_MCLOCKS_STATIC_MD_CSS: &str = include_str!("../../web-assets/mclocks/static-md.css");
+const EMBEDDED_MCLOCKS_STATIC_MD_JS: &str = include_str!("../../web-assets/mclocks/static-md.js");
 const EMBEDDED_MCLOCKS_STATIC_JSON_CSS: &str =
     include_str!("../../web-assets/mclocks/static-json.css");
 const EMBEDDED_MCLOCKS_STATIC_JSON_JS: &str =
@@ -216,14 +210,26 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
         .map_err(|e| format!("Failed to create markdown assets dir: {}", e))?;
     fs::create_dir_all(assets_root.join("mclocks"))
         .map_err(|e| format!("Failed to create mclocks assets dir: {}", e))?;
-    fs::write(assets_root.join(HIGHLIGHT_JS_REL_PATH), EMBEDDED_HIGHLIGHT_JS)
-        .map_err(|e| format!("Failed to write embedded highlight.js: {}", e))?;
-    fs::write(assets_root.join(HIGHLIGHT_CSS_REL_PATH), EMBEDDED_HIGHLIGHT_CSS)
-        .map_err(|e| format!("Failed to write embedded highlight.css: {}", e))?;
-    fs::write(assets_root.join(MCLOCKS_MAIN_JS_REL_PATH), EMBEDDED_MCLOCKS_MAIN_JS)
-        .map_err(|e| format!("Failed to write embedded mclocks main.js: {}", e))?;
-    fs::write(assets_root.join(MCLOCKS_MAIN_CSS_REL_PATH), EMBEDDED_MCLOCKS_MAIN_CSS)
-        .map_err(|e| format!("Failed to write embedded mclocks main.css: {}", e))?;
+    fs::write(
+        assets_root.join(HIGHLIGHT_JS_REL_PATH),
+        EMBEDDED_HIGHLIGHT_JS,
+    )
+    .map_err(|e| format!("Failed to write embedded highlight.js: {}", e))?;
+    fs::write(
+        assets_root.join(HIGHLIGHT_CSS_REL_PATH),
+        EMBEDDED_HIGHLIGHT_CSS,
+    )
+    .map_err(|e| format!("Failed to write embedded highlight.css: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_MAIN_JS_REL_PATH),
+        EMBEDDED_MCLOCKS_MAIN_JS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks main.js: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_MAIN_CSS_REL_PATH),
+        EMBEDDED_MCLOCKS_MAIN_CSS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks main.css: {}", e))?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_MD_JS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_MD_JS,
@@ -861,11 +867,8 @@ mod tests {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let json_file = root_path.join("array-obj.json");
-        fs::write(
-            &json_file,
-            r#"{"items":[{"name":"alice"},{"name":"bob"}]}"#,
-        )
-        .expect("Failed to create array-obj.json");
+        fs::write(&json_file, r#"{"items":[{"name":"alice"},{"name":"bob"}]}"#)
+            .expect("Failed to create array-obj.json");
         let port = find_available_port();
 
         let _server_handle = start_test_server(root_path, port, false, false, false);
@@ -1831,9 +1834,17 @@ mod tests {
 
         let identifier = "test.app.assets".to_string();
         let result = load_web_config(&identifier);
-        assert!(result.is_ok(), "Should load config with assets: {:?}", result);
-        let config = result.unwrap().expect("Should return Some(WebServerConfig)");
-        let assets_server = config.assets_server.expect("assets server should be configured");
+        assert!(
+            result.is_ok(),
+            "Should load config with assets: {:?}",
+            result
+        );
+        let config = result
+            .unwrap()
+            .expect("Should return Some(WebServerConfig)");
+        let assets_server = config
+            .assets_server
+            .expect("assets server should be configured");
         let markdown_highlight = config
             .markdown_highlight
             .expect("markdown highlight should be configured");
@@ -1869,8 +1880,7 @@ mod tests {
             markdown_highlight.css_url,
             format!(
                 "http://127.0.0.1:4040/{}?v={}",
-                HIGHLIGHT_CSS_REL_PATH,
-                MCLOCKS_ASSETS_VERSION
+                HIGHLIGHT_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
             )
         );
 

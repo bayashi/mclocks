@@ -1,7 +1,7 @@
+use crate::web_server::WebMarkdownHighlightConfig;
 use serde_json::Value;
 use std::path::Path;
 use tiny_http::{Header, Response, StatusCode};
-use crate::web_server::WebMarkdownHighlightConfig;
 
 const JSON_VIEW_TEMPLATE: &str = r##"<!doctype html>
 <html>
@@ -188,7 +188,12 @@ fn render_colorized_json_with_indent(value: &Value, path: &str, indent: usize, o
                 let child_path = child_path(path, &idx.to_string());
                 if matches!(child, Value::Object(_) | Value::Array(_)) {
                     let mut child_inner = String::new();
-                    render_colorized_json_with_indent(child, &child_path, indent + 2, &mut child_inner);
+                    render_colorized_json_with_indent(
+                        child,
+                        &child_path,
+                        indent + 2,
+                        &mut child_inner,
+                    );
                     inner.push_str(&inject_indent_after_opening_tag(&child_inner, indent + 2));
                 } else {
                     push_indent(&mut inner, indent + 2);
@@ -415,29 +420,33 @@ pub fn create_json_response(
     let summary_items =
         render_summary_items(&root_type, children_count, source_size_bytes, &view_status);
 
-    let (main_css_link, static_json_css_link, main_js_script, static_json_js_script) = match markdown_highlight {
-        Some(cfg) => (
-            format!(
-                "<link rel=\"stylesheet\" href=\"{}\" />",
-                html_escape(&cfg.main_css_url)
+    let (main_css_link, static_json_css_link, main_js_script, static_json_js_script) =
+        match markdown_highlight {
+            Some(cfg) => (
+                format!(
+                    "<link rel=\"stylesheet\" href=\"{}\" />",
+                    html_escape(&cfg.main_css_url)
+                ),
+                format!(
+                    "<link rel=\"stylesheet\" href=\"{}\" />",
+                    html_escape(&cfg.static_json_css_url)
+                ),
+                format!(
+                    "<script src=\"{}\"></script>",
+                    html_escape(&cfg.main_js_url)
+                ),
+                format!(
+                    "<script src=\"{}\"></script>",
+                    html_escape(&cfg.static_json_js_url)
+                ),
             ),
-            format!(
-                "<link rel=\"stylesheet\" href=\"{}\" />",
-                html_escape(&cfg.static_json_css_url)
+            None => (
+                "".to_string(),
+                "".to_string(),
+                "".to_string(),
+                "".to_string(),
             ),
-            format!("<script src=\"{}\"></script>", html_escape(&cfg.main_js_url)),
-            format!(
-                "<script src=\"{}\"></script>",
-                html_escape(&cfg.static_json_js_url)
-            ),
-        ),
-        None => (
-            "".to_string(),
-            "".to_string(),
-            "".to_string(),
-            "".to_string(),
-        ),
-    };
+        };
     let html = JSON_VIEW_TEMPLATE
         .replace("__PAGE_TITLE__", &page_title)
         .replace("__MAIN_CSS_LINK__", &main_css_link)

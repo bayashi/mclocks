@@ -1,9 +1,9 @@
+use crate::web_server::WebMarkdownHighlightConfig;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
 use std::collections::HashMap;
 use std::path::Path;
 use tiny_http::{Header, Response, StatusCode};
 use urlencoding::encode;
-use crate::web_server::WebMarkdownHighlightConfig;
 
 const MARKDOWN_RENDER_TEMPLATE: &str = r##"<!doctype html>
 <html>
@@ -255,7 +255,10 @@ pub fn create_markdown_response(
                 "<link rel=\"stylesheet\" href=\"{}\" />",
                 html_escape(&cfg.static_md_css_url)
             ),
-            format!("<script src=\"{}\"></script>", html_escape(&cfg.main_js_url)),
+            format!(
+                "<script src=\"{}\"></script>",
+                html_escape(&cfg.main_js_url)
+            ),
             format!(
                 "<script src=\"{}\"></script>",
                 html_escape(&cfg.static_md_js_url)
