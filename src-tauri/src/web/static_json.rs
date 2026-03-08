@@ -157,6 +157,30 @@ body {
 .json-null {
 	color: #9ca3af;
 }
+.json-node.is-hovered {
+	background: rgba(62, 208, 255, 0.2);
+	color: #fff;
+	font-weight: 700;
+	text-shadow: 0 0 8px rgba(56, 189, 248, 0.55);
+	border-radius: 2px;
+}
+#outline-list li.is-hovered > .value {
+	display: inline-block;
+	background: rgba(56, 189, 248, 0.2);
+	padding: 1px 4px;
+	margin: 0 1px;
+	color: #fff;
+	font-weight: 700;
+	text-shadow: 0 0 8px rgba(56, 189, 248, 0.55);
+	border-radius: 2px;
+}
+#outline-list li.is-hovered > .value strong {
+	font-weight: 800;
+}
+.json-node.is-hovered .json-key {
+	font-weight: 800;
+	text-shadow: 0 0 8px rgba(147, 197, 253, 0.5);
+}
 </style>
 </head>
 <body>
@@ -216,6 +240,42 @@ window.addEventListener("mouseup", () => {
 	}
 	isResizing = false;
 	resizer.classList.remove("is-dragging");
+});
+
+const cssEscape = (value) => {
+	if (window.CSS && typeof window.CSS.escape === "function") {
+		return window.CSS.escape(value);
+	}
+	return String(value).replaceAll("\\", "\\\\").replaceAll("\"", "\\\"");
+};
+const outlineItems = document.querySelectorAll("#outline-list li[data-path]");
+let activeOutlineItem = null;
+let activeJsonNodes = [];
+const clearHover = () => {
+	if (activeOutlineItem) {
+		activeOutlineItem.classList.remove("is-hovered");
+		activeOutlineItem = null;
+	}
+	activeJsonNodes.forEach((node) => node.classList.remove("is-hovered"));
+	activeJsonNodes = [];
+};
+outlineItems.forEach((item) => {
+	item.addEventListener("mouseenter", () => {
+		clearHover();
+		const path = item.getAttribute("data-path");
+		if (!path) {
+			return;
+		}
+		const nodes = document.querySelectorAll(`#json-view [data-path="${cssEscape(path)}"]`);
+		if (nodes.length === 0) {
+			return;
+		}
+		activeOutlineItem = item;
+		activeOutlineItem.classList.add("is-hovered");
+		activeJsonNodes = Array.from(nodes);
+		activeJsonNodes.forEach((node) => node.classList.add("is-hovered"));
+	});
+	item.addEventListener("mouseleave", clearHover);
 });
 </script>
 </body>
@@ -297,73 +357,109 @@ fn push_indent(out: &mut String, indent: usize) {
 
 fn render_colorized_json(value: &Value) -> String {
     let mut out = String::new();
-    render_colorized_json_with_indent(value, 0, &mut out);
+    render_colorized_json_with_indent(value, "", 0, &mut out);
     out
 }
 
-fn render_colorized_json_with_indent(value: &Value, indent: usize, out: &mut String) {
+fn child_path(base_path: &str, segment: &str) -> String {
+    if base_path.is_empty() {
+        segment.to_string()
+    } else {
+        format!("{}.{}", base_path, segment)
+    }
+}
+
+fn wrap_json_node(path: &str, inner_html: String) -> String {
+    if path.is_empty() {
+        return inner_html;
+    }
+    format!(
+        "<span class=\"json-node\" data-path=\"{}\">{}</span>",
+        html_escape(path),
+        inner_html
+    )
+}
+
+fn render_colorized_json_with_indent(value: &Value, path: &str, indent: usize, out: &mut String) {
     match value {
         Value::Object(map) => {
-            out.push('{');
+            let mut inner = String::new();
+            inner.push('{');
             if map.is_empty() {
-                out.push('}');
+                inner.push('}');
+                out.push_str(&wrap_json_node(path, inner));
                 return;
             }
-            out.push('\n');
+            inner.push('\n');
             let len = map.len();
             for (idx, (key, child)) in map.iter().enumerate() {
-                push_indent(out, indent + 2);
+                push_indent(&mut inner, indent + 2);
                 let escaped_key =
                     serde_json::to_string(key).unwrap_or_else(|_| "\"<key>\"".to_string());
-                out.push_str("<span class=\"json-key\">");
-                out.push_str(&html_escape(&escaped_key));
-                out.push_str("</span>: ");
-                render_colorized_json_with_indent(child, indent + 2, out);
+                inner.push_str("<span class=\"json-key\">");
+                inner.push_str(&html_escape(&escaped_key));
+                inner.push_str("</span>: ");
+                let child_path = child_path(path, key);
+                render_colorized_json_with_indent(child, &child_path, indent + 2, &mut inner);
                 if idx + 1 < len {
-                    out.push(',');
+                    inner.push(',');
                 }
-                out.push('\n');
+                inner.push('\n');
             }
-            push_indent(out, indent);
-            out.push('}');
+            push_indent(&mut inner, indent);
+            inner.push('}');
+            out.push_str(&wrap_json_node(path, inner));
         }
         Value::Array(arr) => {
-            out.push('[');
+            let mut inner = String::new();
+            inner.push('[');
             if arr.is_empty() {
-                out.push(']');
+                inner.push(']');
+                out.push_str(&wrap_json_node(path, inner));
                 return;
             }
-            out.push('\n');
+            inner.push('\n');
             let len = arr.len();
             for (idx, child) in arr.iter().enumerate() {
-                push_indent(out, indent + 2);
-                render_colorized_json_with_indent(child, indent + 2, out);
+                push_indent(&mut inner, indent + 2);
+                let child_path = child_path(path, &idx.to_string());
+                render_colorized_json_with_indent(child, &child_path, indent + 2, &mut inner);
                 if idx + 1 < len {
-                    out.push(',');
+                    inner.push(',');
                 }
-                out.push('\n');
+                inner.push('\n');
             }
-            push_indent(out, indent);
-            out.push(']');
+            push_indent(&mut inner, indent);
+            inner.push(']');
+            out.push_str(&wrap_json_node(path, inner));
         }
         Value::String(s) => {
             let escaped = serde_json::to_string(s).unwrap_or_else(|_| "\"\"".to_string());
-            out.push_str("<span class=\"json-string\">");
-            out.push_str(&html_escape(&escaped));
-            out.push_str("</span>");
+            let inner = format!(
+                "<span class=\"json-string\">{}</span>",
+                html_escape(&escaped)
+            );
+            out.push_str(&wrap_json_node(path, inner));
         }
         Value::Number(n) => {
-            out.push_str("<span class=\"json-number\">");
-            out.push_str(&html_escape(&n.to_string()));
-            out.push_str("</span>");
+            let inner = format!(
+                "<span class=\"json-number\">{}</span>",
+                html_escape(&n.to_string())
+            );
+            out.push_str(&wrap_json_node(path, inner));
         }
         Value::Bool(b) => {
-            out.push_str("<span class=\"json-bool\">");
-            out.push_str(if *b { "true" } else { "false" });
-            out.push_str("</span>");
+            let inner = format!(
+                "<span class=\"json-bool\">{}</span>",
+                if *b { "true" } else { "false" }
+            );
+            out.push_str(&wrap_json_node(path, inner));
         }
         Value::Null => {
-            out.push_str("<span class=\"json-null\">null</span>");
+            out.push_str(&wrap_json_node(
+                path,
+                "<span class=\"json-null\">null</span>".to_string(),
+            ));
         }
     }
 }
@@ -379,9 +475,15 @@ fn value_shape_label(value: &Value) -> String {
     }
 }
 
-fn render_outline_node_html(label: &str, value: &Value, depth: usize) -> String {
+fn render_outline_node_html(label: &str, full_path: &str, value: &Value, depth: usize) -> String {
     let mut html = String::new();
-    html.push_str("<li><span class=\"value\">");
+    if full_path.is_empty() {
+        html.push_str("<li><span class=\"value\">");
+    } else {
+        html.push_str("<li data-path=\"");
+        html.push_str(&html_escape(full_path));
+        html.push_str("\"><span class=\"value\">");
+    }
     if label.is_empty() {
         html.push_str(&html_escape(&value_shape_label(value)));
     } else {
@@ -406,7 +508,13 @@ fn render_outline_node_html(label: &str, value: &Value, depth: usize) -> String 
                             html.push_str("</span></li>");
                             break;
                         }
-                        html.push_str(&render_outline_node_html(key, child, depth + 1));
+                        let child_full_path = child_path(full_path, key);
+                        html.push_str(&render_outline_node_html(
+                            key,
+                            &child_full_path,
+                            child,
+                            depth + 1,
+                        ));
                     }
                     html.push_str("</ul>");
                 }
@@ -424,8 +532,14 @@ fn render_outline_node_html(label: &str, value: &Value, depth: usize) -> String 
                             html.push_str("</span></li>");
                             break;
                         }
-                        let child_path = index.to_string();
-                        html.push_str(&render_outline_node_html(&child_path, child, depth + 1));
+                        let child_label = index.to_string();
+                        let child_full_path = child_path(full_path, &child_label);
+                        html.push_str(&render_outline_node_html(
+                            &child_label,
+                            &child_full_path,
+                            child,
+                            depth + 1,
+                        ));
                     }
                     html.push_str("</ul>");
                 }
@@ -441,7 +555,7 @@ fn render_outline_items(value: Option<&Value>) -> String {
     let Some(value) = value else {
         return "<li><span class=\"value\">Outline is unavailable</span></li>".to_string();
     };
-    render_outline_node_html("", value, 0)
+    render_outline_node_html("", "", value, 0)
 }
 
 fn render_notice_items(parse_error: Option<&serde_json::Error>) -> String {
