@@ -93,11 +93,27 @@ pub fn run() {
                 config.slow,
                 config.status,
                 config.allow_html_in_md,
+                config.markdown_highlight.clone(),
                 config.editor_repos_dir.clone(),
                 config.editor_include_host,
                 config.editor_command.clone(),
                 config.editor_args.clone(),
             );
+            if let Some(assets_server) = &config.assets_server {
+                start_web_server(
+                    assets_server.root.clone(),
+                    assets_server.port,
+                    false,
+                    false,
+                    false,
+                    false,
+                    None,
+                    None,
+                    false,
+                    "code".to_string(),
+                    vec!["-g".to_string(), "{file}:{line}".to_string()],
+                );
+            }
             if config.open_browser_at_start {
                 Some(config.port)
             } else {

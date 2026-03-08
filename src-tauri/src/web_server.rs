@@ -33,6 +33,13 @@ pub struct WebMarkdownConfig {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct WebAssetsConfig {
+    #[serde(default = "df_assets_port")]
+    pub port: u16,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct WebContentConfig {
     #[serde(default)]
     pub markdown: Option<WebMarkdownConfig>,
@@ -55,7 +62,23 @@ pub struct WebConfig {
     #[serde(default)]
     pub content: Option<WebContentConfig>,
     #[serde(default)]
+    pub assets: Option<WebAssetsConfig>,
+    #[serde(default)]
     pub editor: Option<EditorConfig>,
+}
+
+#[derive(Debug, Clone)]
+pub struct WebMarkdownHighlightConfig {
+    pub main_css_url: String,
+    pub main_js_url: String,
+    pub css_url: String,
+    pub js_url: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct WebAssetsServerConfig {
+    pub root: String,
+    pub port: u16,
 }
 
 #[derive(Debug)]
@@ -67,6 +90,8 @@ pub struct WebServerConfig {
     pub slow: bool,
     pub status: bool,
     pub allow_html_in_md: bool,
+    pub markdown_highlight: Option<WebMarkdownHighlightConfig>,
+    pub assets_server: Option<WebAssetsServerConfig>,
     pub editor_repos_dir: Option<String>,
     pub editor_include_host: bool,
     pub editor_command: String,
@@ -91,6 +116,18 @@ fn df_status() -> bool {
 fn df_allow_html_in_md() -> bool {
     false
 }
+fn df_assets_port() -> u16 {
+    3029
+}
+
+const EMBEDDED_HIGHLIGHT_JS: &str = r#"(function(){const q={"javascript":"\\b(await|break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|if|implements|import|in|instanceof|interface|let|new|null|package|private|protected|public|return|static|super|switch|this|throw|true|try|typeof|undefined|var|void|while|with|yield)\\b","typescript":"\\b(abstract|any|as|asserts|async|await|bigint|boolean|break|case|catch|class|const|constructor|continue|debugger|declare|default|delete|do|else|enum|export|extends|false|finally|for|from|function|get|if|implements|import|in|infer|instanceof|interface|is|keyof|let|module|namespace|never|new|null|number|object|override|package|private|protected|public|readonly|require|return|set|static|string|super|switch|symbol|this|throw|true|try|type|typeof|undefined|unknown|var|void|while|with|yield)\\b","json":"\\b(true|false|null)\\b","rust":"\\b(as|async|await|break|const|continue|crate|dyn|else|enum|extern|false|fn|for|if|impl|in|let|loop|match|mod|move|mut|pub|ref|return|self|Self|static|struct|super|trait|true|type|unsafe|use|where|while)\\b","python":"\\b(and|as|assert|async|await|break|class|continue|def|del|elif|else|except|False|finally|for|from|global|if|import|in|is|lambda|None|nonlocal|not|or|pass|raise|return|True|try|while|with|yield)\\b","bash":"\\b(case|do|done|elif|else|esac|fi|for|function|if|in|select|then|time|until|while)\\b","shell":"\\b(case|do|done|elif|else|esac|fi|for|function|if|in|select|then|time|until|while)\\b","sql":"\\b(ADD|ALL|ALTER|AND|ANY|AS|ASC|BEGIN|BETWEEN|BY|CASE|CHECK|COLUMN|COMMIT|CONSTRAINT|CREATE|DATABASE|DEFAULT|DELETE|DESC|DISTINCT|DROP|ELSE|END|EXISTS|FOREIGN|FROM|FULL|GROUP|HAVING|IN|INDEX|INNER|INSERT|INTO|IS|JOIN|KEY|LEFT|LIKE|LIMIT|NOT|NULL|ON|OR|ORDER|OUTER|PRIMARY|PROCEDURE|RIGHT|ROWNUM|SELECT|SET|TABLE|THEN|TOP|TRUNCATE|UNION|UNIQUE|UPDATE|VALUES|VIEW|WHEN|WHERE)\\b"};const h=(s)=>s.replace(/[&<>]/g,(c)=>c==="&"?"&amp;":c==="<"?"&lt;":"&gt;");const g=(lang)=>new RegExp(q[lang]||q.javascript,lang==="sql"?"g":"g");const n=(s)=>s.replace(/("(?:\\.|[^"\\])*")(?=\\s*:)/g,'<span class="hljs-attr">$1</span>');const p=(s,lang)=>{let o=h(s);o=o.replace(/\\/\\*[\\s\\S]*?\\*\\//g,'<span class="hljs-comment">$&</span>');if(lang==="python"){o=o.replace(/#.*$/gm,'<span class="hljs-comment">$&</span>')}else{o=o.replace(/\\/\\/.*$/gm,'<span class="hljs-comment">$&</span>')}o=o.replace(/'(?:\\\\.|[^'\\\\])*'|"(?:\\\\.|[^"\\\\])*"|`(?:\\\\.|[^`\\\\])*`/g,'<span class="hljs-string">$&</span>');o=o.replace(/\\b0x[a-fA-F0-9]+|\\b\\d+(?:\\.\\d+)?(?:e[+-]?\\d+)?\\b/g,'<span class="hljs-number">$&</span>');o=o.replace(g(lang),(m)=>'<span class="hljs-keyword">'+m+"</span>");if(lang==="json"){o=n(o)}return o};const r=(el)=>{const c=(el.className||"")+" "+((el.parentElement&&el.parentElement.className)||"");const m=c.match(/language-([a-zA-Z0-9_-]+)/)||c.match(/\\blang(?:uage)?-([a-zA-Z0-9_-]+)/);if(!m)return"javascript";return m[1].toLowerCase()};const api={highlightElement:(el)=>{if(!el||el.dataset.hljsDone==="1")return;const lang=r(el);el.innerHTML=p(el.textContent||"",lang);el.classList.add("hljs");el.dataset.hljsDone="1"}};window.hljs=api})();"#;
+const EMBEDDED_HIGHLIGHT_CSS: &str = r#"pre code.hljs{display:block;overflow-x:auto;padding:1em}code.hljs{padding:3px 5px}.hljs{color:#c9d1d9;background:#0d1117}.hljs-doctag,.hljs-keyword,.hljs-meta .hljs-keyword,.hljs-template-tag,.hljs-template-variable,.hljs-type,.hljs-variable.language_{color:#ff7b72}.hljs-title,.hljs-title.class_,.hljs-title.class_.inherited__,.hljs-title.function_{color:#d2a8ff}.hljs-attr,.hljs-attribute,.hljs-literal,.hljs-meta,.hljs-number,.hljs-operator,.hljs-selector-attr,.hljs-selector-class,.hljs-selector-id,.hljs-variable{color:#79c0ff}.hljs-meta .hljs-string,.hljs-regexp,.hljs-string{color:#a5d6ff}.hljs-built_in,.hljs-symbol{color:#ffa657}.hljs-code,.hljs-comment,.hljs-formula{color:#8b949e}.hljs-name,.hljs-quote,.hljs-selector-pseudo,.hljs-selector-tag{color:#7ee787}.hljs-subst{color:#c9d1d9}.hljs-section{color:#1f6feb;font-weight:700}.hljs-bullet{color:#f2cc60}.hljs-emphasis{color:#c9d1d9;font-style:italic}.hljs-strong{color:#c9d1d9;font-weight:700}.hljs-addition{color:#aff5b4;background-color:#033a16}.hljs-deletion{color:#ffdcd7;background-color:#67060c}"#;
+const EMBEDDED_MCLOCKS_MAIN_CSS: &str = r###"*{box-sizing:border-box}body{margin:0;background:#000;color:#bbb;font-family:"Segoe UI","Yu Gothic UI","Meiryo","Hiragino Kaku Gothic ProN",sans-serif}#raw-toggle{display:inline-block;color:#ccc;text-decoration:none;font-size:12px;padding:4px 8px;border:1px solid #444;border-radius:2px}#raw-toggle:hover{background:#1a1a1a;color:#fff}body.mclocks-md{display:flex;line-height:1.6;--toc-width:240px;color:#aaa}body.mclocks-md #toc{position:fixed;top:0;left:0;width:var(--toc-width);height:100vh;overflow-y:auto;background:#0a0a0a;border-right:1px solid #222;padding:16px 12px;font-size:13px;scrollbar-width:thin;scrollbar-color:#333 transparent}body.mclocks-md #toc h2{color:#666;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 12px 4px}body.mclocks-md #toc ul{list-style:none;margin:0;padding:0}body.mclocks-md #toc li a{display:block;color:#555;text-decoration:none;padding:3px 4px;border-radius:3px;line-height:1.4;transition:color .15s,background .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}body.mclocks-md #toc li a:hover{color:#ccc;background:#1a1a1a}body.mclocks-md #toc li a.active{color:#fff;background:#1e1e1e}body.mclocks-md #toc li[data-level="1"] a{padding-left:4px;font-weight:600;color:#777}body.mclocks-md #toc li[data-level="2"] a{padding-left:12px}body.mclocks-md #toc li[data-level="3"] a{padding-left:24px;font-size:12px}body.mclocks-md #toc li[data-level="4"] a{padding-left:36px;font-size:11px}body.mclocks-md #toc-footer{padding-top:12px;margin-top:12px;border-top:1px solid #222}body.mclocks-md #toc-resizer{position:fixed;top:0;left:calc(var(--toc-width) - 3px);width:6px;height:100vh;cursor:col-resize;background:transparent;z-index:20}body.mclocks-md #toc-resizer:hover{background:#222}body.mclocks-md #toc-resizer.is-dragging{background:#333}body.mclocks-md #main{margin-left:var(--toc-width);padding:16px 24px;width:calc(100vw - var(--toc-width));overflow-wrap:anywhere;word-break:break-word}body.mclocks-md pre,body.mclocks-md code{font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;overflow-wrap:anywhere;word-break:break-word}body.mclocks-md pre{color:#fff;padding-left:16px;margin-bottom:0;white-space:pre-wrap}body.mclocks-md .copy-btn{display:block;margin-top:6px;margin-left:16px;padding:4px 8px;background:#333;color:#fff;border:1px solid #555;border-radius:2px;cursor:pointer;font-size:10px;width:fit-content}body.mclocks-md .copy-btn:hover{background:#ccc}body.mclocks-json{display:flex;line-height:1.5;--sidebar-width:300px}body.mclocks-json #sidebar{position:fixed;top:0;left:0;width:var(--sidebar-width);height:100vh;background:#0a0a0a;border-right:1px solid #222;padding:12px 12px 14px;overflow-y:auto}body.mclocks-json #sidebar h2{margin:0 0 8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#666}body.mclocks-json #summary-list,body.mclocks-json #outline-list{list-style:none;margin:0;padding:0}body.mclocks-json #summary-list li{display:flex;gap:8px;margin:0 0 6px;font-size:12px}body.mclocks-json .label{color:#777;min-width:72px}body.mclocks-json .value{color:#ccc;overflow-wrap:anywhere;word-break:break-word}body.mclocks-json #notices{margin:0 0 12px}body.mclocks-json .notice{margin:0 0 8px;padding:8px 10px;border:1px solid #333;background:#101010;color:#ddd;font-size:12px;overflow-wrap:anywhere;word-break:break-word}body.mclocks-json .notice.error{border-color:#563232;background:#1a0f0f;color:#ffadad}body.mclocks-json #outline-list li{margin:0 0 4px;font-size:12px;color:#aaa;white-space:normal;overflow-wrap:anywhere;word-break:break-word}body.mclocks-json #outline-list ul{list-style:none;margin:4px 0 0;padding-left:14px;border-left:1px solid #1c1c1c}body.mclocks-json #sidebar-footer{margin-top:12px;padding-top:10px;border-top:1px solid #222}body.mclocks-json #resizer{position:fixed;top:0;left:calc(var(--sidebar-width) - 3px);width:6px;height:100vh;cursor:col-resize;background:transparent;z-index:20}body.mclocks-json #resizer:hover{background:#222}body.mclocks-json #resizer.is-dragging{background:#333}body.mclocks-json #main{margin-left:var(--sidebar-width);width:calc(100vw - var(--sidebar-width));padding:16px 24px}body.mclocks-json #json-view{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;line-height:1.45;color:#ddd}body.mclocks-json .json-key{color:#93c5fd;font-weight:700}body.mclocks-json .json-string{color:#86efac}body.mclocks-json .json-number{color:#fdba74}body.mclocks-json .json-bool{color:#c4b5fd}body.mclocks-json .json-null{color:#9ca3af}body.mclocks-json .json-node.is-hovered{background:rgba(62,208,255,.2);color:#fff;font-weight:700;text-shadow:0 0 8px rgba(56,189,248,.55);border-radius:2px}body.mclocks-json #outline-list li.is-hovered>.value{display:inline-block;background:rgba(56,189,248,.2);padding:1px 4px;margin:0 1px;color:#fff;font-weight:700;text-shadow:0 0 8px rgba(56,189,248,.55);border-radius:2px}body.mclocks-json #outline-list li.is-hovered>.value strong{font-weight:800}body.mclocks-json .json-node.is-hovered .json-key{font-weight:800;text-shadow:0 0 8px rgba(147,197,253,.5)}"###;
+const EMBEDDED_MCLOCKS_MAIN_JS: &str = r###"(function(){const set=(k,v,min,max,varName)=>{const raw=localStorage.getItem(k);if(raw!==null){const n=Number(raw);if(Number.isFinite(n)){const c=Math.max(min,Math.min(max,n));document.documentElement.style.setProperty(varName,`${c}px`)}}let dragging=false;const rs=document.getElementById(v);if(!rs){return}const apply=(x)=>{const c=Math.max(min,Math.min(max,x));document.documentElement.style.setProperty(varName,`${c}px`);localStorage.setItem(k,String(c))};rs.addEventListener("mousedown",(e)=>{e.preventDefault();dragging=true;rs.classList.add("is-dragging")});window.addEventListener("mousemove",(e)=>{if(!dragging){return}apply(e.clientX)});window.addEventListener("mouseup",()=>{if(!dragging){return}dragging=false;rs.classList.remove("is-dragging")})};if(document.body.classList.contains("mclocks-md")){set("mclocks-md-toc-width","toc-resizer",160,560,"--toc-width");if(window.hljs){document.querySelectorAll("pre code").forEach((c)=>window.hljs.highlightElement(c))}document.querySelectorAll("pre code").forEach((code)=>{const pre=code.parentElement;if(pre.nextElementSibling&&pre.nextElementSibling.classList.contains("copy-btn")){return}const btn=document.createElement("button");btn.textContent="Copy";btn.className="copy-btn";btn.onclick=()=>{navigator.clipboard.writeText(code.textContent||"");btn.textContent="Copied!";setTimeout(()=>{btn.textContent="Copy"},2000)};pre.parentNode.insertBefore(btn,pre.nextSibling)});const tocList=document.getElementById("toc-list");if(tocList){const links=tocList.querySelectorAll("a");const headings=document.querySelectorAll("#content h1, #content h2, #content h3, #content h4");const ob=new IntersectionObserver((entries)=>{entries.forEach((entry)=>{if(entry.isIntersecting){const id=entry.target.id;links.forEach((a)=>a.classList.toggle("active",a.getAttribute("href")==`#${id}`))}})},{rootMargin:"0px 0px -80% 0px",threshold:0});headings.forEach((h)=>ob.observe(h))}}if(document.body.classList.contains("mclocks-json")){set("mclocks-json-sidebar-width","resizer",220,680,"--sidebar-width");const esc=(v)=>window.CSS&&typeof window.CSS.escape==="function"?window.CSS.escape(v):String(v).replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\\\"");const outline=document.querySelectorAll("#outline-list li[data-path]");let activeItem=null;let activeNodes=[];const clear=()=>{if(activeItem){activeItem.classList.remove("is-hovered");activeItem=null}activeNodes.forEach((n)=>n.classList.remove("is-hovered"));activeNodes=[]};outline.forEach((item)=>{item.addEventListener("mouseenter",()=>{clear();const path=item.getAttribute("data-path");if(!path){return}const nodes=document.querySelectorAll(`#json-view [data-path="${esc(path)}"]`);if(nodes.length===0){return}activeItem=item;activeItem.classList.add("is-hovered");activeNodes=Array.from(nodes);activeNodes.forEach((n)=>n.classList.add("is-hovered"))});item.addEventListener("mouseleave",clear)})}})();"###;
+const HIGHLIGHT_JS_REL_PATH: &str = "highlight/highlight.min.js";
+const HIGHLIGHT_CSS_REL_PATH: &str = "highlight/styles/github-dark.min.css";
+const MCLOCKS_MAIN_JS_REL_PATH: &str = "mclocks/main.js";
+const MCLOCKS_MAIN_CSS_REL_PATH: &str = "mclocks/main.css";
 
 pub fn start_web_server(
     root: String,
@@ -99,6 +136,7 @@ pub fn start_web_server(
     slow_enabled: bool,
     status_enabled: bool,
     allow_html_in_md: bool,
+    markdown_highlight: Option<WebMarkdownHighlightConfig>,
     editor_repos_dir: Option<String>,
     editor_include_host: bool,
     editor_command: String,
@@ -129,6 +167,7 @@ pub fn start_web_server(
                 slow_enabled,
                 status_enabled,
                 allow_html_in_md,
+                markdown_highlight.as_ref(),
                 &editor_repos_dir,
                 editor_include_host,
                 &editor_command,
@@ -143,6 +182,28 @@ pub fn start_web_server(
 
 pub fn open_url_in_browser(url: &str) -> Result<(), String> {
     open_with_system_command(url, "Failed to open URL in browser")
+}
+
+fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let assets_root = base_dir
+        .config_dir()
+        .join(identifier)
+        .join("web-assets")
+        .to_path_buf();
+    fs::create_dir_all(assets_root.join("highlight/styles"))
+        .map_err(|e| format!("Failed to create markdown assets dir: {}", e))?;
+    fs::create_dir_all(assets_root.join("mclocks"))
+        .map_err(|e| format!("Failed to create mclocks assets dir: {}", e))?;
+    fs::write(assets_root.join(HIGHLIGHT_JS_REL_PATH), EMBEDDED_HIGHLIGHT_JS)
+        .map_err(|e| format!("Failed to write embedded highlight.js: {}", e))?;
+    fs::write(assets_root.join(HIGHLIGHT_CSS_REL_PATH), EMBEDDED_HIGHLIGHT_CSS)
+        .map_err(|e| format!("Failed to write embedded highlight.css: {}", e))?;
+    fs::write(assets_root.join(MCLOCKS_MAIN_JS_REL_PATH), EMBEDDED_MCLOCKS_MAIN_JS)
+        .map_err(|e| format!("Failed to write embedded mclocks main.js: {}", e))?;
+    fs::write(assets_root.join(MCLOCKS_MAIN_CSS_REL_PATH), EMBEDDED_MCLOCKS_MAIN_CSS)
+        .map_err(|e| format!("Failed to write embedded mclocks main.css: {}", e))?;
+    Ok(assets_root.to_string_lossy().to_string())
 }
 
 pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, String> {
@@ -182,6 +243,22 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         .and_then(|c| c.markdown.as_ref())
         .map(|m| m.allow_raw_html)
         .unwrap_or(false);
+    let assets_port = web_config
+        .assets
+        .as_ref()
+        .map(|assets| assets.port)
+        .unwrap_or_else(df_assets_port);
+    let assets_root = prepare_markdown_assets_root(identifier)?;
+    let assets_server = Some(WebAssetsServerConfig {
+        root: assets_root,
+        port: assets_port,
+    });
+    let markdown_highlight = Some(WebMarkdownHighlightConfig {
+        main_css_url: format!("http://127.0.0.1:{}/{}", assets_port, MCLOCKS_MAIN_CSS_REL_PATH),
+        main_js_url: format!("http://127.0.0.1:{}/{}", assets_port, MCLOCKS_MAIN_JS_REL_PATH),
+        css_url: format!("http://127.0.0.1:{}/{}", assets_port, HIGHLIGHT_CSS_REL_PATH),
+        js_url: format!("http://127.0.0.1:{}/{}", assets_port, HIGHLIGHT_JS_REL_PATH),
+    });
     let editor_include_host = web_config
         .editor
         .as_ref()
@@ -208,6 +285,8 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         slow: web_config.slow,
         status: web_config.status,
         allow_html_in_md,
+        markdown_highlight,
+        assets_server,
         editor_repos_dir,
         editor_include_host,
         editor_command,
@@ -616,8 +695,8 @@ mod tests {
             "Rendered markdown page should include raw toggle link"
         );
         assert!(
-            body.contains("document.querySelectorAll(\"pre code\")"),
-            "Rendered markdown page should include copy button script"
+            !body.contains("<style>") && !body.contains("mclocks-md-toc-width"),
+            "Rendered markdown page should not embed inline markdown CSS/JS"
         );
     }
 
@@ -705,6 +784,39 @@ mod tests {
         assert!(
             body.contains("json-key") && body.contains("json-string"),
             "JSON view should include colorized tokens"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_json_array_object_hover_wrap_includes_opening_brace_line() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let json_file = root_path.join("array-obj.json");
+        fs::write(
+            &json_file,
+            r#"{"items":[{"name":"alice"},{"name":"bob"}]}"#,
+        )
+        .expect("Failed to create array-obj.json");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/array-obj.json", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("data-path=\"items.0\">    {"),
+            "Array object node should include opening brace line inside hover target"
+        );
+        assert!(
+            body.contains("data-path=\"items.0.name\""),
+            "Nested path under array object should keep full path"
         );
     }
 
@@ -1074,6 +1186,7 @@ mod tests {
                     slow_enabled,
                     status_enabled,
                     allow_html_in_md,
+                    None,
                     &None,
                     false,
                     &editor_command,
@@ -1608,6 +1721,77 @@ mod tests {
         assert_eq!(config.dump, true, "dump should be true");
 
         // Cleanup
+        let _ = fs::remove_file(&config_path);
+        let _ = fs::remove_dir(&test_config_dir);
+    }
+
+    #[test]
+    fn test_load_web_config_with_assets_for_markdown_highlight() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let web_root = temp_dir.path().join("webroot");
+        fs::create_dir_all(&web_root).expect("Failed to create web root");
+
+        let base_dir = BaseDirs::new().expect("Failed to get base dir");
+        let config_dir = base_dir.config_dir();
+        let test_config_dir = config_dir.join("test.app.assets");
+        fs::create_dir_all(&test_config_dir).expect("Failed to create config dir");
+
+        let config_file_name = if cfg!(debug_assertions) && tauri::is_dev() {
+            "dev.config.json"
+        } else {
+            "config.json"
+        };
+        let config_path = test_config_dir.join(config_file_name);
+        let web_root_str = web_root
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .replace('\\', "/");
+        let config_json = format!(
+            r#"{{
+            "web": {{
+                "root": "{}",
+                "assets": {{
+                    "port": 4040
+                }}
+            }}
+        }}"#,
+            web_root_str
+        );
+        fs::write(&config_path, config_json).expect("Failed to write config file");
+
+        let identifier = "test.app.assets".to_string();
+        let result = load_web_config(&identifier);
+        assert!(result.is_ok(), "Should load config with assets: {:?}", result);
+        let config = result.unwrap().expect("Should return Some(WebServerConfig)");
+        let assets_server = config.assets_server.expect("assets server should be configured");
+        let markdown_highlight = config
+            .markdown_highlight
+            .expect("markdown highlight should be configured");
+
+        assert_eq!(assets_server.port, 4040);
+        assert!(
+            assets_server.root.ends_with("web-assets"),
+            "assets root should be auto-managed: {}",
+            assets_server.root
+        );
+        assert_eq!(
+            markdown_highlight.main_js_url,
+            "http://127.0.0.1:4040/mclocks/main.js"
+        );
+        assert_eq!(
+            markdown_highlight.main_css_url,
+            "http://127.0.0.1:4040/mclocks/main.css"
+        );
+        assert_eq!(
+            markdown_highlight.js_url,
+            "http://127.0.0.1:4040/highlight/highlight.min.js"
+        );
+        assert_eq!(
+            markdown_highlight.css_url,
+            "http://127.0.0.1:4040/highlight/styles/github-dark.min.css"
+        );
+
         let _ = fs::remove_file(&config_path);
         let _ = fs::remove_dir(&test_config_dir);
     }

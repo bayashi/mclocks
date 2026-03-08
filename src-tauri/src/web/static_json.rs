@@ -1,189 +1,16 @@
 use serde_json::Value;
 use std::path::Path;
 use tiny_http::{Header, Response, StatusCode};
+use crate::web_server::WebMarkdownHighlightConfig;
 
 const JSON_VIEW_TEMPLATE: &str = r##"<!doctype html>
 <html>
 <head>
 <meta charset="UTF-8" />
 <title>__PAGE_TITLE__</title>
-<style>
-:root {
-	--sidebar-width: 300px;
-}
-* {
-	box-sizing: border-box;
-}
-body {
-	margin: 0;
-	background: #000;
-	color: #bbb;
-	display: flex;
-	font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif;
-	line-height: 1.5;
-}
-#sidebar {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: var(--sidebar-width);
-	height: 100vh;
-	background: #0a0a0a;
-	border-right: 1px solid #222;
-	padding: 12px 12px 14px;
-	overflow-y: auto;
-}
-#sidebar h2 {
-	margin: 0 0 8px;
-	font-size: 11px;
-	letter-spacing: 0.1em;
-	text-transform: uppercase;
-	color: #666;
-}
-#summary-list,
-#outline-list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-#summary-list li {
-	display: flex;
-	gap: 8px;
-	margin: 0 0 6px;
-	font-size: 12px;
-}
-.label {
-	color: #777;
-	min-width: 72px;
-}
-.value {
-	color: #ccc;
-	overflow-wrap: anywhere;
-	word-break: break-word;
-}
-#notices {
-	margin: 0 0 12px;
-}
-.notice {
-	margin: 0 0 8px;
-	padding: 8px 10px;
-	border: 1px solid #333;
-	background: #101010;
-	color: #ddd;
-	font-size: 12px;
-	overflow-wrap: anywhere;
-	word-break: break-word;
-}
-.notice.error {
-	border-color: #563232;
-	background: #1a0f0f;
-	color: #ffadad;
-}
-#outline-list li {
-	margin: 0 0 4px;
-	font-size: 12px;
-	color: #aaa;
-	white-space: normal;
-	overflow-wrap: anywhere;
-	word-break: break-word;
-}
-#outline-list ul {
-	list-style: none;
-	margin: 4px 0 0;
-	padding-left: 14px;
-	border-left: 1px solid #1c1c1c;
-}
-#sidebar-footer {
-	margin-top: 12px;
-	padding-top: 10px;
-	border-top: 1px solid #222;
-}
-#raw-toggle {
-	display: inline-block;
-	color: #ccc;
-	text-decoration: none;
-	font-size: 12px;
-	padding: 4px 8px;
-	border: 1px solid #444;
-	border-radius: 2px;
-}
-#raw-toggle:hover {
-	background: #1a1a1a;
-	color: #fff;
-}
-#resizer {
-	position: fixed;
-	top: 0;
-	left: calc(var(--sidebar-width) - 3px);
-	width: 6px;
-	height: 100vh;
-	cursor: col-resize;
-	background: transparent;
-	z-index: 20;
-}
-#resizer:hover {
-	background: #222;
-}
-#resizer.is-dragging {
-	background: #333;
-}
-#main {
-	margin-left: var(--sidebar-width);
-	width: calc(100vw - var(--sidebar-width));
-	padding: 16px 24px;
-}
-#json-view {
-	margin: 0;
-	white-space: pre-wrap;
-	overflow-wrap: anywhere;
-	word-break: break-word;
-	font-family: "Consolas", "Cascadia Code", "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace;
-	line-height: 1.45;
-	color: #ddd;
-}
-.json-key {
-	color: #93c5fd;
-	font-weight: 700;
-}
-.json-string {
-	color: #86efac;
-}
-.json-number {
-	color: #fdba74;
-}
-.json-bool {
-	color: #c4b5fd;
-}
-.json-null {
-	color: #9ca3af;
-}
-.json-node.is-hovered {
-	background: rgba(62, 208, 255, 0.2);
-	color: #fff;
-	font-weight: 700;
-	text-shadow: 0 0 8px rgba(56, 189, 248, 0.55);
-	border-radius: 2px;
-}
-#outline-list li.is-hovered > .value {
-	display: inline-block;
-	background: rgba(56, 189, 248, 0.2);
-	padding: 1px 4px;
-	margin: 0 1px;
-	color: #fff;
-	font-weight: 700;
-	text-shadow: 0 0 8px rgba(56, 189, 248, 0.55);
-	border-radius: 2px;
-}
-#outline-list li.is-hovered > .value strong {
-	font-weight: 800;
-}
-.json-node.is-hovered .json-key {
-	font-weight: 800;
-	text-shadow: 0 0 8px rgba(147, 197, 253, 0.5);
-}
-</style>
+__MAIN_CSS_LINK__
 </head>
-<body>
+<body class="mclocks-json">
 <aside id="sidebar">
 <h2>Summary</h2>
 <ul id="summary-list">__SUMMARY_ITEMS__</ul>
@@ -198,86 +25,7 @@ body {
 <main id="main">
 <pre id="json-view">__JSON_VIEW_HTML__</pre>
 </main>
-<script>
-const root = document.documentElement;
-const resizer = document.getElementById("resizer");
-const MIN_SIDEBAR_WIDTH = 220;
-const MAX_SIDEBAR_WIDTH = 680;
-const SIDEBAR_WIDTH_STORAGE_KEY = "mclocks-json-sidebar-width";
-
-const storedWidthRaw = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
-if (storedWidthRaw !== null) {
-	const storedWidth = Number(storedWidthRaw);
-	if (Number.isFinite(storedWidth)) {
-		const clamped = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, storedWidth));
-		root.style.setProperty("--sidebar-width", `${clamped}px`);
-	}
-}
-
-let isResizing = false;
-const setSidebarWidth = (rawWidth) => {
-	const clamped = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, rawWidth));
-	root.style.setProperty("--sidebar-width", `${clamped}px`);
-	localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(clamped));
-};
-
-resizer.addEventListener("mousedown", (e) => {
-	e.preventDefault();
-	isResizing = true;
-	resizer.classList.add("is-dragging");
-});
-
-window.addEventListener("mousemove", (e) => {
-	if (!isResizing) {
-		return;
-	}
-	setSidebarWidth(e.clientX);
-});
-
-window.addEventListener("mouseup", () => {
-	if (!isResizing) {
-		return;
-	}
-	isResizing = false;
-	resizer.classList.remove("is-dragging");
-});
-
-const cssEscape = (value) => {
-	if (window.CSS && typeof window.CSS.escape === "function") {
-		return window.CSS.escape(value);
-	}
-	return String(value).replaceAll("\\", "\\\\").replaceAll("\"", "\\\"");
-};
-const outlineItems = document.querySelectorAll("#outline-list li[data-path]");
-let activeOutlineItem = null;
-let activeJsonNodes = [];
-const clearHover = () => {
-	if (activeOutlineItem) {
-		activeOutlineItem.classList.remove("is-hovered");
-		activeOutlineItem = null;
-	}
-	activeJsonNodes.forEach((node) => node.classList.remove("is-hovered"));
-	activeJsonNodes = [];
-};
-outlineItems.forEach((item) => {
-	item.addEventListener("mouseenter", () => {
-		clearHover();
-		const path = item.getAttribute("data-path");
-		if (!path) {
-			return;
-		}
-		const nodes = document.querySelectorAll(`#json-view [data-path="${cssEscape(path)}"]`);
-		if (nodes.length === 0) {
-			return;
-		}
-		activeOutlineItem = item;
-		activeOutlineItem.classList.add("is-hovered");
-		activeJsonNodes = Array.from(nodes);
-		activeJsonNodes.forEach((node) => node.classList.add("is-hovered"));
-	});
-	item.addEventListener("mouseleave", clearHover);
-});
-</script>
+__MAIN_JS_SCRIPT__
 </body>
 </html>
 "##;
@@ -355,6 +103,20 @@ fn push_indent(out: &mut String, indent: usize) {
     }
 }
 
+fn inject_indent_after_opening_tag(html: &str, indent: usize) -> String {
+    if let Some(tag_end) = html.find('>') {
+        let mut out = String::with_capacity(html.len() + indent);
+        out.push_str(&html[..=tag_end]);
+        push_indent(&mut out, indent);
+        out.push_str(&html[tag_end + 1..]);
+        return out;
+    }
+    let mut out = String::with_capacity(html.len() + indent);
+    push_indent(&mut out, indent);
+    out.push_str(html);
+    out
+}
+
 fn render_colorized_json(value: &Value) -> String {
     let mut out = String::new();
     render_colorized_json_with_indent(value, "", 0, &mut out);
@@ -421,9 +183,15 @@ fn render_colorized_json_with_indent(value: &Value, path: &str, indent: usize, o
             inner.push('\n');
             let len = arr.len();
             for (idx, child) in arr.iter().enumerate() {
-                push_indent(&mut inner, indent + 2);
                 let child_path = child_path(path, &idx.to_string());
-                render_colorized_json_with_indent(child, &child_path, indent + 2, &mut inner);
+                if matches!(child, Value::Object(_) | Value::Array(_)) {
+                    let mut child_inner = String::new();
+                    render_colorized_json_with_indent(child, &child_path, indent + 2, &mut child_inner);
+                    inner.push_str(&inject_indent_after_opening_tag(&child_inner, indent + 2));
+                } else {
+                    push_indent(&mut inner, indent + 2);
+                    render_colorized_json_with_indent(child, &child_path, indent + 2, &mut inner);
+                }
                 if idx + 1 < len {
                     inner.push(',');
                 }
@@ -584,6 +352,7 @@ pub fn is_json_file(path: &Path) -> bool {
 pub fn create_json_response(
     file_path: &Path,
     json_source: &str,
+    markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     raw_content_toggle_href: &str,
     source_size_bytes: usize,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -644,8 +413,20 @@ pub fn create_json_response(
     let summary_items =
         render_summary_items(&root_type, children_count, source_size_bytes, &view_status);
 
+    let (main_css_link, main_js_script) = match markdown_highlight {
+        Some(cfg) => (
+            format!(
+                "<link rel=\"stylesheet\" href=\"{}\" />",
+                html_escape(&cfg.main_css_url)
+            ),
+            format!("<script src=\"{}\"></script>", html_escape(&cfg.main_js_url)),
+        ),
+        None => ("".to_string(), "".to_string()),
+    };
     let html = JSON_VIEW_TEMPLATE
         .replace("__PAGE_TITLE__", &page_title)
+        .replace("__MAIN_CSS_LINK__", &main_css_link)
+        .replace("__MAIN_JS_SCRIPT__", &main_js_script)
         .replace("__SUMMARY_ITEMS__", &summary_items)
         .replace("__NOTICE_ITEMS__", &notices_html)
         .replace("__OUTLINE_ITEMS__", &outline_items)
