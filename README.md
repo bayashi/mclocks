@@ -16,9 +16,11 @@
 
 ----------
 
-The desktop clock application for multiple time zones🕒🌍🕕 
+<p align="center">The desktop clock application for multiple time zones🕒🌍🕕</p>
 
-![screenshot](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png)
+<p align="center">
+<img src="https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png" alt="screenshot" />
+</p>
 
 Clock-related features:
 
