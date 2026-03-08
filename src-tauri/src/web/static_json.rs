@@ -9,6 +9,7 @@ const JSON_VIEW_TEMPLATE: &str = r##"<!doctype html>
 <meta charset="UTF-8" />
 <title>__PAGE_TITLE__</title>
 __MAIN_CSS_LINK__
+__STATIC_JSON_CSS_LINK__
 </head>
 <body class="mclocks-json">
 <aside id="sidebar">
@@ -26,6 +27,7 @@ __MAIN_CSS_LINK__
 <pre id="json-view">__JSON_VIEW_HTML__</pre>
 </main>
 __MAIN_JS_SCRIPT__
+__STATIC_JSON_JS_SCRIPT__
 </body>
 </html>
 "##;
@@ -413,20 +415,35 @@ pub fn create_json_response(
     let summary_items =
         render_summary_items(&root_type, children_count, source_size_bytes, &view_status);
 
-    let (main_css_link, main_js_script) = match markdown_highlight {
+    let (main_css_link, static_json_css_link, main_js_script, static_json_js_script) = match markdown_highlight {
         Some(cfg) => (
             format!(
                 "<link rel=\"stylesheet\" href=\"{}\" />",
                 html_escape(&cfg.main_css_url)
             ),
+            format!(
+                "<link rel=\"stylesheet\" href=\"{}\" />",
+                html_escape(&cfg.static_json_css_url)
+            ),
             format!("<script src=\"{}\"></script>", html_escape(&cfg.main_js_url)),
+            format!(
+                "<script src=\"{}\"></script>",
+                html_escape(&cfg.static_json_js_url)
+            ),
         ),
-        None => ("".to_string(), "".to_string()),
+        None => (
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+        ),
     };
     let html = JSON_VIEW_TEMPLATE
         .replace("__PAGE_TITLE__", &page_title)
         .replace("__MAIN_CSS_LINK__", &main_css_link)
+        .replace("__STATIC_JSON_CSS_LINK__", &static_json_css_link)
         .replace("__MAIN_JS_SCRIPT__", &main_js_script)
+        .replace("__STATIC_JSON_JS_SCRIPT__", &static_json_js_script)
         .replace("__SUMMARY_ITEMS__", &summary_items)
         .replace("__NOTICE_ITEMS__", &notices_html)
         .replace("__OUTLINE_ITEMS__", &outline_items)

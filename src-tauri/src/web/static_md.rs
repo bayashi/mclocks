@@ -11,6 +11,7 @@ const MARKDOWN_RENDER_TEMPLATE: &str = r##"<!doctype html>
 <meta charset="UTF-8" />
 <title>__PAGE_TITLE__</title>
 __MAIN_CSS_LINK__
+__STATIC_MD_CSS_LINK__
 __HIGHLIGHT_CSS_LINK__
 </head>
 <body class="mclocks-md">
@@ -27,6 +28,7 @@ __HIGHLIGHT_CSS_LINK__
 </div>
 __HIGHLIGHT_JS_SCRIPT__
 __MAIN_JS_SCRIPT__
+__STATIC_MD_JS_SCRIPT__
 </body>
 </html>
 "##;
@@ -236,13 +238,28 @@ pub fn create_markdown_response(
         .and_then(|s| s.to_str())
         .map(html_escape)
         .unwrap_or_else(|| "Markdown".to_string());
-    let (main_css_link, main_js_script, highlight_css_link, highlight_js_script) = match markdown_highlight {
+    let (
+        main_css_link,
+        static_md_css_link,
+        main_js_script,
+        static_md_js_script,
+        highlight_css_link,
+        highlight_js_script,
+    ) = match markdown_highlight {
         Some(cfg) => (
             format!(
                 "<link rel=\"stylesheet\" href=\"{}\" />",
                 html_escape(&cfg.main_css_url)
             ),
+            format!(
+                "<link rel=\"stylesheet\" href=\"{}\" />",
+                html_escape(&cfg.static_md_css_url)
+            ),
             format!("<script src=\"{}\"></script>", html_escape(&cfg.main_js_url)),
+            format!(
+                "<script src=\"{}\"></script>",
+                html_escape(&cfg.static_md_js_url)
+            ),
             format!(
                 "<link rel=\"stylesheet\" href=\"{}\" />",
                 html_escape(&cfg.css_url)
@@ -254,6 +271,8 @@ pub fn create_markdown_response(
             "".to_string(),
             "".to_string(),
             "".to_string(),
+            "".to_string(),
+            "".to_string(),
         ),
     };
     let html = MARKDOWN_RENDER_TEMPLATE
@@ -261,7 +280,9 @@ pub fn create_markdown_response(
         .replace("__TOC_ITEMS__", &toc_items_html)
         .replace("__RAW_TOGGLE_HREF__", &html_escape(raw_toggle_href))
         .replace("__MAIN_CSS_LINK__", &main_css_link)
+        .replace("__STATIC_MD_CSS_LINK__", &static_md_css_link)
         .replace("__MAIN_JS_SCRIPT__", &main_js_script)
+        .replace("__STATIC_MD_JS_SCRIPT__", &static_md_js_script)
         .replace("__HIGHLIGHT_CSS_LINK__", &highlight_css_link)
         .replace("__HIGHLIGHT_JS_SCRIPT__", &highlight_js_script)
         .replace("__RENDERED_HTML__", &rendered_html);

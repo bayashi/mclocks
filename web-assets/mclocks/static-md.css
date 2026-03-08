@@ -1,0 +1,143 @@
+body{
+	display:flex;
+	line-height:1.6;
+	--toc-width:200px;
+	color:#aaa;
+}
+
+#toc{
+	position:fixed;
+	top:0;
+	left:0;
+	width:var(--toc-width);
+	height:100vh;
+	overflow-y:auto;
+	background:#0a0a0a;
+	border-right:1px solid #222;
+	padding:16px 12px;
+	font-size:13px;
+	scrollbar-width:thin;
+	scrollbar-color:#333 transparent;
+}
+
+#toc h2{
+	color:#666;
+	font-size:11px;
+	letter-spacing:.1em;
+	text-transform:uppercase;
+	margin:0 0 12px 4px;
+}
+
+#toc ul{
+	list-style:none;
+	margin:0;
+	padding:0;
+}
+
+#toc li a{
+	display:block;
+	color:#555;
+	text-decoration:none;
+	padding:3px 4px;
+	border-radius:3px;
+	line-height:1.4;
+	transition:color .15s,background .15s;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+}
+
+#toc li a:hover{
+	color:#ccc;
+	background:#1a1a1a;
+}
+
+#toc li a.active{
+	color:#fff;
+	background:#1e1e1e;
+}
+
+#toc li[data-level="1"] a{
+	padding-left:4px;
+	font-weight:600;
+	color:#777;
+}
+
+#toc li[data-level="2"] a{
+	padding-left:12px;
+}
+
+#toc li[data-level="3"] a{
+	padding-left:24px;
+	font-size:12px;
+}
+
+#toc li[data-level="4"] a{
+	padding-left:36px;
+	font-size:11px;
+}
+
+#toc-footer{
+	padding-top:12px;
+	margin-top:12px;
+	border-top:1px solid #222;
+}
+
+#toc-resizer{
+	position:fixed;
+	top:0;
+	left:calc(var(--toc-width) - 3px);
+	width:6px;
+	height:100vh;
+	cursor:col-resize;
+	background:transparent;
+	z-index:20;
+}
+
+#toc-resizer:hover{
+	background:#222;
+}
+
+#toc-resizer.is-dragging{
+	background:#333;
+}
+
+#main{
+	margin-left:var(--toc-width);
+	padding:16px 24px;
+	width:calc(100vw - var(--toc-width));
+	overflow-wrap:anywhere;
+	word-break:break-word;
+}
+
+pre,
+code{
+	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;
+	overflow-wrap:anywhere;
+	word-break:break-word;
+}
+
+pre{
+	color:#fff;
+	padding-left:16px;
+	margin-bottom:0;
+	white-space:pre-wrap;
+}
+
+.copy-btn{
+	display:block;
+	margin-top:6px;
+	margin-left:16px;
+	padding:4px 8px;
+	background:#333;
+	color:#fff;
+	border:1px solid #555;
+	border-radius:2px;
+	cursor:pointer;
+	font-size:10px;
+	width:fit-content;
+}
+
+.copy-btn:hover{
+	background:#ccc;
+}
