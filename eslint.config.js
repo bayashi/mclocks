@@ -4,7 +4,7 @@ import globals from 'globals';
 export default [
   js.configs.recommended,
   {
-    ignores: ['dist/**', 'test/**', 'wdio.conf.js'],
+    ignores: ['dist/**', 'test/**', 'web-assets/**', 'wdio.conf.js'],
   },
   {
     files: ['src/**/*.js'],
