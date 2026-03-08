@@ -3,6 +3,28 @@ use serde_json::Value;
 use std::path::Path;
 use tiny_http::{Header, Response, StatusCode};
 
+#[derive(Clone, Copy)]
+enum StructuredDataFormat {
+    Json,
+    Yaml,
+}
+
+impl StructuredDataFormat {
+    fn file_label(self) -> &'static str {
+        match self {
+            StructuredDataFormat::Json => "JSON",
+            StructuredDataFormat::Yaml => "YAML",
+        }
+    }
+
+    fn invalid_prefix(self) -> &'static str {
+        match self {
+            StructuredDataFormat::Json => "Invalid JSON",
+            StructuredDataFormat::Yaml => "Invalid YAML",
+        }
+    }
+}
+
 const JSON_VIEW_TEMPLATE: &str = r##"<!doctype html>
 <html>
 <head>
@@ -356,20 +378,58 @@ pub fn is_json_file(path: &Path) -> bool {
     }
 }
 
-pub fn create_json_response(
+pub fn is_yaml_file(path: &Path) -> bool {
+    match path.extension().and_then(|s| s.to_str()) {
+        Some(ext) => ext.eq_ignore_ascii_case("yaml") || ext.eq_ignore_ascii_case("yml"),
+        None => false,
+    }
+}
+
+pub fn is_structured_data_file(path: &Path) -> bool {
+    is_json_file(path) || is_yaml_file(path)
+}
+
+fn detect_structured_data_format(path: &Path) -> StructuredDataFormat {
+    if is_yaml_file(path) {
+        StructuredDataFormat::Yaml
+    } else {
+        StructuredDataFormat::Json
+    }
+}
+
+fn parse_structured_data(
+    format: StructuredDataFormat,
+    source: &str,
+) -> Result<Value, serde_json::Error> {
+    match format {
+        StructuredDataFormat::Json => serde_json::from_str::<Value>(source),
+        StructuredDataFormat::Yaml => match serde_yaml::from_str::<Value>(source) {
+            Ok(value) => Ok(value),
+            Err(err) => {
+                let message = format!("{}: {}", StructuredDataFormat::Yaml.invalid_prefix(), err);
+                let io_err = std::io::Error::new(std::io::ErrorKind::InvalidData, message);
+                Err(serde_json::Error::io(io_err))
+            }
+        },
+    }
+}
+
+pub fn create_structured_data_response(
     file_path: &Path,
-    json_source: &str,
+    source: &str,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     raw_content_toggle_href: &str,
     source_size_bytes: usize,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
+    let format = detect_structured_data_format(file_path);
+    let file_label = format.file_label();
     let page_title = file_path
         .file_name()
         .and_then(|s| s.to_str())
         .map(html_escape)
-        .unwrap_or_else(|| "JSON".to_string());
+        .unwrap_or_else(|| file_label.to_string());
     let should_colorize = source_size_bytes <= JSON_COLORIZE_LIMIT_BYTES;
-    let parsed = serde_json::from_str::<Value>(json_source);
+    let parsed = parse_structured_data(format, source);
 
     let (root_type, children_count, json_html, outline_items, notices_html, view_status) =
         match parsed {
@@ -380,7 +440,7 @@ pub fn create_json_response(
                 } else {
                     match serde_json::to_string_pretty(&value) {
                         Ok(pretty) => html_escape(&pretty),
-                        Err(_) => html_escape(json_source),
+                        Err(_) => html_escape(source),
                     }
                 };
                 (
@@ -397,21 +457,24 @@ pub fn create_json_response(
                 )
             }
             Err(err) => {
-                let mut invalid_status = format!(
-                    "Parse Error: {} (line {}, column {})",
-                    err,
-                    err.line(),
-                    err.column()
-                );
+                let mut invalid_status = format!("Parse Error: {}", err);
                 if !should_colorize {
                     invalid_status.push_str(" / Colorize: disabled >10 MB");
                 }
                 (
                     "invalid".to_string(),
                     0usize,
-                    html_escape(json_source),
+                    html_escape(source),
                     render_outline_items(None),
-                    render_notice_items(Some(&err)),
+                    if matches!(format, StructuredDataFormat::Json) {
+                        render_notice_items(Some(&err))
+                    } else {
+                        let mut html = String::new();
+                        html.push_str("<div class=\"notice error\">");
+                        html.push_str(&html_escape(&err.to_string()));
+                        html.push_str("</div>");
+                        html
+                    },
                     invalid_status,
                 )
             }

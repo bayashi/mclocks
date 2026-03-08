@@ -13,7 +13,7 @@ use super::handler_editor::handle_editor_request;
 use super::handler_resource_meta::{handle_resource_meta_request, is_resource_meta_request};
 use super::handler_slow::handle_slow_request;
 use super::handler_status::handle_status_request;
-use super::static_json::{create_json_response, is_json_file};
+use super::static_json::{create_structured_data_response, is_structured_data_file};
 use super::static_md::{
     build_raw_content_toggle_href, create_markdown_response, is_markdown_file,
     should_serve_raw_content,
@@ -424,10 +424,10 @@ fn create_file_response(
                     raw_content_toggle_href,
                 );
             }
-            if is_json_file(file_path.as_path()) && !serve_raw_content {
+            if is_structured_data_file(file_path.as_path()) && !serve_raw_content {
                 let encoding = detect_encoding(&content);
                 let (decoded, _, _) = encoding.decode(&content);
-                return create_json_response(
+                return create_structured_data_response(
                     file_path.as_path(),
                     &decoded,
                     markdown_highlight,
@@ -459,6 +459,7 @@ fn is_text_type(content_type: &str) -> bool {
     content_type.starts_with("text/")
         || content_type == "application/javascript"
         || content_type == "application/json"
+        || content_type == "application/yaml"
         || content_type == "image/svg+xml"
 }
 
@@ -468,6 +469,7 @@ pub fn get_content_type(path: &PathBuf) -> String {
         Some("css") => "text/css",
         Some("js") => "application/javascript",
         Some("json") => "application/json",
+        Some("yaml") | Some("yml") => "application/yaml",
         Some("md") => "text/markdown",
         Some("png") => "image/png",
         Some("jpg") | Some("jpeg") => "image/jpeg",
