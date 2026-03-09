@@ -1,4 +1,4 @@
-use super::static_structured_common::{
+use super::structured_renderer::{
     JSON_COLORIZE_LIMIT_BYTES, StructuredViewKind, build_html_response, child_path, classify_json,
     html_escape, push_indent, render_json_notice_items, render_outline_items, render_summary_items,
     wrap_json_node,
