@@ -73,8 +73,16 @@ pub struct WebMarkdownHighlightConfig {
     pub main_js_url: String,
     pub static_md_css_url: String,
     pub static_md_js_url: String,
+    pub static_structured_common_css_url: String,
+    pub static_structured_common_js_url: String,
     pub static_json_css_url: String,
     pub static_json_js_url: String,
+    pub static_yaml_css_url: String,
+    pub static_yaml_js_url: String,
+    pub static_toml_css_url: String,
+    pub static_toml_js_url: String,
+    pub static_ini_css_url: String,
+    pub static_ini_js_url: String,
     pub css_url: String,
     pub js_url: String,
 }
@@ -168,21 +176,44 @@ const EMBEDDED_HIGHLIGHT_JS: &str = include_str!("../../web-assets/highlight/hig
 const EMBEDDED_HIGHLIGHT_CSS: &str = include_str!("../../web-assets/highlight/github-dark.min.css");
 const EMBEDDED_MCLOCKS_MAIN_CSS: &str = include_str!("../../web-assets/mclocks/main.css");
 const EMBEDDED_MCLOCKS_MAIN_JS: &str = include_str!("../../web-assets/mclocks/main.js");
-const EMBEDDED_MCLOCKS_STATIC_MD_CSS: &str = include_str!("../../web-assets/mclocks/static-md.css");
-const EMBEDDED_MCLOCKS_STATIC_MD_JS: &str = include_str!("../../web-assets/mclocks/static-md.js");
+const EMBEDDED_MCLOCKS_STATIC_MD_CSS: &str = include_str!("../../web-assets/mclocks/static/md.css");
+const EMBEDDED_MCLOCKS_STATIC_MD_JS: &str = include_str!("../../web-assets/mclocks/static/md.js");
+const EMBEDDED_MCLOCKS_STATIC_STRUCTURED_COMMON_CSS: &str =
+    include_str!("../../web-assets/mclocks/static/structured-common.css");
+const EMBEDDED_MCLOCKS_STATIC_STRUCTURED_COMMON_JS: &str =
+    include_str!("../../web-assets/mclocks/static/structured-common.js");
 const EMBEDDED_MCLOCKS_STATIC_JSON_CSS: &str =
-    include_str!("../../web-assets/mclocks/static-json.css");
+    include_str!("../../web-assets/mclocks/static/json.css");
 const EMBEDDED_MCLOCKS_STATIC_JSON_JS: &str =
-    include_str!("../../web-assets/mclocks/static-json.js");
+    include_str!("../../web-assets/mclocks/static/json.js");
+const EMBEDDED_MCLOCKS_STATIC_YAML_CSS: &str =
+    include_str!("../../web-assets/mclocks/static/yaml.css");
+const EMBEDDED_MCLOCKS_STATIC_YAML_JS: &str =
+    include_str!("../../web-assets/mclocks/static/yaml.js");
+const EMBEDDED_MCLOCKS_STATIC_TOML_CSS: &str =
+    include_str!("../../web-assets/mclocks/static/toml.css");
+const EMBEDDED_MCLOCKS_STATIC_TOML_JS: &str =
+    include_str!("../../web-assets/mclocks/static/toml.js");
+const EMBEDDED_MCLOCKS_STATIC_INI_CSS: &str =
+    include_str!("../../web-assets/mclocks/static/ini.css");
+const EMBEDDED_MCLOCKS_STATIC_INI_JS: &str = include_str!("../../web-assets/mclocks/static/ini.js");
 const HIGHLIGHT_JS_REL_PATH: &str = "highlight/highlight.min.js";
 const HIGHLIGHT_CSS_REL_PATH: &str = "highlight/github-dark.min.css";
 const MCLOCKS_MAIN_JS_REL_PATH: &str = "mclocks/main.js";
 const MCLOCKS_MAIN_CSS_REL_PATH: &str = "mclocks/main.css";
-const MCLOCKS_STATIC_MD_JS_REL_PATH: &str = "mclocks/static-md.js";
-const MCLOCKS_STATIC_MD_CSS_REL_PATH: &str = "mclocks/static-md.css";
-const MCLOCKS_STATIC_JSON_JS_REL_PATH: &str = "mclocks/static-json.js";
-const MCLOCKS_STATIC_JSON_CSS_REL_PATH: &str = "mclocks/static-json.css";
-const MCLOCKS_ASSETS_VERSION: &str = "20260308-7";
+const MCLOCKS_STATIC_MD_JS_REL_PATH: &str = "mclocks/static/md.js";
+const MCLOCKS_STATIC_MD_CSS_REL_PATH: &str = "mclocks/static/md.css";
+const MCLOCKS_STATIC_STRUCTURED_COMMON_JS_REL_PATH: &str = "mclocks/static/structured-common.js";
+const MCLOCKS_STATIC_STRUCTURED_COMMON_CSS_REL_PATH: &str = "mclocks/static/structured-common.css";
+const MCLOCKS_STATIC_JSON_JS_REL_PATH: &str = "mclocks/static/json.js";
+const MCLOCKS_STATIC_JSON_CSS_REL_PATH: &str = "mclocks/static/json.css";
+const MCLOCKS_STATIC_YAML_JS_REL_PATH: &str = "mclocks/static/yaml.js";
+const MCLOCKS_STATIC_YAML_CSS_REL_PATH: &str = "mclocks/static/yaml.css";
+const MCLOCKS_STATIC_TOML_JS_REL_PATH: &str = "mclocks/static/toml.js";
+const MCLOCKS_STATIC_TOML_CSS_REL_PATH: &str = "mclocks/static/toml.css";
+const MCLOCKS_STATIC_INI_JS_REL_PATH: &str = "mclocks/static/ini.js";
+const MCLOCKS_STATIC_INI_CSS_REL_PATH: &str = "mclocks/static/ini.css";
+const MCLOCKS_ASSETS_VERSION: &str = "20260309-2";
 
 pub fn start_web_server(
     root: String,
@@ -250,6 +281,8 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
         .map_err(|e| format!("Failed to create markdown assets dir: {}", e))?;
     fs::create_dir_all(assets_root.join("mclocks"))
         .map_err(|e| format!("Failed to create mclocks assets dir: {}", e))?;
+    fs::create_dir_all(assets_root.join("mclocks").join("static"))
+        .map_err(|e| format!("Failed to create mclocks static assets dir: {}", e))?;
     fs::write(
         assets_root.join(HIGHLIGHT_JS_REL_PATH),
         EMBEDDED_HIGHLIGHT_JS,
@@ -274,22 +307,72 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
         assets_root.join(MCLOCKS_STATIC_MD_JS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_MD_JS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static-md.js: {}", e))?;
+    .map_err(|e| format!("Failed to write embedded mclocks static/md.js: {}", e))?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_MD_CSS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_MD_CSS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static-md.css: {}", e))?;
+    .map_err(|e| format!("Failed to write embedded mclocks static/md.css: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_STRUCTURED_COMMON_JS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_STRUCTURED_COMMON_JS,
+    )
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured-common.js: {}",
+            e
+        )
+    })?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_STRUCTURED_COMMON_CSS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_STRUCTURED_COMMON_CSS,
+    )
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured-common.css: {}",
+            e
+        )
+    })?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_JSON_JS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_JSON_JS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static-json.js: {}", e))?;
+    .map_err(|e| format!("Failed to write embedded mclocks static/json.js: {}", e))?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_JSON_CSS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_JSON_CSS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static-json.css: {}", e))?;
+    .map_err(|e| format!("Failed to write embedded mclocks static/json.css: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_YAML_JS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_YAML_JS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks static/yaml.js: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_YAML_CSS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_YAML_CSS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks static/yaml.css: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_TOML_JS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_TOML_JS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks static/toml.js: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_TOML_CSS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_TOML_CSS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks static/toml.css: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_INI_JS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_INI_JS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks static/ini.js: {}", e))?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_INI_CSS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_INI_CSS,
+    )
+    .map_err(|e| format!("Failed to write embedded mclocks static/ini.css: {}", e))?;
     Ok(assets_root.to_string_lossy().to_string())
 }
 
@@ -370,6 +453,14 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
             "http://127.0.0.1:{}/{}?v={}",
             assets_port, MCLOCKS_STATIC_MD_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
         ),
+        static_structured_common_css_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_STRUCTURED_COMMON_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_structured_common_js_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_STRUCTURED_COMMON_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
         static_json_css_url: format!(
             "http://127.0.0.1:{}/{}?v={}",
             assets_port, MCLOCKS_STATIC_JSON_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
@@ -377,6 +468,30 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         static_json_js_url: format!(
             "http://127.0.0.1:{}/{}?v={}",
             assets_port, MCLOCKS_STATIC_JSON_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_yaml_css_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_YAML_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_yaml_js_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_YAML_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_toml_css_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_TOML_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_toml_js_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_TOML_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_ini_css_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_INI_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_ini_js_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_INI_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
         ),
         css_url: format!(
             "http://127.0.0.1:{}/{}?v={}",
@@ -1113,8 +1228,12 @@ mod tests {
             "YAML view should include raw toggle link"
         );
         assert!(
-            body.contains("json-key") && body.contains("json-bool"),
+            body.contains("yaml-key") && body.contains("yaml-bool"),
             "YAML view should include colorized tokens"
+        );
+        assert!(
+            !body.contains("<span class=\"yaml-delim json-delim\">{</span>"),
+            "YAML view should render YAML content instead of JSON object delimiters"
         );
     }
 

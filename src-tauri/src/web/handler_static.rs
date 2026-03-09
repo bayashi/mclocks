@@ -13,11 +13,11 @@ use super::handler_editor::handle_editor_request;
 use super::handler_resource_meta::{handle_resource_meta_request, is_resource_meta_request};
 use super::handler_slow::handle_slow_request;
 use super::handler_status::handle_status_request;
-use super::static_json::{create_structured_data_response, is_structured_data_file};
 use super::static_md::{
     build_raw_content_toggle_href, create_markdown_response, is_markdown_file,
     should_serve_raw_content,
 };
+use super::static_structured::{create_structured_data_response, is_structured_data_file};
 use crate::web_server::WebMarkdownHighlightConfig;
 
 const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
