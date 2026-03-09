@@ -46,3 +46,4 @@ uuid = { version = "1", features = ["v4"] }
 base64 = "0.22"
 tempfile = "3"
 pulldown-cmark = "0.13.1"
+configparser = "3.1.0"

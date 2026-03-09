@@ -1152,6 +1152,94 @@ mod tests {
     }
 
     #[test]
+    fn test_handle_web_request_ini_family_extensions_render_html_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let ini_source = "[user]\nname=alice\nenabled=true\n";
+        for ext in ["ini", "config", "cfg"] {
+            let file_path = root_path.join(format!("settings.{}", ext));
+            fs::write(&file_path, ini_source).expect("Failed to create INI family test file");
+        }
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        for ext in ["ini", "config", "cfg"] {
+            let response = client
+                .get(&format!("http://127.0.0.1:{}/settings.{}", port, ext))
+                .send()
+                .expect("Failed to send request");
+            assert_eq!(response.status(), 200);
+            let content_type = response
+                .headers()
+                .get("content-type")
+                .expect("Content-Type header should exist")
+                .to_str()
+                .expect("Content-Type should be valid string");
+            assert!(
+                content_type.starts_with("text/html"),
+                "INI family view response should be HTML, got: {}",
+                content_type
+            );
+
+            let body = response.text().expect("Body should be readable");
+            assert!(
+                body.contains("id=\"summary-list\""),
+                "INI family view should include summary pane"
+            );
+            assert!(
+                body.contains("id=\"outline-list\""),
+                "INI family view should include outline pane"
+            );
+            assert!(
+                body.contains("id=\"raw-toggle\"")
+                    && body.contains(&format!("href=\"/settings.{}?raw=1\"", ext)),
+                "INI family view should include raw toggle link"
+            );
+            assert!(
+                body.contains("json-key") && body.contains("json-string"),
+                "INI family view should include colorized tokens"
+            );
+        }
+    }
+
+    #[test]
+    fn test_handle_web_request_ini_file_raw_query_returns_raw_ini() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let ini_file = root_path.join("raw.ini");
+        let ini_source = "[main]\nname=raw\ncount=1\n";
+        fs::write(&ini_file, ini_source).expect("Failed to create raw.ini");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/raw.ini?raw=1", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/plain"),
+            "Raw INI response should be text/plain, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(body, ini_source);
+    }
+
+    #[test]
     fn test_handle_web_request_toml_file_renders_html_view() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
@@ -1478,6 +1566,24 @@ mod tests {
     #[test]
     fn test_get_content_type_toml() {
         let path = PathBuf::from("data.toml");
+        assert_eq!(get_content_type(&path), "text/plain");
+    }
+
+    #[test]
+    fn test_get_content_type_ini() {
+        let path = PathBuf::from("settings.ini");
+        assert_eq!(get_content_type(&path), "text/plain");
+    }
+
+    #[test]
+    fn test_get_content_type_config() {
+        let path = PathBuf::from("settings.config");
+        assert_eq!(get_content_type(&path), "text/plain");
+    }
+
+    #[test]
+    fn test_get_content_type_cfg() {
+        let path = PathBuf::from("settings.cfg");
         assert_eq!(get_content_type(&path), "text/plain");
     }
 

@@ -1,4 +1,5 @@
 use crate::web_server::WebMarkdownHighlightConfig;
+use configparser::ini::Ini;
 use serde_json::Value;
 use std::path::Path;
 use tiny_http::{Header, Response, StatusCode};
@@ -8,6 +9,7 @@ enum StructuredDataFormat {
     Json,
     Yaml,
     Toml,
+    Ini,
 }
 
 impl StructuredDataFormat {
@@ -16,6 +18,7 @@ impl StructuredDataFormat {
             StructuredDataFormat::Json => "JSON",
             StructuredDataFormat::Yaml => "YAML",
             StructuredDataFormat::Toml => "TOML",
+            StructuredDataFormat::Ini => "INI",
         }
     }
 
@@ -24,6 +27,7 @@ impl StructuredDataFormat {
             StructuredDataFormat::Json => "Invalid JSON",
             StructuredDataFormat::Yaml => "Invalid YAML",
             StructuredDataFormat::Toml => "Invalid TOML",
+            StructuredDataFormat::Ini => "Invalid INI",
         }
     }
 }
@@ -401,8 +405,19 @@ pub fn is_toml_file(path: &Path) -> bool {
     }
 }
 
+pub fn is_ini_file(path: &Path) -> bool {
+    match path.extension().and_then(|s| s.to_str()) {
+        Some(ext) => {
+            ext.eq_ignore_ascii_case("ini")
+                || ext.eq_ignore_ascii_case("config")
+                || ext.eq_ignore_ascii_case("cfg")
+        }
+        None => false,
+    }
+}
+
 pub fn is_structured_data_file(path: &Path) -> bool {
-    is_json_file(path) || is_yaml_file(path) || is_toml_file(path)
+    is_json_file(path) || is_yaml_file(path) || is_toml_file(path) || is_ini_file(path)
 }
 
 fn detect_structured_data_format(path: &Path) -> StructuredDataFormat {
@@ -410,9 +425,45 @@ fn detect_structured_data_format(path: &Path) -> StructuredDataFormat {
         StructuredDataFormat::Yaml
     } else if is_toml_file(path) {
         StructuredDataFormat::Toml
+    } else if is_ini_file(path) {
+        StructuredDataFormat::Ini
     } else {
         StructuredDataFormat::Json
     }
+}
+
+fn parse_ini_to_json(source: &str) -> Result<Value, String> {
+    let mut parser = Ini::new();
+    let parsed = parser.read(source.to_string())?;
+    let mut root = serde_json::Map::new();
+    let mut global = serde_json::Map::new();
+    let mut sections = serde_json::Map::new();
+
+    for (section_name, entries) in parsed {
+        let mut section_map = serde_json::Map::new();
+        for (key, value) in entries {
+            section_map.insert(
+                key,
+                match value {
+                    Some(v) => Value::String(v),
+                    None => Value::Null,
+                },
+            );
+        }
+        if section_name.eq_ignore_ascii_case("default") {
+            for (key, value) in section_map {
+                global.insert(key, value);
+            }
+        } else {
+            sections.insert(section_name, Value::Object(section_map));
+        }
+    }
+
+    if !global.is_empty() {
+        root.insert("_global".to_string(), Value::Object(global));
+    }
+    root.insert("sections".to_string(), Value::Object(sections));
+    Ok(Value::Object(root))
 }
 
 fn parse_structured_data(
@@ -431,6 +482,14 @@ fn parse_structured_data(
         },
         StructuredDataFormat::Toml => match toml::from_str::<toml::Value>(source) {
             Ok(value) => Ok(convert_toml_to_json(value)),
+            Err(err) => {
+                let message = format!("{}: {}", format.invalid_prefix(), err);
+                let io_err = std::io::Error::new(std::io::ErrorKind::InvalidData, message);
+                Err(serde_json::Error::io(io_err))
+            }
+        },
+        StructuredDataFormat::Ini => match parse_ini_to_json(source) {
+            Ok(value) => Ok(value),
             Err(err) => {
                 let message = format!("{}: {}", format.invalid_prefix(), err);
                 let io_err = std::io::Error::new(std::io::ErrorKind::InvalidData, message);
