@@ -6,6 +6,12 @@ pub mod handler_resource_meta;
 pub mod handler_slow;
 pub mod handler_static;
 pub mod handler_status;
+pub mod static_ini;
+#[path = "static_json_new.rs"]
 pub mod static_json;
 pub mod static_md;
+pub mod static_structured;
+pub mod static_structured_common;
+pub mod static_toml;
+pub mod static_yaml;
 pub mod status_code;

@@ -1,0 +1,34 @@
+.json-key{
+	color:#93c5fd;
+	font-weight:700;
+}
+
+.json-string{
+	color:#86efac;
+}
+
+.json-number{
+	color:#fdba74;
+}
+
+.json-bool{
+	color:#c4b5fd;
+}
+
+.json-null{
+	color:#9ca3af;
+}
+
+.json-delim{
+	color:#ddd;
+}
+
+.json-node.is-hovered .json-key{
+	font-weight:800;
+	text-shadow:0 0 8px rgba(147,197,253,.5);
+}
+
+.json-node.is-hovered .json-delim{
+	font-weight:800;
+	text-shadow:0 0 8px rgba(56,189,248,.55);
+}

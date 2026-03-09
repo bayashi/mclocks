@@ -33,13 +33,11 @@
 			if (!path) {
 				return;
 			}
-
 			const nodes = document.querySelectorAll(`#json-view [data-path="${cssEscape(path)}"]`);
-			if (nodes.length === 0) {
+			const entryKeys = document.querySelectorAll(`#json-view [data-key-path="${cssEscape(path)}"]`);
+			if (nodes.length === 0 && entryKeys.length === 0) {
 				return;
 			}
-			const entryKeys = document.querySelectorAll(`#json-view [data-key-path="${cssEscape(path)}"]`);
-
 			activeOutlineItem = item;
 			activeOutlineItem.classList.add("is-hovered");
 			activeJsonNodes = Array.from(nodes);
