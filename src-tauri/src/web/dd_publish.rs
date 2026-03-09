@@ -90,6 +90,7 @@ fn is_supported_file(path: &Path) -> bool {
         Some("js") => true,
         Some("json") => true,
         Some("yaml") | Some("yml") => true,
+        Some("ini") | Some("config") | Some("cfg") => true,
         Some("toml") => true,
         Some("md") | Some("markdown") => true,
         Some("png") => true,
@@ -235,5 +236,20 @@ mod tests {
             result.is_ok(),
             "TOML file should be accepted for temp sharing"
         );
+    }
+
+    #[test]
+    fn test_register_temp_file_accepts_ini_family() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        for ext in ["ini", "config", "cfg"] {
+            let file_path = temp_dir.path().join(format!("sample.{}", ext));
+            fs::write(&file_path, "name=alice\n").expect("Failed to write INI family file");
+            let result = register_temp_file(&file_path);
+            assert!(
+                result.is_ok(),
+                "INI family file should be accepted for temp sharing: .{}",
+                ext
+            );
+        }
     }
 }
