@@ -137,6 +137,19 @@ body{
 	margin-bottom:12px;
 }
 
+#content a:link{
+	color:#7fb8ff;
+}
+
+#content a:visited{
+	color:#9b7bdb;
+}
+
+#content a:hover,
+#content a:focus-visible{
+	color:#b9d8ff;
+}
+
 pre,
 code{
 	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;

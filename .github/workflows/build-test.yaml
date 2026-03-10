@@ -11,6 +11,7 @@ on:
       - '**/.gitignore'
       - '**/dependabot.yml'
       - 'src-mcp/**'
+      - 'web-assets/**/*.css'
 
 jobs:
   setup:
