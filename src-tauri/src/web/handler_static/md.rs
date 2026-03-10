@@ -213,6 +213,7 @@ pub fn build_raw_content_toggle_href(url: &str) -> String {
     let mut parts = no_fragment.splitn(2, '?');
     let path = parts.next().unwrap_or("/");
     let query = parts.next().unwrap_or("");
+    let is_raw_mode = should_serve_raw_content(url);
     let mut kept_pairs: Vec<String> = Vec::new();
     for pair in query.split('&') {
         if pair.is_empty() {
@@ -224,8 +225,14 @@ pub fn build_raw_content_toggle_href(url: &str) -> String {
         }
         kept_pairs.push(pair.to_string());
     }
-    kept_pairs.push("raw=1".to_string());
-    format!("{}?{}", path, kept_pairs.join("&"))
+    if !is_raw_mode {
+        kept_pairs.push("raw=1".to_string());
+    }
+    if kept_pairs.is_empty() {
+        path.to_string()
+    } else {
+        format!("{}?{}", path, kept_pairs.join("&"))
+    }
 }
 
 pub fn create_markdown_response(
