@@ -3,6 +3,18 @@
 		window.mclocksSetupResizer("mclocks-json-sidebar-width", "resizer", 200, 400, "--sidebar-width");
 	}
 
+	const pathCopyBtn = document.getElementById("path-copy-btn");
+	const pathLabel = document.getElementById("main-header-path");
+	if (pathCopyBtn && pathLabel) {
+		pathCopyBtn.addEventListener("click", () => {
+			navigator.clipboard.writeText(pathLabel.textContent || "");
+			pathCopyBtn.textContent = "Copied!";
+			setTimeout(() => {
+				pathCopyBtn.textContent = "Copy";
+			}, 2000);
+		});
+	}
+
 	const cssEscape = (value) => {
 		if (window.CSS && typeof window.CSS.escape === "function") {
 			return window.CSS.escape(value);

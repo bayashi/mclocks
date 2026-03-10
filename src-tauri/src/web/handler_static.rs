@@ -7,17 +7,32 @@ use std::path::{Path, PathBuf};
 use tiny_http::{Header, Response, StatusCode};
 use urlencoding::{decode, encode};
 
-use super::common::create_error_response;
+#[path = "handler_static/ini.rs"]
+mod ini;
+#[path = "handler_static/json.rs"]
+mod json;
+#[path = "handler_static/md.rs"]
+mod md;
+#[path = "handler_static/structured_dispatcher.rs"]
+mod structured_dispatcher;
+#[path = "handler_static/structured_renderer.rs"]
+mod structured_renderer;
+#[path = "handler_static/toml.rs"]
+mod toml;
+#[path = "handler_static/yaml.rs"]
+mod yaml;
+
+use self::md::{
+    build_raw_content_toggle_href, create_markdown_response, is_markdown_file,
+    should_serve_raw_content,
+};
+use self::structured_dispatcher::{create_structured_data_response, is_structured_data_file};
+use super::common::{create_error_response, get_web_content_type};
 use super::handler_dump::handle_dump_request;
 use super::handler_editor::handle_editor_request;
 use super::handler_resource_meta::{handle_resource_meta_request, is_resource_meta_request};
 use super::handler_slow::handle_slow_request;
 use super::handler_status::handle_status_request;
-use super::static_md::{
-    build_raw_content_toggle_href, create_markdown_response, is_markdown_file,
-    should_serve_raw_content,
-};
-use super::static_structured::{create_structured_data_response, is_structured_data_file};
 use crate::web_server::WebMarkdownHighlightConfig;
 
 const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
@@ -471,24 +486,7 @@ fn is_text_type(content_type: &str) -> bool {
 }
 
 pub fn get_content_type(path: &PathBuf) -> String {
-    match path.extension().and_then(|s| s.to_str()) {
-        Some("html") => "text/html",
-        Some("css") => "text/css",
-        Some("js") => "application/javascript",
-        Some("json") => "application/json",
-        Some("yaml") | Some("yml") => "application/yaml",
-        Some("ini") | Some("config") | Some("cfg") => "text/plain",
-        Some("toml") => "text/plain",
-        Some("md") | Some("markdown") => "text/markdown",
-        Some("png") => "image/png",
-        Some("jpg") | Some("jpeg") => "image/jpeg",
-        Some("gif") => "image/gif",
-        Some("svg") => "image/svg+xml",
-        Some("ico") => "image/x-icon",
-        Some("txt") => "text/plain",
-        _ => "application/octet-stream",
-    }
-    .to_string()
+    get_web_content_type(path.as_path()).to_string()
 }
 
 pub fn handle_web_request(

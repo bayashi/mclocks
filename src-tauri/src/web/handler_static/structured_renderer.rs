@@ -21,12 +21,17 @@ __STRUCTURED_FORMAT_CSS_LINK__
 <div id="notices">__NOTICE_ITEMS__</div>
 <h2>Outline</h2>
 <ul id="outline-list">__OUTLINE_ITEMS__</ul>
-<div id="sidebar-footer">
-<a id="raw-toggle" href="__RAW_TOGGLE_HREF__">Raw</a>
-</div>
 </aside>
 <div id="resizer" aria-label="Resize sidebar" title="Drag to resize"></div>
 <main id="main">
+<div id="main-header">
+<div id="path-actions">
+<div id="main-header-path">__ABSOLUTE_PATH__</div>
+<button id="path-copy-btn" class="header-action-btn" type="button">Copy</button>
+</div>
+<a id="raw-toggle" class="header-action-btn" href="__RAW_TOGGLE_HREF__">Raw</a>
+</div>
+<div id="main-separator"></div>
 <pre id="json-view">__JSON_VIEW_HTML__</pre>
 </main>
 __MAIN_JS_SCRIPT__
@@ -256,6 +261,7 @@ pub fn push_indent(out: &mut String, indent: usize) {
 
 pub fn build_html_response(
     page_title: &str,
+    absolute_path: &str,
     json_html: &str,
     outline_items: &str,
     notices_html: &str,
@@ -340,6 +346,7 @@ pub fn build_html_response(
         .replace("__SUMMARY_ITEMS__", summary_items)
         .replace("__NOTICE_ITEMS__", notices_html)
         .replace("__OUTLINE_ITEMS__", outline_items)
+        .replace("__ABSOLUTE_PATH__", &html_escape(absolute_path))
         .replace("__RAW_TOGGLE_HREF__", &html_escape(raw_content_toggle_href))
         .replace("__JSON_VIEW_HTML__", json_html);
     let content_type = "text/html; charset=utf-8";

@@ -1,3 +1,4 @@
+use crate::web::common::format_display_path;
 use crate::web_server::WebMarkdownHighlightConfig;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
 use std::collections::HashMap;
@@ -18,12 +19,17 @@ __HIGHLIGHT_CSS_LINK__
 <nav id="toc">
 <h2>Index</h2>
 <ul id="toc-list">__TOC_ITEMS__</ul>
-<div id="toc-footer">
-<a id="raw-toggle" href="__RAW_TOGGLE_HREF__">Raw</a>
-</div>
 </nav>
 <div id="toc-resizer" aria-label="Resize TOC" title="Drag to resize"></div>
 <div id="main">
+<div id="main-header">
+<div id="path-actions">
+<div id="main-header-path">__ABSOLUTE_PATH__</div>
+<button id="path-copy-btn" class="header-action-btn" type="button">Copy</button>
+</div>
+<a id="raw-toggle" class="header-action-btn" href="__RAW_TOGGLE_HREF__">Raw</a>
+</div>
+<div id="main-separator"></div>
 <div id="content">__RENDERED_HTML__</div>
 </div>
 __HIGHLIGHT_JS_SCRIPT__
@@ -238,6 +244,7 @@ pub fn create_markdown_response(
         .and_then(|s| s.to_str())
         .map(html_escape)
         .unwrap_or_else(|| "Markdown".to_string());
+    let absolute_path = html_escape(&format_display_path(file_path));
     let (
         main_css_link,
         static_md_css_link,
@@ -281,6 +288,7 @@ pub fn create_markdown_response(
     let html = MARKDOWN_RENDER_TEMPLATE
         .replace("__PAGE_TITLE__", &page_title)
         .replace("__TOC_ITEMS__", &toc_items_html)
+        .replace("__ABSOLUTE_PATH__", &absolute_path)
         .replace("__RAW_TOGGLE_HREF__", &html_escape(raw_toggle_href))
         .replace("__MAIN_CSS_LINK__", &main_css_link)
         .replace("__STATIC_MD_CSS_LINK__", &static_md_css_link)

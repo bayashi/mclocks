@@ -1,7 +1,7 @@
-use super::static_ini::{create_ini_response, is_ini_file};
-use super::static_json::{create_json_response, is_json_file};
-use super::static_toml::{create_toml_response, is_toml_file};
-use super::static_yaml::{create_yaml_response, is_yaml_file};
+use super::ini::{create_ini_response, is_ini_file};
+use super::json::{create_json_response, is_json_file};
+use super::toml::{create_toml_response, is_toml_file};
+use super::yaml::{create_yaml_response, is_yaml_file};
 use crate::web_server::WebMarkdownHighlightConfig;
 use std::path::Path;
 use tiny_http::Response;

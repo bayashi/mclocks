@@ -1,3 +1,4 @@
+use super::common::is_supported_web_file;
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -83,26 +84,6 @@ pub fn register_temp_root(path: &Path) -> Result<String, String> {
     Ok(hash)
 }
 
-fn is_supported_file(path: &Path) -> bool {
-    match path.extension().and_then(|s| s.to_str()) {
-        Some("html") => true,
-        Some("css") => true,
-        Some("js") => true,
-        Some("json") => true,
-        Some("yaml") | Some("yml") => true,
-        Some("ini") | Some("config") | Some("cfg") => true,
-        Some("toml") => true,
-        Some("md") | Some("markdown") => true,
-        Some("png") => true,
-        Some("jpg") | Some("jpeg") => true,
-        Some("gif") => true,
-        Some("svg") => true,
-        Some("ico") => true,
-        Some("txt") => true,
-        _ => false,
-    }
-}
-
 pub fn register_temp_file(path: &Path) -> Result<String, String> {
     if !path.exists() {
         return Err(format!("File not found: {}", path.display()));
@@ -110,7 +91,7 @@ pub fn register_temp_file(path: &Path) -> Result<String, String> {
     if !path.is_file() {
         return Err(format!("Path is not a file: {}", path.display()));
     }
-    if !is_supported_file(path) {
+    if !is_supported_web_file(path) {
         return Err(format!("Unsupported file type: {}", path.display()));
     }
 
