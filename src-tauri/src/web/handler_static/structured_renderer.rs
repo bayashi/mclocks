@@ -121,8 +121,8 @@ pub fn render_summary_items(
     view_status: &str,
 ) -> String {
     let mut html = String::new();
+    let _ = root_type;
     let fields = [
-        ("Root", root_type.to_string()),
         ("Raw Size", raw_size_display(size_bytes)),
         (
             "Last Mod",

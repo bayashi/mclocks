@@ -949,6 +949,10 @@ mod tests {
             "Rendered markdown page should include heading ids"
         );
         assert!(
+            body.contains("id=\"summary-list\"") && body.contains("Summary"),
+            "Rendered markdown page should include summary pane"
+        );
+        assert!(
             body.contains("id=\"toc-list\"") && body.contains("Index"),
             "Rendered markdown page should include TOC"
         );
@@ -1032,6 +1036,10 @@ mod tests {
 
         let body = response.text().expect("Body should be readable");
         assert!(
+            body.contains("id=\"summary-list\"") && body.contains("Summary"),
+            "Rendered markdown(.markdown) page should include summary pane"
+        );
+        assert!(
             body.contains("id=\"toc-list\"") && body.contains("Index"),
             "Rendered markdown(.markdown) page should include TOC"
         );
@@ -1113,6 +1121,10 @@ mod tests {
         assert!(
             body.contains("id=\"summary-list\""),
             "JSON view should include summary pane"
+        );
+        assert!(
+            !body.contains("<span class=\"label\">Root</span>"),
+            "JSON summary should not include root label"
         );
         assert!(
             body.contains("id=\"outline-list\""),

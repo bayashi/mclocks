@@ -17,7 +17,7 @@ body{
 }
 
 #sidebar h2{
-	margin:0 0 8px;
+	margin:0 0 6px;
 	font-size:11px;
 	letter-spacing:.1em;
 	text-transform:uppercase;
@@ -29,6 +29,10 @@ body{
 	list-style:none;
 	margin:0;
 	padding:0;
+}
+
+#sidebar #summary-list{
+	margin:0 0 24px;
 }
 
 #summary-list li{
@@ -50,7 +54,7 @@ body{
 }
 
 #notices{
-	margin:0 0 12px;
+	margin:0;
 }
 
 .notice{
