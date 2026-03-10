@@ -18,12 +18,12 @@ __HIGHLIGHT_CSS_LINK__
 <nav id="toc">
 <h2>Index</h2>
 <ul id="toc-list">__TOC_ITEMS__</ul>
-<div id="toc-footer">
-<a id="raw-toggle" href="__RAW_TOGGLE_HREF__">Raw</a>
-</div>
 </nav>
 <div id="toc-resizer" aria-label="Resize TOC" title="Drag to resize"></div>
 <div id="main">
+<div id="main-header">
+<a id="raw-toggle" href="__RAW_TOGGLE_HREF__">Raw</a>
+</div>
 <div id="content">__RENDERED_HTML__</div>
 </div>
 __HIGHLIGHT_JS_SCRIPT__

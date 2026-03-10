@@ -77,12 +77,6 @@ body{
 	font-size:11px;
 }
 
-#toc-footer{
-	padding-top:12px;
-	margin-top:12px;
-	border-top:1px solid #222;
-}
-
 #toc-resizer{
 	position:fixed;
 	top:0;
@@ -108,6 +102,12 @@ body{
 	width:calc(100vw - var(--toc-width));
 	overflow-wrap:anywhere;
 	word-break:break-word;
+}
+
+#main-header{
+	display:flex;
+	justify-content:flex-end;
+	margin-bottom:8px;
 }
 
 pre,

@@ -86,12 +86,6 @@ body{
 	border-left:1px solid #1c1c1c;
 }
 
-#sidebar-footer{
-	margin-top:12px;
-	padding-top:10px;
-	border-top:1px solid #222;
-}
-
 #resizer{
 	position:fixed;
 	top:0;
@@ -115,6 +109,12 @@ body{
 	margin-left:var(--sidebar-width);
 	width:calc(100vw - var(--sidebar-width));
 	padding:16px 24px;
+}
+
+#main-header{
+	display:flex;
+	justify-content:flex-end;
+	margin-bottom:8px;
 }
 
 #json-view{

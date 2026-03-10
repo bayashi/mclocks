@@ -21,12 +21,12 @@ __STRUCTURED_FORMAT_CSS_LINK__
 <div id="notices">__NOTICE_ITEMS__</div>
 <h2>Outline</h2>
 <ul id="outline-list">__OUTLINE_ITEMS__</ul>
-<div id="sidebar-footer">
-<a id="raw-toggle" href="__RAW_TOGGLE_HREF__">Raw</a>
-</div>
 </aside>
 <div id="resizer" aria-label="Resize sidebar" title="Drag to resize"></div>
 <main id="main">
+<div id="main-header">
+<a id="raw-toggle" href="__RAW_TOGGLE_HREF__">Raw</a>
+</div>
 <pre id="json-view">__JSON_VIEW_HTML__</pre>
 </main>
 __MAIN_JS_SCRIPT__
