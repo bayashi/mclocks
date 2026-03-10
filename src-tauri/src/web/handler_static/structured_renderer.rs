@@ -116,7 +116,6 @@ fn raw_size_display(size: usize) -> String {
 
 pub fn render_summary_items(
     root_type: &str,
-    children: usize,
     size_bytes: usize,
     last_modified_ms: Option<u64>,
     view_status: &str,
@@ -124,7 +123,6 @@ pub fn render_summary_items(
     let mut html = String::new();
     let fields = [
         ("Root", root_type.to_string()),
-        ("Children", children.to_string()),
         ("Raw Size", raw_size_display(size_bytes)),
         (
             "Last Mod",

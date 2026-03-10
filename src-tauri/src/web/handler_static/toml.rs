@@ -145,7 +145,7 @@ pub fn create_toml_response(
             Err(serde_json::Error::io(io_err))
         }
     };
-    let (root_type, children_count, json_html, outline_items, notices_html, view_status) =
+    let (root_type, _children_count, json_html, outline_items, notices_html, view_status) =
         match parsed {
             Ok(value) => {
                 let (root_type, children_count) = classify_json(&value);
@@ -184,7 +184,6 @@ pub fn create_toml_response(
         };
     let summary_items = render_summary_items(
         &root_type,
-        children_count,
         source_size_bytes,
         get_last_modified_ms(file_path),
         &view_status,
