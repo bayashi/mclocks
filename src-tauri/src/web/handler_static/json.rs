@@ -3,6 +3,7 @@ use super::structured_renderer::{
     html_escape, push_indent, render_json_notice_items, render_outline_items, render_summary_items,
     wrap_json_node,
 };
+use crate::web::common::format_display_path;
 use crate::web_server::WebMarkdownHighlightConfig;
 use serde_json::Value;
 use std::path::Path;
@@ -148,6 +149,7 @@ pub fn create_json_response(
         .and_then(|s| s.to_str())
         .map(html_escape)
         .unwrap_or_else(|| "JSON".to_string());
+    let absolute_path = format_display_path(file_path);
     let should_colorize = source_size_bytes <= JSON_COLORIZE_LIMIT_BYTES;
     let parsed = serde_json::from_str::<Value>(source);
     let (root_type, children_count, json_html, outline_items, notices_html, view_status) =
@@ -194,6 +196,7 @@ pub fn create_json_response(
         render_summary_items(&root_type, children_count, source_size_bytes, &view_status);
     build_html_response(
         &page_title,
+        &absolute_path,
         &json_html,
         &outline_items,
         &notices_html,

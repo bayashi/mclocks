@@ -65,3 +65,16 @@ pub fn get_web_content_type(path: &Path) -> &'static str {
         _ => "application/octet-stream",
     }
 }
+
+pub fn format_display_path(path: &Path) -> String {
+    let raw = path.to_string_lossy();
+    if cfg!(windows) {
+        if let Some(rest) = raw.strip_prefix(r"\\?\UNC\") {
+            return format!(r"\\{}", rest);
+        }
+        if let Some(rest) = raw.strip_prefix(r"\\?\") {
+            return rest.to_string();
+        }
+    }
+    raw.to_string()
+}

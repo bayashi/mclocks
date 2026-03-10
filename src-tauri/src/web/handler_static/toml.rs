@@ -3,6 +3,7 @@ use super::structured_renderer::{
     convert_toml_to_json, html_escape, render_error_notice, render_outline_items,
     render_summary_items, wrap_json_node,
 };
+use crate::web::common::format_display_path;
 use crate::web_server::WebMarkdownHighlightConfig;
 use serde_json::Value;
 use std::path::Path;
@@ -134,6 +135,7 @@ pub fn create_toml_response(
         .and_then(|s| s.to_str())
         .map(html_escape)
         .unwrap_or_else(|| "TOML".to_string());
+    let absolute_path = format_display_path(file_path);
     let should_colorize = source_size_bytes <= JSON_COLORIZE_LIMIT_BYTES;
     let parsed = match toml::from_str::<toml::Value>(source) {
         Ok(value) => Ok(convert_toml_to_json(value)),
@@ -184,6 +186,7 @@ pub fn create_toml_response(
         render_summary_items(&root_type, children_count, source_size_bytes, &view_status);
     build_html_response(
         &page_title,
+        &absolute_path,
         &json_html,
         &outline_items,
         &notices_html,

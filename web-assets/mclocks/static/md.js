@@ -26,6 +26,18 @@
 		pre.parentNode.insertBefore(btn, pre.nextSibling);
 	});
 
+	const pathCopyBtn = document.getElementById("path-copy-btn");
+	const pathLabel = document.getElementById("main-header-path");
+	if (pathCopyBtn && pathLabel) {
+		pathCopyBtn.addEventListener("click", () => {
+			navigator.clipboard.writeText(pathLabel.textContent || "");
+			pathCopyBtn.textContent = "Copied!";
+			setTimeout(() => {
+				pathCopyBtn.textContent = "Copy";
+			}, 2000);
+		});
+	}
+
 	const tocList = document.getElementById("toc-list");
 	if (!tocList) {
 		return;
