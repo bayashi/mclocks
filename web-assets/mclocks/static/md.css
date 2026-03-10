@@ -25,13 +25,35 @@ body{
 	font-size:11px;
 	letter-spacing:.1em;
 	text-transform:uppercase;
-	margin:0 0 12px 4px;
+	margin:0 0 8px 4px;
 }
 
 #toc ul{
 	list-style:none;
 	margin:0;
 	padding:0;
+}
+
+#toc #summary-list{
+	margin:0 0 24px;
+}
+
+#summary-list li{
+	display:flex;
+	gap:4px;
+	margin:0 0 6px;
+	font-size:12px;
+}
+
+#summary-list .label{
+	color:#777;
+	min-width:58px;
+}
+
+#summary-list .value{
+	color:#ccc;
+	overflow-wrap:anywhere;
+	word-break:break-word;
 }
 
 #toc li a{

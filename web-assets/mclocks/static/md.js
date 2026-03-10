@@ -70,6 +70,39 @@
 		});
 	}
 
+	const summaryList = document.getElementById("summary-list");
+	if (summaryList) {
+		const pad2 = (n) => String(n).padStart(2, "0");
+		const toLocalTime = (value) => {
+			const n = Number(value);
+			if (!Number.isFinite(n)) {
+				return null;
+			}
+			const d = new Date(n);
+			const y = d.getFullYear();
+			const mo = pad2(d.getMonth() + 1);
+			const da = pad2(d.getDate());
+			const h = pad2(d.getHours());
+			const mi = pad2(d.getMinutes());
+			const s = pad2(d.getSeconds());
+			return `${y}-${mo}-${da} ${h}:${mi}:${s}`;
+		};
+		summaryList.querySelectorAll("li").forEach((item) => {
+			const label = item.querySelector(".label");
+			const value = item.querySelector(".value");
+			if (!label || !value) {
+				return;
+			}
+			if (label.textContent?.trim() !== "Last Mod") {
+				return;
+			}
+			const formatted = toLocalTime(value.textContent?.trim());
+			if (formatted) {
+				value.textContent = formatted;
+			}
+		});
+	}
+
 	const tocList = document.getElementById("toc-list");
 	if (!tocList) {
 		return;

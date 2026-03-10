@@ -2,7 +2,9 @@ use crate::web::common::format_display_path;
 use crate::web_server::WebMarkdownHighlightConfig;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
 use std::collections::HashMap;
+use std::fs;
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_http::{Header, Response, StatusCode};
 use urlencoding::encode;
 
@@ -17,6 +19,8 @@ __HIGHLIGHT_CSS_LINK__
 </head>
 <body class="mclocks-md" data-open-external-link-in-new-tab="__OPEN_EXTERNAL_LINK_IN_NEW_TAB__">
 <nav id="toc">
+<h2>Summary</h2>
+<ul id="summary-list">__SUMMARY_ITEMS__</ul>
 <h2>Index</h2>
 <ul id="toc-list">__TOC_ITEMS__</ul>
 </nav>
@@ -182,6 +186,62 @@ fn render_markdown_html(markdown_source: &str, allow_html_in_md: bool) -> String
     rendered_html
 }
 
+fn human_bytes(size: usize) -> String {
+    if size < 1024 {
+        return format!("{}B", size);
+    }
+    let kb = size as f64 / 1024.0;
+    if kb < 1024.0 {
+        return format!("{:.2}KB", kb);
+    }
+    let mb = kb / 1024.0;
+    if mb < 1024.0 {
+        return format!("{:.2}MB", mb);
+    }
+    let gb = mb / 1024.0;
+    format!("{:.2}GB", gb)
+}
+
+fn raw_size_display(size: usize) -> String {
+    human_bytes(size)
+}
+
+fn system_time_to_unix_ms(value: SystemTime) -> Option<u64> {
+    value
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .and_then(|duration| u64::try_from(duration.as_millis()).ok())
+}
+
+fn get_last_modified_ms(file_path: &Path) -> Option<u64> {
+    fs::metadata(file_path)
+        .ok()
+        .and_then(|metadata| metadata.modified().ok())
+        .and_then(system_time_to_unix_ms)
+}
+
+fn render_summary_items(size_bytes: usize, last_modified_ms: Option<u64>, status: &str) -> String {
+    let mut html = String::new();
+    let fields = [
+        ("Raw Size", raw_size_display(size_bytes)),
+        (
+            "Last Mod",
+            last_modified_ms
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "-".to_string()),
+        ),
+        ("Status", status.to_string()),
+    ];
+    for (label, value) in fields {
+        html.push_str("<li><span class=\"label\">");
+        html.push_str(label);
+        html.push_str("</span><span class=\"value\">");
+        html.push_str(&html_escape(&value));
+        html.push_str("</span></li>");
+    }
+    html
+}
+
 pub fn is_markdown_file(path: &Path) -> bool {
     match path.extension().and_then(|s| s.to_str()) {
         Some(ext) => ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("markdown"),
@@ -238,6 +298,7 @@ pub fn build_raw_content_toggle_href(url: &str) -> String {
 pub fn create_markdown_response(
     file_path: &Path,
     markdown_source: &str,
+    raw_size_bytes: usize,
     allow_html_in_md: bool,
     markdown_open_external_link_in_new_tab: bool,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
@@ -247,6 +308,11 @@ pub fn create_markdown_response(
     let rendered_html = render_markdown_html(markdown_source, allow_html_in_md);
     let rendered_html = inject_heading_ids(&rendered_html, &headings);
     let toc_items_html = build_toc_items_html(&headings);
+    let summary_items = render_summary_items(
+        raw_size_bytes,
+        get_last_modified_ms(file_path),
+        "Rendered Markdown",
+    );
     let page_title = file_path
         .file_name()
         .and_then(|s| s.to_str())
@@ -300,6 +366,7 @@ pub fn create_markdown_response(
     };
     let html = MARKDOWN_RENDER_TEMPLATE
         .replace("__PAGE_TITLE__", &page_title)
+        .replace("__SUMMARY_ITEMS__", &summary_items)
         .replace("__TOC_ITEMS__", &toc_items_html)
         .replace("__ABSOLUTE_PATH__", &absolute_path)
         .replace(

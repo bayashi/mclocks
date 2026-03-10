@@ -435,6 +435,7 @@ fn create_file_response(
                 return create_markdown_response(
                     file_path.as_path(),
                     &decoded,
+                    content.len(),
                     allow_html_in_md,
                     markdown_open_external_link_in_new_tab,
                     markdown_highlight,
