@@ -32,8 +32,10 @@
 		pathCopyBtn.addEventListener("click", () => {
 			navigator.clipboard.writeText(pathLabel.textContent || "");
 			pathCopyBtn.textContent = "Copied!";
+			pathCopyBtn.blur();
 			setTimeout(() => {
 				pathCopyBtn.textContent = "Copy";
+				pathCopyBtn.blur();
 			}, 2000);
 		});
 	}

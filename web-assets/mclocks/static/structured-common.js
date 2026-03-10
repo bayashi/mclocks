@@ -9,8 +9,10 @@
 		pathCopyBtn.addEventListener("click", () => {
 			navigator.clipboard.writeText(pathLabel.textContent || "");
 			pathCopyBtn.textContent = "Copied!";
+			pathCopyBtn.blur();
 			setTimeout(() => {
 				pathCopyBtn.textContent = "Copy";
+				pathCopyBtn.blur();
 			}, 2000);
 		});
 	}
@@ -23,6 +25,7 @@
 	};
 
 	const outlineItems = document.querySelectorAll("#outline-list li[data-path]");
+	const outlineList = document.getElementById("outline-list");
 	let activeOutlineItem = null;
 	let activeJsonNodes = [];
 	let activeJsonEntryKeys = [];
@@ -58,5 +61,16 @@
 			activeJsonEntryKeys.forEach((node) => node.classList.add("is-hovered"));
 		});
 		item.addEventListener("mouseleave", clearHover);
+	});
+
+	if (outlineList) {
+		outlineList.addEventListener("mouseleave", clearHover);
+	}
+	document.addEventListener("mouseleave", clearHover);
+	window.addEventListener("blur", clearHover);
+	document.addEventListener("visibilitychange", () => {
+		if (document.hidden) {
+			clearHover();
+		}
 	});
 })();

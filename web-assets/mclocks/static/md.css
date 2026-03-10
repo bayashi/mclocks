@@ -165,7 +165,7 @@ pre{
 }
 
 .copy-btn:hover{
-	background:#ccc;
+	background:#666;
 }
 
 #main-header .header-action-btn{
@@ -189,7 +189,7 @@ pre{
 }
 
 #main-header .header-action-btn:hover{
-	background:#ccc;
+	background:#666;
 	color:#fff;
 }
 
@@ -199,11 +199,18 @@ pre{
 }
 
 #main-header #path-copy-btn:hover,
-#main-header #raw-toggle:hover,
-#main-header #path-copy-btn:focus,
-#main-header #raw-toggle:focus,
-#main-header #path-copy-btn:active,
-#main-header #raw-toggle:active{
-	background:#ccc;
+#main-header #raw-toggle:hover{
+	background:#666;
 	color:#fff;
+}
+
+#main-header .header-action-btn:focus,
+#main-header .header-action-btn:active{
+	background:#333;
+	color:#fff;
+}
+
+#main-header .header-action-btn:focus-visible{
+	outline:1px solid #666;
+	outline-offset:1px;
 }
