@@ -1,4 +1,7 @@
 use crate::web_server::WebMarkdownHighlightConfig;
+use std::fs;
+use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_http::{Header, Response, StatusCode};
 
 pub const JSON_COLORIZE_LIMIT_BYTES: usize = 10 * 1024 * 1024;
@@ -111,6 +114,7 @@ pub fn render_summary_items(
     root_type: &str,
     children: usize,
     size_bytes: usize,
+    last_modified_ms: Option<u64>,
     view_status: &str,
 ) -> String {
     let mut html = String::new();
@@ -118,6 +122,12 @@ pub fn render_summary_items(
         ("Root", root_type.to_string()),
         ("Children", children.to_string()),
         ("Raw Size", human_bytes(size_bytes)),
+        (
+            "Last Mod",
+            last_modified_ms
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "-".to_string()),
+        ),
         ("Status", view_status.to_string()),
     ];
     for (label, value) in fields {
@@ -128,6 +138,20 @@ pub fn render_summary_items(
         html.push_str("</span></li>");
     }
     html
+}
+
+fn system_time_to_unix_ms(value: SystemTime) -> Option<u64> {
+    value
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .and_then(|duration| u64::try_from(duration.as_millis()).ok())
+}
+
+pub fn get_last_modified_ms(file_path: &Path) -> Option<u64> {
+    fs::metadata(file_path)
+        .ok()
+        .and_then(|metadata| metadata.modified().ok())
+        .and_then(system_time_to_unix_ms)
 }
 
 fn value_shape_label(value: &serde_json::Value) -> String {
