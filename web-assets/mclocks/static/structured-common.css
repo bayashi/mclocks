@@ -33,14 +33,14 @@ body{
 
 #summary-list li{
 	display:flex;
-	gap:8px;
+	gap:4px;
 	margin:0 0 6px;
 	font-size:12px;
 }
 
 .label{
 	color:#777;
-	min-width:72px;
+	min-width:58px;
 }
 
 .value{

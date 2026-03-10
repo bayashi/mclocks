@@ -15,7 +15,7 @@ __MAIN_CSS_LINK__
 __STATIC_MD_CSS_LINK__
 __HIGHLIGHT_CSS_LINK__
 </head>
-<body class="mclocks-md">
+<body class="mclocks-md" data-open-external-link-in-new-tab="__OPEN_EXTERNAL_LINK_IN_NEW_TAB__">
 <nav id="toc">
 <h2>Index</h2>
 <ul id="toc-list">__TOC_ITEMS__</ul>
@@ -239,6 +239,7 @@ pub fn create_markdown_response(
     file_path: &Path,
     markdown_source: &str,
     allow_html_in_md: bool,
+    markdown_open_external_link_in_new_tab: bool,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     raw_toggle_href: &str,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -252,6 +253,11 @@ pub fn create_markdown_response(
         .map(html_escape)
         .unwrap_or_else(|| "Markdown".to_string());
     let absolute_path = html_escape(&format_display_path(file_path));
+    let open_external_link_in_new_tab = if markdown_open_external_link_in_new_tab {
+        "true"
+    } else {
+        "false"
+    };
     let (
         main_css_link,
         static_md_css_link,
@@ -296,6 +302,10 @@ pub fn create_markdown_response(
         .replace("__PAGE_TITLE__", &page_title)
         .replace("__TOC_ITEMS__", &toc_items_html)
         .replace("__ABSOLUTE_PATH__", &absolute_path)
+        .replace(
+            "__OPEN_EXTERNAL_LINK_IN_NEW_TAB__",
+            open_external_link_in_new_tab,
+        )
         .replace("__RAW_TOGGLE_HREF__", &html_escape(raw_toggle_href))
         .replace("__MAIN_CSS_LINK__", &main_css_link)
         .replace("__STATIC_MD_CSS_LINK__", &static_md_css_link)

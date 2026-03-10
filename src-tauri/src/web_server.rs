@@ -29,6 +29,12 @@ pub struct WebMarkdownConfig {
         alias = "allowRawHtml"
     )]
     pub allow_raw_html: bool,
+    #[serde(
+        default = "df_markdown_open_external_link_in_new_tab",
+        rename = "openExternalLinkInNewTab",
+        alias = "openLinksInNewTab"
+    )]
+    pub open_external_link_in_new_tab: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -102,6 +108,7 @@ pub struct WebServerConfig {
     pub slow: bool,
     pub status: bool,
     pub allow_html_in_md: bool,
+    pub markdown_open_external_link_in_new_tab: bool,
     pub markdown_highlight: Option<WebMarkdownHighlightConfig>,
     pub assets_server: Option<WebAssetsServerConfig>,
     pub editor_repos_dir: Option<String>,
@@ -127,6 +134,9 @@ fn df_status() -> bool {
 }
 fn df_allow_html_in_md() -> bool {
     false
+}
+fn df_markdown_open_external_link_in_new_tab() -> bool {
+    true
 }
 
 const MIN_WEB_PORT: u16 = 2000;
@@ -222,6 +232,7 @@ pub fn start_web_server(
     slow_enabled: bool,
     status_enabled: bool,
     allow_html_in_md: bool,
+    markdown_open_external_link_in_new_tab: bool,
     markdown_highlight: Option<WebMarkdownHighlightConfig>,
     editor_repos_dir: Option<String>,
     editor_include_host: bool,
@@ -253,6 +264,7 @@ pub fn start_web_server(
                 slow_enabled,
                 status_enabled,
                 allow_html_in_md,
+                markdown_open_external_link_in_new_tab,
                 markdown_highlight.as_ref(),
                 &editor_repos_dir,
                 editor_include_host,
@@ -415,6 +427,12 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         .and_then(|c| c.markdown.as_ref())
         .map(|m| m.allow_raw_html)
         .unwrap_or(false);
+    let markdown_open_external_link_in_new_tab = web_config
+        .content
+        .as_ref()
+        .and_then(|c| c.markdown.as_ref())
+        .map(|m| m.open_external_link_in_new_tab)
+        .unwrap_or(true);
     let has_explicit_web_port = config_value.pointer("/web/port").is_some();
     let main_port = if has_explicit_web_port {
         if !is_local_port_available(web_config.port) {
@@ -528,6 +546,7 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         slow: web_config.slow,
         status: web_config.status,
         allow_html_in_md,
+        markdown_open_external_link_in_new_tab,
         markdown_highlight,
         assets_server,
         editor_repos_dir,
@@ -1827,6 +1846,7 @@ mod tests {
                     slow_enabled,
                     status_enabled,
                     allow_html_in_md,
+                    true,
                     None,
                     &None,
                     false,

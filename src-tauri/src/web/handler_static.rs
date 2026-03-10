@@ -422,6 +422,7 @@ fn detect_encoding(content: &[u8]) -> &'static Encoding {
 fn create_file_response(
     file_path: &PathBuf,
     allow_html_in_md: bool,
+    markdown_open_external_link_in_new_tab: bool,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     serve_raw_content: bool,
     raw_content_toggle_href: &str,
@@ -435,6 +436,7 @@ fn create_file_response(
                     file_path.as_path(),
                     &decoded,
                     allow_html_in_md,
+                    markdown_open_external_link_in_new_tab,
                     markdown_highlight,
                     raw_content_toggle_href,
                 );
@@ -496,6 +498,7 @@ pub fn handle_web_request(
     slow_enabled: bool,
     status_enabled: bool,
     allow_html_in_md: bool,
+    markdown_open_external_link_in_new_tab: bool,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     editor_repos_dir: &Option<String>,
     editor_include_host: bool,
@@ -510,6 +513,7 @@ pub fn handle_web_request(
         return create_file_response(
             &shared_file_path,
             allow_html_in_md,
+            markdown_open_external_link_in_new_tab,
             markdown_highlight,
             serve_raw_content,
             &raw_content_toggle_href,
@@ -621,6 +625,7 @@ pub fn handle_web_request(
                     return create_file_response(
                         &index_path,
                         allow_html_in_md,
+                        markdown_open_external_link_in_new_tab,
                         markdown_highlight,
                         serve_raw_content,
                         &raw_content_toggle_href,
@@ -644,6 +649,7 @@ pub fn handle_web_request(
                 return create_file_response(
                     &file_path,
                     allow_html_in_md,
+                    markdown_open_external_link_in_new_tab,
                     markdown_highlight,
                     serve_raw_content,
                     &raw_content_toggle_href,
@@ -661,6 +667,7 @@ pub fn handle_web_request(
                     return create_file_response(
                         &index_path,
                         allow_html_in_md,
+                        markdown_open_external_link_in_new_tab,
                         markdown_highlight,
                         serve_raw_content,
                         &raw_content_toggle_href,
@@ -680,6 +687,7 @@ pub fn handle_web_request(
             return create_file_response(
                 &index_path,
                 allow_html_in_md,
+                markdown_open_external_link_in_new_tab,
                 markdown_highlight,
                 serve_raw_content,
                 &raw_content_toggle_href,
@@ -693,6 +701,7 @@ pub fn handle_web_request(
     create_file_response(
         &normalized_path,
         allow_html_in_md,
+        markdown_open_external_link_in_new_tab,
         markdown_highlight,
         serve_raw_content,
         &raw_content_toggle_href,

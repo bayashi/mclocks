@@ -1,4 +1,34 @@
 (function(){
+	const normalizeOpenExternalLinkInNewTab = (value) => value !== "false";
+
+	const isExternalHref = (href) => {
+		try {
+			const resolved = new URL(href, window.location.href);
+			if (resolved.protocol === "http:" || resolved.protocol === "https:") {
+				return resolved.origin !== window.location.origin;
+			}
+			return true;
+		} catch (_) {
+			return false;
+		}
+	};
+
+	const applyContentLinkTargets = (openExternalLinkInNewTab) => {
+		document.querySelectorAll("#content a[href]").forEach((anchor) => {
+			const href = (anchor.getAttribute("href") || "").trim();
+			if (!href || href.startsWith("#") || !openExternalLinkInNewTab || !isExternalHref(href)) {
+				anchor.removeAttribute("target");
+				anchor.removeAttribute("rel");
+				return;
+			}
+			anchor.setAttribute("target", "_blank");
+			anchor.setAttribute("rel", "noopener noreferrer");
+		});
+	};
+
+	const openExternalLinkInNewTab = normalizeOpenExternalLinkInNewTab(document.body?.dataset?.openExternalLinkInNewTab);
+	applyContentLinkTargets(openExternalLinkInNewTab);
+
 	if (typeof window.mclocksSetupResizer === "function") {
 		window.mclocksSetupResizer("mclocks-md-toc-width", "toc-resizer", 200, 400, "--toc-width");
 	}

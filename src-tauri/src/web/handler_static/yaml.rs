@@ -1,7 +1,7 @@
 use super::structured_renderer::{
     JSON_COLORIZE_LIMIT_BYTES, StructuredViewKind, build_html_response, child_path, classify_json,
-    html_escape, push_indent, render_error_notice, render_outline_items, render_summary_items,
-    wrap_json_node,
+    get_last_modified_ms, html_escape, push_indent, render_error_notice, render_outline_items,
+    render_summary_items, wrap_json_node,
 };
 use crate::web::common::format_display_path;
 use crate::web_server::WebMarkdownHighlightConfig;
@@ -159,7 +159,7 @@ pub fn create_yaml_response(
             Err(serde_json::Error::io(io_err))
         }
     };
-    let (root_type, children_count, json_html, outline_items, notices_html, view_status) =
+    let (root_type, _children_count, json_html, outline_items, notices_html, view_status) =
         match parsed {
             Ok(value) => {
                 let (root_type, children_count) = classify_json(&value);
@@ -196,8 +196,12 @@ pub fn create_yaml_response(
                 )
             }
         };
-    let summary_items =
-        render_summary_items(&root_type, children_count, source_size_bytes, &view_status);
+    let summary_items = render_summary_items(
+        &root_type,
+        source_size_bytes,
+        get_last_modified_ms(file_path),
+        &view_status,
+    );
     build_html_response(
         &page_title,
         &absolute_path,

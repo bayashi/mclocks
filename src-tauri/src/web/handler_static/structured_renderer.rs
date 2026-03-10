@@ -1,4 +1,7 @@
 use crate::web_server::WebMarkdownHighlightConfig;
+use std::fs;
+use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_http::{Header, Response, StatusCode};
 
 pub const JSON_COLORIZE_LIMIT_BYTES: usize = 10 * 1024 * 1024;
@@ -93,31 +96,40 @@ pub fn classify_json(value: &serde_json::Value) -> (&'static str, usize) {
 
 fn human_bytes(size: usize) -> String {
     if size < 1024 {
-        return format!("{} B", size);
+        return format!("{}B", size);
     }
     let kb = size as f64 / 1024.0;
     if kb < 1024.0 {
-        return format!("{:.1} KB", kb);
+        return format!("{:.2}KB", kb);
     }
     let mb = kb / 1024.0;
     if mb < 1024.0 {
-        return format!("{:.1} MB", mb);
+        return format!("{:.2}MB", mb);
     }
     let gb = mb / 1024.0;
-    format!("{:.2} GB", gb)
+    format!("{:.2}GB", gb)
+}
+
+fn raw_size_display(size: usize) -> String {
+    human_bytes(size)
 }
 
 pub fn render_summary_items(
     root_type: &str,
-    children: usize,
     size_bytes: usize,
+    last_modified_ms: Option<u64>,
     view_status: &str,
 ) -> String {
     let mut html = String::new();
     let fields = [
         ("Root", root_type.to_string()),
-        ("Children", children.to_string()),
-        ("Raw Size", human_bytes(size_bytes)),
+        ("Raw Size", raw_size_display(size_bytes)),
+        (
+            "Last Mod",
+            last_modified_ms
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "-".to_string()),
+        ),
         ("Status", view_status.to_string()),
     ];
     for (label, value) in fields {
@@ -128,6 +140,20 @@ pub fn render_summary_items(
         html.push_str("</span></li>");
     }
     html
+}
+
+fn system_time_to_unix_ms(value: SystemTime) -> Option<u64> {
+    value
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .and_then(|duration| u64::try_from(duration.as_millis()).ok())
+}
+
+pub fn get_last_modified_ms(file_path: &Path) -> Option<u64> {
+    fs::metadata(file_path)
+        .ok()
+        .and_then(|metadata| metadata.modified().ok())
+        .and_then(system_time_to_unix_ms)
 }
 
 fn value_shape_label(value: &serde_json::Value) -> String {
