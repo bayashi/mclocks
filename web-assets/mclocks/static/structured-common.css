@@ -114,14 +114,14 @@ body{
 #main-header{
 	display:flex;
 	justify-content:space-between;
-	align-items:flex-start;
+	align-items:center;
 	gap:8px;
 	margin-bottom:8px;
 }
 
 #path-actions{
 	display:flex;
-	align-items:flex-start;
+	align-items:center;
 	gap:8px;
 	flex:1;
 	min-width:0;
@@ -130,6 +130,7 @@ body{
 #main-header-path{
 	flex:0 1 auto;
 	min-width:0;
+	line-height:1.2;
 	color:#777;
 	font-size:12px;
 	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;
@@ -206,6 +207,12 @@ body{
 #main-header .header-action-btn:focus-visible{
 	outline:1px solid #666;
 	outline-offset:1px;
+}
+
+#main-header #path-copy-btn{
+	padding:3px 7px;
+	min-height:20px;
+	font-size:9px;
 }
 
 #json-view{
