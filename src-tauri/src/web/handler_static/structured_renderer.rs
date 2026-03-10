@@ -96,18 +96,22 @@ pub fn classify_json(value: &serde_json::Value) -> (&'static str, usize) {
 
 fn human_bytes(size: usize) -> String {
     if size < 1024 {
-        return format!("{} B", size);
+        return format!("{}B", size);
     }
     let kb = size as f64 / 1024.0;
     if kb < 1024.0 {
-        return format!("{:.1} KB", kb);
+        return format!("{:.2}KB", kb);
     }
     let mb = kb / 1024.0;
     if mb < 1024.0 {
-        return format!("{:.1} MB", mb);
+        return format!("{:.2}MB", mb);
     }
     let gb = mb / 1024.0;
-    format!("{:.2} GB", gb)
+    format!("{:.2}GB", gb)
+}
+
+fn raw_size_display(size: usize) -> String {
+    human_bytes(size)
 }
 
 pub fn render_summary_items(
@@ -121,7 +125,7 @@ pub fn render_summary_items(
     let fields = [
         ("Root", root_type.to_string()),
         ("Children", children.to_string()),
-        ("Raw Size", human_bytes(size_bytes)),
+        ("Raw Size", raw_size_display(size_bytes)),
         (
             "Last Mod",
             last_modified_ms
