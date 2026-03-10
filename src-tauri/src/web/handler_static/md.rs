@@ -1,5 +1,5 @@
-use crate::web_server::WebMarkdownHighlightConfig;
 use crate::web::common::format_display_path;
+use crate::web_server::WebMarkdownHighlightConfig;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
 use std::collections::HashMap;
 use std::path::Path;
