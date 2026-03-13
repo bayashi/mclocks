@@ -97,7 +97,7 @@ pub fn create_ini_response(
     file_path: &Path,
     source: &str,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
-    raw_content_toggle_href: &str,
+    mode_switch_html: &str,
     source_size_bytes: usize,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let page_title = file_path
@@ -165,7 +165,7 @@ pub fn create_ini_response(
         &outline_items,
         &notices_html,
         &summary_items,
-        raw_content_toggle_href,
+        mode_switch_html,
         markdown_highlight,
         StructuredViewKind::Ini,
     )

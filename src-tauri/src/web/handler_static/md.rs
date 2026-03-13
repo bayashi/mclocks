@@ -31,7 +31,7 @@ __HIGHLIGHT_CSS_LINK__
 <div id="main-header-path">__ABSOLUTE_PATH__</div>
 <button id="path-copy-btn" class="header-action-btn" type="button">Copy</button>
 </div>
-<a id="raw-toggle" class="header-action-btn" href="__RAW_TOGGLE_HREF__">Raw</a>
+__MODE_SWITCH_HTML__
 </div>
 <div id="main-separator"></div>
 <div id="content">__RENDERED_HTML__</div>
@@ -249,52 +249,6 @@ pub fn is_markdown_file(path: &Path) -> bool {
     }
 }
 
-pub fn should_serve_raw_content(url: &str) -> bool {
-    let query = match url.split('?').nth(1) {
-        Some(q) => q.split('#').next().unwrap_or(q),
-        None => return false,
-    };
-    for pair in query.split('&') {
-        if pair.is_empty() {
-            continue;
-        }
-        let mut kv = pair.splitn(2, '=');
-        let key = kv.next().unwrap_or("");
-        let value = kv.next().unwrap_or("");
-        if key == "raw" && (value == "1" || value.eq_ignore_ascii_case("true")) {
-            return true;
-        }
-    }
-    false
-}
-
-pub fn build_raw_content_toggle_href(url: &str) -> String {
-    let no_fragment = url.split('#').next().unwrap_or(url);
-    let mut parts = no_fragment.splitn(2, '?');
-    let path = parts.next().unwrap_or("/");
-    let query = parts.next().unwrap_or("");
-    let is_raw_mode = should_serve_raw_content(url);
-    let mut kept_pairs: Vec<String> = Vec::new();
-    for pair in query.split('&') {
-        if pair.is_empty() {
-            continue;
-        }
-        let key = pair.splitn(2, '=').next().unwrap_or("");
-        if key == "raw" {
-            continue;
-        }
-        kept_pairs.push(pair.to_string());
-    }
-    if !is_raw_mode {
-        kept_pairs.push("raw=1".to_string());
-    }
-    if kept_pairs.is_empty() {
-        path.to_string()
-    } else {
-        format!("{}?{}", path, kept_pairs.join("&"))
-    }
-}
-
 pub fn create_markdown_response(
     file_path: &Path,
     markdown_source: &str,
@@ -302,7 +256,7 @@ pub fn create_markdown_response(
     allow_html_in_md: bool,
     markdown_open_external_link_in_new_tab: bool,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
-    raw_toggle_href: &str,
+    mode_switch_html: &str,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let headings = extract_markdown_headings(markdown_source);
     let rendered_html = render_markdown_html(markdown_source, allow_html_in_md);
@@ -373,7 +327,7 @@ pub fn create_markdown_response(
             "__OPEN_EXTERNAL_LINK_IN_NEW_TAB__",
             open_external_link_in_new_tab,
         )
-        .replace("__RAW_TOGGLE_HREF__", &html_escape(raw_toggle_href))
+        .replace("__MODE_SWITCH_HTML__", mode_switch_html)
         .replace("__MAIN_CSS_LINK__", &main_css_link)
         .replace("__STATIC_MD_CSS_LINK__", &static_md_css_link)
         .replace("__MAIN_JS_SCRIPT__", &main_js_script)

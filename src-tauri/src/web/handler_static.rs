@@ -22,10 +22,7 @@ mod toml;
 #[path = "handler_static/yaml.rs"]
 mod yaml;
 
-use self::md::{
-    build_raw_content_toggle_href, create_markdown_response, is_markdown_file,
-    should_serve_raw_content,
-};
+use self::md::{create_markdown_response, is_markdown_file};
 use self::structured_dispatcher::{create_structured_data_response, is_structured_data_file};
 use super::common::{create_error_response, get_web_content_type};
 use super::handler_dump::handle_dump_request;
@@ -35,6 +32,37 @@ use super::handler_slow::handle_slow_request;
 use super::handler_status::handle_status_request;
 use crate::web_server::WebMarkdownHighlightConfig;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ContentMode {
+    Content,
+    Raw,
+    Source,
+}
+
+#[derive(Clone, Copy)]
+enum ModeSwitchVariant {
+    DirectoryRawSwitch,
+    SourceView,
+}
+
+impl ContentMode {
+    fn as_query_value(self) -> Option<&'static str> {
+        match self {
+            ContentMode::Content => Some("content"),
+            ContentMode::Raw => Some("raw"),
+            ContentMode::Source => Some("source"),
+        }
+    }
+
+    fn as_label(self) -> &'static str {
+        match self {
+            ContentMode::Content => "Content",
+            ContentMode::Raw => "Raw",
+            ContentMode::Source => "Source",
+        }
+    }
+}
+
 const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
 <html>
 <head>
@@ -43,9 +71,10 @@ const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
 <style>
 * { box-sizing: border-box; }
 body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; }
-#main { padding: 16px 24px; max-width: 960px; overflow-wrap: anywhere; word-break: break-word; }
-h1 { color: #ddd; font-size: 26px; margin: 0 0 16px; }
-.path { color: #666; margin-bottom: 16px; }
+#main { padding: 16px 24px; width: 100vw; overflow-wrap: anywhere; word-break: break-word; }
+h1 { color: #ddd; font-size: 26px; margin: 0; }
+.path { color: #666; margin: 10px 0 16px; }
+#header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid #222; }
 li { border-bottom: 1px solid #161616; }
 a { display: block; color: #ccc; text-decoration: none; padding: 8px 4px; border-radius: 2px; }
@@ -56,6 +85,10 @@ a:hover { color: #fff; background: #1a1a1a; }
 .no-link { display: block; color: #666; padding: 8px 4px; cursor: default; }
 .empty { color: #666; font-style: italic; padding: 8px 4px; }
 .error { color: #ff6b6b; padding: 8px 4px; }
+.mode-switch { display: flex; gap: 6px; margin: 0; }
+.mode-switch .mode-btn { display: inline-flex; align-items: center; justify-content: center; margin: 0; padding: 4px 8px; min-height: 24px; background: #333; color: #fff; border: 1px solid #555; border-radius: 2px; font-size: 11px; line-height: 1.2; text-decoration: none; }
+.mode-switch .mode-btn:hover { background: #666; color: #fff; }
+.mode-switch .mode-btn.is-active { background: #555; border-color: #777; }
 #meta-tooltip { position: fixed; z-index: 9999; pointer-events: none; background: #101010; color: #ddd; border: 1px solid #333; border-radius: 4px; padding: 8px 10px; font-size: 12px; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,0.45); width: min(840px, calc(100vw - 16px)); max-width: 840px; }
 #meta-tooltip.hidden { display: none; }
 #meta-tooltip table { border-collapse: collapse; border-spacing: 0; width: 100%; }
@@ -68,7 +101,10 @@ a:hover { color: #fff; background: #1a1a1a; }
 </head>
 <body>
 <div id="main">
+<div id="header">
 <h1>Index of __DISPLAY_PATH__</h1>
+__MODE_SWITCH_HTML__
+</div>
 <div class="path">__DISPLAY_PATH__</div>
 <ul>
 __LIST_ITEMS__
@@ -82,6 +118,42 @@ const metaCache = new Map();
 let activeAnchor = null;
 let hoverTimerId = null;
 const HOVER_DELAY_MS = 750;
+const MODE_STORAGE_KEY = "mclocks.web.content.mode";
+const MODE_VALUES = new Set(["content", "raw", "source"]);
+const normalizeMode = (value) => MODE_VALUES.has(value) ? value : "content";
+const queryParams = new URLSearchParams(window.location.search);
+const hasModeQuery = queryParams.has("mode");
+const modeFromQuery = normalizeMode(queryParams.get("mode") || "content");
+const modeFromStorage = normalizeMode(localStorage.getItem(MODE_STORAGE_KEY) || "content");
+const currentMode = hasModeQuery ? modeFromQuery : modeFromStorage;
+const directoryMode = currentMode === "raw" ? "raw" : "source";
+localStorage.setItem(MODE_STORAGE_KEY, directoryMode);
+document.querySelectorAll(".mode-switch [data-mode]").forEach((el) => {
+	const activeMode = normalizeMode(el.getAttribute("data-active-mode") || (el.getAttribute("data-mode") || "content"));
+	el.classList.toggle("is-active", activeMode === directoryMode);
+	el.addEventListener("click", () => {
+		const mode = normalizeMode(el.getAttribute("data-store-mode") || (el.getAttribute("data-mode") || "content"));
+		localStorage.setItem(MODE_STORAGE_KEY, mode);
+	});
+});
+const applyModeToHref = (href, mode) => {
+	let resolved;
+	try {
+		resolved = new URL(href, window.location.origin);
+	} catch (_) {
+		return href;
+	}
+	if (mode === "content") {
+		resolved.searchParams.delete("mode");
+	} else {
+		resolved.searchParams.set("mode", mode);
+	}
+	return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+};
+document.querySelectorAll("a[data-entry-link]").forEach((a) => {
+	const originalHref = a.getAttribute("href") || "";
+	a.setAttribute("href", applyModeToHref(originalHref, directoryMode));
+});
 const escapeHtml = (s) => String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
 const pad2 = (n) => String(n).padStart(2, "0");
 const toLocalTime = (value) => {
@@ -192,7 +264,7 @@ document.querySelectorAll("a[data-meta-path]").forEach((a) => {
 fn append_parent_entry(list_items: &mut String, parent_url: &str) {
     let _ = write!(
         list_items,
-        "<li class=\"back\"><a href=\"{}\"><span class=\"entry-label\">↩️</span>. . /</a></li>\n",
+        "<li class=\"back\"><a href=\"{}\" data-entry-link=\"1\"><span class=\"entry-label\">↩️</span>. . /</a></li>\n",
         html_escape(parent_url)
     );
 }
@@ -200,7 +272,7 @@ fn append_parent_entry(list_items: &mut String, parent_url: &str) {
 fn append_directory_entry(list_items: &mut String, dir_url: &str, dir_name: &str) {
     let _ = write!(
         list_items,
-        "<li class=\"dir\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📁</span>{}/</a></li>\n",
+        "<li class=\"dir\"><a href=\"{}\" data-meta-path=\"{}\" data-entry-link=\"1\"><span class=\"entry-label\">📁</span>{}/</a></li>\n",
         html_escape(dir_url),
         html_escape(dir_name),
         html_escape(dir_name)
@@ -218,7 +290,7 @@ fn append_directory_entry_no_link(list_items: &mut String, dir_name: &str) {
 fn append_file_entry(list_items: &mut String, file_url: &str, file_name: &str) {
     let _ = write!(
         list_items,
-        "<li class=\"file\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📄</span>{}</a></li>\n",
+        "<li class=\"file\"><a href=\"{}\" data-meta-path=\"{}\" data-entry-link=\"1\"><span class=\"entry-label\">📄</span>{}</a></li>\n",
         html_escape(file_url),
         html_escape(file_name),
         html_escape(file_name)
@@ -245,7 +317,119 @@ fn is_tmpdir_root_listing(url_path: &str) -> bool {
     !suffix.contains('/')
 }
 
-fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io::Cursor<Vec<u8>>> {
+fn parse_content_mode(url: &str) -> ContentMode {
+    let query = match url.split('?').nth(1) {
+        Some(q) => q.split('#').next().unwrap_or(q),
+        None => return ContentMode::Content,
+    };
+    for pair in query.split('&') {
+        if pair.is_empty() {
+            continue;
+        }
+        let mut kv = pair.splitn(2, '=');
+        let key = kv.next().unwrap_or("");
+        let value = kv.next().unwrap_or("");
+        if key != "mode" {
+            continue;
+        }
+        return match value {
+            "raw" => ContentMode::Raw,
+            "source" => ContentMode::Source,
+            "content" => ContentMode::Content,
+            _ => ContentMode::Content,
+        };
+    }
+    ContentMode::Content
+}
+
+fn split_url_path_and_query(url: &str) -> (&str, &str) {
+    let no_fragment = url.split('#').next().unwrap_or(url);
+    let mut parts = no_fragment.splitn(2, '?');
+    let path = parts.next().unwrap_or("/");
+    let query = parts.next().unwrap_or("");
+    (path, query)
+}
+
+fn build_mode_href(path: &str, query: &str, target_mode: ContentMode) -> String {
+    let mut kept_pairs: Vec<String> = Vec::new();
+    for pair in query.split('&') {
+        if pair.is_empty() {
+            continue;
+        }
+        let key = pair.splitn(2, '=').next().unwrap_or("");
+        if key == "mode" || key == "raw" {
+            continue;
+        }
+        kept_pairs.push(pair.to_string());
+    }
+    if target_mode == ContentMode::Content {
+        // Keep content mode URL clean as implicit default.
+    } else if let Some(mode_value) = target_mode.as_query_value() {
+        kept_pairs.push(format!("mode={}", mode_value));
+    }
+    if kept_pairs.is_empty() {
+        path.to_string()
+    } else {
+        format!("{}?{}", path, kept_pairs.join("&"))
+    }
+}
+
+fn build_mode_switch_html(
+    path: &str,
+    query: &str,
+    current_mode: ContentMode,
+    id: &str,
+    variant: ModeSwitchVariant,
+) -> String {
+    let mut html = String::new();
+    html.push_str("<div class=\"mode-switch\" role=\"group\" aria-label=\"Display mode\">");
+    match variant {
+        ModeSwitchVariant::DirectoryRawSwitch => {
+            let is_raw = current_mode == ContentMode::Raw;
+            let target_mode = if is_raw {
+                ContentMode::Source
+            } else {
+                ContentMode::Raw
+            };
+            let active_class = if is_raw { " is-active" } else { "" };
+            let href = build_mode_href(path, query, target_mode);
+            let store_mode = target_mode.as_query_value().unwrap_or("source");
+            let _ = write!(
+                html,
+                "<a id=\"{}-raw\" class=\"header-action-btn mode-btn{}\" href=\"{}\" data-mode=\"raw\" data-active-mode=\"raw\" data-store-mode=\"{}\">Raw</a>",
+                id,
+                active_class,
+                html_escape(&href),
+                store_mode
+            );
+        }
+        ModeSwitchVariant::SourceView => {
+            for mode in [ContentMode::Raw, ContentMode::Content] {
+                let href = build_mode_href(path, query, mode);
+                let active_class = if mode == current_mode { " is-active" } else { "" };
+                let _ = write!(
+                    html,
+                    "<a id=\"{}-{}\" class=\"header-action-btn mode-btn{}\" href=\"{}\" data-mode=\"{}\">{}</a>",
+                    id,
+                    mode.as_query_value().unwrap_or("content"),
+                    active_class,
+                    html_escape(&href),
+                    mode.as_query_value().unwrap_or("content"),
+                    mode.as_label()
+                );
+            }
+        }
+    }
+    html.push_str("</div>");
+    html
+}
+
+fn create_directory_listing(
+    dir_path: &Path,
+    url_path: &str,
+    url_query: &str,
+    current_mode: ContentMode,
+) -> Response<std::io::Cursor<Vec<u8>>> {
     // Decode URL path for display (each segment separately)
     let decoded_path = if url_path == "/" {
         "/".to_string()
@@ -364,9 +548,17 @@ fn create_directory_listing(dir_path: &Path, url_path: &str) -> Response<std::io
     if !has_entries {
         list_items.push_str("<li class=\"empty\">(empty)</li>\n");
     }
+    let mode_switch_html = build_mode_switch_html(
+        url_path,
+        url_query,
+        current_mode,
+        "directory-mode",
+        ModeSwitchVariant::DirectoryRawSwitch,
+    );
     let html = DIRECTORY_LISTING_TEMPLATE
         .replace("__PAGE_TITLE__", &html_escape(&decoded_path))
         .replace("__DISPLAY_PATH__", &html_escape(&decoded_path))
+        .replace("__MODE_SWITCH_HTML__", &mode_switch_html)
         .replace("__LIST_ITEMS__", &list_items)
         .replace("__METADATA_ENDPOINT__", &html_escape(&metadata_endpoint));
 
@@ -424,12 +616,20 @@ fn create_file_response(
     allow_html_in_md: bool,
     markdown_open_external_link_in_new_tab: bool,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
-    serve_raw_content: bool,
-    raw_content_toggle_href: &str,
+    content_mode: ContentMode,
+    url_path: &str,
+    url_query: &str,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     match fs::read(file_path) {
         Ok(content) => {
-            if is_markdown_file(file_path.as_path()) && !serve_raw_content {
+            let mode_switch_html = build_mode_switch_html(
+                url_path,
+                url_query,
+                content_mode,
+                "content-mode",
+                ModeSwitchVariant::SourceView,
+            );
+            if is_markdown_file(file_path.as_path()) && content_mode == ContentMode::Source {
                 let encoding = detect_encoding(&content);
                 let (decoded, _, _) = encoding.decode(&content);
                 return create_markdown_response(
@@ -439,24 +639,21 @@ fn create_file_response(
                     allow_html_in_md,
                     markdown_open_external_link_in_new_tab,
                     markdown_highlight,
-                    raw_content_toggle_href,
+                    &mode_switch_html,
                 );
             }
-            if is_structured_data_file(file_path.as_path()) && !serve_raw_content {
+            if is_structured_data_file(file_path.as_path()) && content_mode == ContentMode::Source {
                 let encoding = detect_encoding(&content);
                 let (decoded, _, _) = encoding.decode(&content);
                 return create_structured_data_response(
                     file_path.as_path(),
                     &decoded,
                     markdown_highlight,
-                    raw_content_toggle_href,
+                    &mode_switch_html,
                     content.len(),
                 );
             }
-            let base_content_type = if serve_raw_content
-                && (is_structured_data_file(file_path.as_path())
-                    || is_markdown_file(file_path.as_path()))
-            {
+            let base_content_type = if content_mode == ContentMode::Raw {
                 "text/plain".to_string()
             } else {
                 get_content_type(file_path)
@@ -507,17 +704,17 @@ pub fn handle_web_request(
     editor_args: &[String],
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let url = request.url();
-    let path = url.split('?').next().unwrap_or("/");
+    let (path, request_query) = split_url_path_and_query(url);
+    let content_mode = parse_content_mode(url);
     if let Some(shared_file_path) = resolve_temp_file(path) {
-        let serve_raw_content = should_serve_raw_content(url);
-        let raw_content_toggle_href = build_raw_content_toggle_href(url);
         return create_file_response(
             &shared_file_path,
             allow_html_in_md,
             markdown_open_external_link_in_new_tab,
             markdown_highlight,
-            serve_raw_content,
-            &raw_content_toggle_href,
+            content_mode,
+            path,
+            request_query,
         );
     }
     let (active_root_path, active_path, public_url_path) = match resolve_temp_share(path) {
@@ -531,8 +728,6 @@ pub fn handle_web_request(
         }
         None => (root_path.clone(), path.to_string(), path.to_string()),
     };
-    let serve_raw_content = should_serve_raw_content(url);
-    let raw_content_toggle_href = build_raw_content_toggle_href(url);
 
     if is_resource_meta_request(active_path.as_str()) {
         return handle_resource_meta_request(url, &active_root_path, active_path.as_str());
@@ -628,8 +823,9 @@ pub fn handle_web_request(
                         allow_html_in_md,
                         markdown_open_external_link_in_new_tab,
                         markdown_highlight,
-                        serve_raw_content,
-                        &raw_content_toggle_href,
+                        content_mode,
+                        public_url_path.as_str(),
+                        request_query,
                     );
                 }
                 // If index.html doesn't exist, show directory listing
@@ -637,6 +833,8 @@ pub fn handle_web_request(
                     return create_directory_listing(
                         active_root_path.as_path(),
                         public_url_path.as_str(),
+                        request_query,
+                        content_mode,
                     );
                 }
                 return create_error_response(StatusCode(404), "Not Found");
@@ -652,8 +850,9 @@ pub fn handle_web_request(
                     allow_html_in_md,
                     markdown_open_external_link_in_new_tab,
                     markdown_highlight,
-                    serve_raw_content,
-                    &raw_content_toggle_href,
+                    content_mode,
+                    public_url_path.as_str(),
+                    request_query,
                 );
             }
             // Check if it's a directory request
@@ -670,12 +869,18 @@ pub fn handle_web_request(
                         allow_html_in_md,
                         markdown_open_external_link_in_new_tab,
                         markdown_highlight,
-                        serve_raw_content,
-                        &raw_content_toggle_href,
+                        content_mode,
+                        public_url_path.as_str(),
+                        request_query,
                     );
                 }
                 // Generate directory listing
-                return create_directory_listing(&file_path, public_url_path.as_str());
+                return create_directory_listing(
+                    &file_path,
+                    public_url_path.as_str(),
+                    request_query,
+                    content_mode,
+                );
             }
             return create_error_response(StatusCode(404), "Not Found");
         }
@@ -690,12 +895,18 @@ pub fn handle_web_request(
                 allow_html_in_md,
                 markdown_open_external_link_in_new_tab,
                 markdown_highlight,
-                serve_raw_content,
-                &raw_content_toggle_href,
+                content_mode,
+                public_url_path.as_str(),
+                request_query,
             );
         }
         // Generate directory listing
-        return create_directory_listing(&normalized_path, public_url_path.as_str());
+        return create_directory_listing(
+            &normalized_path,
+            public_url_path.as_str(),
+            request_query,
+            content_mode,
+        );
     }
 
     // It's a file, serve it
@@ -704,7 +915,8 @@ pub fn handle_web_request(
         allow_html_in_md,
         markdown_open_external_link_in_new_tab,
         markdown_highlight,
-        serve_raw_content,
-        &raw_content_toggle_href,
+        content_mode,
+        public_url_path.as_str(),
+        request_query,
     )
 }
