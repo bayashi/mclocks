@@ -31,6 +31,25 @@ html.sticky, html.sticky body {
 #mclocks {
   white-space: nowrap;
   margin: 8px;
+  position: relative;
+  z-index: 0;
+}
+
+html:not(.sticky) #mclocks.is-drop-hover {
+  color: #eaeaea;
+}
+
+html:not(.sticky) #mclocks.is-drop-hover::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: -8px;
+  bottom: -8px;
+  border-radius: 8px;
+  background: rgba(128, 128, 128, 0.28);
+  pointer-events: none;
+  z-index: -1;
 }
 
 html.sticky #mclocks {
