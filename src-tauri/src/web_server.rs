@@ -696,7 +696,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_web_request_directory_listing_shows_hidden_without_links() {
+    fn test_handle_web_request_directory_listing_shows_hidden_with_links() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let subdir = root_path.join("subdir");
@@ -720,12 +720,12 @@ mod tests {
         assert!(body.contains(".hidden.txt"), "Should show hidden file name");
         assert!(body.contains(".hidden-dir/"), "Should show hidden dir name");
         assert!(
-            !body.contains("href=\"/subdir/.hidden.txt\""),
-            "Hidden file should not be linked"
+            body.contains("href=\"/subdir/.hidden.txt\""),
+            "Hidden file should be linked"
         );
         assert!(
-            !body.contains("href=\"/subdir/.hidden-dir/\""),
-            "Hidden directory should not be linked"
+            body.contains("href=\"/subdir/.hidden-dir/\""),
+            "Hidden directory should be linked"
         );
         assert!(
             body.contains("href=\"/subdir/visible.txt\""),
@@ -734,7 +734,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_web_request_hidden_file_access_is_rejected() {
+    fn test_handle_web_request_hidden_file_access_is_allowed() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         fs::write(root_path.join(".secret.txt"), "secret").expect("Failed to create hidden file");
@@ -748,7 +748,12 @@ mod tests {
             .get(&format!("http://127.0.0.1:{}/.secret.txt", port))
             .send()
             .expect("Failed to send request");
-        assert_eq!(response.status(), 400);
+        assert_eq!(response.status(), 200);
+        assert_eq!(
+            response.text().expect("Body should be readable"),
+            "secret",
+            "Hidden file should be served like regular files"
+        );
     }
 
     #[test]
@@ -998,8 +1003,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/plain"),
-            "Raw markdown response should be text/plain, got: {}",
+            content_type.starts_with("text/markdown"),
+            "Raw markdown response should keep text/markdown, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1156,8 +1161,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/plain"),
-            "Raw markdown(.markdown) response should be text/plain, got: {}",
+            content_type.starts_with("text/markdown"),
+            "Raw markdown(.markdown) response should keep text/markdown, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1290,8 +1295,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/plain"),
-            "Raw JSON response should be text/plain, got: {}",
+            content_type.starts_with("application/json"),
+            "Raw JSON response should keep application/json, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1416,8 +1421,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/plain"),
-            "Raw YAML response should be text/plain, got: {}",
+            content_type.starts_with("application/yaml"),
+            "Raw YAML response should keep application/yaml, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
