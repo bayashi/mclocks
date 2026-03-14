@@ -952,7 +952,7 @@ fn is_text_type(content_type: &str) -> bool {
 }
 
 pub fn get_content_type(path: &PathBuf) -> String {
-    get_web_content_type(path.as_path()).to_string()
+    get_web_content_type(path.as_path())
 }
 
 pub fn handle_web_request(
