@@ -22,13 +22,13 @@ __STRUCTURED_FORMAT_CSS_LINK__
 <h2>Summary</h2>
 <ul id="summary-list">__SUMMARY_ITEMS__</ul>
 <div id="notices">__NOTICE_ITEMS__</div>
-<h2>Outline</h2>
-<ul id="outline-list">__OUTLINE_ITEMS__</ul>
+__OUTLINE_SECTION__
 </aside>
 <div id="resizer" aria-label="Resize sidebar" title="Drag to resize"></div>
 <main id="main">
 <div id="main-header">
 <div id="path-actions">
+<a id="directory-link" href="__PARENT_DIRECTORY_HREF__" title="Open directory">📁</a>
 <div id="main-header-path">__ABSOLUTE_PATH__</div>
 <button id="path-copy-btn" class="header-action-btn" type="button">Copy</button>
 </div>
@@ -288,8 +288,10 @@ pub fn push_indent(out: &mut String, indent: usize) {
 pub fn build_html_response(
     page_title: &str,
     absolute_path: &str,
+    parent_directory_href: &str,
     json_html: &str,
     outline_items: &str,
+    show_outline: bool,
     notices_html: &str,
     summary_items: &str,
     mode_switch_html: &str,
@@ -349,6 +351,14 @@ pub fn build_html_response(
             "".to_string(),
         ),
     };
+    let outline_section = if show_outline {
+        format!(
+            "<h2>Outline</h2><ul id=\"outline-list\">{}</ul>",
+            outline_items
+        )
+    } else {
+        "".to_string()
+    };
     let html = STRUCTURED_VIEW_TEMPLATE
         .replace("__PAGE_TITLE__", page_title)
         .replace("__MAIN_CSS_LINK__", &main_css_link)
@@ -371,8 +381,12 @@ pub fn build_html_response(
         )
         .replace("__SUMMARY_ITEMS__", summary_items)
         .replace("__NOTICE_ITEMS__", notices_html)
-        .replace("__OUTLINE_ITEMS__", outline_items)
+        .replace("__OUTLINE_SECTION__", &outline_section)
         .replace("__ABSOLUTE_PATH__", &html_escape(absolute_path))
+        .replace(
+            "__PARENT_DIRECTORY_HREF__",
+            &html_escape(parent_directory_href),
+        )
         .replace("__MODE_SWITCH_HTML__", mode_switch_html)
         .replace("__JSON_VIEW_HTML__", json_html);
     let content_type = "text/html; charset=utf-8";

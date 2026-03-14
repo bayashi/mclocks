@@ -140,6 +140,7 @@ fn render_colorized_yaml_with_indent(value: &Value, path: &str, indent: usize, o
 pub fn create_yaml_response(
     file_path: &Path,
     source: &str,
+    parent_directory_href: &str,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     mode_switch_html: &str,
     source_size_bytes: usize,
@@ -159,43 +160,52 @@ pub fn create_yaml_response(
             Err(serde_json::Error::io(io_err))
         }
     };
-    let (root_type, _children_count, json_html, outline_items, notices_html, view_status) =
-        match parsed {
-            Ok(value) => {
-                let (root_type, children_count) = classify_json(&value);
-                let rendered = if should_colorize {
-                    render_colorized_yaml(&value)
+    let (
+        root_type,
+        _children_count,
+        json_html,
+        outline_items,
+        show_outline,
+        notices_html,
+        view_status,
+    ) = match parsed {
+        Ok(value) => {
+            let (root_type, children_count) = classify_json(&value);
+            let rendered = if should_colorize {
+                render_colorized_yaml(&value)
+            } else {
+                html_escape(source)
+            };
+            (
+                root_type.to_string(),
+                children_count,
+                rendered,
+                render_outline_items(Some(&value)),
+                true,
+                String::new(),
+                if should_colorize {
+                    "Parse OK".to_string()
                 } else {
-                    html_escape(source)
-                };
-                (
-                    root_type.to_string(),
-                    children_count,
-                    rendered,
-                    render_outline_items(Some(&value)),
-                    String::new(),
-                    if should_colorize {
-                        "Parse OK".to_string()
-                    } else {
-                        "Parse OK (Colorize: disabled >10 MB)".to_string()
-                    },
-                )
+                    "Parse OK (Colorize: disabled >10 MB)".to_string()
+                },
+            )
+        }
+        Err(err) => {
+            let mut invalid_status = format!("Parse Error: {}", err);
+            if !should_colorize {
+                invalid_status.push_str(" / Colorize: disabled >10 MB");
             }
-            Err(err) => {
-                let mut invalid_status = format!("Parse Error: {}", err);
-                if !should_colorize {
-                    invalid_status.push_str(" / Colorize: disabled >10 MB");
-                }
-                (
-                    "invalid".to_string(),
-                    0usize,
-                    html_escape(source),
-                    render_outline_items(None),
-                    render_error_notice(&err.to_string()),
-                    invalid_status,
-                )
-            }
-        };
+            (
+                "invalid".to_string(),
+                0usize,
+                html_escape(source),
+                render_outline_items(None),
+                false,
+                render_error_notice(&err.to_string()),
+                invalid_status,
+            )
+        }
+    };
     let summary_items = render_summary_items(
         &root_type,
         source_size_bytes,
@@ -205,8 +215,10 @@ pub fn create_yaml_response(
     build_html_response(
         &page_title,
         &absolute_path,
+        parent_directory_href,
         &json_html,
         &outline_items,
+        show_outline,
         &notices_html,
         &summary_items,
         mode_switch_html,

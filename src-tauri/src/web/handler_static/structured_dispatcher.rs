@@ -13,6 +13,7 @@ pub fn is_structured_data_file(path: &Path) -> bool {
 pub fn create_structured_data_response(
     file_path: &Path,
     source: &str,
+    parent_directory_href: &str,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     mode_switch_html: &str,
     source_size_bytes: usize,
@@ -21,6 +22,7 @@ pub fn create_structured_data_response(
         create_json_response(
             file_path,
             source,
+            parent_directory_href,
             markdown_highlight,
             mode_switch_html,
             source_size_bytes,
@@ -29,6 +31,7 @@ pub fn create_structured_data_response(
         create_yaml_response(
             file_path,
             source,
+            parent_directory_href,
             markdown_highlight,
             mode_switch_html,
             source_size_bytes,
@@ -37,6 +40,7 @@ pub fn create_structured_data_response(
         create_toml_response(
             file_path,
             source,
+            parent_directory_href,
             markdown_highlight,
             mode_switch_html,
             source_size_bytes,
@@ -45,6 +49,7 @@ pub fn create_structured_data_response(
         create_ini_response(
             file_path,
             source,
+            parent_directory_href,
             markdown_highlight,
             mode_switch_html,
             source_size_bytes,
