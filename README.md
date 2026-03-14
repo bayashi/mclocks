@@ -346,8 +346,11 @@ The web viewer supports `mode` query options such as `content`, `raw`, and `sour
 
 ### drag-and-drop based content viewer
 
-In addition to static file hosting, the web server also includes a drag-and-drop based content viewer workflow: when you drag and drop a file or directory onto the mclocks clock window, it can be opened and viewed through temporary local URLs.
-These temporary URLs are discarded when mclocks exits.
+In addition to static file hosting, mclocks supports a drag-and-drop content viewer workflow:
+
+* Drop a directory onto the clock window to open it in the web viewer via a temporary local URL.
+* Drop a single file to open it in the web viewer when the file type is supported by the temporary-file viewer.
+* The generated temporary URLs are local-only and are discarded when mclocks exits.
 
 ### /dump endpoint
 
