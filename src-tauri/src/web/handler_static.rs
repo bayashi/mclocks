@@ -49,6 +49,8 @@ body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Go
 #main { padding: 16px 24px; width: 100vw; overflow-wrap: anywhere; word-break: break-word; }
 #header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 10px; }
 #path-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#directory-link { display: inline-flex; align-items: center; justify-content: center; color: #bbb; text-decoration: none; font-size: 14px; line-height: 1; }
+#directory-link:hover { color: #fff; }
 #main-header-path { flex: 0 1 auto; min-width: 0; line-height: 1.2; color: #777; font-size: 12px; font-family: "Consolas", "Cascadia Code", "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace; overflow-wrap: anywhere; word-break: break-word; }
 #main-separator { height: 1px; background: #222; margin: 0 0 12px; }
 ul { list-style: none; margin: 0; padding: 0; border-top: none; }
@@ -89,6 +91,7 @@ a:hover { color: #fff; background: #1a1a1a; }
 <div id="main">
 <div id="header">
 <div id="path-actions">
+__DIRECTORY_LINK_HTML__
 <div id="main-header-path">__ABSOLUTE_PATH__</div>
 <button id="path-copy-btn" class="mode-btn" type="button">Copy</button>
 </div>
@@ -370,14 +373,6 @@ if (summaryList) {
 </html>
 "##;
 
-fn append_parent_entry(list_items: &mut String, parent_url: &str) {
-    let _ = write!(
-        list_items,
-        "<li class=\"back\"><a href=\"{}\" data-entry-link=\"1\"><span class=\"entry-label\">↩️</span>. . /</a></li>\n",
-        html_escape(parent_url)
-    );
-}
-
 fn append_directory_entry(list_items: &mut String, dir_url: &str, dir_name: &str) {
     let _ = write!(
         list_items,
@@ -396,18 +391,6 @@ fn append_file_entry(list_items: &mut String, file_url: &str, file_name: &str) {
         html_escape(file_name),
         html_escape(file_name)
     );
-}
-
-fn is_tmpdir_root_listing(url_path: &str) -> bool {
-    if !url_path.starts_with(TEMP_DIR_PREFIX) {
-        return false;
-    }
-    let trimmed = url_path.trim_end_matches('/');
-    let suffix = &trimmed[TEMP_DIR_PREFIX.len()..];
-    if suffix.is_empty() {
-        return false;
-    }
-    !suffix.contains('/')
 }
 
 fn parse_content_mode(url: &str) -> ContentMode {
@@ -469,6 +452,30 @@ fn resolve_source_parent_directory_href(
     build_parent_directory_href(url_path, url_query, mode)
 }
 
+fn resolve_directory_parent_directory_href(
+    url_path: &str,
+    url_query: &str,
+    mode: ContentMode,
+    dir_path: &Path,
+) -> Option<String> {
+    if url_path == "/" {
+        return None;
+    }
+    if url_path.starts_with(TEMP_DIR_PREFIX) {
+        if let Some(parent) = dir_path.parent() {
+            if let Ok(hash) = register_temp_root(parent) {
+                let temp_dir_path = format!("{}{}/", TEMP_DIR_PREFIX, hash);
+                return Some(template_common::build_mode_href(
+                    &temp_dir_path,
+                    url_query,
+                    mode,
+                ));
+            }
+        }
+    }
+    Some(build_parent_directory_href(url_path, url_query, mode))
+}
+
 fn create_directory_listing(
     dir_path: &Path,
     url_path: &str,
@@ -503,28 +510,8 @@ fn create_directory_listing(
     let mut list_items = String::new();
     let mut has_entries = false;
 
-    // Add parent directory link if not at root
-    if url_path != "/" && !is_tmpdir_root_listing(url_path) {
-        let trimmed = url_path.trim_end_matches('/');
-        let parent_url = if trimmed == "" {
-            "/".to_string()
-        } else {
-            match trimmed.rfind('/') {
-                Some(pos) => {
-                    let parent = &trimmed[..pos];
-                    if parent.is_empty() {
-                        "/".to_string()
-                    } else {
-                        format!("{}/", parent)
-                    }
-                }
-                None => "/".to_string(),
-            }
-        };
-        append_parent_entry(&mut list_items, &parent_url);
-        has_entries = true;
-    }
-
+    let parent_directory_href =
+        resolve_directory_parent_directory_href(url_path, url_query, current_mode, dir_path);
     // Read directory entries
     match fs::read_dir(dir_path) {
         Ok(entries) => {
@@ -593,10 +580,18 @@ fn create_directory_listing(
         "directory-mode",
         ModeSwitchVariant::DirectoryRawSwitch,
     );
+    let directory_link_html = match parent_directory_href.as_deref() {
+        Some(href) => format!(
+            "<a id=\"directory-link\" href=\"{}\" title=\"Open directory\">📁</a>",
+            html_escape(href)
+        ),
+        None => "".to_string(),
+    };
     let html = DIRECTORY_LISTING_TEMPLATE
         .replace("__PAGE_TITLE__", &html_escape(&decoded_path))
         .replace("__DISPLAY_PATH__", &html_escape(&decoded_path))
         .replace("__ABSOLUTE_PATH__", &html_escape(&absolute_path))
+        .replace("__DIRECTORY_LINK_HTML__", &directory_link_html)
         .replace("__MODE_SWITCH_HTML__", &mode_switch_html)
         .replace("__LIST_ITEMS__", &list_items)
         .replace("__METADATA_ENDPOINT__", &html_escape(&metadata_endpoint));

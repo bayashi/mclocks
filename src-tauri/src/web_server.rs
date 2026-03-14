@@ -692,7 +692,15 @@ mod tests {
         let body = response.text().unwrap();
         assert!(body.contains("<ul>"), "Should show directory listing");
         assert!(body.contains("file.txt"), "Should list file.txt");
-        assert!(body.contains(". . /"), "Should show parent directory link");
+        assert!(
+            body.contains("id=\"directory-link\""),
+            "Should show directory icon link in header"
+        );
+        assert!(
+            body.contains("href=\"/\""),
+            "Directory icon link should point to parent directory"
+        );
+        assert!(!body.contains(". . /"), "Should not show ../ entry");
     }
 
     #[test]
@@ -806,7 +814,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tmpdir_root_hides_parent_link_and_subdir_shows_it() {
+    fn test_tmpdir_root_and_subdir_show_header_parent_link() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let subdir = root_path.join("subdir");
@@ -814,6 +822,12 @@ mod tests {
         fs::write(subdir.join("file.txt"), "content").expect("Failed to create file.txt");
         let share_hash =
             register_temp_root(root_path.as_path()).expect("Failed to register temp root");
+        let parent_hash = register_temp_root(
+            root_path
+                .parent()
+                .expect("Temp root should have a parent directory"),
+        )
+        .expect("Failed to register parent temp root");
         let port = find_available_port();
 
         let _server_handle = start_test_server(root_path.clone(), port, false, false, false);
@@ -830,8 +844,19 @@ mod tests {
         assert_eq!(root_listing.status(), 200);
         let root_body = root_listing.text().expect("Failed to read body");
         assert!(
+            root_body.contains("id=\"directory-link\""),
+            "tmpdir root should show header parent link"
+        );
+        assert!(
+            root_body.contains(&format!(
+                "id=\"directory-link\" href=\"{}{}",
+                TEMP_DIR_PREFIX, parent_hash
+            )),
+            "tmpdir root header parent link should point to registered parent tempdir"
+        );
+        assert!(
             !root_body.contains(". . /"),
-            "tmpdir root should not show parent link"
+            "tmpdir root should not show ../ entry"
         );
 
         let subdir_listing = client
@@ -844,8 +869,12 @@ mod tests {
         assert_eq!(subdir_listing.status(), 200);
         let subdir_body = subdir_listing.text().expect("Failed to read body");
         assert!(
-            subdir_body.contains(". . /"),
-            "tmpdir subdir should show parent link"
+            subdir_body.contains("id=\"directory-link\""),
+            "tmpdir subdir should show header parent link"
+        );
+        assert!(
+            !subdir_body.contains(". . /"),
+            "tmpdir subdir should not show ../ entry"
         );
     }
 
