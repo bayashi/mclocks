@@ -20,6 +20,41 @@ body{
 	scrollbar-color:#333 transparent;
 }
 
+#toc #sidebar-controls{
+	margin:0 0 12px;
+}
+
+#toc #sidebar-controls .mode-switch{
+	display:flex;
+	gap:6px;
+}
+
+#toc #sidebar-controls .mode-switch .mode-btn{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	margin:0;
+	padding:4px 8px;
+	min-height:24px;
+	background:#333;
+	color:#fff;
+	border:1px solid #555;
+	border-radius:2px;
+	font-size:11px;
+	line-height:1.2;
+	text-decoration:none;
+}
+
+#toc #sidebar-controls .mode-switch .mode-btn:hover{
+	background:#666;
+	color:#fff;
+}
+
+#toc #sidebar-controls .mode-switch .mode-btn.is-active{
+	background:#555;
+	border-color:#777;
+}
+
 #toc h2{
 	color:#666;
 	font-size:11px;

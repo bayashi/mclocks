@@ -20,6 +20,7 @@ __HIGHLIGHT_CSS_LINK__
 </head>
 <body class="mclocks-md" data-open-external-link-in-new-tab="__OPEN_EXTERNAL_LINK_IN_NEW_TAB__">
 <nav id="toc">
+<div id="sidebar-controls">__MODE_SWITCH_HTML__</div>
 <h2>Summary</h2>
 <ul id="summary-list">__SUMMARY_ITEMS__</ul>
 <h2>Index</h2>
@@ -323,13 +324,14 @@ pub fn create_markdown_response(
             &template_common::render_main_header_html(
                 &absolute_path,
                 Some(parent_directory_href),
-                Some(mode_switch_html),
+                None,
             ),
         )
         .replace(
             "__OPEN_EXTERNAL_LINK_IN_NEW_TAB__",
             open_external_link_in_new_tab,
         )
+        .replace("__MODE_SWITCH_HTML__", mode_switch_html)
         .replace("__MAIN_CSS_LINK__", &main_css_link)
         .replace("__STATIC_MD_CSS_LINK__", &static_md_css_link)
         .replace("__MAIN_JS_SCRIPT__", &main_js_script)

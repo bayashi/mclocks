@@ -16,6 +16,41 @@ body{
 	overflow-y:auto;
 }
 
+#sidebar #sidebar-controls{
+	margin:0 0 12px;
+}
+
+#sidebar #sidebar-controls .mode-switch{
+	display:flex;
+	gap:6px;
+}
+
+#sidebar #sidebar-controls .mode-switch .mode-btn{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	margin:0;
+	padding:4px 8px;
+	min-height:24px;
+	background:#333;
+	color:#fff;
+	border:1px solid #555;
+	border-radius:2px;
+	font-size:11px;
+	line-height:1.2;
+	text-decoration:none;
+}
+
+#sidebar #sidebar-controls .mode-switch .mode-btn:hover{
+	background:#666;
+	color:#fff;
+}
+
+#sidebar #sidebar-controls .mode-switch .mode-btn.is-active{
+	background:#555;
+	border-color:#777;
+}
+
 #sidebar h2{
 	margin:0 0 6px;
 	font-size:11px;
