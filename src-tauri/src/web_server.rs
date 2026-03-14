@@ -943,6 +943,46 @@ mod tests {
     }
 
     #[test]
+    fn test_handle_web_request_html_file_raw_query_returns_plain_text() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let html_file = root_path.join("raw.html");
+        fs::write(
+            &html_file,
+            "<!doctype html><html><body><h1>Raw</h1></body></html>",
+        )
+        .expect("Failed to create raw.html");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/raw.html?mode=raw", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/plain"),
+            "Raw HTML response should be text/plain, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(
+            body,
+            "<!doctype html><html><body><h1>Raw</h1></body></html>"
+        );
+    }
+
+    #[test]
     fn test_handle_web_request_markdown_file_renders_html() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
@@ -1032,8 +1072,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/markdown"),
-            "Raw markdown response should keep text/markdown, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw markdown response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1190,8 +1230,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/markdown"),
-            "Raw markdown(.markdown) response should keep text/markdown, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw markdown(.markdown) response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1324,8 +1364,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("application/json"),
-            "Raw JSON response should keep application/json, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw JSON response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1450,8 +1490,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/x-yaml"),
-            "Raw YAML response should keep text/x-yaml, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw YAML response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1640,8 +1680,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/x-toml"),
-            "Raw TOML response should be text/x-toml, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw TOML response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");

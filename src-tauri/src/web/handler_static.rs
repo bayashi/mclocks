@@ -889,6 +889,7 @@ fn create_file_response(
             }
             let (base_content_type, should_download) =
                 resolve_content_type_and_download(file_path.as_path(), &content);
+            let is_binary_content = is_probably_binary(&content);
             if content_mode == ContentMode::Source
                 && !should_download
                 && is_text_type(&base_content_type)
@@ -910,7 +911,11 @@ fn create_file_response(
                     &mode_switch_html,
                 );
             }
-            let content_type = if is_text_type(&base_content_type) {
+            let content_type = if content_mode == ContentMode::Raw && !is_binary_content {
+                let encoding = detect_encoding(&content);
+                let charset = encoding.name();
+                format!("text/plain; charset={}", charset)
+            } else if is_text_type(&base_content_type) {
                 let encoding = detect_encoding(&content);
                 let charset = encoding.name();
                 format!("{}; charset={}", base_content_type, charset)
