@@ -24,7 +24,7 @@ mod yaml;
 
 use self::md::{create_markdown_response, is_markdown_file};
 use self::structured_dispatcher::{create_structured_data_response, is_structured_data_file};
-use super::common::{create_error_response, get_web_content_type};
+use super::common::{create_error_response, format_display_path, get_web_content_type};
 use super::handler_dump::handle_dump_request;
 use super::handler_editor::handle_editor_request;
 use super::handler_resource_meta::{handle_resource_meta_request, is_resource_meta_request};
@@ -72,9 +72,10 @@ const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
 * { box-sizing: border-box; }
 body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; }
 #main { padding: 16px 24px; width: 100vw; overflow-wrap: anywhere; word-break: break-word; }
-h1 { color: #ddd; font-size: 26px; margin: 0; }
-.path { color: #666; margin: 10px 0 16px; }
-#header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+h1 { color: #ddd; font-size: 26px; margin: 0 0 12px; }
+#header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 10px; }
+#path-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#main-header-path { flex: 0 1 auto; min-width: 0; line-height: 1.2; color: #777; font-size: 12px; font-family: "Consolas", "Cascadia Code", "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace; overflow-wrap: anywhere; word-break: break-word; }
 ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid #222; }
 li { border-bottom: 1px solid #161616; }
 a { display: block; color: #ccc; text-decoration: none; padding: 8px 4px; border-radius: 2px; }
@@ -89,6 +90,8 @@ a:hover { color: #fff; background: #1a1a1a; }
 .mode-switch .mode-btn { display: inline-flex; align-items: center; justify-content: center; margin: 0; padding: 4px 8px; min-height: 24px; background: #333; color: #fff; border: 1px solid #555; border-radius: 2px; font-size: 11px; line-height: 1.2; text-decoration: none; }
 .mode-switch .mode-btn:hover { background: #666; color: #fff; }
 .mode-switch .mode-btn.is-active { background: #555; border-color: #777; }
+#path-copy-btn { display: inline-flex; align-items: center; justify-content: center; margin: 0; padding: 3px 7px; min-height: 20px; background: #333; color: #fff; border: 1px solid #555; border-radius: 2px; cursor: pointer; font-size: 9px; line-height: 1.2; font-family: inherit; appearance: none; }
+#path-copy-btn:hover { background: #666; color: #fff; }
 .mode-switch.directory-switch .raw-switch { justify-content: space-between; gap: 8px; min-width: 72px; padding: 4px 7px; }
 .mode-switch.directory-switch .raw-switch { background: transparent; border: none; box-shadow: none; }
 .mode-switch.directory-switch .raw-switch:hover { background: transparent; border: none; }
@@ -110,10 +113,13 @@ a:hover { color: #fff; background: #1a1a1a; }
 <body>
 <div id="main">
 <div id="header">
-<h1>Index of __DISPLAY_PATH__</h1>
+<div id="path-actions">
+<div id="main-header-path">__ABSOLUTE_PATH__</div>
+<button id="path-copy-btn" class="mode-btn" type="button">Copy</button>
+</div>
 __MODE_SWITCH_HTML__
 </div>
-<div class="path">__DISPLAY_PATH__</div>
+<h1>Index of __DISPLAY_PATH__</h1>
 <ul>
 __LIST_ITEMS__
 </ul>
@@ -162,6 +168,19 @@ document.querySelectorAll("a[data-entry-link]").forEach((a) => {
 	const originalHref = a.getAttribute("href") || "";
 	a.setAttribute("href", applyModeToHref(originalHref, directoryMode));
 });
+const pathCopyBtn = document.getElementById("path-copy-btn");
+const pathLabel = document.getElementById("main-header-path");
+if (pathCopyBtn && pathLabel) {
+	pathCopyBtn.addEventListener("click", () => {
+		navigator.clipboard.writeText(pathLabel.textContent || "");
+		pathCopyBtn.textContent = "Copied!";
+		pathCopyBtn.blur();
+		setTimeout(() => {
+			pathCopyBtn.textContent = "Copy";
+			pathCopyBtn.blur();
+		}, 2000);
+	});
+}
 const escapeHtml = (s) => String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
 const pad2 = (n) => String(n).padStart(2, "0");
 const toLocalTime = (value) => {
@@ -569,6 +588,7 @@ fn create_directory_listing(
     if !has_entries {
         list_items.push_str("<li class=\"empty\">(empty)</li>\n");
     }
+    let absolute_path = format_display_path(dir_path);
     let mode_switch_html = build_mode_switch_html(
         url_path,
         url_query,
@@ -579,6 +599,7 @@ fn create_directory_listing(
     let html = DIRECTORY_LISTING_TEMPLATE
         .replace("__PAGE_TITLE__", &html_escape(&decoded_path))
         .replace("__DISPLAY_PATH__", &html_escape(&decoded_path))
+        .replace("__ABSOLUTE_PATH__", &html_escape(&absolute_path))
         .replace("__MODE_SWITCH_HTML__", &mode_switch_html)
         .replace("__LIST_ITEMS__", &list_items)
         .replace("__METADATA_ENDPOINT__", &html_escape(&metadata_endpoint));
