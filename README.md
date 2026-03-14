@@ -336,12 +336,13 @@ The maximum text size per sticky note is 128 KB.
 
 If the `web` field is configured in your `config.json`, the web server starts automatically when `mclocks` launches. The main server starts at `web.port` (or `3030`) and falls back downward when needed. The web server only listens on `127.0.0.1` (localhost), so it is only accessible from your local machine.
 
-### Supported file types
+### Content mode
 
-The web server supports the following file types:
+The web viewer supports `mode` query options such as `content`, `raw`, and `source`.
 
-* Text: `html`, `css`, `js`, `json`, `yaml(yml)`, `toml`, `md(markdown)`, `txt`
-* Images: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+* `content` (default): Serves the file with its detected content type, so browsers can render it normally when possible.
+* `raw`: Returns non-binary files as `text/plain` to show the raw text safely without browser-side rendering.
+* `source`: Opens the source viewer layout with summary/sidebar navigation for supported formats, while still allowing safe plain-text inspection for unsupported text files.
 
 ### drag-and-drop based content viewer
 
