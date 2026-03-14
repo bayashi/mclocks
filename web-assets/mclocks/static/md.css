@@ -266,3 +266,17 @@ pre{
 	min-height:20px;
 	font-size:9px;
 }
+
+#main-header #directory-link{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	color:#bbb;
+	text-decoration:none;
+	font-size:14px;
+	line-height:1;
+}
+
+#main-header #directory-link:hover{
+	color:#fff;
+}

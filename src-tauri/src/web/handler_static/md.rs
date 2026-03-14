@@ -28,6 +28,7 @@ __HIGHLIGHT_CSS_LINK__
 <div id="main">
 <div id="main-header">
 <div id="path-actions">
+<a id="directory-link" href="__PARENT_DIRECTORY_HREF__" title="Open directory">📁</a>
 <div id="main-header-path">__ABSOLUTE_PATH__</div>
 <button id="path-copy-btn" class="header-action-btn" type="button">Copy</button>
 </div>
@@ -253,6 +254,7 @@ pub fn create_markdown_response(
     file_path: &Path,
     markdown_source: &str,
     raw_size_bytes: usize,
+    parent_directory_href: &str,
     allow_html_in_md: bool,
     markdown_open_external_link_in_new_tab: bool,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
@@ -323,6 +325,10 @@ pub fn create_markdown_response(
         .replace("__SUMMARY_ITEMS__", &summary_items)
         .replace("__TOC_ITEMS__", &toc_items_html)
         .replace("__ABSOLUTE_PATH__", &absolute_path)
+        .replace(
+            "__PARENT_DIRECTORY_HREF__",
+            &html_escape(parent_directory_href),
+        )
         .replace(
             "__OPEN_EXTERNAL_LINK_IN_NEW_TAB__",
             open_external_link_in_new_tab,

@@ -1,9 +1,12 @@
-use super::dd_publish::{TEMP_DIR_PREFIX, resolve_temp_file, resolve_temp_share};
+use super::dd_publish::{
+    TEMP_DIR_PREFIX, TEMP_FILE_PREFIX, register_temp_root, resolve_temp_file, resolve_temp_share,
+};
 use chardetng::EncodingDetector;
 use encoding_rs::{Encoding, UTF_8};
 use std::fmt::Write;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_http::{Header, Response, StatusCode};
 use urlencoding::{decode, encode};
 
@@ -288,6 +291,119 @@ document.querySelectorAll("a[data-meta-path]").forEach((a) => {
 </html>
 "##;
 
+const SOURCE_VIEW_TEMPLATE: &str = r##"<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>__PAGE_TITLE__</title>
+__MAIN_CSS_LINK__
+__HIGHLIGHT_CSS_LINK__
+<style>
+body{color:#aaa;background:#000;margin:0;font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif;line-height:1.6}
+body{display:flex;min-height:100vh}
+#sidebar{width:260px;max-width:45vw;overflow:auto;border-right:1px solid #1b1b1b;background:#050505;padding:12px}
+#sidebar-controls{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
+#sidebar-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#main-header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px}
+#path-actions{display:flex;align-items:center;gap:8px;min-width:0}
+#directory-link{display:inline-flex;align-items:center;justify-content:center;color:#bbb;text-decoration:none;font-size:14px;line-height:1}
+#directory-link:hover{color:#fff}
+#sidebar h2{margin:0 0 8px;color:#ddd;font-size:14px;font-weight:600}
+#summary-list{list-style:none;margin:0;padding:0}
+#summary-list li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid #111;font-size:12px}
+#summary-list .label{color:#666}
+#summary-list .value{color:#bbb;font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace}
+#notices{margin-top:10px}
+#main{padding:16px 24px;width:100vw;overflow-wrap:anywhere;word-break:break-word}
+#main-header-path{flex:0 1 auto;min-width:0;line-height:1.2;color:#777;font-size:12px;font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;overflow-wrap:anywhere;word-break:break-word}
+#main-separator{height:1px;background:#222;margin:0 0 12px}
+#path-copy-btn{display:inline-flex;align-items:center;justify-content:center;margin:0;padding:3px 7px;min-height:20px;background:#333;color:#fff;border:1px solid #555;border-radius:2px;cursor:pointer;font-size:9px;line-height:1.2;font-family:inherit;appearance:none}
+#path-copy-btn:hover{background:#666;color:#fff}
+.mode-switch{display:flex;gap:6px;margin:0}
+.mode-switch .mode-btn{display:inline-flex;align-items:center;justify-content:center;margin:0;padding:4px 8px;min-height:24px;background:#333;color:#fff;border:1px solid #555;border-radius:2px;font-size:11px;line-height:1.2;text-decoration:none}
+.mode-switch .mode-btn:hover{background:#666;color:#fff}
+.mode-switch .mode-btn.is-active{background:#555;border-color:#777}
+pre{margin:0;padding:12px;background:#111;border:1px solid #222;border-radius:4px;overflow:auto}
+code{font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;font-size:12px;line-height:1.5;white-space:pre}
+</style>
+</head>
+<body>
+<aside id="sidebar">
+<div id="sidebar-controls">
+<div id="sidebar-actions">
+__MODE_SWITCH_HTML__
+</div>
+</div>
+<h2>Summary</h2>
+<ul id="summary-list">__SUMMARY_ITEMS__</ul>
+<div id="notices"></div>
+</aside>
+<div id="main">
+<div id="main-header">
+<div id="path-actions">
+<a id="directory-link" href="__PARENT_DIRECTORY_HREF__" title="Open directory">📁</a>
+<div id="main-header-path">__ABSOLUTE_PATH__</div>
+<button id="path-copy-btn" type="button">Copy</button>
+</div>
+</div>
+<div id="main-separator"></div>
+<pre><code class="__LANGUAGE_CLASS__">__SOURCE_HTML__</code></pre>
+</div>
+__HIGHLIGHT_JS_SCRIPT__
+__MAIN_JS_SCRIPT__
+<script>
+const pathCopyBtn = document.getElementById("path-copy-btn");
+const pathLabel = document.getElementById("main-header-path");
+if (pathCopyBtn && pathLabel) {
+	pathCopyBtn.addEventListener("click", () => {
+		navigator.clipboard.writeText(pathLabel.textContent || "");
+		pathCopyBtn.textContent = "Copied!";
+		pathCopyBtn.blur();
+		setTimeout(() => {
+			pathCopyBtn.textContent = "Copy";
+			pathCopyBtn.blur();
+		}, 2000);
+	});
+}
+if (window.hljs) {
+	document.querySelectorAll("pre code").forEach((code) => {
+		window.hljs.highlightElement(code);
+	});
+}
+const summaryList = document.getElementById("summary-list");
+if (summaryList) {
+	const pad2 = (n) => String(n).padStart(2, "0");
+	const toLocalTime = (value) => {
+		const n = Number(value);
+		if (!Number.isFinite(n)) {
+			return value;
+		}
+		const d = new Date(n);
+		const y = d.getFullYear();
+		const mo = pad2(d.getMonth() + 1);
+		const da = pad2(d.getDate());
+		const h = pad2(d.getHours());
+		const mi = pad2(d.getMinutes());
+		const s = pad2(d.getSeconds());
+		return `${y}-${mo}-${da} ${h}:${mi}:${s}`;
+	};
+	summaryList.querySelectorAll("li").forEach((li) => {
+		const label = li.querySelector(".label");
+		const value = li.querySelector(".value");
+		if (!label || !value) {
+			return;
+		}
+		if (label.textContent?.trim() !== "Last Mod") {
+			return;
+		}
+		value.textContent = toLocalTime(value.textContent?.trim() || "-");
+	});
+}
+</script>
+</body>
+</html>
+"##;
+
 fn append_parent_entry(list_items: &mut String, parent_url: &str) {
     let _ = write!(
         list_items,
@@ -306,28 +422,12 @@ fn append_directory_entry(list_items: &mut String, dir_url: &str, dir_name: &str
     );
 }
 
-fn append_directory_entry_no_link(list_items: &mut String, dir_name: &str) {
-    let _ = write!(
-        list_items,
-        "<li class=\"dir\"><span class=\"no-link\"><span class=\"entry-label\">📁</span>{}/</span></li>\n",
-        html_escape(dir_name)
-    );
-}
-
 fn append_file_entry(list_items: &mut String, file_url: &str, file_name: &str) {
     let _ = write!(
         list_items,
         "<li class=\"file\"><a href=\"{}\" data-meta-path=\"{}\" data-entry-link=\"1\"><span class=\"entry-label\">📄</span>{}</a></li>\n",
         html_escape(file_url),
         html_escape(file_name),
-        html_escape(file_name)
-    );
-}
-
-fn append_file_entry_no_link(list_items: &mut String, file_name: &str) {
-    let _ = write!(
-        list_items,
-        "<li class=\"file\"><span class=\"no-link\"><span class=\"entry-label\">📄</span>{}</span></li>\n",
         html_escape(file_name)
     );
 }
@@ -399,6 +499,32 @@ fn build_mode_href(path: &str, query: &str, target_mode: ContentMode) -> String 
     } else {
         format!("{}?{}", path, kept_pairs.join("&"))
     }
+}
+
+fn build_parent_directory_href(path: &str, query: &str, mode: ContentMode) -> String {
+    let trimmed = path.trim_end_matches('/');
+    let parent = match trimmed.rfind('/') {
+        Some(0) | None => "/".to_string(),
+        Some(pos) => format!("{}/", &trimmed[..pos]),
+    };
+    build_mode_href(&parent, query, mode)
+}
+
+fn resolve_source_parent_directory_href(
+    url_path: &str,
+    url_query: &str,
+    mode: ContentMode,
+    file_path: &Path,
+) -> String {
+    if url_path.starts_with(TEMP_FILE_PREFIX) {
+        if let Some(parent) = file_path.parent() {
+            if let Ok(hash) = register_temp_root(parent) {
+                let temp_dir_path = format!("{}{}/", TEMP_DIR_PREFIX, hash);
+                return build_mode_href(&temp_dir_path, url_query, mode);
+            }
+        }
+    }
+    build_parent_directory_href(url_path, url_query, mode)
 }
 
 fn build_mode_switch_html(
@@ -555,11 +681,7 @@ fn create_directory_listing(
                     let base = url_path.trim_end_matches('/');
                     format!("{}/{}/", base, encoded_dir)
                 };
-                if dir.starts_with('.') {
-                    append_directory_entry_no_link(&mut list_items, &dir);
-                } else {
-                    append_directory_entry(&mut list_items, &dir_url, &dir);
-                }
+                append_directory_entry(&mut list_items, &dir_url, &dir);
                 has_entries = true;
             }
 
@@ -572,11 +694,7 @@ fn create_directory_listing(
                     let base = url_path.trim_end_matches('/');
                     format!("{}/{}", base, encoded_file)
                 };
-                if file.starts_with('.') {
-                    append_file_entry_no_link(&mut list_items, &file);
-                } else {
-                    append_file_entry(&mut list_items, &file_url, &file);
-                }
+                append_file_entry(&mut list_items, &file_url, &file);
                 has_entries = true;
             }
         }
@@ -653,6 +771,189 @@ fn detect_encoding(content: &[u8]) -> &'static Encoding {
     encoding
 }
 
+fn human_bytes(size: usize) -> String {
+    if size < 1024 {
+        return format!("{}B", size);
+    }
+    let kb = size as f64 / 1024.0;
+    if kb < 1024.0 {
+        return format!("{:.2}KB", kb);
+    }
+    let mb = kb / 1024.0;
+    if mb < 1024.0 {
+        return format!("{:.2}MB", mb);
+    }
+    let gb = mb / 1024.0;
+    format!("{:.2}GB", gb)
+}
+
+fn system_time_to_unix_ms(value: SystemTime) -> Option<u64> {
+    value
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .and_then(|duration| u64::try_from(duration.as_millis()).ok())
+}
+
+fn get_last_modified_ms(file_path: &Path) -> Option<u64> {
+    fs::metadata(file_path)
+        .ok()
+        .and_then(|metadata| metadata.modified().ok())
+        .and_then(system_time_to_unix_ms)
+}
+
+fn render_source_summary_items(
+    size_bytes: usize,
+    last_modified_ms: Option<u64>,
+    status: &str,
+) -> String {
+    let mut html = String::new();
+    let fields = [
+        ("Raw Size", human_bytes(size_bytes)),
+        (
+            "Last Mod",
+            last_modified_ms
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "-".to_string()),
+        ),
+        ("Status", status.to_string()),
+    ];
+    for (label, value) in fields {
+        html.push_str("<li><span class=\"label\">");
+        html.push_str(label);
+        html.push_str("</span><span class=\"value\">");
+        html.push_str(&html_escape(&value));
+        html.push_str("</span></li>");
+    }
+    html
+}
+
+fn is_probably_binary(content: &[u8]) -> bool {
+    if content.is_empty() {
+        return false;
+    }
+    if content.contains(&0) {
+        return true;
+    }
+    let mut suspicious = 0usize;
+    let sample_len = content.len().min(8192);
+    for b in &content[..sample_len] {
+        let is_text_char = matches!(*b, 0x09 | 0x0A | 0x0D | 0x20..=0x7E);
+        if !is_text_char {
+            suspicious += 1;
+        }
+    }
+    suspicious * 10 > sample_len * 3
+}
+
+fn sanitize_language_class(file_path: &Path) -> String {
+    let ext = file_path
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if ext.is_empty() {
+        return "language-plaintext".to_string();
+    }
+    if ext
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        return format!("language-{}", ext);
+    }
+    "language-plaintext".to_string()
+}
+
+fn create_source_text_response(
+    file_path: &Path,
+    source: &str,
+    source_size_bytes: usize,
+    parent_directory_href: &str,
+    markdown_highlight: Option<&WebMarkdownHighlightConfig>,
+    mode_switch_html: &str,
+) -> Response<std::io::Cursor<Vec<u8>>> {
+    let page_title = file_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .map(html_escape)
+        .unwrap_or_else(|| "Source".to_string());
+    let absolute_path = html_escape(&format_display_path(file_path));
+    let language_class = sanitize_language_class(file_path);
+    let summary_items = render_source_summary_items(
+        source_size_bytes,
+        get_last_modified_ms(file_path),
+        "Syntax Highlight",
+    );
+    let (main_css_link, main_js_script, highlight_css_link, highlight_js_script) =
+        match markdown_highlight {
+            Some(cfg) => (
+                format!(
+                    "<link rel=\"stylesheet\" href=\"{}\" />",
+                    html_escape(&cfg.main_css_url)
+                ),
+                format!(
+                    "<script src=\"{}\"></script>",
+                    html_escape(&cfg.main_js_url)
+                ),
+                format!(
+                    "<link rel=\"stylesheet\" href=\"{}\" />",
+                    html_escape(&cfg.css_url)
+                ),
+                format!("<script src=\"{}\"></script>", html_escape(&cfg.js_url)),
+            ),
+            None => (
+                "".to_string(),
+                "".to_string(),
+                "".to_string(),
+                "".to_string(),
+            ),
+        };
+    let html = SOURCE_VIEW_TEMPLATE
+        .replace("__PAGE_TITLE__", &page_title)
+        .replace("__MAIN_CSS_LINK__", &main_css_link)
+        .replace("__HIGHLIGHT_CSS_LINK__", &highlight_css_link)
+        .replace("__MAIN_JS_SCRIPT__", &main_js_script)
+        .replace("__HIGHLIGHT_JS_SCRIPT__", &highlight_js_script)
+        .replace("__ABSOLUTE_PATH__", &absolute_path)
+        .replace(
+            "__PARENT_DIRECTORY_HREF__",
+            &html_escape(parent_directory_href),
+        )
+        .replace("__MODE_SWITCH_HTML__", mode_switch_html)
+        .replace("__SUMMARY_ITEMS__", &summary_items)
+        .replace("__LANGUAGE_CLASS__", &language_class)
+        .replace("__SOURCE_HTML__", &html_escape(source));
+    let content_type = "text/html; charset=utf-8";
+    if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
+        Response::from_string(html)
+            .with_header(header)
+            .with_status_code(StatusCode(200))
+    } else {
+        Response::from_string(html).with_status_code(StatusCode(200))
+    }
+}
+
+fn resolve_content_type_and_download(file_path: &Path, content: &[u8]) -> (String, bool) {
+    let detected = get_content_type(&file_path.to_path_buf());
+    if detected != "application/octet-stream" {
+        return (detected, false);
+    }
+    if is_probably_binary(content) {
+        ("application/octet-stream".to_string(), true)
+    } else {
+        ("text/plain".to_string(), false)
+    }
+}
+
+fn make_attachment_disposition(file_path: &Path) -> String {
+    let filename = file_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("download.bin")
+        .replace('"', "_")
+        .replace(['\r', '\n'], "");
+    format!("attachment; filename=\"{}\"", filename)
+}
+
 fn create_file_response(
     file_path: &PathBuf,
     allow_html_in_md: bool,
@@ -674,10 +975,17 @@ fn create_file_response(
             if is_markdown_file(file_path.as_path()) && content_mode == ContentMode::Source {
                 let encoding = detect_encoding(&content);
                 let (decoded, _, _) = encoding.decode(&content);
+                let parent_directory_href = resolve_source_parent_directory_href(
+                    url_path,
+                    url_query,
+                    content_mode,
+                    file_path.as_path(),
+                );
                 return create_markdown_response(
                     file_path.as_path(),
                     &decoded,
                     content.len(),
+                    &parent_directory_href,
                     allow_html_in_md,
                     markdown_open_external_link_in_new_tab,
                     markdown_highlight,
@@ -687,19 +995,44 @@ fn create_file_response(
             if is_structured_data_file(file_path.as_path()) && content_mode == ContentMode::Source {
                 let encoding = detect_encoding(&content);
                 let (decoded, _, _) = encoding.decode(&content);
+                let parent_directory_href = resolve_source_parent_directory_href(
+                    url_path,
+                    url_query,
+                    content_mode,
+                    file_path.as_path(),
+                );
                 return create_structured_data_response(
                     file_path.as_path(),
                     &decoded,
+                    &parent_directory_href,
                     markdown_highlight,
                     &mode_switch_html,
                     content.len(),
                 );
             }
-            let base_content_type = if content_mode == ContentMode::Raw {
-                "text/plain".to_string()
-            } else {
-                get_content_type(file_path)
-            };
+            let (base_content_type, should_download) =
+                resolve_content_type_and_download(file_path.as_path(), &content);
+            if content_mode == ContentMode::Source
+                && !should_download
+                && is_text_type(&base_content_type)
+            {
+                let encoding = detect_encoding(&content);
+                let (decoded, _, _) = encoding.decode(&content);
+                let parent_directory_href = resolve_source_parent_directory_href(
+                    url_path,
+                    url_query,
+                    content_mode,
+                    file_path.as_path(),
+                );
+                return create_source_text_response(
+                    file_path.as_path(),
+                    &decoded,
+                    content.len(),
+                    &parent_directory_href,
+                    markdown_highlight,
+                    &mode_switch_html,
+                );
+            }
             let content_type = if is_text_type(&base_content_type) {
                 let encoding = detect_encoding(&content);
                 let charset = encoding.name();
@@ -708,9 +1041,18 @@ fn create_file_response(
                 base_content_type
             };
             if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
-                Response::from_data(content)
+                let mut response = Response::from_data(content)
                     .with_header(header)
-                    .with_status_code(StatusCode(200))
+                    .with_status_code(StatusCode(200));
+                if should_download {
+                    if let Ok(disposition) = Header::from_bytes(
+                        &b"Content-Disposition"[..],
+                        make_attachment_disposition(file_path.as_path()).as_bytes(),
+                    ) {
+                        response = response.with_header(disposition);
+                    }
+                }
+                response
             } else {
                 Response::from_data(content).with_status_code(StatusCode(200))
             }
@@ -830,7 +1172,7 @@ pub fn handle_web_request(
             match decode(segment) {
                 Ok(decoded) => {
                     // Security: Reject traversal after URL decoding (%2e%2e bypass)
-                    if decoded.contains("..") || decoded.starts_with('.') {
+                    if decoded.contains("..") {
                         return create_error_response(StatusCode(400), "Bad Request");
                     }
                     decoded_segments.push(decoded.into_owned());
