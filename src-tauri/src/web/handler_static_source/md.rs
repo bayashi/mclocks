@@ -1,3 +1,4 @@
+use super::template_common;
 use crate::web::common::format_display_path;
 use crate::web_server::WebMarkdownHighlightConfig;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
@@ -26,14 +27,7 @@ __HIGHLIGHT_CSS_LINK__
 </nav>
 <div id="toc-resizer" aria-label="Resize TOC" title="Drag to resize"></div>
 <div id="main">
-<div id="main-header">
-<div id="path-actions">
-<a id="directory-link" href="__PARENT_DIRECTORY_HREF__" title="Open directory">📁</a>
-<div id="main-header-path">__ABSOLUTE_PATH__</div>
-<button id="path-copy-btn" class="header-action-btn" type="button">Copy</button>
-</div>
-__MODE_SWITCH_HTML__
-</div>
+__COMMON_HEADER_HTML__
 <div id="main-separator"></div>
 <div id="content">__RENDERED_HTML__</div>
 </div>
@@ -274,7 +268,7 @@ pub fn create_markdown_response(
         .and_then(|s| s.to_str())
         .map(html_escape)
         .unwrap_or_else(|| "Markdown".to_string());
-    let absolute_path = html_escape(&format_display_path(file_path));
+    let absolute_path = format_display_path(file_path);
     let open_external_link_in_new_tab = if markdown_open_external_link_in_new_tab {
         "true"
     } else {
@@ -324,16 +318,18 @@ pub fn create_markdown_response(
         .replace("__PAGE_TITLE__", &page_title)
         .replace("__SUMMARY_ITEMS__", &summary_items)
         .replace("__TOC_ITEMS__", &toc_items_html)
-        .replace("__ABSOLUTE_PATH__", &absolute_path)
         .replace(
-            "__PARENT_DIRECTORY_HREF__",
-            &html_escape(parent_directory_href),
+            "__COMMON_HEADER_HTML__",
+            &template_common::render_main_header_html(
+                &absolute_path,
+                Some(parent_directory_href),
+                Some(mode_switch_html),
+            ),
         )
         .replace(
             "__OPEN_EXTERNAL_LINK_IN_NEW_TAB__",
             open_external_link_in_new_tab,
         )
-        .replace("__MODE_SWITCH_HTML__", mode_switch_html)
         .replace("__MAIN_CSS_LINK__", &main_css_link)
         .replace("__STATIC_MD_CSS_LINK__", &static_md_css_link)
         .replace("__MAIN_JS_SCRIPT__", &main_js_script)

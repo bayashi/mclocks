@@ -20,6 +20,8 @@ mod md;
 mod structured_dispatcher;
 #[path = "handler_static_source/structured_renderer.rs"]
 mod structured_renderer;
+#[path = "handler_static_source/template_common.rs"]
+mod template_common;
 #[path = "handler_static_source/toml.rs"]
 mod toml;
 #[path = "handler_static_source/yaml.rs"]
@@ -339,13 +341,7 @@ __MODE_SWITCH_HTML__
 <div id="notices"></div>
 </aside>
 <div id="main">
-<div id="main-header">
-<div id="path-actions">
-<a id="directory-link" href="__PARENT_DIRECTORY_HREF__" title="Open directory">📁</a>
-<div id="main-header-path">__ABSOLUTE_PATH__</div>
-<button id="path-copy-btn" type="button">Copy</button>
-</div>
-</div>
+__COMMON_HEADER_HTML__
 <div id="main-separator"></div>
 <pre><code class="__LANGUAGE_CLASS__">__SOURCE_HTML__</code></pre>
 </div>
@@ -876,7 +872,7 @@ fn create_source_text_response(
         .and_then(|s| s.to_str())
         .map(html_escape)
         .unwrap_or_else(|| "Source".to_string());
-    let absolute_path = html_escape(&format_display_path(file_path));
+    let absolute_path = format_display_path(file_path);
     let language_class = sanitize_language_class(file_path);
     let summary_items = render_source_summary_items(
         source_size_bytes,
@@ -913,10 +909,13 @@ fn create_source_text_response(
         .replace("__HIGHLIGHT_CSS_LINK__", &highlight_css_link)
         .replace("__MAIN_JS_SCRIPT__", &main_js_script)
         .replace("__HIGHLIGHT_JS_SCRIPT__", &highlight_js_script)
-        .replace("__ABSOLUTE_PATH__", &absolute_path)
         .replace(
-            "__PARENT_DIRECTORY_HREF__",
-            &html_escape(parent_directory_href),
+            "__COMMON_HEADER_HTML__",
+            &template_common::render_main_header_html(
+                &absolute_path,
+                Some(parent_directory_href),
+                None,
+            ),
         )
         .replace("__MODE_SWITCH_HTML__", mode_switch_html)
         .replace("__SUMMARY_ITEMS__", &summary_items)
