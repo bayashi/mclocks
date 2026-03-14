@@ -593,7 +593,7 @@ mod tests {
     use urlencoding::encode;
 
     #[test]
-    fn test_handle_web_request_root_with_index() {
+    fn test_handle_web_request_root_with_index_shows_directory_listing() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let index_file = root_path.join("index.html");
@@ -610,7 +610,12 @@ mod tests {
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 200);
-        assert_eq!(response.text().unwrap(), "<html>test</html>");
+        let body = response.text().unwrap();
+        assert!(body.contains("<ul>"), "Should show directory listing");
+        assert!(
+            body.contains("index.html"),
+            "Should include index.html as a regular file entry"
+        );
     }
 
     #[test]
@@ -648,7 +653,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_web_request_directory_with_index() {
+    fn test_handle_web_request_directory_with_index_shows_directory_listing() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let subdir = root_path.join("subdir");
@@ -667,7 +672,12 @@ mod tests {
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 200);
-        assert_eq!(response.text().unwrap(), "<html>subdir index</html>");
+        let body = response.text().unwrap();
+        assert!(body.contains("<ul>"), "Should show directory listing");
+        assert!(
+            body.contains("index.html"),
+            "Should include index.html as a regular file entry"
+        );
     }
 
     #[test]

@@ -1042,7 +1042,7 @@ pub fn handle_web_request(
 
     // Determine the actual file path
     let file_path = if url_path == "/" {
-        active_root_path.join("index.html")
+        active_root_path.clone()
     } else {
         let relative_path = url_path.trim_start_matches('/');
         if relative_path.starts_with('/') || (cfg!(windows) && relative_path.contains(':')) {
@@ -1080,21 +1080,8 @@ pub fn handle_web_request(
         }
         Err(_) => {
             // canonicalize() failed, check if file_path exists
-            // Special case: if url_path is "/", check for index.html first
+            // Special case: if url_path is "/", show directory listing
             if url_path == "/" {
-                let index_path = active_root_path.join("index.html");
-                if index_path.exists() && index_path.is_file() {
-                    return create_file_response(
-                        &index_path,
-                        allow_html_in_md,
-                        markdown_open_external_link_in_new_tab,
-                        markdown_highlight,
-                        content_mode,
-                        public_url_path.as_str(),
-                        request_query,
-                    );
-                }
-                // If index.html doesn't exist, show directory listing
                 if active_root_path.exists() && active_root_path.is_dir() {
                     return create_directory_listing(
                         active_root_path.as_path(),
@@ -1127,19 +1114,6 @@ pub fn handle_web_request(
                 if !file_path.starts_with(active_root_path.as_path()) {
                     return create_error_response(StatusCode(404), "Not Found");
                 }
-                // Check for index.html in the directory
-                let index_path = file_path.join("index.html");
-                if index_path.exists() && index_path.is_file() {
-                    return create_file_response(
-                        &index_path,
-                        allow_html_in_md,
-                        markdown_open_external_link_in_new_tab,
-                        markdown_highlight,
-                        content_mode,
-                        public_url_path.as_str(),
-                        request_query,
-                    );
-                }
                 // Generate directory listing
                 return create_directory_listing(
                     &file_path,
@@ -1152,21 +1126,8 @@ pub fn handle_web_request(
         }
     };
 
-    // If the normalized path is a directory, check for index.html
+    // If the normalized path is a directory, show directory listing
     if normalized_path.is_dir() {
-        let index_path = normalized_path.join("index.html");
-        if index_path.exists() {
-            return create_file_response(
-                &index_path,
-                allow_html_in_md,
-                markdown_open_external_link_in_new_tab,
-                markdown_highlight,
-                content_mode,
-                public_url_path.as_str(),
-                request_query,
-            );
-        }
-        // Generate directory listing
         return create_directory_listing(
             &normalized_path,
             public_url_path.as_str(),
