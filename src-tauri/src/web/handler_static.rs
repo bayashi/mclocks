@@ -72,11 +72,11 @@ const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
 * { box-sizing: border-box; }
 body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; }
 #main { padding: 16px 24px; width: 100vw; overflow-wrap: anywhere; word-break: break-word; }
-h1 { color: #ddd; font-size: 26px; margin: 0 0 12px; }
 #header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 10px; }
 #path-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
 #main-header-path { flex: 0 1 auto; min-width: 0; line-height: 1.2; color: #777; font-size: 12px; font-family: "Consolas", "Cascadia Code", "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace; overflow-wrap: anywhere; word-break: break-word; }
-ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid #222; }
+#main-separator { height: 1px; background: #222; margin: 0 0 12px; }
+ul { list-style: none; margin: 0; padding: 0; border-top: none; }
 li { border-bottom: 1px solid #161616; }
 a { display: block; color: #ccc; text-decoration: none; padding: 8px 4px; border-radius: 2px; }
 a:hover { color: #fff; background: #1a1a1a; }
@@ -119,7 +119,7 @@ a:hover { color: #fff; background: #1a1a1a; }
 </div>
 __MODE_SWITCH_HTML__
 </div>
-<h1>Index of __DISPLAY_PATH__</h1>
+<div id="main-separator"></div>
 <ul>
 __LIST_ITEMS__
 </ul>
