@@ -27,7 +27,7 @@
     "diff": "8.0.3",
     "fast-xml-parser": "5.3.8",
     "lodash": "4.17.23",
-    "undici": "6.23.0"
+    "undici": "6.24.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
