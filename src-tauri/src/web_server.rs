@@ -635,10 +635,16 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(body.contains("Index of /"), "Should show directory listing");
+        assert!(body.contains("<ul>"), "Should show directory listing");
         assert!(body.contains("file1.txt"), "Should list file1.txt");
         assert!(body.contains("file2.html"), "Should list file2.html");
         assert!(body.contains("subdir/"), "Should list subdir");
+        assert!(
+            body.contains("mclocks.web.content.mode")
+                && body.contains("data-mode=\"raw\"")
+                && body.contains("data-active-mode=\"raw\""),
+            "Directory listing should include mode switch UI"
+        );
     }
 
     #[test]
@@ -684,10 +690,7 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(
-            body.contains("Index of /subdir/"),
-            "Should show directory listing"
-        );
+        assert!(body.contains("<ul>"), "Should show directory listing");
         assert!(body.contains("file.txt"), "Should list file.txt");
         assert!(body.contains(". . /"), "Should show parent directory link");
     }
@@ -922,7 +925,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/readme.md", port))
+            .get(&format!("http://127.0.0.1:{}/readme.md?mode=source", port))
             .send()
             .expect("Failed to send request");
 
@@ -957,8 +960,11 @@ mod tests {
             "Rendered markdown page should include TOC"
         );
         assert!(
-            body.contains("id=\"raw-toggle\"") && body.contains("href=\"/readme.md?raw=1\""),
-            "Rendered markdown page should include raw toggle link"
+            body.contains("data-mode=\"raw\"")
+                && body.contains("href=\"/readme.md?mode=raw\"")
+                && body.contains("data-mode=\"content\"")
+                && body.contains("href=\"/readme.md\""),
+            "Rendered markdown page should include mode switch links"
         );
         assert!(
             !body.contains("<style>") && !body.contains("mclocks-md-toc-width"),
@@ -980,7 +986,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/raw.md?raw=1", port))
+            .get(&format!("http://127.0.0.1:{}/raw.md?mode=raw", port))
             .send()
             .expect("Failed to send request");
 
@@ -1001,6 +1007,75 @@ mod tests {
     }
 
     #[test]
+    fn test_handle_web_request_markdown_file_without_mode_serves_markdown_text() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let md_file = root_path.join("plain.md");
+        fs::write(&md_file, "# Plain Title\n").expect("Failed to create plain.md");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/plain.md", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/markdown"),
+            "Default markdown response should be text/markdown, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(body, "# Plain Title\n");
+    }
+
+    #[test]
+    fn test_handle_web_request_invalid_mode_is_treated_as_default() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let md_file = root_path.join("invalid-mode.md");
+        fs::write(&md_file, "# Invalid Mode\n").expect("Failed to create invalid-mode.md");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!(
+                "http://127.0.0.1:{}/invalid-mode.md?mode=unknown",
+                port
+            ))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/markdown"),
+            "Invalid mode should fall back to default response, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(body, "# Invalid Mode\n");
+    }
+
+    #[test]
     fn test_handle_web_request_markdown_extension_renders_html() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
@@ -1017,7 +1092,10 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/readme.markdown", port))
+            .get(&format!(
+                "http://127.0.0.1:{}/readme.markdown?mode=source",
+                port
+            ))
             .send()
             .expect("Failed to send request");
 
@@ -1044,8 +1122,11 @@ mod tests {
             "Rendered markdown(.markdown) page should include TOC"
         );
         assert!(
-            body.contains("id=\"raw-toggle\"") && body.contains("href=\"/readme.markdown?raw=1\""),
-            "Rendered markdown(.markdown) page should include raw toggle link"
+            body.contains("data-mode=\"raw\"")
+                && body.contains("href=\"/readme.markdown?mode=raw\"")
+                && body.contains("data-mode=\"content\"")
+                && body.contains("href=\"/readme.markdown\""),
+            "Rendered markdown(.markdown) page should include mode switch links"
         );
     }
 
@@ -1063,7 +1144,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/raw.markdown?raw=1", port))
+            .get(&format!("http://127.0.0.1:{}/raw.markdown?mode=raw", port))
             .send()
             .expect("Failed to send request");
 
@@ -1100,7 +1181,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/data.json", port))
+            .get(&format!("http://127.0.0.1:{}/data.json?mode=source", port))
             .send()
             .expect("Failed to send request");
 
@@ -1131,8 +1212,11 @@ mod tests {
             "JSON view should include outline pane"
         );
         assert!(
-            body.contains("id=\"raw-toggle\"") && body.contains("href=\"/data.json?raw=1\""),
-            "JSON view should include raw toggle link"
+            body.contains("data-mode=\"raw\"")
+                && body.contains("href=\"/data.json?mode=raw\"")
+                && body.contains("data-mode=\"content\"")
+                && body.contains("href=\"/data.json\""),
+            "JSON view should include mode switch links"
         );
         assert!(
             body.contains("json-key") && body.contains("json-string"),
@@ -1154,7 +1238,10 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/array-obj.json", port))
+            .get(&format!(
+                "http://127.0.0.1:{}/array-obj.json?mode=source",
+                port
+            ))
             .send()
             .expect("Failed to send request");
 
@@ -1191,7 +1278,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/raw.json?raw=1", port))
+            .get(&format!("http://127.0.0.1:{}/raw.json?mode=raw", port))
             .send()
             .expect("Failed to send request");
 
@@ -1212,6 +1299,39 @@ mod tests {
     }
 
     #[test]
+    fn test_handle_web_request_json_file_without_mode_serves_json_text() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let json_file = root_path.join("plain.json");
+        fs::write(&json_file, r#"{"name":"plain"}"#).expect("Failed to create plain.json");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/plain.json", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("application/json"),
+            "Default JSON response should be application/json, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(body, r#"{"name":"plain"}"#);
+    }
+
+    #[test]
     fn test_handle_web_request_yaml_file_renders_html_view() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
@@ -1228,7 +1348,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/data.yaml", port))
+            .get(&format!("http://127.0.0.1:{}/data.yaml?mode=source", port))
             .send()
             .expect("Failed to send request");
 
@@ -1255,8 +1375,11 @@ mod tests {
             "YAML view should include outline pane"
         );
         assert!(
-            body.contains("id=\"raw-toggle\"") && body.contains("href=\"/data.yaml?raw=1\""),
-            "YAML view should include raw toggle link"
+            body.contains("data-mode=\"raw\"")
+                && body.contains("href=\"/data.yaml?mode=raw\"")
+                && body.contains("data-mode=\"content\"")
+                && body.contains("href=\"/data.yaml\""),
+            "YAML view should include mode switch links"
         );
         assert!(
             body.contains("yaml-key") && body.contains("yaml-bool"),
@@ -1281,7 +1404,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/raw.yml?raw=1", port))
+            .get(&format!("http://127.0.0.1:{}/raw.yml?mode=raw", port))
             .send()
             .expect("Failed to send request");
 
@@ -1318,7 +1441,10 @@ mod tests {
         let client = reqwest::blocking::Client::new();
         for ext in ["ini", "config", "cfg"] {
             let response = client
-                .get(&format!("http://127.0.0.1:{}/settings.{}", port, ext))
+                .get(&format!(
+                    "http://127.0.0.1:{}/settings.{}?mode=source",
+                    port, ext
+                ))
                 .send()
                 .expect("Failed to send request");
             assert_eq!(response.status(), 200);
@@ -1344,9 +1470,11 @@ mod tests {
                 "INI family view should include outline pane"
             );
             assert!(
-                body.contains("id=\"raw-toggle\"")
-                    && body.contains(&format!("href=\"/settings.{}?raw=1\"", ext)),
-                "INI family view should include raw toggle link"
+                body.contains("data-mode=\"raw\"")
+                    && body.contains(&format!("href=\"/settings.{}?mode=raw\"", ext))
+                    && body.contains("data-mode=\"content\"")
+                    && body.contains(&format!("href=\"/settings.{}\"", ext)),
+                "INI family view should include mode switch links"
             );
             assert!(
                 body.contains("json-key") && body.contains("json-string"),
@@ -1369,7 +1497,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/raw.ini?raw=1", port))
+            .get(&format!("http://127.0.0.1:{}/raw.ini?mode=raw", port))
             .send()
             .expect("Failed to send request");
 
@@ -1406,7 +1534,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/data.toml", port))
+            .get(&format!("http://127.0.0.1:{}/data.toml?mode=source", port))
             .send()
             .expect("Failed to send request");
 
@@ -1433,8 +1561,11 @@ mod tests {
             "TOML view should include outline pane"
         );
         assert!(
-            body.contains("id=\"raw-toggle\"") && body.contains("href=\"/data.toml?raw=1\""),
-            "TOML view should include raw toggle link"
+            body.contains("data-mode=\"raw\"")
+                && body.contains("href=\"/data.toml?mode=raw\"")
+                && body.contains("data-mode=\"content\"")
+                && body.contains("href=\"/data.toml\""),
+            "TOML view should include mode switch links"
         );
         assert!(
             body.contains("json-key") && body.contains("json-bool"),
@@ -1463,7 +1594,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/raw.toml?raw=1", port))
+            .get(&format!("http://127.0.0.1:{}/raw.toml?mode=raw", port))
             .send()
             .expect("Failed to send request");
 
@@ -1496,7 +1627,10 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/invalid.json", port))
+            .get(&format!(
+                "http://127.0.0.1:{}/invalid.json?mode=source",
+                port
+            ))
             .send()
             .expect("Failed to send request");
 
@@ -1527,7 +1661,7 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/large.json", port))
+            .get(&format!("http://127.0.0.1:{}/large.json?mode=source", port))
             .send()
             .expect("Failed to send request");
 
@@ -1624,7 +1758,7 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(body.contains("Index of /"), "Should show directory listing");
+        assert!(body.contains("<ul>"), "Should show directory listing");
         assert!(
             body.contains("美乳雀のソーダ"),
             "Should show decoded directory name in title"
@@ -1654,7 +1788,7 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(body.contains("Index of /"), "Should show directory listing");
+        assert!(body.contains("<ul>"), "Should show directory listing");
         // Check that multibyte characters are displayed correctly (not URL encoded)
         assert!(
             body.contains("日本語ファイル.txt"),
@@ -1901,7 +2035,10 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/raw-html.md", port))
+            .get(&format!(
+                "http://127.0.0.1:{}/raw-html.md?mode=source",
+                port
+            ))
             .send()
             .expect("Failed to send request");
         assert_eq!(response.status(), 200);
@@ -1931,7 +2068,10 @@ mod tests {
 
         let client = reqwest::blocking::Client::new();
         let response = client
-            .get(&format!("http://127.0.0.1:{}/raw-html.md", port))
+            .get(&format!(
+                "http://127.0.0.1:{}/raw-html.md?mode=source",
+                port
+            ))
             .send()
             .expect("Failed to send request");
         assert_eq!(response.status(), 200);

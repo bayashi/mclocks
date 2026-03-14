@@ -229,15 +229,25 @@ pre{
 	color:#fff;
 }
 
-#main-header #raw-toggle:link,
-#main-header #raw-toggle:visited{
+#main-header .mode-switch{
+	display:flex;
+	gap:6px;
+}
+
+#main-header .mode-btn:link,
+#main-header .mode-btn:visited{
 	color:#fff;
 }
 
 #main-header #path-copy-btn:hover,
-#main-header #raw-toggle:hover{
+#main-header .mode-btn:hover{
 	background:#666;
 	color:#fff;
+}
+
+#main-header .mode-btn.is-active{
+	background:#555;
+	border-color:#777;
 }
 
 #main-header .header-action-btn:focus,

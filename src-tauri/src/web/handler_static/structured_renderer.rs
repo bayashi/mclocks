@@ -32,7 +32,7 @@ __STRUCTURED_FORMAT_CSS_LINK__
 <div id="main-header-path">__ABSOLUTE_PATH__</div>
 <button id="path-copy-btn" class="header-action-btn" type="button">Copy</button>
 </div>
-<a id="raw-toggle" class="header-action-btn" href="__RAW_TOGGLE_HREF__">Raw</a>
+__MODE_SWITCH_HTML__
 </div>
 <div id="main-separator"></div>
 <pre id="json-view">__JSON_VIEW_HTML__</pre>
@@ -292,7 +292,7 @@ pub fn build_html_response(
     outline_items: &str,
     notices_html: &str,
     summary_items: &str,
-    raw_content_toggle_href: &str,
+    mode_switch_html: &str,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     view_kind: StructuredViewKind,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
@@ -373,7 +373,7 @@ pub fn build_html_response(
         .replace("__NOTICE_ITEMS__", notices_html)
         .replace("__OUTLINE_ITEMS__", outline_items)
         .replace("__ABSOLUTE_PATH__", &html_escape(absolute_path))
-        .replace("__RAW_TOGGLE_HREF__", &html_escape(raw_content_toggle_href))
+        .replace("__MODE_SWITCH_HTML__", mode_switch_html)
         .replace("__JSON_VIEW_HTML__", json_html);
     let content_type = "text/html; charset=utf-8";
     if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
