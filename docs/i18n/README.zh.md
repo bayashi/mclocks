@@ -305,7 +305,7 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 
 * `root`：包含要提供的文件的目录路径（必需）
 * `port`：监听的端口号（默认：3030）
-* `open_browser_at_start`：如果设置为 `true`，`mclocks` 启动时自动在默认浏览器中打开 Web 服务器 URL（默认：`false`）
+* `openBrowserAtStart`：如果设置为 `true`，`mclocks` 启动时自动在默认浏览器中打开 Web 服务器 URL（默认：`false`）
 * `dump`：如果设置为 `true`，启用以 JSON 返回请求详情的 `/dump` 端点（默认：`false`）
 * `slow`：如果设置为 `true`，启用延迟响应的 `/slow` 端点（默认：`false`）
 * `status`：如果设置为 `true`，启用返回任意 HTTP 状态码的 `/status/{code}` 端点（默认：`false`）

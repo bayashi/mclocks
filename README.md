@@ -326,7 +326,7 @@ The maximum text size per sticky note is 128 KB.
 
 * `root`: Path to the directory containing files to serve (required)
 * `port`: Preferred port number for the main web server (`>=2000`, default: `3030`). If the preferred port is in use, mclocks searches downward (`-1`) until it finds an available port.
-* `open_browser_at_start`: If set to `true`, automatically opens the web server URL in the default browser when `mclocks` starts (default: `false`)
+* `openBrowserAtStart`: If set to `true`, automatically opens the web server URL in the default browser when `mclocks` starts (default: `false`)
 * `dump`: If set to `true`, enables the `/dump` endpoint that returns request details as JSON (default: `false`)
 * `slow`: If set to `true`, enables the `/slow` endpoint that delays the response (default: `false`)
 * `status`: If set to `true`, enables the `/status/{code}` endpoint that returns arbitrary HTTP status codes (default: `false`)
@@ -336,17 +336,21 @@ The maximum text size per sticky note is 128 KB.
 
 If the `web` field is configured in your `config.json`, the web server starts automatically when `mclocks` launches. The main server starts at `web.port` (or `3030`) and falls back downward when needed. The web server only listens on `127.0.0.1` (localhost), so it is only accessible from your local machine.
 
-### Supported file types
+### Content mode
 
-The web server supports the following file types:
+The web viewer supports `mode` query options such as `content`, `raw`, and `source`.
 
-* Text: `html`, `css`, `js`, `json`, `yaml(yml)`, `toml`, `md(markdown)`, `txt`
-* Images: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+* `content` (default): Serves the file with its detected content type, so browsers can render it normally when possible.
+* `raw`: Returns non-binary files as `text/plain` to show the raw text safely without browser-side rendering.
+* `source`: Opens the source viewer layout with summary/sidebar navigation for supported formats, while still allowing safe plain-text inspection for unsupported text files.
 
 ### drag-and-drop based content viewer
 
-In addition to static file hosting, the web server also includes a drag-and-drop based content viewer workflow: when you drag and drop a file or directory onto the mclocks clock window, it can be opened and viewed through temporary local URLs.
-These temporary URLs are discarded when mclocks exits.
+In addition to static file hosting, mclocks supports a drag-and-drop content viewer workflow:
+
+* Drop a directory onto the clock window to open it in the web viewer via a temporary local URL.
+* Drop a single file to open it in the web viewer when the file type is supported by the temporary-file viewer.
+* The generated temporary URLs are local-only and are discarded when mclocks exits.
 
 ### /dump endpoint
 

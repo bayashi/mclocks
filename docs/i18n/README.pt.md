@@ -305,7 +305,7 @@ O `mclocks` pode servir arquivos estáticos por meio de um servidor web integrad
 
 * `root`: Caminho para o diretório contendo os arquivos a serem servidos (obrigatório)
 * `port`: Número da porta para escutar (padrão: 3030)
-* `open_browser_at_start`: Se definido como `true`, abre automaticamente a URL do servidor web no navegador padrão quando o `mclocks` inicia (padrão: `false`)
+* `openBrowserAtStart`: Se definido como `true`, abre automaticamente a URL do servidor web no navegador padrão quando o `mclocks` inicia (padrão: `false`)
 * `dump`: Se definido como `true`, habilita o endpoint `/dump` que retorna detalhes da requisição como JSON (padrão: `false`)
 * `slow`: Se definido como `true`, habilita o endpoint `/slow` que atrasa a resposta (padrão: `false`)
 * `status`: Se definido como `true`, habilita o endpoint `/status/{code}` que retorna códigos de status HTTP arbitrários (padrão: `false`)
