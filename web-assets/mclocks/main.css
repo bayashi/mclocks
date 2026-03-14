@@ -59,6 +59,52 @@ body{
 	border-color:#777;
 }
 
+:is(#toc,#sidebar) #summary-list{
+	margin:0 0 24px;
+}
+
+#summary-list li{
+	display:flex;
+	gap:4px;
+	margin:0 0 6px;
+	font-size:12px;
+}
+
+#summary-list .label{
+	color:#777;
+	min-width:58px;
+}
+
+#summary-list .value{
+	color:#ccc;
+	overflow-wrap:anywhere;
+	word-break:break-word;
+}
+
+:is(#toc-resizer,#resizer){
+	position:fixed;
+	top:0;
+	width:6px;
+	height:100vh;
+	cursor:col-resize;
+	background:transparent;
+	z-index:20;
+}
+
+:is(#toc-resizer,#resizer):hover{
+	background:#222;
+}
+
+:is(#toc-resizer,#resizer).is-dragging{
+	background:#333;
+}
+
+#main{
+	padding:16px 24px;
+	overflow-wrap:anywhere;
+	word-break:break-word;
+}
+
 #main-header{
 	display:flex;
 	justify-content:space-between;

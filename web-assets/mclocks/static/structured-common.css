@@ -31,28 +31,6 @@ body{
 	padding:0;
 }
 
-#sidebar #summary-list{
-	margin:0 0 24px;
-}
-
-#summary-list li{
-	display:flex;
-	gap:4px;
-	margin:0 0 6px;
-	font-size:12px;
-}
-
-.label{
-	color:#777;
-	min-width:58px;
-}
-
-.value{
-	color:#ccc;
-	overflow-wrap:anywhere;
-	word-break:break-word;
-}
-
 #notices{
 	margin:0;
 }
@@ -91,28 +69,12 @@ body{
 }
 
 #resizer{
-	position:fixed;
-	top:0;
 	left:calc(var(--sidebar-width) - 3px);
-	width:6px;
-	height:100vh;
-	cursor:col-resize;
-	background:transparent;
-	z-index:20;
-}
-
-#resizer:hover{
-	background:#222;
-}
-
-#resizer.is-dragging{
-	background:#333;
 }
 
 #main{
 	margin-left:var(--sidebar-width);
 	width:calc(100vw - var(--sidebar-width));
-	padding:16px 24px;
 }
 
 

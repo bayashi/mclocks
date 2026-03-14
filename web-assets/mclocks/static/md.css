@@ -34,28 +34,6 @@ body{
 	padding:0;
 }
 
-#toc #summary-list{
-	margin:0 0 24px;
-}
-
-#summary-list li{
-	display:flex;
-	gap:4px;
-	margin:0 0 6px;
-	font-size:12px;
-}
-
-#summary-list .label{
-	color:#777;
-	min-width:58px;
-}
-
-#summary-list .value{
-	color:#ccc;
-	overflow-wrap:anywhere;
-	word-break:break-word;
-}
-
 #toc li a{
 	display:block;
 	color:#555;
@@ -100,30 +78,12 @@ body{
 }
 
 #toc-resizer{
-	position:fixed;
-	top:0;
 	left:calc(var(--toc-width) - 3px);
-	width:6px;
-	height:100vh;
-	cursor:col-resize;
-	background:transparent;
-	z-index:20;
-}
-
-#toc-resizer:hover{
-	background:#222;
-}
-
-#toc-resizer.is-dragging{
-	background:#333;
 }
 
 #main{
 	margin-left:var(--toc-width);
-	padding:16px 24px;
 	width:calc(100vw - var(--toc-width));
-	overflow-wrap:anywhere;
-	word-break:break-word;
 }
 
 #content a:link{

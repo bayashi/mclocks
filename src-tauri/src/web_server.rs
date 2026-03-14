@@ -223,7 +223,7 @@ const MCLOCKS_STATIC_TOML_JS_REL_PATH: &str = "mclocks/static/toml.js";
 const MCLOCKS_STATIC_TOML_CSS_REL_PATH: &str = "mclocks/static/toml.css";
 const MCLOCKS_STATIC_INI_JS_REL_PATH: &str = "mclocks/static/ini.js";
 const MCLOCKS_STATIC_INI_CSS_REL_PATH: &str = "mclocks/static/ini.css";
-const MCLOCKS_ASSETS_VERSION: &str = "20260310-2";
+const MCLOCKS_ASSETS_VERSION: &str = "20260314-1";
 
 pub fn start_web_server(
     root: String,
