@@ -326,7 +326,7 @@ The maximum text size per sticky note is 128 KB.
 
 * `root`: Path to the directory containing files to serve (required)
 * `port`: Preferred port number for the main web server (`>=2000`, default: `3030`). If the preferred port is in use, mclocks searches downward (`-1`) until it finds an available port.
-* `open_browser_at_start`: If set to `true`, automatically opens the web server URL in the default browser when `mclocks` starts (default: `false`)
+* `openBrowserAtStart`: If set to `true`, automatically opens the web server URL in the default browser when `mclocks` starts (default: `false`)
 * `dump`: If set to `true`, enables the `/dump` endpoint that returns request details as JSON (default: `false`)
 * `slow`: If set to `true`, enables the `/slow` endpoint that delays the response (default: `false`)
 * `status`: If set to `true`, enables the `/status/{code}` endpoint that returns arbitrary HTTP status codes (default: `false`)
