@@ -72,11 +72,13 @@ body{
 
 #summary-list .label{
 	color:#777;
-	min-width:58px;
+	flex:0 0 58px;
 }
 
 #summary-list .value{
+	flex:1;
 	color:#ccc;
+	text-align:left;
 	overflow-wrap:anywhere;
 	word-break:break-word;
 }
