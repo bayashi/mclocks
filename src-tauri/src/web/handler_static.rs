@@ -10,19 +10,19 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_http::{Header, Response, StatusCode};
 use urlencoding::{decode, encode};
 
-#[path = "handler_static/ini.rs"]
+#[path = "handler_static_source/ini.rs"]
 mod ini;
-#[path = "handler_static/json.rs"]
+#[path = "handler_static_source/json.rs"]
 mod json;
-#[path = "handler_static/md.rs"]
+#[path = "handler_static_source/md.rs"]
 mod md;
-#[path = "handler_static/structured_dispatcher.rs"]
+#[path = "handler_static_source/structured_dispatcher.rs"]
 mod structured_dispatcher;
-#[path = "handler_static/structured_renderer.rs"]
+#[path = "handler_static_source/structured_renderer.rs"]
 mod structured_renderer;
-#[path = "handler_static/toml.rs"]
+#[path = "handler_static_source/toml.rs"]
 mod toml;
-#[path = "handler_static/yaml.rs"]
+#[path = "handler_static_source/yaml.rs"]
 mod yaml;
 
 use self::md::{create_markdown_response, is_markdown_file};
