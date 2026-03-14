@@ -140,8 +140,9 @@ fn render_colorized_json_with_indent(value: &Value, path: &str, indent: usize, o
 pub fn create_json_response(
     file_path: &Path,
     source: &str,
+    parent_directory_href: &str,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
-    raw_content_toggle_href: &str,
+    mode_switch_html: &str,
     source_size_bytes: usize,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let page_title = file_path
@@ -152,46 +153,55 @@ pub fn create_json_response(
     let absolute_path = format_display_path(file_path);
     let should_colorize = source_size_bytes <= JSON_COLORIZE_LIMIT_BYTES;
     let parsed = serde_json::from_str::<Value>(source);
-    let (root_type, _children_count, json_html, outline_items, notices_html, view_status) =
-        match parsed {
-            Ok(value) => {
-                let (root_type, children_count) = classify_json(&value);
-                let rendered = if should_colorize {
-                    render_colorized_json(&value)
-                } else {
-                    match serde_json::to_string_pretty(&value) {
-                        Ok(pretty) => html_escape(&pretty),
-                        Err(_) => html_escape(source),
-                    }
-                };
-                (
-                    root_type.to_string(),
-                    children_count,
-                    rendered,
-                    render_outline_items(Some(&value)),
-                    render_json_notice_items(None),
-                    if should_colorize {
-                        "Parse OK".to_string()
-                    } else {
-                        "Parse OK (Colorize: disabled >10 MB)".to_string()
-                    },
-                )
-            }
-            Err(err) => {
-                let mut invalid_status = format!("Parse Error: {}", err);
-                if !should_colorize {
-                    invalid_status.push_str(" / Colorize: disabled >10 MB");
+    let (
+        root_type,
+        _children_count,
+        json_html,
+        outline_items,
+        show_outline,
+        notices_html,
+        view_status,
+    ) = match parsed {
+        Ok(value) => {
+            let (root_type, children_count) = classify_json(&value);
+            let rendered = if should_colorize {
+                render_colorized_json(&value)
+            } else {
+                match serde_json::to_string_pretty(&value) {
+                    Ok(pretty) => html_escape(&pretty),
+                    Err(_) => html_escape(source),
                 }
-                (
-                    "invalid".to_string(),
-                    0usize,
-                    html_escape(source),
-                    render_outline_items(None),
-                    render_json_notice_items(Some(&err)),
-                    invalid_status,
-                )
+            };
+            (
+                root_type.to_string(),
+                children_count,
+                rendered,
+                render_outline_items(Some(&value)),
+                true,
+                render_json_notice_items(None),
+                if should_colorize {
+                    "Parse OK".to_string()
+                } else {
+                    "Parse OK (Colorize: disabled >10 MB)".to_string()
+                },
+            )
+        }
+        Err(err) => {
+            let mut invalid_status = format!("Parse Error: {}", err);
+            if !should_colorize {
+                invalid_status.push_str(" / Colorize: disabled >10 MB");
             }
-        };
+            (
+                "invalid".to_string(),
+                0usize,
+                html_escape(source),
+                render_outline_items(None),
+                false,
+                render_json_notice_items(Some(&err)),
+                invalid_status,
+            )
+        }
+    };
     let summary_items = render_summary_items(
         &root_type,
         source_size_bytes,
@@ -201,11 +211,13 @@ pub fn create_json_response(
     build_html_response(
         &page_title,
         &absolute_path,
+        parent_directory_href,
         &json_html,
         &outline_items,
+        show_outline,
         &notices_html,
         &summary_items,
-        raw_content_toggle_href,
+        mode_switch_html,
         markdown_highlight,
         StructuredViewKind::Json,
     )

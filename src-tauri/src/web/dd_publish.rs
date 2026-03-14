@@ -183,7 +183,10 @@ pub fn resolve_temp_file(path: &str) -> Option<PathBuf> {
 }
 
 pub fn build_temp_share_url(port: u16, hash: &str) -> String {
-    format!("http://127.0.0.1:{}{}{}/", port, TEMP_DIR_PREFIX, hash)
+    format!(
+        "http://127.0.0.1:{}{}{}/?mode=source",
+        port, TEMP_DIR_PREFIX, hash
+    )
 }
 
 pub fn build_temp_file_url(port: u16, hash: &str, path: &Path) -> Result<String, String> {
@@ -194,15 +197,16 @@ pub fn build_temp_file_url(port: u16, hash: &str, path: &Path) -> Result<String,
         .to_string();
     let encoded_name = encode(&file_name);
     Ok(format!(
-        "http://127.0.0.1:{}{}{}/{}",
+        "http://127.0.0.1:{}{}{}/{}?mode=source",
         port, TEMP_FILE_PREFIX, hash, encoded_name
     ))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::register_temp_file;
+    use super::{build_temp_file_url, build_temp_share_url, register_temp_file};
     use std::fs;
+    use std::path::PathBuf;
     use tempfile::TempDir;
 
     #[test]
@@ -232,5 +236,22 @@ mod tests {
                 ext
             );
         }
+    }
+
+    #[test]
+    fn test_build_temp_share_url_appends_render_mode() {
+        let url = build_temp_share_url(3030, "abc12345");
+        assert_eq!(url, "http://127.0.0.1:3030/tmpdir-abc12345/?mode=source");
+    }
+
+    #[test]
+    fn test_build_temp_file_url_appends_render_mode() {
+        let path = PathBuf::from("foo.md");
+        let url = build_temp_file_url(3030, "abc12345", path.as_path())
+            .expect("Failed to build temp file URL");
+        assert_eq!(
+            url,
+            "http://127.0.0.1:3030/tmpfile-abc12345/foo.md?mode=source"
+        );
     }
 }

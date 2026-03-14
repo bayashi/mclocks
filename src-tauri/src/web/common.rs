@@ -34,36 +34,9 @@ pub fn is_supported_web_file(path: &Path) -> bool {
     }
 }
 
-pub fn get_web_content_type(path: &Path) -> &'static str {
-    match path.extension().and_then(|s| s.to_str()) {
-        Some(ext) if ext.eq_ignore_ascii_case("html") => "text/html",
-        Some(ext) if ext.eq_ignore_ascii_case("css") => "text/css",
-        Some(ext) if ext.eq_ignore_ascii_case("js") => "application/javascript",
-        Some(ext) if ext.eq_ignore_ascii_case("json") => "application/json",
-        Some(ext) if ext.eq_ignore_ascii_case("yaml") || ext.eq_ignore_ascii_case("yml") => {
-            "application/yaml"
-        }
-        Some(ext)
-            if ext.eq_ignore_ascii_case("ini")
-                || ext.eq_ignore_ascii_case("config")
-                || ext.eq_ignore_ascii_case("cfg") =>
-        {
-            "text/plain"
-        }
-        Some(ext) if ext.eq_ignore_ascii_case("toml") => "text/plain",
-        Some(ext) if ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("markdown") => {
-            "text/markdown"
-        }
-        Some(ext) if ext.eq_ignore_ascii_case("png") => "image/png",
-        Some(ext) if ext.eq_ignore_ascii_case("jpg") || ext.eq_ignore_ascii_case("jpeg") => {
-            "image/jpeg"
-        }
-        Some(ext) if ext.eq_ignore_ascii_case("gif") => "image/gif",
-        Some(ext) if ext.eq_ignore_ascii_case("svg") => "image/svg+xml",
-        Some(ext) if ext.eq_ignore_ascii_case("ico") => "image/x-icon",
-        Some(ext) if ext.eq_ignore_ascii_case("txt") => "text/plain",
-        _ => "application/octet-stream",
-    }
+pub fn get_web_content_type(path: &Path) -> String {
+    let guessed = mime_guess::from_path(path).first_or_octet_stream();
+    guessed.essence_str().to_string()
 }
 
 pub fn format_display_path(path: &Path) -> String {

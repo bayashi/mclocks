@@ -88,6 +88,35 @@ const onDropTempWebRoot = async (payload) => {
   }
 };
 
+const isDraggingPathPayload = (payload) => {
+  return Array.isArray(payload?.paths) && payload.paths.length > 0;
+};
+
+const updateDropHoverState = (mainElement, payload) => {
+  if (!mainElement) {
+    return;
+  }
+  if (!payload) {
+    mainElement.classList.remove('is-drop-hover');
+    return;
+  }
+  switch (payload.type) {
+    case 'enter':
+    case 'over':
+      if (isDraggingPathPayload(payload)) {
+        mainElement.classList.add('is-drop-hover');
+      }
+      break;
+    case 'leave':
+    case 'drop':
+      mainElement.classList.remove('is-drop-hover');
+      break;
+    default:
+      // Keep current state for unknown payload types.
+      break;
+  }
+};
+
 /**
  * Initialize global event handlers and window behavior
  * @param {ClockCtx} clockCtx - Application context
@@ -142,6 +171,7 @@ const clockGlobalInit = async (clockCtx) => {
 
   try {
     await currentClockWindow.onDragDropEvent((event) => {
+      updateDropHoverState(clockCtx.mainElement(), event.payload);
       onDropTempWebRoot(event.payload);
     });
   } catch (error) {

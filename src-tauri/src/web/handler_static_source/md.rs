@@ -1,3 +1,4 @@
+use super::template_common;
 use crate::web::common::format_display_path;
 use crate::web_server::WebMarkdownHighlightConfig;
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
@@ -19,6 +20,7 @@ __HIGHLIGHT_CSS_LINK__
 </head>
 <body class="mclocks-md" data-open-external-link-in-new-tab="__OPEN_EXTERNAL_LINK_IN_NEW_TAB__">
 <nav id="toc">
+<div id="sidebar-controls">__MODE_SWITCH_HTML__</div>
 <h2>Summary</h2>
 <ul id="summary-list">__SUMMARY_ITEMS__</ul>
 <h2>Index</h2>
@@ -26,13 +28,7 @@ __HIGHLIGHT_CSS_LINK__
 </nav>
 <div id="toc-resizer" aria-label="Resize TOC" title="Drag to resize"></div>
 <div id="main">
-<div id="main-header">
-<div id="path-actions">
-<div id="main-header-path">__ABSOLUTE_PATH__</div>
-<button id="path-copy-btn" class="header-action-btn" type="button">Copy</button>
-</div>
-<a id="raw-toggle" class="header-action-btn" href="__RAW_TOGGLE_HREF__">Raw</a>
-</div>
+__COMMON_HEADER_HTML__
 <div id="main-separator"></div>
 <div id="content">__RENDERED_HTML__</div>
 </div>
@@ -249,60 +245,15 @@ pub fn is_markdown_file(path: &Path) -> bool {
     }
 }
 
-pub fn should_serve_raw_content(url: &str) -> bool {
-    let query = match url.split('?').nth(1) {
-        Some(q) => q.split('#').next().unwrap_or(q),
-        None => return false,
-    };
-    for pair in query.split('&') {
-        if pair.is_empty() {
-            continue;
-        }
-        let mut kv = pair.splitn(2, '=');
-        let key = kv.next().unwrap_or("");
-        let value = kv.next().unwrap_or("");
-        if key == "raw" && (value == "1" || value.eq_ignore_ascii_case("true")) {
-            return true;
-        }
-    }
-    false
-}
-
-pub fn build_raw_content_toggle_href(url: &str) -> String {
-    let no_fragment = url.split('#').next().unwrap_or(url);
-    let mut parts = no_fragment.splitn(2, '?');
-    let path = parts.next().unwrap_or("/");
-    let query = parts.next().unwrap_or("");
-    let is_raw_mode = should_serve_raw_content(url);
-    let mut kept_pairs: Vec<String> = Vec::new();
-    for pair in query.split('&') {
-        if pair.is_empty() {
-            continue;
-        }
-        let key = pair.splitn(2, '=').next().unwrap_or("");
-        if key == "raw" {
-            continue;
-        }
-        kept_pairs.push(pair.to_string());
-    }
-    if !is_raw_mode {
-        kept_pairs.push("raw=1".to_string());
-    }
-    if kept_pairs.is_empty() {
-        path.to_string()
-    } else {
-        format!("{}?{}", path, kept_pairs.join("&"))
-    }
-}
-
 pub fn create_markdown_response(
     file_path: &Path,
     markdown_source: &str,
     raw_size_bytes: usize,
+    parent_directory_href: &str,
     allow_html_in_md: bool,
     markdown_open_external_link_in_new_tab: bool,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
-    raw_toggle_href: &str,
+    mode_switch_html: &str,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let headings = extract_markdown_headings(markdown_source);
     let rendered_html = render_markdown_html(markdown_source, allow_html_in_md);
@@ -318,7 +269,7 @@ pub fn create_markdown_response(
         .and_then(|s| s.to_str())
         .map(html_escape)
         .unwrap_or_else(|| "Markdown".to_string());
-    let absolute_path = html_escape(&format_display_path(file_path));
+    let absolute_path = format_display_path(file_path);
     let open_external_link_in_new_tab = if markdown_open_external_link_in_new_tab {
         "true"
     } else {
@@ -368,12 +319,19 @@ pub fn create_markdown_response(
         .replace("__PAGE_TITLE__", &page_title)
         .replace("__SUMMARY_ITEMS__", &summary_items)
         .replace("__TOC_ITEMS__", &toc_items_html)
-        .replace("__ABSOLUTE_PATH__", &absolute_path)
+        .replace(
+            "__COMMON_HEADER_HTML__",
+            &template_common::render_main_header_html(
+                &absolute_path,
+                Some(parent_directory_href),
+                None,
+            ),
+        )
         .replace(
             "__OPEN_EXTERNAL_LINK_IN_NEW_TAB__",
             open_external_link_in_new_tab,
         )
-        .replace("__RAW_TOGGLE_HREF__", &html_escape(raw_toggle_href))
+        .replace("__MODE_SWITCH_HTML__", mode_switch_html)
         .replace("__MAIN_CSS_LINK__", &main_css_link)
         .replace("__STATIC_MD_CSS_LINK__", &static_md_css_link)
         .replace("__MAIN_JS_SCRIPT__", &main_js_script)

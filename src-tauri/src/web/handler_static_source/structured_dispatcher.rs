@@ -13,40 +13,45 @@ pub fn is_structured_data_file(path: &Path) -> bool {
 pub fn create_structured_data_response(
     file_path: &Path,
     source: &str,
+    parent_directory_href: &str,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
-    raw_content_toggle_href: &str,
+    mode_switch_html: &str,
     source_size_bytes: usize,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     if is_json_file(file_path) {
         create_json_response(
             file_path,
             source,
+            parent_directory_href,
             markdown_highlight,
-            raw_content_toggle_href,
+            mode_switch_html,
             source_size_bytes,
         )
     } else if is_yaml_file(file_path) {
         create_yaml_response(
             file_path,
             source,
+            parent_directory_href,
             markdown_highlight,
-            raw_content_toggle_href,
+            mode_switch_html,
             source_size_bytes,
         )
     } else if is_toml_file(file_path) {
         create_toml_response(
             file_path,
             source,
+            parent_directory_href,
             markdown_highlight,
-            raw_content_toggle_href,
+            mode_switch_html,
             source_size_bytes,
         )
     } else {
         create_ini_response(
             file_path,
             source,
+            parent_directory_href,
             markdown_highlight,
-            raw_content_toggle_href,
+            mode_switch_html,
             source_size_bytes,
         )
     }

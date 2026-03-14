@@ -23,3 +23,214 @@ body{
 	background:#1a1a1a;
 	color:#fff;
 }
+
+:is(#toc,#sidebar) #sidebar-controls{
+	margin:0 0 12px;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch{
+	display:flex;
+	gap:6px;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch .mode-btn{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	margin:0;
+	padding:4px 8px;
+	min-height:24px;
+	background:#333;
+	color:#fff;
+	border:1px solid #555;
+	border-radius:2px;
+	font-size:11px;
+	line-height:1.2;
+	text-decoration:none;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch .mode-btn:hover{
+	background:#666;
+	color:#fff;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch .mode-btn.is-active{
+	background:#555;
+	border-color:#777;
+}
+
+:is(#toc,#sidebar) #summary-list{
+	margin:0 0 24px;
+}
+
+#summary-list li{
+	display:flex;
+	gap:4px;
+	margin:0 0 6px;
+	font-size:12px;
+}
+
+#summary-list .label{
+	color:#777;
+	flex:0 0 58px;
+}
+
+#summary-list .value{
+	flex:1;
+	color:#ccc;
+	text-align:left;
+	overflow-wrap:anywhere;
+	word-break:break-word;
+}
+
+:is(#toc-resizer,#resizer){
+	position:fixed;
+	top:0;
+	width:6px;
+	height:100vh;
+	cursor:col-resize;
+	background:transparent;
+	z-index:20;
+}
+
+:is(#toc-resizer,#resizer):hover{
+	background:#222;
+}
+
+:is(#toc-resizer,#resizer).is-dragging{
+	background:#333;
+}
+
+#main{
+	padding:16px 24px;
+	overflow-wrap:anywhere;
+	word-break:break-word;
+}
+
+#main-header{
+	display:flex;
+	justify-content:space-between;
+	align-items:center;
+	gap:8px;
+	margin-bottom:8px;
+}
+
+#path-actions{
+	display:flex;
+	align-items:center;
+	gap:8px;
+	flex:1;
+	min-width:0;
+}
+
+#main-header-path{
+	flex:0 1 auto;
+	min-width:0;
+	line-height:1.2;
+	color:#777;
+	font-size:12px;
+	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;
+	overflow-wrap:anywhere;
+	word-break:break-word;
+}
+
+#main-separator{
+	height:1px;
+	background:#222;
+	margin-bottom:12px;
+}
+
+.copy-btn{
+	display:block;
+	margin-top:6px;
+	margin-left:16px;
+	padding:4px 8px;
+	background:#333;
+	color:#fff;
+	border:1px solid #555;
+	border-radius:2px;
+	cursor:pointer;
+	font-size:10px;
+	width:fit-content;
+}
+
+.copy-btn:hover{
+	background:#666;
+}
+
+#main-header .header-action-btn{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	margin:0;
+	padding:4px 8px;
+	min-height:24px;
+	background:#333;
+	color:#fff;
+	border:1px solid #555;
+	border-radius:2px;
+	cursor:pointer;
+	font-size:10px;
+	line-height:1.2;
+	width:fit-content;
+	text-decoration:none;
+	font-family:inherit;
+	appearance:none;
+}
+
+#main-header .header-action-btn:hover{
+	background:#666;
+	color:#fff;
+}
+
+#main-header .mode-switch{
+	display:flex;
+	gap:6px;
+}
+
+#main-header .mode-btn:link,
+#main-header .mode-btn:visited{
+	color:#fff;
+}
+
+#main-header #path-copy-btn:hover,
+#main-header .mode-btn:hover{
+	background:#666;
+	color:#fff;
+}
+
+#main-header .mode-btn.is-active{
+	background:#555;
+	border-color:#777;
+}
+
+#main-header .header-action-btn:focus,
+#main-header .header-action-btn:active{
+	background:#333;
+	color:#fff;
+}
+
+#main-header .header-action-btn:focus-visible{
+	outline:1px solid #666;
+	outline-offset:1px;
+}
+
+#main-header #path-copy-btn{
+	padding:3px 7px;
+	min-height:20px;
+	font-size:9px;
+}
+
+#main-header #directory-link{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	color:#bbb;
+	text-decoration:none;
+	font-size:14px;
+	line-height:1;
+}
+
+#main-header #directory-link:hover{
+	color:#fff;
+}

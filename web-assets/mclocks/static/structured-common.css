@@ -31,28 +31,6 @@ body{
 	padding:0;
 }
 
-#sidebar #summary-list{
-	margin:0 0 24px;
-}
-
-#summary-list li{
-	display:flex;
-	gap:4px;
-	margin:0 0 6px;
-	font-size:12px;
-}
-
-.label{
-	color:#777;
-	min-width:58px;
-}
-
-.value{
-	color:#ccc;
-	overflow-wrap:anywhere;
-	word-break:break-word;
-}
-
 #notices{
 	margin:0;
 }
@@ -91,133 +69,14 @@ body{
 }
 
 #resizer{
-	position:fixed;
-	top:0;
 	left:calc(var(--sidebar-width) - 3px);
-	width:6px;
-	height:100vh;
-	cursor:col-resize;
-	background:transparent;
-	z-index:20;
-}
-
-#resizer:hover{
-	background:#222;
-}
-
-#resizer.is-dragging{
-	background:#333;
 }
 
 #main{
 	margin-left:var(--sidebar-width);
 	width:calc(100vw - var(--sidebar-width));
-	padding:16px 24px;
 }
 
-#main-header{
-	display:flex;
-	justify-content:space-between;
-	align-items:center;
-	gap:8px;
-	margin-bottom:8px;
-}
-
-#path-actions{
-	display:flex;
-	align-items:center;
-	gap:8px;
-	flex:1;
-	min-width:0;
-}
-
-#main-header-path{
-	flex:0 1 auto;
-	min-width:0;
-	line-height:1.2;
-	color:#777;
-	font-size:12px;
-	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;
-	overflow-wrap:anywhere;
-	word-break:break-word;
-}
-
-#main-separator{
-	height:1px;
-	background:#222;
-	margin-bottom:12px;
-}
-
-.copy-btn{
-	display:block;
-	margin-top:6px;
-	margin-left:16px;
-	padding:4px 8px;
-	background:#333;
-	color:#fff;
-	border:1px solid #555;
-	border-radius:2px;
-	cursor:pointer;
-	font-size:10px;
-	width:fit-content;
-}
-
-.copy-btn:hover{
-	background:#666;
-}
-
-#main-header .header-action-btn{
-	display:inline-flex;
-	align-items:center;
-	justify-content:center;
-	margin:0;
-	padding:4px 8px;
-	min-height:24px;
-	background:#333;
-	color:#fff;
-	border:1px solid #555;
-	border-radius:2px;
-	cursor:pointer;
-	font-size:10px;
-	line-height:1.2;
-	width:fit-content;
-	text-decoration:none;
-	font-family:inherit;
-	appearance:none;
-}
-
-#main-header .header-action-btn:hover{
-	background:#666;
-	color:#fff;
-}
-
-#main-header #raw-toggle:link,
-#main-header #raw-toggle:visited{
-	color:#fff;
-}
-
-#main-header #path-copy-btn:hover,
-#main-header #raw-toggle:hover{
-	background:#666;
-	color:#fff;
-}
-
-#main-header .header-action-btn:focus,
-#main-header .header-action-btn:active{
-	background:#333;
-	color:#fff;
-}
-
-#main-header .header-action-btn:focus-visible{
-	outline:1px solid #666;
-	outline-offset:1px;
-}
-
-#main-header #path-copy-btn{
-	padding:3px 7px;
-	min-height:20px;
-	font-size:9px;
-}
 
 #json-view{
 	margin:0;
