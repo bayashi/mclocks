@@ -89,6 +89,14 @@ a:hover { color: #fff; background: #1a1a1a; }
 .mode-switch .mode-btn { display: inline-flex; align-items: center; justify-content: center; margin: 0; padding: 4px 8px; min-height: 24px; background: #333; color: #fff; border: 1px solid #555; border-radius: 2px; font-size: 11px; line-height: 1.2; text-decoration: none; }
 .mode-switch .mode-btn:hover { background: #666; color: #fff; }
 .mode-switch .mode-btn.is-active { background: #555; border-color: #777; }
+.mode-switch.directory-switch .raw-switch { justify-content: space-between; gap: 8px; min-width: 72px; padding: 4px 7px; }
+.mode-switch.directory-switch .raw-switch { background: transparent; border: none; box-shadow: none; }
+.mode-switch.directory-switch .raw-switch:hover { background: transparent; border: none; }
+.mode-switch.directory-switch .raw-switch .switch-label { font-size: 11px; line-height: 1; }
+.mode-switch.directory-switch .raw-switch .switch-track { position: relative; width: 28px; height: 16px; border-radius: 999px; border: 1px solid #666; background: #222; transition: background-color .14s ease, border-color .14s ease; }
+.mode-switch.directory-switch .raw-switch .switch-thumb { position: absolute; top: 1px; left: 1px; width: 12px; height: 12px; border-radius: 50%; background: #aaa; transition: transform .14s ease, background-color .14s ease; }
+.mode-switch.directory-switch .raw-switch.is-active .switch-track { background: #0f6d3d; border-color: #2ea56a; }
+.mode-switch.directory-switch .raw-switch.is-active .switch-thumb { transform: translateX(12px); background: #d6ffe8; }
 #meta-tooltip { position: fixed; z-index: 9999; pointer-events: none; background: #101010; color: #ddd; border: 1px solid #333; border-radius: 4px; padding: 8px 10px; font-size: 12px; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,0.45); width: min(840px, calc(100vw - 16px)); max-width: 840px; }
 #meta-tooltip.hidden { display: none; }
 #meta-tooltip table { border-collapse: collapse; border-spacing: 0; width: 100%; }
@@ -381,8 +389,16 @@ fn build_mode_switch_html(
     id: &str,
     variant: ModeSwitchVariant,
 ) -> String {
+    let container_class = match variant {
+        ModeSwitchVariant::DirectoryRawSwitch => "mode-switch directory-switch",
+        ModeSwitchVariant::SourceView => "mode-switch",
+    };
     let mut html = String::new();
-    html.push_str("<div class=\"mode-switch\" role=\"group\" aria-label=\"Display mode\">");
+    let _ = write!(
+        html,
+        "<div class=\"{}\" role=\"group\" aria-label=\"Display mode\">",
+        container_class
+    );
     match variant {
         ModeSwitchVariant::DirectoryRawSwitch => {
             let is_raw = current_mode == ContentMode::Raw;
@@ -396,17 +412,22 @@ fn build_mode_switch_html(
             let store_mode = target_mode.as_query_value().unwrap_or("source");
             let _ = write!(
                 html,
-                "<a id=\"{}-raw\" class=\"header-action-btn mode-btn{}\" href=\"{}\" data-mode=\"raw\" data-active-mode=\"raw\" data-store-mode=\"{}\">Raw</a>",
+                "<a id=\"{}-raw\" class=\"header-action-btn mode-btn raw-switch{}\" href=\"{}\" data-mode=\"raw\" data-active-mode=\"raw\" data-store-mode=\"{}\" aria-pressed=\"{}\"><span class=\"switch-label\">Raw</span><span class=\"switch-track\" aria-hidden=\"true\"><span class=\"switch-thumb\"></span></span></a>",
                 id,
                 active_class,
                 html_escape(&href),
-                store_mode
+                store_mode,
+                if is_raw { "true" } else { "false" }
             );
         }
         ModeSwitchVariant::SourceView => {
             for mode in [ContentMode::Raw, ContentMode::Content] {
                 let href = build_mode_href(path, query, mode);
-                let active_class = if mode == current_mode { " is-active" } else { "" };
+                let active_class = if mode == current_mode {
+                    " is-active"
+                } else {
+                    ""
+                };
                 let _ = write!(
                     html,
                     "<a id=\"{}-{}\" class=\"header-action-btn mode-btn{}\" href=\"{}\" data-mode=\"{}\">{}</a>",
