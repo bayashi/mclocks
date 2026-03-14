@@ -10,23 +10,26 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_http::{Header, Response, StatusCode};
 use urlencoding::{decode, encode};
 
-#[path = "handler_static/ini.rs"]
+#[path = "handler_static_source/ini.rs"]
 mod ini;
-#[path = "handler_static/json.rs"]
+#[path = "handler_static_source/json.rs"]
 mod json;
-#[path = "handler_static/md.rs"]
+#[path = "handler_static_source/md.rs"]
 mod md;
-#[path = "handler_static/structured_dispatcher.rs"]
+#[path = "handler_static_source/structured_dispatcher.rs"]
 mod structured_dispatcher;
-#[path = "handler_static/structured_renderer.rs"]
+#[path = "handler_static_source/structured_renderer.rs"]
 mod structured_renderer;
-#[path = "handler_static/toml.rs"]
+#[path = "handler_static_source/template_common.rs"]
+mod template_common;
+#[path = "handler_static_source/toml.rs"]
 mod toml;
-#[path = "handler_static/yaml.rs"]
+#[path = "handler_static_source/yaml.rs"]
 mod yaml;
 
 use self::md::{create_markdown_response, is_markdown_file};
 use self::structured_dispatcher::{create_structured_data_response, is_structured_data_file};
+use self::template_common::{ContentMode, ModeSwitchVariant};
 use super::common::{create_error_response, format_display_path, get_web_content_type};
 use super::handler_dump::handle_dump_request;
 use super::handler_editor::handle_editor_request;
@@ -34,37 +37,6 @@ use super::handler_resource_meta::{handle_resource_meta_request, is_resource_met
 use super::handler_slow::handle_slow_request;
 use super::handler_status::handle_status_request;
 use crate::web_server::WebMarkdownHighlightConfig;
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum ContentMode {
-    Content,
-    Raw,
-    Source,
-}
-
-#[derive(Clone, Copy)]
-enum ModeSwitchVariant {
-    DirectoryRawSwitch,
-    SourceView,
-}
-
-impl ContentMode {
-    fn as_query_value(self) -> Option<&'static str> {
-        match self {
-            ContentMode::Content => Some("content"),
-            ContentMode::Raw => Some("raw"),
-            ContentMode::Source => Some("source"),
-        }
-    }
-
-    fn as_label(self) -> &'static str {
-        match self {
-            ContentMode::Content => "Content",
-            ContentMode::Raw => "Raw",
-            ContentMode::Source => "Source",
-        }
-    }
-}
 
 const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
 <html>
@@ -339,13 +311,7 @@ __MODE_SWITCH_HTML__
 <div id="notices"></div>
 </aside>
 <div id="main">
-<div id="main-header">
-<div id="path-actions">
-<a id="directory-link" href="__PARENT_DIRECTORY_HREF__" title="Open directory">📁</a>
-<div id="main-header-path">__ABSOLUTE_PATH__</div>
-<button id="path-copy-btn" type="button">Copy</button>
-</div>
-</div>
+__COMMON_HEADER_HTML__
 <div id="main-separator"></div>
 <pre><code class="__LANGUAGE_CLASS__">__SOURCE_HTML__</code></pre>
 </div>
@@ -477,37 +443,13 @@ fn split_url_path_and_query(url: &str) -> (&str, &str) {
     (path, query)
 }
 
-fn build_mode_href(path: &str, query: &str, target_mode: ContentMode) -> String {
-    let mut kept_pairs: Vec<String> = Vec::new();
-    for pair in query.split('&') {
-        if pair.is_empty() {
-            continue;
-        }
-        let key = pair.splitn(2, '=').next().unwrap_or("");
-        if key == "mode" || key == "raw" {
-            continue;
-        }
-        kept_pairs.push(pair.to_string());
-    }
-    if target_mode == ContentMode::Content {
-        // Keep content mode URL clean as implicit default.
-    } else if let Some(mode_value) = target_mode.as_query_value() {
-        kept_pairs.push(format!("mode={}", mode_value));
-    }
-    if kept_pairs.is_empty() {
-        path.to_string()
-    } else {
-        format!("{}?{}", path, kept_pairs.join("&"))
-    }
-}
-
 fn build_parent_directory_href(path: &str, query: &str, mode: ContentMode) -> String {
     let trimmed = path.trim_end_matches('/');
     let parent = match trimmed.rfind('/') {
         Some(0) | None => "/".to_string(),
         Some(pos) => format!("{}/", &trimmed[..pos]),
     };
-    build_mode_href(&parent, query, mode)
+    template_common::build_mode_href(&parent, query, mode)
 }
 
 fn resolve_source_parent_directory_href(
@@ -520,74 +462,11 @@ fn resolve_source_parent_directory_href(
         if let Some(parent) = file_path.parent() {
             if let Ok(hash) = register_temp_root(parent) {
                 let temp_dir_path = format!("{}{}/", TEMP_DIR_PREFIX, hash);
-                return build_mode_href(&temp_dir_path, url_query, mode);
+                return template_common::build_mode_href(&temp_dir_path, url_query, mode);
             }
         }
     }
     build_parent_directory_href(url_path, url_query, mode)
-}
-
-fn build_mode_switch_html(
-    path: &str,
-    query: &str,
-    current_mode: ContentMode,
-    id: &str,
-    variant: ModeSwitchVariant,
-) -> String {
-    let container_class = match variant {
-        ModeSwitchVariant::DirectoryRawSwitch => "mode-switch directory-switch",
-        ModeSwitchVariant::SourceView => "mode-switch",
-    };
-    let mut html = String::new();
-    let _ = write!(
-        html,
-        "<div class=\"{}\" role=\"group\" aria-label=\"Display mode\">",
-        container_class
-    );
-    match variant {
-        ModeSwitchVariant::DirectoryRawSwitch => {
-            let is_raw = current_mode == ContentMode::Raw;
-            let target_mode = if is_raw {
-                ContentMode::Source
-            } else {
-                ContentMode::Raw
-            };
-            let active_class = if is_raw { " is-active" } else { "" };
-            let href = build_mode_href(path, query, target_mode);
-            let store_mode = target_mode.as_query_value().unwrap_or("source");
-            let _ = write!(
-                html,
-                "<a id=\"{}-raw\" class=\"header-action-btn mode-btn raw-switch{}\" href=\"{}\" data-mode=\"raw\" data-active-mode=\"raw\" data-store-mode=\"{}\" aria-pressed=\"{}\"><span class=\"switch-label\">Raw</span><span class=\"switch-track\" aria-hidden=\"true\"><span class=\"switch-thumb\"></span></span></a>",
-                id,
-                active_class,
-                html_escape(&href),
-                store_mode,
-                if is_raw { "true" } else { "false" }
-            );
-        }
-        ModeSwitchVariant::SourceView => {
-            for mode in [ContentMode::Raw, ContentMode::Content] {
-                let href = build_mode_href(path, query, mode);
-                let active_class = if mode == current_mode {
-                    " is-active"
-                } else {
-                    ""
-                };
-                let _ = write!(
-                    html,
-                    "<a id=\"{}-{}\" class=\"header-action-btn mode-btn{}\" href=\"{}\" data-mode=\"{}\">{}</a>",
-                    id,
-                    mode.as_query_value().unwrap_or("content"),
-                    active_class,
-                    html_escape(&href),
-                    mode.as_query_value().unwrap_or("content"),
-                    mode.as_label()
-                );
-            }
-        }
-    }
-    html.push_str("</div>");
-    html
 }
 
 fn create_directory_listing(
@@ -707,7 +586,7 @@ fn create_directory_listing(
         list_items.push_str("<li class=\"empty\">(empty)</li>\n");
     }
     let absolute_path = format_display_path(dir_path);
-    let mode_switch_html = build_mode_switch_html(
+    let mode_switch_html = template_common::build_mode_switch_html(
         url_path,
         url_query,
         current_mode,
@@ -876,7 +755,7 @@ fn create_source_text_response(
         .and_then(|s| s.to_str())
         .map(html_escape)
         .unwrap_or_else(|| "Source".to_string());
-    let absolute_path = html_escape(&format_display_path(file_path));
+    let absolute_path = format_display_path(file_path);
     let language_class = sanitize_language_class(file_path);
     let summary_items = render_source_summary_items(
         source_size_bytes,
@@ -913,10 +792,13 @@ fn create_source_text_response(
         .replace("__HIGHLIGHT_CSS_LINK__", &highlight_css_link)
         .replace("__MAIN_JS_SCRIPT__", &main_js_script)
         .replace("__HIGHLIGHT_JS_SCRIPT__", &highlight_js_script)
-        .replace("__ABSOLUTE_PATH__", &absolute_path)
         .replace(
-            "__PARENT_DIRECTORY_HREF__",
-            &html_escape(parent_directory_href),
+            "__COMMON_HEADER_HTML__",
+            &template_common::render_main_header_html(
+                &absolute_path,
+                Some(parent_directory_href),
+                None,
+            ),
         )
         .replace("__MODE_SWITCH_HTML__", mode_switch_html)
         .replace("__SUMMARY_ITEMS__", &summary_items)
@@ -965,7 +847,7 @@ fn create_file_response(
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     match fs::read(file_path) {
         Ok(content) => {
-            let mode_switch_html = build_mode_switch_html(
+            let mode_switch_html = template_common::build_mode_switch_html(
                 url_path,
                 url_query,
                 content_mode,
@@ -1070,7 +952,7 @@ fn is_text_type(content_type: &str) -> bool {
 }
 
 pub fn get_content_type(path: &PathBuf) -> String {
-    get_web_content_type(path.as_path()).to_string()
+    get_web_content_type(path.as_path())
 }
 
 pub fn handle_web_request(

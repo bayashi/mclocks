@@ -1,3 +1,4 @@
+use super::template_common;
 use crate::web_server::WebMarkdownHighlightConfig;
 use std::fs;
 use std::path::Path;
@@ -26,14 +27,7 @@ __OUTLINE_SECTION__
 </aside>
 <div id="resizer" aria-label="Resize sidebar" title="Drag to resize"></div>
 <main id="main">
-<div id="main-header">
-<div id="path-actions">
-<a id="directory-link" href="__PARENT_DIRECTORY_HREF__" title="Open directory">📁</a>
-<div id="main-header-path">__ABSOLUTE_PATH__</div>
-<button id="path-copy-btn" class="header-action-btn" type="button">Copy</button>
-</div>
-__MODE_SWITCH_HTML__
-</div>
+__COMMON_HEADER_HTML__
 <div id="main-separator"></div>
 <pre id="json-view">__JSON_VIEW_HTML__</pre>
 </main>
@@ -382,12 +376,14 @@ pub fn build_html_response(
         .replace("__SUMMARY_ITEMS__", summary_items)
         .replace("__NOTICE_ITEMS__", notices_html)
         .replace("__OUTLINE_SECTION__", &outline_section)
-        .replace("__ABSOLUTE_PATH__", &html_escape(absolute_path))
         .replace(
-            "__PARENT_DIRECTORY_HREF__",
-            &html_escape(parent_directory_href),
+            "__COMMON_HEADER_HTML__",
+            &template_common::render_main_header_html(
+                absolute_path,
+                Some(parent_directory_href),
+                Some(mode_switch_html),
+            ),
         )
-        .replace("__MODE_SWITCH_HTML__", mode_switch_html)
         .replace("__JSON_VIEW_HTML__", json_html);
     let content_type = "text/html; charset=utf-8";
     if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {

@@ -1421,8 +1421,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("application/yaml"),
-            "Raw YAML response should keep application/yaml, got: {}",
+            content_type.starts_with("text/x-yaml"),
+            "Raw YAML response should keep text/x-yaml, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1611,8 +1611,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/plain"),
-            "Raw TOML response should be text/plain, got: {}",
+            content_type.starts_with("text/x-toml"),
+            "Raw TOML response should be text/x-toml, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1831,7 +1831,7 @@ mod tests {
     #[test]
     fn test_get_content_type_js() {
         let path = PathBuf::from("script.js");
-        assert_eq!(get_content_type(&path), "application/javascript");
+        assert_eq!(get_content_type(&path), "text/javascript");
     }
 
     #[test]
@@ -1843,19 +1843,19 @@ mod tests {
     #[test]
     fn test_get_content_type_yaml() {
         let path = PathBuf::from("data.yaml");
-        assert_eq!(get_content_type(&path), "application/yaml");
+        assert_eq!(get_content_type(&path), "text/x-yaml");
     }
 
     #[test]
     fn test_get_content_type_yml() {
         let path = PathBuf::from("data.yml");
-        assert_eq!(get_content_type(&path), "application/yaml");
+        assert_eq!(get_content_type(&path), "text/x-yaml");
     }
 
     #[test]
     fn test_get_content_type_toml() {
         let path = PathBuf::from("data.toml");
-        assert_eq!(get_content_type(&path), "text/plain");
+        assert_eq!(get_content_type(&path), "text/x-toml");
     }
 
     #[test]
@@ -1867,7 +1867,7 @@ mod tests {
     #[test]
     fn test_get_content_type_config() {
         let path = PathBuf::from("settings.config");
-        assert_eq!(get_content_type(&path), "text/plain");
+        assert_eq!(get_content_type(&path), "application/xml");
     }
 
     #[test]
