@@ -20,6 +20,7 @@ __STRUCTURED_FORMAT_CSS_LINK__
 </head>
 <body class="mclocks-json">
 <aside id="sidebar">
+<div id="sidebar-controls">__MODE_SWITCH_HTML__</div>
 <h2>Summary</h2>
 <ul id="summary-list">__SUMMARY_ITEMS__</ul>
 <div id="notices">__NOTICE_ITEMS__</div>
@@ -381,9 +382,10 @@ pub fn build_html_response(
             &template_common::render_main_header_html(
                 absolute_path,
                 Some(parent_directory_href),
-                Some(mode_switch_html),
+                None,
             ),
         )
+        .replace("__MODE_SWITCH_HTML__", mode_switch_html)
         .replace("__JSON_VIEW_HTML__", json_html);
     let content_type = "text/html; charset=utf-8";
     if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {

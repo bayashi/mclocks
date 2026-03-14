@@ -223,7 +223,7 @@ const MCLOCKS_STATIC_TOML_JS_REL_PATH: &str = "mclocks/static/toml.js";
 const MCLOCKS_STATIC_TOML_CSS_REL_PATH: &str = "mclocks/static/toml.css";
 const MCLOCKS_STATIC_INI_JS_REL_PATH: &str = "mclocks/static/ini.js";
 const MCLOCKS_STATIC_INI_CSS_REL_PATH: &str = "mclocks/static/ini.css";
-const MCLOCKS_ASSETS_VERSION: &str = "20260310-2";
+const MCLOCKS_ASSETS_VERSION: &str = "20260314-2";
 
 pub fn start_web_server(
     root: String,
@@ -593,7 +593,7 @@ mod tests {
     use urlencoding::encode;
 
     #[test]
-    fn test_handle_web_request_root_with_index() {
+    fn test_handle_web_request_root_with_index_shows_directory_listing() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let index_file = root_path.join("index.html");
@@ -610,7 +610,12 @@ mod tests {
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 200);
-        assert_eq!(response.text().unwrap(), "<html>test</html>");
+        let body = response.text().unwrap();
+        assert!(body.contains("<ul>"), "Should show directory listing");
+        assert!(
+            body.contains("index.html"),
+            "Should include index.html as a regular file entry"
+        );
     }
 
     #[test]
@@ -648,7 +653,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_web_request_directory_with_index() {
+    fn test_handle_web_request_directory_with_index_shows_directory_listing() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let subdir = root_path.join("subdir");
@@ -667,7 +672,12 @@ mod tests {
             .expect("Failed to send request");
 
         assert_eq!(response.status(), 200);
-        assert_eq!(response.text().unwrap(), "<html>subdir index</html>");
+        let body = response.text().unwrap();
+        assert!(body.contains("<ul>"), "Should show directory listing");
+        assert!(
+            body.contains("index.html"),
+            "Should include index.html as a regular file entry"
+        );
     }
 
     #[test]
@@ -692,7 +702,15 @@ mod tests {
         let body = response.text().unwrap();
         assert!(body.contains("<ul>"), "Should show directory listing");
         assert!(body.contains("file.txt"), "Should list file.txt");
-        assert!(body.contains(". . /"), "Should show parent directory link");
+        assert!(
+            body.contains("id=\"directory-link\""),
+            "Should show directory icon link in header"
+        );
+        assert!(
+            body.contains("href=\"/\""),
+            "Directory icon link should point to parent directory"
+        );
+        assert!(!body.contains(". . /"), "Should not show ../ entry");
     }
 
     #[test]
@@ -806,7 +824,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tmpdir_root_hides_parent_link_and_subdir_shows_it() {
+    fn test_tmpdir_root_and_subdir_show_header_parent_link() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
         let subdir = root_path.join("subdir");
@@ -814,6 +832,12 @@ mod tests {
         fs::write(subdir.join("file.txt"), "content").expect("Failed to create file.txt");
         let share_hash =
             register_temp_root(root_path.as_path()).expect("Failed to register temp root");
+        let parent_hash = register_temp_root(
+            root_path
+                .parent()
+                .expect("Temp root should have a parent directory"),
+        )
+        .expect("Failed to register parent temp root");
         let port = find_available_port();
 
         let _server_handle = start_test_server(root_path.clone(), port, false, false, false);
@@ -830,8 +854,19 @@ mod tests {
         assert_eq!(root_listing.status(), 200);
         let root_body = root_listing.text().expect("Failed to read body");
         assert!(
+            root_body.contains("id=\"directory-link\""),
+            "tmpdir root should show header parent link"
+        );
+        assert!(
+            root_body.contains(&format!(
+                "id=\"directory-link\" href=\"{}{}",
+                TEMP_DIR_PREFIX, parent_hash
+            )),
+            "tmpdir root header parent link should point to registered parent tempdir"
+        );
+        assert!(
             !root_body.contains(". . /"),
-            "tmpdir root should not show parent link"
+            "tmpdir root should not show ../ entry"
         );
 
         let subdir_listing = client
@@ -844,8 +879,12 @@ mod tests {
         assert_eq!(subdir_listing.status(), 200);
         let subdir_body = subdir_listing.text().expect("Failed to read body");
         assert!(
-            subdir_body.contains(". . /"),
-            "tmpdir subdir should show parent link"
+            subdir_body.contains("id=\"directory-link\""),
+            "tmpdir subdir should show header parent link"
+        );
+        assert!(
+            !subdir_body.contains(". . /"),
+            "tmpdir subdir should not show ../ entry"
         );
     }
 
@@ -911,6 +950,46 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         assert_eq!(response.text().unwrap(), "<html>test</html>");
+    }
+
+    #[test]
+    fn test_handle_web_request_html_file_raw_query_returns_plain_text() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let html_file = root_path.join("raw.html");
+        fs::write(
+            &html_file,
+            "<!doctype html><html><body><h1>Raw</h1></body></html>",
+        )
+        .expect("Failed to create raw.html");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/raw.html?mode=raw", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/plain"),
+            "Raw HTML response should be text/plain, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(
+            body,
+            "<!doctype html><html><body><h1>Raw</h1></body></html>"
+        );
     }
 
     #[test]
@@ -1003,8 +1082,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/markdown"),
-            "Raw markdown response should keep text/markdown, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw markdown response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1161,8 +1240,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/markdown"),
-            "Raw markdown(.markdown) response should keep text/markdown, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw markdown(.markdown) response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1295,8 +1374,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("application/json"),
-            "Raw JSON response should keep application/json, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw JSON response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1421,8 +1500,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/x-yaml"),
-            "Raw YAML response should keep text/x-yaml, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw YAML response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
@@ -1611,8 +1690,8 @@ mod tests {
             .to_str()
             .expect("Content-Type should be valid string");
         assert!(
-            content_type.starts_with("text/x-toml"),
-            "Raw TOML response should be text/x-toml, got: {}",
+            content_type.starts_with("text/plain"),
+            "Raw TOML response should be text/plain, got: {}",
             content_type
         );
         let body = response.text().expect("Body should be readable");
