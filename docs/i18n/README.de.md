@@ -305,7 +305,7 @@ Die maximale Textgröße pro Haftnotiz beträgt 128 KB.
 
 * `root`: Pfad zum Verzeichnis mit den bereitzustellenden Dateien (erforderlich)
 * `port`: Portnummer zum Lauschen (Standard: 3030)
-* `open_browser_at_start`: Wenn auf `true` gesetzt, wird beim Start von `mclocks` automatisch die Webserver-URL im Standardbrowser geöffnet (Standard: `false`)
+* `openBrowserAtStart`: Wenn auf `true` gesetzt, wird beim Start von `mclocks` automatisch die Webserver-URL im Standardbrowser geöffnet (Standard: `false`)
 * `dump`: Wenn auf `true` gesetzt, aktiviert den `/dump`-Endpunkt, der Anforderungsdetails als JSON zurückgibt (Standard: `false`)
 * `slow`: Wenn auf `true` gesetzt, aktiviert den `/slow`-Endpunkt, der die Antwort verzögert (Standard: `false`)
 * `status`: Wenn auf `true` gesetzt, aktiviert den `/status/{code}`-Endpunkt, der beliebige HTTP-Statuscodes zurückgibt (Standard: `false`)

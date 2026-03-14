@@ -305,7 +305,7 @@ Yapışkan not başına maksimum metin boyutu 128 KB'dir.
 
 * `root`: Sunulacak dosyaları içeren dizinin yolu (zorunlu)
 * `port`: Dinlenecek port numarası (varsayılan: 3030)
-* `open_browser_at_start`: `true` olarak ayarlanırsa, `mclocks` başladığında varsayılan tarayıcıda web sunucusu URL'sini otomatik olarak açar (varsayılan: `false`)
+* `openBrowserAtStart`: `true` olarak ayarlanırsa, `mclocks` başladığında varsayılan tarayıcıda web sunucusu URL'sini otomatik olarak açar (varsayılan: `false`)
 * `dump`: `true` olarak ayarlanırsa, istek ayrıntılarını JSON olarak döndüren `/dump` uç noktasını etkinleştirir (varsayılan: `false`)
 * `slow`: `true` olarak ayarlanırsa, yanıtı geciktiren `/slow` uç noktasını etkinleştirir (varsayılan: `false`)
 * `status`: `true` olarak ayarlanırsa, rastgele HTTP durum kodları döndüren `/status/{code}` uç noktasını etkinleştirir (varsayılan: `false`)

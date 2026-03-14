@@ -305,7 +305,7 @@ El tamaño máximo de texto por nota adhesiva es de 128 KB.
 
 * `root`: Ruta al directorio que contiene los archivos a servir (obligatorio)
 * `port`: Número de puerto para escuchar (por defecto: 3030)
-* `open_browser_at_start`: Si se establece en `true`, abre automáticamente la URL del servidor web en el navegador predeterminado cuando `mclocks` se inicia (por defecto: `false`)
+* `openBrowserAtStart`: Si se establece en `true`, abre automáticamente la URL del servidor web en el navegador predeterminado cuando `mclocks` se inicia (por defecto: `false`)
 * `dump`: Si se establece en `true`, habilita el endpoint `/dump` que devuelve los detalles de la solicitud como JSON (por defecto: `false`)
 * `slow`: Si se establece en `true`, habilita el endpoint `/slow` que retrasa la respuesta (por defecto: `false`)
 * `status`: Si se establece en `true`, habilita el endpoint `/status/{code}` que devuelve códigos de estado HTTP arbitrarios (por defecto: `false`)

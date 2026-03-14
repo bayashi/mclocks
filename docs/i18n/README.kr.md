@@ -305,7 +305,7 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
 
 * `root`: 제공할 파일이 포함된 디렉토리 경로 (필수)
 * `port`: 수신할 포트 번호 (기본값: 3030)
-* `open_browser_at_start`: `true`로 설정하면 `mclocks` 시작 시 기본 브라우저에서 웹 서버 URL을 자동으로 엽니다 (기본값: `false`)
+* `openBrowserAtStart`: `true`로 설정하면 `mclocks` 시작 시 기본 브라우저에서 웹 서버 URL을 자동으로 엽니다 (기본값: `false`)
 * `dump`: `true`로 설정하면 요청 세부 정보를 JSON으로 반환하는 `/dump` 엔드포인트가 활성화됩니다 (기본값: `false`)
 * `slow`: `true`로 설정하면 응답을 지연시키는 `/slow` 엔드포인트가 활성화됩니다 (기본값: `false`)
 * `status`: `true`로 설정하면 임의의 HTTP 상태 코드를 반환하는 `/status/{code}` 엔드포인트가 활성화됩니다 (기본값: `false`)

@@ -305,7 +305,7 @@ Ukuran teks maksimum per catatan tempel adalah 128 KB.
 
 * `root`: Path ke direktori yang berisi file untuk disajikan (wajib)
 * `port`: Nomor port untuk didengarkan (default: 3030)
-* `open_browser_at_start`: Jika diatur ke `true`, secara otomatis membuka URL server web di browser default saat `mclocks` dimulai (default: `false`)
+* `openBrowserAtStart`: Jika diatur ke `true`, secara otomatis membuka URL server web di browser default saat `mclocks` dimulai (default: `false`)
 * `dump`: Jika diatur ke `true`, mengaktifkan endpoint `/dump` yang mengembalikan detail permintaan sebagai JSON (default: `false`)
 * `slow`: Jika diatur ke `true`, mengaktifkan endpoint `/slow` yang menunda respons (default: `false`)
 * `status`: Jika diatur ke `true`, mengaktifkan endpoint `/status/{code}` yang mengembalikan kode status HTTP arbitrer (default: `false`)
