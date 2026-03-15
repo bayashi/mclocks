@@ -13,7 +13,7 @@ use util::open_text_in_editor;
 use web::dd_publish::{
     build_temp_file_url, build_temp_share_url, register_temp_file, register_temp_root,
 };
-use web_server::{load_web_config, open_url_in_browser, start_web_server};
+use web_server::{default_web_server_config, load_web_config, open_url_in_browser, start_web_server};
 
 /// Global lock to serialize all saveWindowState calls across windows.
 /// Prevents potential deadlocks in the window-state plugin when multiple
@@ -53,8 +53,7 @@ fn register_temp_web_root(
 ) -> Result<String, String> {
     let port = {
         let guard = web_main_port.0.lock().map_err(|e| e.to_string())?;
-        guard
-            .ok_or("Web server is not configured. Set web.root in config.json first.".to_string())?
+        guard.ok_or("Web server is not available.".to_string())?
     };
 
     let dropped = std::path::Path::new(&dropped_path);
@@ -90,10 +89,20 @@ pub fn run() {
     tbr = tbr.manage(WindowStateSaveLock::default());
     tbr = tbr.manage(WebMainPortStore::default());
 
-    let (web_error, web_config_for_startup) = match load_web_config(&identifier) {
-        Ok(Some(config)) => (None, Some(config)),
-        Ok(None) => (None, None),
-        Err(e) => (Some(e), None),
+    let mut web_error: Option<String> = None;
+    let web_config_for_startup = match load_web_config(&identifier) {
+        Ok(Some(config)) => Some(config),
+        Ok(None) => match default_web_server_config(&identifier) {
+            Ok(config) => Some(config),
+            Err(e) => {
+                web_error = Some(e);
+                None
+            }
+        },
+        Err(e) => {
+            web_error = Some(e);
+            None
+        }
     };
 
     let port_to_open = web_config_for_startup

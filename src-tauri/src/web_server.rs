@@ -249,12 +249,18 @@ pub fn start_web_server(
         };
 
         let root_path = PathBuf::from(root);
-        if !root_path.exists() {
-            eprintln!("Web root path does not exist: {}", root_path.display());
-            return;
+        if root_path.exists() && root_path.is_dir() {
+            println!(
+                "Web server started on http://localhost:{} (serving root: {})",
+                port,
+                root_path.display()
+            );
+        } else {
+            println!(
+                "Web server started on http://localhost:{} (temp-share only mode)",
+                port
+            );
         }
-
-        println!("Web server started on http://localhost:{}", port);
 
         for mut request in server.incoming_requests() {
             let response = handle_web_request(
@@ -276,6 +282,35 @@ pub fn start_web_server(
             }
         }
     });
+}
+
+fn build_unconfigured_web_root_path(identifier: &String) -> Result<String, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let root = base_dir
+        .config_dir()
+        .join(identifier)
+        .join("__mclocks_unconfigured_web_root__");
+    Ok(root.to_string_lossy().to_string())
+}
+
+pub fn default_web_server_config(identifier: &String) -> Result<WebServerConfig, String> {
+    let main_port = find_available_port_downward(df_web_port(), MIN_WEB_PORT, "main web")?;
+    Ok(WebServerConfig {
+        root: build_unconfigured_web_root_path(identifier)?,
+        port: main_port,
+        open_browser_at_start: false,
+        dump: false,
+        slow: false,
+        status: false,
+        allow_html_in_md: false,
+        markdown_open_external_link_in_new_tab: true,
+        markdown_highlight: None,
+        assets_server: None,
+        editor_repos_dir: None,
+        editor_include_host: false,
+        editor_command: "code".to_string(),
+        editor_args: vec!["-g".to_string(), "{file}:{line}".to_string()],
+    })
 }
 
 pub fn open_url_in_browser(url: &str) -> Result<(), String> {
@@ -2508,6 +2543,36 @@ mod tests {
         // Cleanup
         let _ = fs::remove_file(&config_path);
         let _ = fs::remove_dir(&test_config_dir);
+    }
+
+    #[test]
+    fn test_default_web_server_config_for_temp_share_only_mode() {
+        let identifier = "test.app.defaultweb".to_string();
+        let config = default_web_server_config(&identifier)
+            .expect("Should build default web server config");
+        assert!(
+            config.port >= MIN_WEB_PORT,
+            "Default port should be in valid range"
+        );
+        assert_eq!(
+            config.open_browser_at_start, false,
+            "Default open browser should be disabled"
+        );
+        assert_eq!(config.dump, false, "Default dump should be disabled");
+        assert_eq!(config.slow, false, "Default slow should be disabled");
+        assert_eq!(config.status, false, "Default status should be disabled");
+        assert!(
+            config.root.contains("__mclocks_unconfigured_web_root__"),
+            "Default root should point to unconfigured marker path"
+        );
+        assert!(
+            config.assets_server.is_none(),
+            "Assets server should be disabled in temp-share only mode"
+        );
+        assert!(
+            config.markdown_highlight.is_none(),
+            "Markdown highlight assets should be disabled in temp-share only mode"
+        );
     }
 
     #[test]
