@@ -39,14 +39,9 @@ describe('Sticky Note - Create from main window (Ctrl+s)', () => {
 				window.__TAURI_INTERNALS__ = { invoke: mockInvoke };
 			}
 		}, testConfig);
-		await browser.refresh();
-		await browser.waitUntil(
-			async () => {
-				const readyState = await browser.execute(() => document.readyState);
-				return readyState === 'complete';
-			},
-			{ timeout: 10000, timeoutMsg: 'Page did not load after refresh' }
-		);
+		await browser.execute(() => {
+			window.dispatchEvent(new Event('DOMContentLoaded'));
+		});
 		// Wait for clocks to initialize
 		await browser.waitUntil(
 			async () => {

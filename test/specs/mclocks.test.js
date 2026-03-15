@@ -67,19 +67,10 @@ describe('mclocks Application Launch Test', () => {
             }
             window.__TAURI_INTERNALS__.invoke = mockInvoke;
         }, testConfig);
-        // Reload to ensure config is available when DOMContentLoaded fires
-        await browser.refresh();
-        // Wait for page to be ready after refresh
-        await browser.waitUntil(
-            async () => {
-                const readyState = await browser.execute(() => document.readyState);
-                return readyState === 'complete';
-            },
-            {
-                timeout: 10000,
-                timeoutMsg: 'Page did not load after refresh'
-            }
-        );
+        // Re-run app initialization after invoke mock is installed
+        await browser.execute(() => {
+            window.dispatchEvent(new Event('DOMContentLoaded'));
+        });
     });
 
     // Keep browser open for debugging if test fails
