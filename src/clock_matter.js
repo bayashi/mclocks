@@ -9,8 +9,7 @@ import { escapeHTML, pad, enqueueNotification, openMessageDialog } from './util.
 export function initClocks(clockCtx, cfg, clocks) {
   let clocksHtml = '';
 
-  for (const [index, clock] of clocks.getAllClocks().entries()) {
-    clock.id = `mclk-${index}`;
+  for (const clock of clocks.getAllClocks()) {
     clocksHtml += renderClockHTML(clockCtx, clock);
     if (!clock.countdown) {
       clock.fn = cdate().locale(cfg.locale).tz(clock.timezone).cdateFn();
@@ -53,7 +52,6 @@ export async function adjustWindowSize(clockCtx, clocks) {
   let w = 0;
 
   for (const clock of clocks.getAllClocks()) {
-    tock(clockCtx, clock);
     w += clock.el.parentElement.offsetWidth;
   }
 
@@ -67,8 +65,18 @@ export async function adjustWindowSize(clockCtx, clocks) {
   }
 }
 
+export function refreshClocks(clockCtx, clocks) {
+  for (const clock of clocks.getAllClocks()) {
+    tock(clockCtx, clock);
+  }
+}
+
 export function startClocks(clockCtx, clocks) {
   for (const clock of clocks.getAllClocks()) {
+    if (clock.timeoutId) {
+      clearTimeout(clock.timeoutId);
+      clock.timeoutId = null;
+    }
     tick(clockCtx, clock);
   }
 }
@@ -133,6 +141,7 @@ function tock(clockCtx, clock) {
 
 export function switchFormat(clockCtx, cfg, clocks) {
   clockCtx.setFormat(clockCtx.format() === cfg.format && cfg.format2 ? cfg.format2 : cfg.format);
+  refreshClocks(clockCtx, clocks);
   adjustWindowSize(clockCtx, clocks);
 }
 
@@ -160,11 +169,11 @@ export function addTimerClock(clockCtx, cfg, clocks, timerInSec) {
     countdown: `${clockCtx.timerIcon()}%M:%s`, // The timer clock is just an alternative countdown timer
     target: clockCtx.cdateUTC().add(timerInSec, "s").text(),
     timezone: "UTC",
-    id: `mclk-${clocks.getAllClocks().length - 1}`,
     timerName: `${timerInSec / 60}-minute timer`,
     pauseStart: null,
   });
   initClocks(clockCtx, cfg, clocks);
+  refreshClocks(clockCtx, clocks);
   adjustWindowSize(clockCtx, clocks);
   startClocks(clockCtx, clocks);
 }

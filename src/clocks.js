@@ -1,6 +1,7 @@
 export class Clocks {
   #clocks = [];
   #timerClocks = [];
+  #nextTimerId = 0;
 
   constructor(clocks, epochClockName) {
     const epochClock = {
@@ -9,10 +10,14 @@ export class Clocks {
       isEpoch: true,
     };
 
-    this.#clocks = [...clocks, epochClock];
+    this.#clocks = [...clocks, epochClock].map((clock, index) => ({
+      ...clock,
+      id: clock.id ?? `mclk-${index}`,
+    }));
   }
 
   pushTimerClock(timerClock) {
+    timerClock.id = timerClock.id ?? `mclk-timer-${this.#nextTimerId++}`;
     this.#timerClocks.push(timerClock);
     return this;
   }
@@ -45,7 +50,19 @@ export class Clocks {
    * @param {Object} timerClock - Timer clock to cleanup
    */
   #cleanupTimer(timerClock) {
+    if (!timerClock) {
+      return;
+    }
     clearTimeout(timerClock.timeoutId);
-    document.getElementById(timerClock.id).remove();
+    const timerElement = document.getElementById(timerClock.id);
+    if (!timerElement) {
+      return;
+    }
+    const listItemElement = timerElement.parentElement;
+    if (listItemElement?.tagName === "LI") {
+      listItemElement.remove();
+      return;
+    }
+    timerElement.remove();
   }
 }

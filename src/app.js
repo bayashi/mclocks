@@ -1,24 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
-import { initClocks, adjustWindowSize, startClocks } from './clock_matter.js';
+import { initClocks, refreshClocks, adjustWindowSize, startClocks } from './clock_matter.js';
 import { ClockCtx } from './clock_ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
 import { stickyEntry } from './sticky/sticky.js';
-
-/**
- * Default configuration for the application
- * Used when config.json does not exist
- * @returns {Object} Default configuration object
- */
-const getDefaultClockConfig = () => {
-  return {
-    clocks: [
-      { name: 'UTC', timezone: 'UTC' }
-    ]
-  };
-};
 
 // Application entry point
 window.addEventListener("DOMContentLoaded", async () => {
@@ -209,30 +196,8 @@ const initClockConfig = async (clockCtx) => {
 
     return config;
   } catch (error) {
-    // Fallback for testing environment where Tauri APIs are not available
-    // Use default configuration
-    console.warn('Could not load config from Tauri, using defaults:', error);
-    // Check sessionStorage first (for tests), then window.__defaultClockConfig, then getDefaultClockConfig()
-    let defaultClockConfig = null;
-    try {
-      const stored = sessionStorage.getItem('__defaultClockConfig');
-      if (stored) {
-        defaultClockConfig = JSON.parse(stored);
-      }
-    } catch {
-      // Ignore sessionStorage errors
-    }
-    defaultClockConfig = defaultClockConfig || window.__defaultClockConfig || getDefaultClockConfig();
-
-    clockCtx.setFormat(defaultClockConfig.format);
-    clockCtx.setTimerIcon(defaultClockConfig.timerIcon);
-    clockCtx.setWithoutNotification(defaultClockConfig.withoutNotification);
-    clockCtx.setMaxTimerClockNumber(defaultClockConfig.maxTimerClockNumber);
-    clockCtx.setUseTZ(defaultClockConfig.usetz);
-    clockCtx.setConvTZ(defaultClockConfig.convtz);
-    clockCtx.setDisableHover(defaultClockConfig.disableHover);
-
-    return defaultClockConfig;
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to load config: ${reason}`, { cause: error });
   }
 };
 
@@ -295,6 +260,7 @@ const clockMain = async (clockCtx) => {
     const clocks = new Clocks(cfg.clocks, cfg.epochClockName);
     initClockStyles(clockCtx, cfg);
     initClocks(clockCtx, cfg, clocks);
+    refreshClocks(clockCtx, clocks);
     adjustWindowSize(clockCtx, clocks);
 
     startClocks(clockCtx, clocks);

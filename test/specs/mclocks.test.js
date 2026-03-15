@@ -50,25 +50,27 @@ describe('mclocks Application Launch Test', () => {
         } catch (error) {
             console.warn('Failed to grant clipboard permissions via CDP:', error.message);
         }
-        // Set test config in both window.__defaultClockConfig and sessionStorage
-        // sessionStorage persists across page reloads
+        // Mock load_config before refresh so app init can read config
         await browser.execute((config) => {
-            sessionStorage.setItem('__defaultClockConfig', JSON.stringify(config));
-            window.__defaultClockConfig = config;
-        }, testConfig);
-        // Reload to ensure config is available when DOMContentLoaded fires
-        await browser.refresh();
-        // Wait for page to be ready after refresh
-        await browser.waitUntil(
-            async () => {
-                const readyState = await browser.execute(() => document.readyState);
-                return readyState === 'complete';
-            },
-            {
-                timeout: 10000,
-                timeoutMsg: 'Page did not load after refresh'
+            const originalInvoke = window.__TAURI_INTERNALS__?.invoke;
+            const mockInvoke = async function(cmd, args) {
+                if (cmd === 'load_config') {
+                    return config;
+                }
+                if (typeof originalInvoke === 'function') {
+                    return originalInvoke(cmd, args);
+                }
+                return undefined;
+            };
+            if (!window.__TAURI_INTERNALS__) {
+                window.__TAURI_INTERNALS__ = {};
             }
-        );
+            window.__TAURI_INTERNALS__.invoke = mockInvoke;
+        }, testConfig);
+        // Re-run app initialization after invoke mock is installed
+        await browser.execute(() => {
+            window.dispatchEvent(new Event('DOMContentLoaded'));
+        });
     });
 
     // Keep browser open for debugging if test fails
