@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
-import { initClocks, adjustWindowSize, startClocks } from './clock_matter.js';
+import { initClocks, refreshClocks, adjustWindowSize, startClocks } from './clock_matter.js';
 import { ClockCtx } from './clock_ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
@@ -295,6 +295,7 @@ const clockMain = async (clockCtx) => {
     const clocks = new Clocks(cfg.clocks, cfg.epochClockName);
     initClockStyles(clockCtx, cfg);
     initClocks(clockCtx, cfg, clocks);
+    refreshClocks(clockCtx, clocks);
     adjustWindowSize(clockCtx, clocks);
 
     startClocks(clockCtx, clocks);

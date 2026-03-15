@@ -53,7 +53,6 @@ export async function adjustWindowSize(clockCtx, clocks) {
   let w = 0;
 
   for (const clock of clocks.getAllClocks()) {
-    tock(clockCtx, clock);
     w += clock.el.parentElement.offsetWidth;
   }
 
@@ -64,6 +63,12 @@ export async function adjustWindowSize(clockCtx, clocks) {
     // Fallback for testing environment where Tauri APIs are not available
     console.warn('Could not adjust window size (testing environment?):', e);
     // Don't throw error in testing environment, just log it
+  }
+}
+
+export function refreshClocks(clockCtx, clocks) {
+  for (const clock of clocks.getAllClocks()) {
+    tock(clockCtx, clock);
   }
 }
 
@@ -137,6 +142,7 @@ function tock(clockCtx, clock) {
 
 export function switchFormat(clockCtx, cfg, clocks) {
   clockCtx.setFormat(clockCtx.format() === cfg.format && cfg.format2 ? cfg.format2 : cfg.format);
+  refreshClocks(clockCtx, clocks);
   adjustWindowSize(clockCtx, clocks);
 }
 
@@ -169,6 +175,7 @@ export function addTimerClock(clockCtx, cfg, clocks, timerInSec) {
     pauseStart: null,
   });
   initClocks(clockCtx, cfg, clocks);
+  refreshClocks(clockCtx, clocks);
   adjustWindowSize(clockCtx, clocks);
   startClocks(clockCtx, clocks);
 }
