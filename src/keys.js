@@ -99,10 +99,10 @@ async function withBaseKey(e, pressedKeys, clockCtx, cfg, clocks) {
     if (input === 0 && clocks.getTimerClocks().length > 0) {
       e.preventDefault();
       if (pressingAltKey(e)) {
-        // Ctrl + Alt + 0 --> remove newest timer (remove the clock on the far right)
+        // Ctrl + Alt + 0 --> remove newest timer
         clocks.removeTimerRight();
       } else {
-        // Ctrl + 0 --> remove oldest timer (remove the clock on the far left)
+        // Ctrl + 0 --> remove oldest timer
         clocks.removeTimerLeft();
       }
       adjustWindowSize(clockCtx, clocks);
