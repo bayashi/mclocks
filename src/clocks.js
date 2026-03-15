@@ -45,7 +45,19 @@ export class Clocks {
    * @param {Object} timerClock - Timer clock to cleanup
    */
   #cleanupTimer(timerClock) {
+    if (!timerClock) {
+      return;
+    }
     clearTimeout(timerClock.timeoutId);
-    document.getElementById(timerClock.id).remove();
+    const timerElement = document.getElementById(timerClock.id);
+    if (!timerElement) {
+      return;
+    }
+    const listItemElement = timerElement.parentElement;
+    if (listItemElement?.tagName === "LI") {
+      listItemElement.remove();
+      return;
+    }
+    timerElement.remove();
   }
 }
