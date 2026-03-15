@@ -1832,6 +1832,51 @@ mod tests {
     }
 
     #[test]
+    fn test_temp_share_works_when_root_is_unconfigured() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let missing_root = temp_dir.path().join("missing-web-root");
+        let dropped_dir = temp_dir.path().join("dropped");
+        fs::create_dir_all(&dropped_dir).expect("Failed to create dropped directory");
+        fs::write(dropped_dir.join("hello.txt"), "hello").expect("Failed to create dropped file");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(missing_root, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+
+        let root_response = client
+            .get(&format!("http://127.0.0.1:{}/", port))
+            .send()
+            .expect("Failed to send root request");
+        assert_eq!(
+            root_response.status(),
+            404,
+            "Regular path should return 404 when web root is not configured"
+        );
+
+        let hash = register_temp_root(dropped_dir.as_path())
+            .expect("Failed to register temporary dropped directory");
+        let tmp_response = client
+            .get(&format!(
+                "http://127.0.0.1:{}{}{}/?mode=source",
+                port, TEMP_DIR_PREFIX, hash
+            ))
+            .send()
+            .expect("Failed to send temp-share request");
+        assert_eq!(
+            tmp_response.status(),
+            200,
+            "Temp-share URL should still be accessible"
+        );
+        let body = tmp_response.text().expect("Response body should be readable");
+        assert!(
+            body.contains("hello.txt"),
+            "Temp-share directory listing should include dropped file"
+        );
+    }
+
+    #[test]
     fn test_handle_web_request_multibyte_filename() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
