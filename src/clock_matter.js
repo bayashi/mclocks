@@ -9,8 +9,7 @@ import { escapeHTML, pad, enqueueNotification, openMessageDialog } from './util.
 export function initClocks(clockCtx, cfg, clocks) {
   let clocksHtml = '';
 
-  for (const [index, clock] of clocks.getAllClocks().entries()) {
-    clock.id = `mclk-${index}`;
+  for (const clock of clocks.getAllClocks()) {
     clocksHtml += renderClockHTML(clockCtx, clock);
     if (!clock.countdown) {
       clock.fn = cdate().locale(cfg.locale).tz(clock.timezone).cdateFn();
@@ -170,7 +169,6 @@ export function addTimerClock(clockCtx, cfg, clocks, timerInSec) {
     countdown: `${clockCtx.timerIcon()}%M:%s`, // The timer clock is just an alternative countdown timer
     target: clockCtx.cdateUTC().add(timerInSec, "s").text(),
     timezone: "UTC",
-    id: `mclk-${clocks.getAllClocks().length - 1}`,
     timerName: `${timerInSec / 60}-minute timer`,
     pauseStart: null,
   });

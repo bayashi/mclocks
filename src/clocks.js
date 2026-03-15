@@ -1,6 +1,7 @@
 export class Clocks {
   #clocks = [];
   #timerClocks = [];
+  #nextTimerId = 0;
 
   constructor(clocks, epochClockName) {
     const epochClock = {
@@ -9,10 +10,14 @@ export class Clocks {
       isEpoch: true,
     };
 
-    this.#clocks = [...clocks, epochClock];
+    this.#clocks = [...clocks, epochClock].map((clock, index) => ({
+      ...clock,
+      id: clock.id ?? `mclk-${index}`,
+    }));
   }
 
   pushTimerClock(timerClock) {
+    timerClock.id = timerClock.id ?? `mclk-timer-${this.#nextTimerId++}`;
     this.#timerClocks.push(timerClock);
     return this;
   }
