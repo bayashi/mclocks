@@ -69,6 +69,10 @@ export async function adjustWindowSize(clockCtx, clocks) {
 
 export function startClocks(clockCtx, clocks) {
   for (const clock of clocks.getAllClocks()) {
+    if (clock.timeoutId) {
+      clearTimeout(clock.timeoutId);
+      clock.timeoutId = null;
+    }
     tick(clockCtx, clock);
   }
 }
