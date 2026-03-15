@@ -1869,7 +1869,9 @@ mod tests {
             200,
             "Temp-share URL should still be accessible"
         );
-        let body = tmp_response.text().expect("Response body should be readable");
+        let body = tmp_response
+            .text()
+            .expect("Response body should be readable");
         assert!(
             body.contains("hello.txt"),
             "Temp-share directory listing should include dropped file"
@@ -2593,8 +2595,8 @@ mod tests {
     #[test]
     fn test_default_web_server_config_for_temp_share_only_mode() {
         let identifier = "test.app.defaultweb".to_string();
-        let config = default_web_server_config(&identifier)
-            .expect("Should build default web server config");
+        let config =
+            default_web_server_config(&identifier).expect("Should build default web server config");
         assert!(
             config.port >= MIN_WEB_PORT,
             "Default port should be in valid range"

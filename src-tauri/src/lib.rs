@@ -13,7 +13,9 @@ use util::open_text_in_editor;
 use web::dd_publish::{
     build_temp_file_url, build_temp_share_url, register_temp_file, register_temp_root,
 };
-use web_server::{default_web_server_config, load_web_config, open_url_in_browser, start_web_server};
+use web_server::{
+    default_web_server_config, load_web_config, open_url_in_browser, start_web_server,
+};
 
 /// Global lock to serialize all saveWindowState calls across windows.
 /// Prevents potential deadlocks in the window-state plugin when multiple
