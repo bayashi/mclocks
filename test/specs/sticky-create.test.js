@@ -23,8 +23,21 @@ describe('Sticky Note - Create from main window (Ctrl+s)', () => {
 	beforeEach(async () => {
 		await browser.url('/');
 		await browser.execute((config) => {
-			sessionStorage.setItem('__defaultClockConfig', JSON.stringify(config));
-			window.__defaultClockConfig = config;
+			const originalInvoke = window.__TAURI_INTERNALS__?.invoke;
+			const mockInvoke = async function(cmd, args) {
+				if (cmd === 'load_config') {
+					return config;
+				}
+				if (typeof originalInvoke === 'function') {
+					return originalInvoke(cmd, args);
+				}
+				return undefined;
+			};
+			if (window.__TAURI_INTERNALS__) {
+				window.__TAURI_INTERNALS__.invoke = mockInvoke;
+			} else {
+				window.__TAURI_INTERNALS__ = { invoke: mockInvoke };
+			}
 		}, testConfig);
 		await browser.refresh();
 		await browser.waitUntil(
@@ -63,7 +76,7 @@ describe('Sticky Note - Create from main window (Ctrl+s)', () => {
 	 * Tracks create_sticky and dialog calls on window.__stickyTest.
 	 */
 	const installInvokeMock = async (clipboardText) => {
-		await browser.execute((text) => {
+		await browser.execute((text, config) => {
 			window.__clipboardText = text;
 			window.__stickyTest = {
 				createStickyCalled: false,
@@ -88,6 +101,10 @@ describe('Sticky Note - Create from main window (Ctrl+s)', () => {
 					window.__stickyTest.createStickyText = args?.text ?? null;
 					return;
 				}
+				// Config read
+				if (cmd === 'load_config') {
+					return config;
+				}
 				// Dialog (message)
 				if (cmd && typeof cmd === 'string' && cmd.includes('dialog')) {
 					window.__stickyTest.dialogCalled = true;
@@ -111,7 +128,7 @@ describe('Sticky Note - Create from main window (Ctrl+s)', () => {
 			} else {
 				window.__TAURI_INTERNALS__ = { invoke: mockInvoke };
 			}
-		}, clipboardText);
+		}, clipboardText, testConfig);
 	};
 
 	const getStickyTestResult = async () => {
