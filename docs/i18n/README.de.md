@@ -237,8 +237,8 @@ Leerzeilen werden bei allen Operationen beibehalten.
 | `Ctrl + 1` bis `Ctrl + 9` | Timer starten (1 Minute × Zifferntaste) |
 | `Ctrl + Alt + 1` bis `Ctrl + Alt + 9` | Timer starten (10 Minuten × Zifferntaste) |
 | `Ctrl + p` | Alle Timer pausieren / fortsetzen |
-| `Ctrl + 0` | Ältesten Timer (ganz links) löschen |
-| `Ctrl + Alt + 0` | Neuesten Timer (ganz rechts) löschen |
+| `Ctrl + 0` | Ältesten Timer löschen |
+| `Ctrl + Alt + 0` | Neuesten Timer löschen |
 
 ### Haftnotiz
 

@@ -237,8 +237,8 @@ Les lignes vides sont préservées telles quelles dans toutes les opérations.
 | `Ctrl + 1` à `Ctrl + 9` | Démarrer un minuteur (1 minute × touche numérique) |
 | `Ctrl + Alt + 1` à `Ctrl + Alt + 9` | Démarrer un minuteur (10 minutes × touche numérique) |
 | `Ctrl + p` | Mettre en pause / reprendre tous les minuteurs |
-| `Ctrl + 0` | Supprimer le minuteur le plus ancien (le plus à gauche) |
-| `Ctrl + Alt + 0` | Supprimer le minuteur le plus récent (le plus à droite) |
+| `Ctrl + 0` | Supprimer le minuteur le plus ancien |
+| `Ctrl + Alt + 0` | Supprimer le minuteur le plus récent |
 
 ### Note adhésive
 

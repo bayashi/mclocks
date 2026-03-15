@@ -237,8 +237,8 @@ Las líneas vacías se preservan tal cual en todas las operaciones.
 | `Ctrl + 1` a `Ctrl + 9` | Iniciar temporizador (1 minuto × tecla numérica) |
 | `Ctrl + Alt + 1` a `Ctrl + Alt + 9` | Iniciar temporizador (10 minutos × tecla numérica) |
 | `Ctrl + p` | Pausar / reanudar todos los temporizadores |
-| `Ctrl + 0` | Eliminar el temporizador más antiguo (el de más a la izquierda) |
-| `Ctrl + Alt + 0` | Eliminar el temporizador más reciente (el de más a la derecha) |
+| `Ctrl + 0` | Eliminar el temporizador más antiguo |
+| `Ctrl + Alt + 0` | Eliminar el temporizador más reciente |
 
 ### Nota adhesiva
 
