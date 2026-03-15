@@ -249,12 +249,18 @@ pub fn start_web_server(
         };
 
         let root_path = PathBuf::from(root);
-        if !root_path.exists() {
-            eprintln!("Web root path does not exist: {}", root_path.display());
-            return;
+        if root_path.exists() && root_path.is_dir() {
+            println!(
+                "Web server started on http://localhost:{} (serving root: {})",
+                port,
+                root_path.display()
+            );
+        } else {
+            println!(
+                "Web server started on http://localhost:{} (temp-share only mode)",
+                port
+            );
         }
-
-        println!("Web server started on http://localhost:{}", port);
 
         for mut request in server.incoming_requests() {
             let response = handle_web_request(
@@ -276,6 +282,35 @@ pub fn start_web_server(
             }
         }
     });
+}
+
+fn build_unconfigured_web_root_path(identifier: &String) -> Result<String, String> {
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let root = base_dir
+        .config_dir()
+        .join(identifier)
+        .join("__mclocks_unconfigured_web_root__");
+    Ok(root.to_string_lossy().to_string())
+}
+
+pub fn default_web_server_config(identifier: &String) -> Result<WebServerConfig, String> {
+    let main_port = find_available_port_downward(df_web_port(), MIN_WEB_PORT, "main web")?;
+    Ok(WebServerConfig {
+        root: build_unconfigured_web_root_path(identifier)?,
+        port: main_port,
+        open_browser_at_start: false,
+        dump: false,
+        slow: false,
+        status: false,
+        allow_html_in_md: false,
+        markdown_open_external_link_in_new_tab: true,
+        markdown_highlight: None,
+        assets_server: None,
+        editor_repos_dir: None,
+        editor_include_host: false,
+        editor_command: "code".to_string(),
+        editor_args: vec!["-g".to_string(), "{file}:{line}".to_string()],
+    })
 }
 
 pub fn open_url_in_browser(url: &str) -> Result<(), String> {
@@ -1797,6 +1832,53 @@ mod tests {
     }
 
     #[test]
+    fn test_temp_share_works_when_root_is_unconfigured() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let missing_root = temp_dir.path().join("missing-web-root");
+        let dropped_dir = temp_dir.path().join("dropped");
+        fs::create_dir_all(&dropped_dir).expect("Failed to create dropped directory");
+        fs::write(dropped_dir.join("hello.txt"), "hello").expect("Failed to create dropped file");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(missing_root, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+
+        let root_response = client
+            .get(&format!("http://127.0.0.1:{}/", port))
+            .send()
+            .expect("Failed to send root request");
+        assert_eq!(
+            root_response.status(),
+            404,
+            "Regular path should return 404 when web root is not configured"
+        );
+
+        let hash = register_temp_root(dropped_dir.as_path())
+            .expect("Failed to register temporary dropped directory");
+        let tmp_response = client
+            .get(&format!(
+                "http://127.0.0.1:{}{}{}/?mode=source",
+                port, TEMP_DIR_PREFIX, hash
+            ))
+            .send()
+            .expect("Failed to send temp-share request");
+        assert_eq!(
+            tmp_response.status(),
+            200,
+            "Temp-share URL should still be accessible"
+        );
+        let body = tmp_response
+            .text()
+            .expect("Response body should be readable");
+        assert!(
+            body.contains("hello.txt"),
+            "Temp-share directory listing should include dropped file"
+        );
+    }
+
+    #[test]
     fn test_handle_web_request_multibyte_filename() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
@@ -2508,6 +2590,36 @@ mod tests {
         // Cleanup
         let _ = fs::remove_file(&config_path);
         let _ = fs::remove_dir(&test_config_dir);
+    }
+
+    #[test]
+    fn test_default_web_server_config_for_temp_share_only_mode() {
+        let identifier = "test.app.defaultweb".to_string();
+        let config =
+            default_web_server_config(&identifier).expect("Should build default web server config");
+        assert!(
+            config.port >= MIN_WEB_PORT,
+            "Default port should be in valid range"
+        );
+        assert_eq!(
+            config.open_browser_at_start, false,
+            "Default open browser should be disabled"
+        );
+        assert_eq!(config.dump, false, "Default dump should be disabled");
+        assert_eq!(config.slow, false, "Default slow should be disabled");
+        assert_eq!(config.status, false, "Default status should be disabled");
+        assert!(
+            config.root.contains("__mclocks_unconfigured_web_root__"),
+            "Default root should point to unconfigured marker path"
+        );
+        assert!(
+            config.assets_server.is_none(),
+            "Assets server should be disabled in temp-share only mode"
+        );
+        assert!(
+            config.markdown_highlight.is_none(),
+            "Markdown highlight assets should be disabled in temp-share only mode"
+        );
     }
 
     #[test]
