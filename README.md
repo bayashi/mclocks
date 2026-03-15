@@ -255,8 +255,8 @@ Empty lines are preserved as-is in all operations.
 | `Ctrl + 1` to `Ctrl + 9` | Start timer (1 minute × number key) |
 | `Ctrl + Alt + 1` to `Ctrl + Alt + 9` | Start timer (10 minutes × number key) |
 | `Ctrl + p` | Pause / resume all timers |
-| `Ctrl + 0` | Delete the oldest timer (leftmost) |
-| `Ctrl + Alt + 0` | Delete the newest timer (rightmost) |
+| `Ctrl + 0` | Delete the oldest timer |
+| `Ctrl + Alt + 0` | Delete the newest timer |
 
 ### Sticky Note
 

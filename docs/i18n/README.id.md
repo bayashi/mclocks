@@ -237,8 +237,8 @@ Baris kosong dipertahankan apa adanya di semua operasi.
 | `Ctrl + 1` sampai `Ctrl + 9` | Mulai timer (1 menit × tombol angka) |
 | `Ctrl + Alt + 1` sampai `Ctrl + Alt + 9` | Mulai timer (10 menit × tombol angka) |
 | `Ctrl + p` | Jeda / lanjutkan semua timer |
-| `Ctrl + 0` | Hapus timer tertua (paling kiri) |
-| `Ctrl + Alt + 0` | Hapus timer terbaru (paling kanan) |
+| `Ctrl + 0` | Hapus timer tertua |
+| `Ctrl + Alt + 0` | Hapus timer terbaru |
 
 ### Catatan tempel
 

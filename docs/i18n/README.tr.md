@@ -237,8 +237,8 @@ Boş satırlar tüm işlemlerde olduğu gibi korunur.
 | `Ctrl + 1` - `Ctrl + 9` | Zamanlayıcı başlat (1 dakika × sayı tuşu) |
 | `Ctrl + Alt + 1` - `Ctrl + Alt + 9` | Zamanlayıcı başlat (10 dakika × sayı tuşu) |
 | `Ctrl + p` | Tüm zamanlayıcıları duraklat / devam ettir |
-| `Ctrl + 0` | En eski zamanlayıcıyı (en soldaki) sil |
-| `Ctrl + Alt + 0` | En yeni zamanlayıcıyı (en sağdaki) sil |
+| `Ctrl + 0` | En eski zamanlayıcıyı sil |
+| `Ctrl + Alt + 0` | En yeni zamanlayıcıyı sil |
 
 ### Yapışkan not
 
