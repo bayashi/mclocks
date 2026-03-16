@@ -6,14 +6,7 @@ body{
 }
 
 #toc{
-	position:fixed;
-	top:0;
-	left:0;
 	width:var(--toc-width);
-	height:100vh;
-	overflow-y:auto;
-	background:#0a0a0a;
-	border-right:1px solid #222;
 	padding:16px 12px;
 	font-size:13px;
 	scrollbar-width:thin;
@@ -21,10 +14,6 @@ body{
 }
 
 #toc h2{
-	color:#666;
-	font-size:11px;
-	letter-spacing:.1em;
-	text-transform:uppercase;
 	margin:0 0 8px 4px;
 }
 

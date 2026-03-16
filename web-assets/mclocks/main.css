@@ -9,6 +9,23 @@ body{
 	font-family:"Segoe UI","Yu Gothic UI","Meiryo","Hiragino Kaku Gothic ProN",sans-serif;
 }
 
+:is(#toc,#sidebar){
+	position:fixed;
+	top:0;
+	left:0;
+	height:100vh;
+	background:#0a0a0a;
+	border-right:1px solid #222;
+	overflow-y:auto;
+}
+
+:is(#toc,#sidebar) h2{
+	font-size:11px;
+	letter-spacing:.1em;
+	text-transform:uppercase;
+	color:#666;
+}
+
 #raw-toggle{
 	display:inline-block;
 	color:#ccc;

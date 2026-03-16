@@ -5,23 +5,12 @@ body{
 }
 
 #sidebar{
-	position:fixed;
-	top:0;
-	left:0;
 	width:var(--sidebar-width);
-	height:100vh;
-	background:#0a0a0a;
-	border-right:1px solid #222;
 	padding:12px 12px 14px;
-	overflow-y:auto;
 }
 
 #sidebar h2{
 	margin:0 0 6px;
-	font-size:11px;
-	letter-spacing:.1em;
-	text-transform:uppercase;
-	color:#666;
 }
 
 #summary-list,
