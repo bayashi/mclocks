@@ -54,10 +54,10 @@ body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Go
 #directory-link:hover { color: #fff; }
 #main-header-path { flex: 0 1 auto; min-width: 0; line-height: 1.2; color: #777; font-size: 12px; font-family: "Consolas", "Cascadia Code", "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace; overflow-wrap: anywhere; word-break: break-word; }
 #main-separator { height: 1px; background: #222; margin: 0 0 12px; }
-#entry-list { list-style: none; margin: 0; padding: 0; border-top: none; }
-#entry-list li { border-bottom: 1px solid #161616; }
-#entry-list a { display: block; color: #ccc; text-decoration: none; padding: 8px 4px; border-radius: 2px; }
-#entry-list a:hover { color: #fff; background: #1a1a1a; }
+#main > ul { list-style: none; margin: 0; padding: 0; border-top: none; }
+#main > ul > li { border-bottom: 1px solid #161616; }
+#main > ul > li > a { display: block; color: #ccc; text-decoration: none; padding: 8px 4px; border-radius: 2px; }
+#main > ul > li > a:hover { color: #fff; background: #1a1a1a; }
 .entry-label { display: inline-block; min-width: calc(1.7em - 2px); color: #666; }
 .dir .entry-label { color: #777; }
 .back .entry-label { color: #555; }
@@ -103,7 +103,7 @@ __DIRECTORY_LINK_HTML__
 </div>
 </div>
 <div id="main-separator"></div>
-<ul id="entry-list">
+<ul>
 __LIST_ITEMS__
 </ul>
 </div>
