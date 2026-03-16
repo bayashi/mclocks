@@ -88,7 +88,7 @@ body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Go
 #meta-tooltip tr.preview-row th, #meta-tooltip tr.preview-row td { vertical-align: top; }
 </style>
 </head>
-<body class="mclocks-source">
+<body class="mclocks-directory">
 <aside id="sidebar">
 <div id="sidebar-controls">__MODE_SWITCH_HTML__</div>
 <h2>Summary</h2>
@@ -293,7 +293,7 @@ const SOURCE_VIEW_TEMPLATE: &str = r##"<!doctype html>
 __MAIN_CSS_LINK__
 __HIGHLIGHT_CSS_LINK__
 <style>
-body{line-height:1.6;min-height:100vh;--source-sidebar-width:200px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:16px 12px;--left-pane-bg:#050505;--left-pane-border-right:1px solid #1b1b1b;--left-pane-h2-margin:0 0 8px 4px;--left-pane-h2-font-size:14px;--left-pane-h2-color:#ddd;--left-pane-h2-font-weight:600;--sidebar-controls-gap:8px;--sidebar-actions-gap:6px}
+body{line-height:1.6;min-height:100vh;--source-sidebar-width:200px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:16px 12px;--left-pane-bg:#050505;--left-pane-border-right:1px solid #1b1b1b;--left-pane-h2-margin:0 0 8px 4px;--sidebar-controls-gap:8px;--sidebar-actions-gap:6px}
 #sidebar{max-width:45vw;overflow:auto}
 #notices{margin-top:10px}
 pre{margin:0;padding:12px;background:#111;border:1px solid #222;border-radius:4px;overflow-x:auto;overflow-y:hidden;overflow-wrap:normal;word-break:normal}

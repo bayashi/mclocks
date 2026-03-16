@@ -119,30 +119,6 @@ body{
 	word-break:break-word;
 }
 
-.mclocks-source #summary-list{
-	margin:0;
-}
-
-.mclocks-source #summary-list li{
-	justify-content:space-between;
-	gap:10px;
-	margin:0;
-	padding:4px 0;
-	border-bottom:1px solid #111;
-}
-
-.mclocks-source #summary-list .label{
-	color:#666;
-	flex:0 0 auto;
-}
-
-.mclocks-source #summary-list .value{
-	flex:0 0 auto;
-	color:#bbb;
-	text-align:right;
-	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;
-}
-
 :is(#toc-resizer,#resizer){
 	position:fixed;
 	top:0;
