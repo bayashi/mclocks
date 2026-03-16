@@ -14,12 +14,14 @@ body{
 	top:0;
 	left:0;
 	height:100vh;
+	padding:var(--left-pane-padding,0);
 	background:#0a0a0a;
 	border-right:1px solid #222;
 	overflow-y:auto;
 }
 
 :is(#toc,#sidebar) h2{
+	margin:var(--left-pane-h2-margin,0);
 	font-size:11px;
 	letter-spacing:.1em;
 	text-transform:uppercase;

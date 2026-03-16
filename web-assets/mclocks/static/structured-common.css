@@ -3,15 +3,12 @@ body{
 	line-height:1.5;
 	--sidebar-width:200px;
 	--left-pane-width:var(--sidebar-width);
+	--left-pane-padding:12px 12px 14px;
+	--left-pane-h2-margin:0 0 6px;
 }
 
 #sidebar{
 	width:var(--sidebar-width);
-	padding:12px 12px 14px;
-}
-
-#sidebar h2{
-	margin:0 0 6px;
 }
 
 #summary-list,

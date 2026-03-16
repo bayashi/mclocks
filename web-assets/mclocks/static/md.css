@@ -3,19 +3,16 @@ body{
 	line-height:1.6;
 	--toc-width:200px;
 	--left-pane-width:var(--toc-width);
+	--left-pane-padding:16px 12px;
+	--left-pane-h2-margin:0 0 8px 4px;
 	color:#aaa;
 }
 
 #toc{
 	width:var(--toc-width);
-	padding:16px 12px;
 	font-size:13px;
 	scrollbar-width:thin;
 	scrollbar-color:#333 transparent;
-}
-
-#toc h2{
-	margin:0 0 8px 4px;
 }
 
 #toc ul{
