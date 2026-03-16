@@ -45,18 +45,25 @@ const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
 <title>Index of __PAGE_TITLE__</title>
 <style>
 * { box-sizing: border-box; }
-body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; }
-#main { padding: 16px 24px; width: 100vw; overflow-wrap: anywhere; word-break: break-word; }
+body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; --sidebar-width: 220px; }
+#sidebar { position: fixed; top: 0; left: 0; width: var(--sidebar-width); height: 100vh; padding: 14px 12px; background: #0a0a0a; border-right: 1px solid #222; overflow-y: auto; }
+#sidebar-controls { margin: 0 0 12px; }
+#sidebar h2 { margin: 0 0 8px 4px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #666; font-weight: 400; }
+#summary-list { list-style: none; margin: 0; padding: 0; }
+#summary-list li { display: flex; gap: 4px; margin: 0 0 6px; font-size: 12px; }
+#summary-list .label { color: #777; flex: 0 0 58px; }
+#summary-list .value { color: #ccc; flex: 1; text-align: left; overflow-wrap: anywhere; word-break: break-word; }
+#main { margin-left: var(--sidebar-width); width: calc(100vw - var(--sidebar-width)); padding: 16px 24px; overflow-wrap: anywhere; word-break: break-word; }
 #header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 10px; }
 #path-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
 #directory-link { display: inline-flex; align-items: center; justify-content: center; color: #bbb; text-decoration: none; font-size: 14px; line-height: 1; }
 #directory-link:hover { color: #fff; }
 #main-header-path { flex: 0 1 auto; min-width: 0; line-height: 1.2; color: #777; font-size: 12px; font-family: "Consolas", "Cascadia Code", "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace; overflow-wrap: anywhere; word-break: break-word; }
 #main-separator { height: 1px; background: #222; margin: 0 0 12px; }
-ul { list-style: none; margin: 0; padding: 0; border-top: none; }
-li { border-bottom: 1px solid #161616; }
-a { display: block; color: #ccc; text-decoration: none; padding: 8px 4px; border-radius: 2px; }
-a:hover { color: #fff; background: #1a1a1a; }
+#entry-list { list-style: none; margin: 0; padding: 0; border-top: none; }
+#entry-list li { border-bottom: 1px solid #161616; }
+#entry-list a { display: block; color: #ccc; text-decoration: none; padding: 8px 4px; border-radius: 2px; }
+#entry-list a:hover { color: #fff; background: #1a1a1a; }
 .entry-label { display: inline-block; min-width: calc(1.7em - 2px); color: #666; }
 .dir .entry-label { color: #777; }
 .back .entry-label { color: #555; }
@@ -88,6 +95,11 @@ a:hover { color: #fff; background: #1a1a1a; }
 </style>
 </head>
 <body class="mclocks-source">
+<aside id="sidebar">
+<div id="sidebar-controls">__MODE_SWITCH_HTML__</div>
+<h2>Summary</h2>
+<ul id="summary-list">__SUMMARY_ITEMS__</ul>
+</aside>
 <div id="main">
 <div id="header">
 <div id="path-actions">
@@ -95,10 +107,9 @@ __DIRECTORY_LINK_HTML__
 <div id="main-header-path">__ABSOLUTE_PATH__</div>
 <button id="path-copy-btn" class="mode-btn" type="button">Copy</button>
 </div>
-__MODE_SWITCH_HTML__
 </div>
 <div id="main-separator"></div>
-<ul>
+<ul id="entry-list">
 __LIST_ITEMS__
 </ul>
 </div>
@@ -178,6 +189,20 @@ const toLocalTime = (value) => {
 	const s = pad2(d.getSeconds());
 	return `${y}-${mo}-${da} ${h}:${mi}:${s}`;
 };
+const summaryList = document.getElementById("summary-list");
+if (summaryList) {
+	summaryList.querySelectorAll("li").forEach((li) => {
+		const label = li.querySelector(".label");
+		const value = li.querySelector(".value");
+		if (!label || !value) {
+			return;
+		}
+		if (label.textContent?.trim() !== "Last Mod") {
+			return;
+		}
+		value.textContent = toLocalTime(value.textContent?.trim() || "-");
+	});
+}
 const renderTooltip = (meta) => {
 	const size = meta?.size_hr ?? "-";
 	const preview = meta?.preview ?? "-";
@@ -455,6 +480,36 @@ fn resolve_directory_parent_directory_href(
     Some(build_parent_directory_href(url_path, url_query, mode))
 }
 
+fn render_directory_summary_items(
+    entry_count: usize,
+    dir_count: usize,
+    file_count: usize,
+    last_modified_ms: Option<u64>,
+    status: &str,
+) -> String {
+    let mut html = String::new();
+    let fields = [
+        ("Entries", entry_count.to_string()),
+        ("Dirs", dir_count.to_string()),
+        ("Files", file_count.to_string()),
+        (
+            "Last Mod",
+            last_modified_ms
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "-".to_string()),
+        ),
+        ("Status", status.to_string()),
+    ];
+    for (label, value) in fields {
+        html.push_str("<li><span class=\"label\">");
+        html.push_str(label);
+        html.push_str("</span><span class=\"value\">");
+        html.push_str(&html_escape(&value));
+        html.push_str("</span></li>");
+    }
+    html
+}
+
 fn create_directory_listing(
     dir_path: &Path,
     url_path: &str,
@@ -487,6 +542,9 @@ fn create_directory_listing(
     };
 
     let mut list_items = String::new();
+    let mut dir_count = 0usize;
+    let mut file_count = 0usize;
+    let mut summary_status = "Directory Listing";
     let mut has_entries = false;
 
     let parent_directory_href =
@@ -516,6 +574,8 @@ fn create_directory_listing(
             // Sort directories and files
             dirs.sort();
             files.sort();
+            dir_count = dirs.len();
+            file_count = files.len();
 
             // Add directory entries
             for dir in dirs {
@@ -545,12 +605,20 @@ fn create_directory_listing(
         }
         Err(_) => {
             list_items.push_str("<li class=\"error\">Error reading directory</li>\n");
+            summary_status = "Error reading directory";
         }
     }
 
     if !has_entries {
         list_items.push_str("<li class=\"empty\">(empty)</li>\n");
     }
+    let summary_items = render_directory_summary_items(
+        dir_count + file_count,
+        dir_count,
+        file_count,
+        get_last_modified_ms(dir_path),
+        summary_status,
+    );
     let absolute_path = format_display_path(dir_path);
     let mode_switch_html = template_common::build_mode_switch_html(
         url_path,
@@ -572,6 +640,7 @@ fn create_directory_listing(
         .replace("__ABSOLUTE_PATH__", &html_escape(&absolute_path))
         .replace("__DIRECTORY_LINK_HTML__", &directory_link_html)
         .replace("__MODE_SWITCH_HTML__", &mode_switch_html)
+        .replace("__SUMMARY_ITEMS__", &summary_items)
         .replace("__LIST_ITEMS__", &list_items)
         .replace("__METADATA_ENDPOINT__", &html_escape(&metadata_endpoint));
 
