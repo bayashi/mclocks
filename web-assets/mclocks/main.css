@@ -90,6 +90,63 @@ body{
 	border-color:#777;
 }
 
+:is(#toc,#sidebar) #sidebar-controls .mode-switch.directory-switch .raw-switch{
+	justify-content:space-between;
+	gap:8px;
+	min-width:72px;
+	padding:4px 7px;
+	background:transparent;
+	border:none;
+	box-shadow:none;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch.directory-switch .raw-switch:hover{
+	background:transparent;
+	border:none;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch.directory-switch .raw-switch.is-active{
+	background:transparent;
+	border:none;
+	box-shadow:none;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch.directory-switch .raw-switch .switch-label{
+	font-size:11px;
+	line-height:1;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch.directory-switch .raw-switch .switch-track{
+	position:relative;
+	width:28px;
+	height:16px;
+	border-radius:999px;
+	border:1px solid #666;
+	background:transparent;
+	transition:border-color .14s ease;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch.directory-switch .raw-switch .switch-thumb{
+	position:absolute;
+	top:1px;
+	left:1px;
+	width:12px;
+	height:12px;
+	border-radius:50%;
+	background:#aaa;
+	transition:transform .14s ease,background-color .14s ease;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch.directory-switch .raw-switch.is-active .switch-track{
+	background:transparent;
+	border-color:#2ea56a;
+}
+
+:is(#toc,#sidebar) #sidebar-controls .mode-switch.directory-switch .raw-switch.is-active .switch-thumb{
+	transform:translateX(12px);
+	background:#d6ffe8;
+}
+
 :is(#toc,#sidebar) #summary-list{
 	margin:0 0 24px;
 }
@@ -117,30 +174,6 @@ body{
 	text-align:left;
 	overflow-wrap:anywhere;
 	word-break:break-word;
-}
-
-.mclocks-source #summary-list{
-	margin:0;
-}
-
-.mclocks-source #summary-list li{
-	justify-content:space-between;
-	gap:10px;
-	margin:0;
-	padding:4px 0;
-	border-bottom:1px solid #111;
-}
-
-.mclocks-source #summary-list .label{
-	color:#666;
-	flex:0 0 auto;
-}
-
-.mclocks-source #summary-list .value{
-	flex:0 0 auto;
-	color:#bbb;
-	text-align:right;
-	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;
 }
 
 :is(#toc-resizer,#resizer){
