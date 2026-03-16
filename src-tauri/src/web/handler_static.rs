@@ -43,16 +43,10 @@ const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <title>Index of __PAGE_TITLE__</title>
+__MAIN_CSS_LINK__
 <style>
 * { box-sizing: border-box; }
-body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; --sidebar-width: 200px; }
-#sidebar { position: fixed; top: 0; left: 0; width: var(--sidebar-width); height: 100vh; padding: 16px 12px; background: #0a0a0a; border-right: 1px solid #222; overflow-y: auto; }
-#sidebar-controls { margin: 0 0 12px; }
-#sidebar h2 { margin: 0 0 8px 4px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #666; font-weight: 400; }
-#summary-list { list-style: none; margin: 0; padding: 0; }
-#summary-list li { display: flex; gap: 4px; margin: 0 0 6px; font-size: 12px; }
-#summary-list .label { color: #777; flex: 0 0 58px; }
-#summary-list .value { color: #ccc; flex: 1; text-align: left; overflow-wrap: anywhere; word-break: break-word; }
+body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; --sidebar-width: 200px; --left-pane-width: var(--sidebar-width); --left-pane-padding: 16px 12px; --left-pane-h2-margin: 0 0 8px 4px; }
 #main { margin-left: var(--sidebar-width); width: calc(100vw - var(--sidebar-width)); padding: 16px 24px; overflow-wrap: anywhere; word-break: break-word; }
 #header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 10px; }
 #path-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -515,6 +509,7 @@ fn create_directory_listing(
     url_path: &str,
     url_query: &str,
     current_mode: ContentMode,
+    markdown_highlight: Option<&WebMarkdownHighlightConfig>,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     // Decode URL path for display (each segment separately)
     let decoded_path = if url_path == "/" {
@@ -634,8 +629,16 @@ fn create_directory_listing(
         ),
         None => "".to_string(),
     };
+    let main_css_link = match markdown_highlight {
+        Some(cfg) => format!(
+            "<link rel=\"stylesheet\" href=\"{}\" />",
+            html_escape(&cfg.main_css_url)
+        ),
+        None => "".to_string(),
+    };
     let html = DIRECTORY_LISTING_TEMPLATE
         .replace("__PAGE_TITLE__", &html_escape(&decoded_path))
+        .replace("__MAIN_CSS_LINK__", &main_css_link)
         .replace("__DISPLAY_PATH__", &html_escape(&decoded_path))
         .replace("__ABSOLUTE_PATH__", &html_escape(&absolute_path))
         .replace("__DIRECTORY_LINK_HTML__", &directory_link_html)
@@ -1136,6 +1139,7 @@ pub fn handle_web_request(
                         public_url_path.as_str(),
                         request_query,
                         content_mode,
+                        markdown_highlight,
                     );
                 }
                 return create_error_response(StatusCode(404), "Not Found");
@@ -1168,6 +1172,7 @@ pub fn handle_web_request(
                     public_url_path.as_str(),
                     request_query,
                     content_mode,
+                    markdown_highlight,
                 );
             }
             return create_error_response(StatusCode(404), "Not Found");
@@ -1181,6 +1186,7 @@ pub fn handle_web_request(
             public_url_path.as_str(),
             request_query,
             content_mode,
+            markdown_highlight,
         );
     }
 
