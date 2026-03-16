@@ -2,6 +2,7 @@ body{
 	display:flex;
 	line-height:1.6;
 	--toc-width:200px;
+	--left-pane-width:var(--toc-width);
 	color:#aaa;
 }
 
@@ -68,11 +69,6 @@ body{
 
 #toc-resizer{
 	left:calc(var(--toc-width) - 3px);
-}
-
-#main{
-	margin-left:var(--toc-width);
-	width:calc(100vw - var(--toc-width));
 }
 
 #content a:link{

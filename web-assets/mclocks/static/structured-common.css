@@ -2,6 +2,7 @@ body{
 	display:flex;
 	line-height:1.5;
 	--sidebar-width:200px;
+	--left-pane-width:var(--sidebar-width);
 }
 
 #sidebar{
@@ -60,12 +61,6 @@ body{
 #resizer{
 	left:calc(var(--sidebar-width) - 3px);
 }
-
-#main{
-	margin-left:var(--sidebar-width);
-	width:calc(100vw - var(--sidebar-width));
-}
-
 
 #json-view{
 	margin:0;

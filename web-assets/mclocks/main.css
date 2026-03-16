@@ -119,6 +119,8 @@ body{
 }
 
 #main{
+	margin-left:var(--left-pane-width,0px);
+	width:calc(100vw - var(--left-pane-width,0px));
 	padding:16px 24px;
 	overflow-wrap:anywhere;
 	word-break:break-word;
