@@ -45,8 +45,8 @@ const DIRECTORY_LISTING_TEMPLATE: &str = r##"<!DOCTYPE html>
 <title>Index of __PAGE_TITLE__</title>
 <style>
 * { box-sizing: border-box; }
-body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; --sidebar-width: 220px; }
-#sidebar { position: fixed; top: 0; left: 0; width: var(--sidebar-width); height: 100vh; padding: 14px 12px; background: #0a0a0a; border-right: 1px solid #222; overflow-y: auto; }
+body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; --sidebar-width: 200px; }
+#sidebar { position: fixed; top: 0; left: 0; width: var(--sidebar-width); height: 100vh; padding: 16px 12px; background: #0a0a0a; border-right: 1px solid #222; overflow-y: auto; }
 #sidebar-controls { margin: 0 0 12px; }
 #sidebar h2 { margin: 0 0 8px 4px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #666; font-weight: 400; }
 #summary-list { list-style: none; margin: 0; padding: 0; }
@@ -299,7 +299,7 @@ const SOURCE_VIEW_TEMPLATE: &str = r##"<!doctype html>
 __MAIN_CSS_LINK__
 __HIGHLIGHT_CSS_LINK__
 <style>
-body{line-height:1.6;min-height:100vh;--source-sidebar-width:260px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:12px;--left-pane-bg:#050505;--left-pane-border-right:1px solid #1b1b1b;--left-pane-h2-margin:0 0 8px;--left-pane-h2-font-size:14px;--left-pane-h2-color:#ddd;--left-pane-h2-font-weight:600;--sidebar-controls-gap:8px;--sidebar-actions-gap:6px}
+body{line-height:1.6;min-height:100vh;--source-sidebar-width:200px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:16px 12px;--left-pane-bg:#050505;--left-pane-border-right:1px solid #1b1b1b;--left-pane-h2-margin:0 0 8px 4px;--left-pane-h2-font-size:14px;--left-pane-h2-color:#ddd;--left-pane-h2-font-weight:600;--sidebar-controls-gap:8px;--sidebar-actions-gap:6px}
 #sidebar{max-width:45vw;overflow:auto}
 #notices{margin-top:10px}
 pre{margin:0;padding:12px;background:#111;border:1px solid #222;border-radius:4px;overflow-x:auto;overflow-y:hidden;overflow-wrap:normal;word-break:normal}
