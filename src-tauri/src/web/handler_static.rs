@@ -87,7 +87,7 @@ a:hover { color: #fff; background: #1a1a1a; }
 #meta-tooltip tr.preview-row th, #meta-tooltip tr.preview-row td { vertical-align: top; }
 </style>
 </head>
-<body>
+<body class="mclocks-source">
 <div id="main">
 <div id="header">
 <div id="path-actions">
@@ -274,10 +274,10 @@ const SOURCE_VIEW_TEMPLATE: &str = r##"<!doctype html>
 __MAIN_CSS_LINK__
 __HIGHLIGHT_CSS_LINK__
 <style>
-body{color:#aaa;background:#000;margin:0;font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif;line-height:1.6}
-body{display:flex;min-height:100vh}
-#sidebar{width:260px;max-width:45vw;overflow:auto;border-right:1px solid #1b1b1b;background:#050505;padding:12px}
-#sidebar-controls{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
+body{color:#aaa;background:#000;margin:0;font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif;line-height:1.6;--source-sidebar-width:260px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:12px;--left-pane-h2-margin:0 0 8px}
+body{min-height:100vh}
+#sidebar{width:var(--source-sidebar-width);max-width:45vw;overflow:auto;border-right:1px solid #1b1b1b;background:#050505}
+#sidebar-controls{display:flex;flex-direction:column;gap:8px}
 #sidebar-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 #sidebar h2{margin:0 0 8px;color:#ddd;font-size:14px;font-weight:600}
 #summary-list{list-style:none;margin:0;padding:0}
