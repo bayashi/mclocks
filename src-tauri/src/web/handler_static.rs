@@ -87,7 +87,7 @@ a:hover { color: #fff; background: #1a1a1a; }
 #meta-tooltip tr.preview-row th, #meta-tooltip tr.preview-row td { vertical-align: top; }
 </style>
 </head>
-<body>
+<body class="mclocks-source">
 <div id="main">
 <div id="header">
 <div id="path-actions">
@@ -274,35 +274,14 @@ const SOURCE_VIEW_TEMPLATE: &str = r##"<!doctype html>
 __MAIN_CSS_LINK__
 __HIGHLIGHT_CSS_LINK__
 <style>
-body{color:#aaa;background:#000;margin:0;font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif;line-height:1.6}
-body{display:flex;min-height:100vh}
-#sidebar{width:260px;max-width:45vw;overflow:auto;border-right:1px solid #1b1b1b;background:#050505;padding:12px}
-#sidebar-controls{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
-#sidebar-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-#main-header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px}
-#path-actions{display:flex;align-items:center;gap:8px;min-width:0}
-#directory-link{display:inline-flex;align-items:center;justify-content:center;color:#bbb;text-decoration:none;font-size:14px;line-height:1}
-#directory-link:hover{color:#fff}
-#sidebar h2{margin:0 0 8px;color:#ddd;font-size:14px;font-weight:600}
-#summary-list{list-style:none;margin:0;padding:0}
-#summary-list li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid #111;font-size:12px}
-#summary-list .label{color:#666}
-#summary-list .value{color:#bbb;font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace}
+body{line-height:1.6;min-height:100vh;--source-sidebar-width:260px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:12px;--left-pane-bg:#050505;--left-pane-border-right:1px solid #1b1b1b;--left-pane-h2-margin:0 0 8px;--left-pane-h2-font-size:14px;--left-pane-h2-color:#ddd;--left-pane-h2-font-weight:600;--sidebar-controls-gap:8px;--sidebar-actions-gap:6px}
+#sidebar{max-width:45vw;overflow:auto}
 #notices{margin-top:10px}
-#main{padding:16px 24px;width:100vw;overflow-wrap:anywhere;word-break:break-word}
-#main-header-path{flex:0 1 auto;min-width:0;line-height:1.2;color:#777;font-size:12px;font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;overflow-wrap:anywhere;word-break:break-word}
-#main-separator{height:1px;background:#222;margin:0 0 12px}
-#path-copy-btn{display:inline-flex;align-items:center;justify-content:center;margin:0;padding:3px 7px;min-height:20px;background:#333;color:#fff;border:1px solid #555;border-radius:2px;cursor:pointer;font-size:9px;line-height:1.2;font-family:inherit;appearance:none}
-#path-copy-btn:hover{background:#666;color:#fff}
-.mode-switch{display:flex;gap:6px;margin:0}
-.mode-switch .mode-btn{display:inline-flex;align-items:center;justify-content:center;margin:0;padding:4px 8px;min-height:24px;background:#333;color:#fff;border:1px solid #555;border-radius:2px;font-size:11px;line-height:1.2;text-decoration:none}
-.mode-switch .mode-btn:hover{background:#666;color:#fff}
-.mode-switch .mode-btn.is-active{background:#555;border-color:#777}
-pre{margin:0;padding:12px;background:#111;border:1px solid #222;border-radius:4px;overflow:auto}
-code{font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;font-size:12px;line-height:1.5;white-space:pre}
+pre{margin:0;padding:12px;background:#111;border:1px solid #222;border-radius:4px;overflow-x:auto;overflow-y:hidden;overflow-wrap:normal;word-break:normal}
+code{font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;font-size:12px;line-height:1.5;white-space:pre;overflow-wrap:normal;word-break:normal}
 </style>
 </head>
-<body>
+<body class="mclocks-source">
 <aside id="sidebar">
 <div id="sidebar-controls">
 <div id="sidebar-actions">

@@ -9,6 +9,27 @@ body{
 	font-family:"Segoe UI","Yu Gothic UI","Meiryo","Hiragino Kaku Gothic ProN",sans-serif;
 }
 
+:is(#toc,#sidebar){
+	position:fixed;
+	top:0;
+	left:0;
+	width:var(--left-pane-width,auto);
+	height:100vh;
+	padding:var(--left-pane-padding,0);
+	background:var(--left-pane-bg,#0a0a0a);
+	border-right:var(--left-pane-border-right,1px solid #222);
+	overflow-y:auto;
+}
+
+:is(#toc,#sidebar) h2{
+	margin:var(--left-pane-h2-margin,0);
+	font-size:var(--left-pane-h2-font-size,11px);
+	letter-spacing:var(--left-pane-h2-letter-spacing,.1em);
+	text-transform:var(--left-pane-h2-text-transform,uppercase);
+	color:var(--left-pane-h2-color,#666);
+	font-weight:var(--left-pane-h2-font-weight,400);
+}
+
 #raw-toggle{
 	display:inline-block;
 	color:#ccc;
@@ -26,6 +47,16 @@ body{
 
 :is(#toc,#sidebar) #sidebar-controls{
 	margin:0 0 12px;
+	display:flex;
+	flex-direction:column;
+	gap:var(--sidebar-controls-gap,0);
+}
+
+:is(#toc,#sidebar) #sidebar-actions{
+	display:flex;
+	align-items:center;
+	gap:var(--sidebar-actions-gap,0);
+	flex-wrap:wrap;
 }
 
 :is(#toc,#sidebar) #sidebar-controls .mode-switch{
@@ -63,6 +94,11 @@ body{
 	margin:0 0 24px;
 }
 
+#summary-list{
+	list-style:none;
+	padding:0;
+}
+
 #summary-list li{
 	display:flex;
 	gap:4px;
@@ -81,6 +117,30 @@ body{
 	text-align:left;
 	overflow-wrap:anywhere;
 	word-break:break-word;
+}
+
+.mclocks-source #summary-list{
+	margin:0;
+}
+
+.mclocks-source #summary-list li{
+	justify-content:space-between;
+	gap:10px;
+	margin:0;
+	padding:4px 0;
+	border-bottom:1px solid #111;
+}
+
+.mclocks-source #summary-list .label{
+	color:#666;
+	flex:0 0 auto;
+}
+
+.mclocks-source #summary-list .value{
+	flex:0 0 auto;
+	color:#bbb;
+	text-align:right;
+	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;
 }
 
 :is(#toc-resizer,#resizer){
@@ -102,6 +162,8 @@ body{
 }
 
 #main{
+	margin-left:var(--left-pane-width,0px);
+	width:calc(100vw - var(--left-pane-width,0px));
 	padding:16px 24px;
 	overflow-wrap:anywhere;
 	word-break:break-word;
