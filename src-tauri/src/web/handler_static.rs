@@ -274,8 +274,7 @@ const SOURCE_VIEW_TEMPLATE: &str = r##"<!doctype html>
 __MAIN_CSS_LINK__
 __HIGHLIGHT_CSS_LINK__
 <style>
-body{color:#aaa;background:#000;margin:0;font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif;line-height:1.6;--source-sidebar-width:260px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:12px;--left-pane-h2-margin:0 0 8px}
-body{min-height:100vh}
+body{line-height:1.6;min-height:100vh;--source-sidebar-width:260px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:12px;--left-pane-h2-margin:0 0 8px}
 #sidebar{width:var(--source-sidebar-width);max-width:45vw;overflow:auto;border-right:1px solid #1b1b1b;background:#050505}
 #sidebar-controls{display:flex;flex-direction:column;gap:8px}
 #sidebar-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
