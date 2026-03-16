@@ -9,7 +9,6 @@ body{
 }
 
 #toc{
-	width:var(--toc-width);
 	font-size:13px;
 	scrollbar-width:thin;
 	scrollbar-color:#333 transparent;

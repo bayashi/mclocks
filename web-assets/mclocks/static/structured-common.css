@@ -7,10 +7,6 @@ body{
 	--left-pane-h2-margin:0 0 6px;
 }
 
-#sidebar{
-	width:var(--sidebar-width);
-}
-
 #outline-list{
 	list-style:none;
 	margin:0;

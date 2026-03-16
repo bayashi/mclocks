@@ -13,19 +13,21 @@ body{
 	position:fixed;
 	top:0;
 	left:0;
+	width:var(--left-pane-width,auto);
 	height:100vh;
 	padding:var(--left-pane-padding,0);
-	background:#0a0a0a;
-	border-right:1px solid #222;
+	background:var(--left-pane-bg,#0a0a0a);
+	border-right:var(--left-pane-border-right,1px solid #222);
 	overflow-y:auto;
 }
 
 :is(#toc,#sidebar) h2{
 	margin:var(--left-pane-h2-margin,0);
-	font-size:11px;
-	letter-spacing:.1em;
-	text-transform:uppercase;
-	color:#666;
+	font-size:var(--left-pane-h2-font-size,11px);
+	letter-spacing:var(--left-pane-h2-letter-spacing,.1em);
+	text-transform:var(--left-pane-h2-text-transform,uppercase);
+	color:var(--left-pane-h2-color,#666);
+	font-weight:var(--left-pane-h2-font-weight,400);
 }
 
 #raw-toggle{
@@ -45,6 +47,16 @@ body{
 
 :is(#toc,#sidebar) #sidebar-controls{
 	margin:0 0 12px;
+	display:flex;
+	flex-direction:column;
+	gap:var(--sidebar-controls-gap,0);
+}
+
+:is(#toc,#sidebar) #sidebar-actions{
+	display:flex;
+	align-items:center;
+	gap:var(--sidebar-actions-gap,0);
+	flex-wrap:wrap;
 }
 
 :is(#toc,#sidebar) #sidebar-controls .mode-switch{

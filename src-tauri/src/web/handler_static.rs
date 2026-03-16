@@ -274,11 +274,8 @@ const SOURCE_VIEW_TEMPLATE: &str = r##"<!doctype html>
 __MAIN_CSS_LINK__
 __HIGHLIGHT_CSS_LINK__
 <style>
-body{line-height:1.6;min-height:100vh;--source-sidebar-width:260px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:12px;--left-pane-h2-margin:0 0 8px}
-#sidebar{width:var(--source-sidebar-width);max-width:45vw;overflow:auto;border-right:1px solid #1b1b1b;background:#050505}
-#sidebar-controls{display:flex;flex-direction:column;gap:8px}
-#sidebar-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-#sidebar h2{margin:0 0 8px;color:#ddd;font-size:14px;font-weight:600}
+body{line-height:1.6;min-height:100vh;--source-sidebar-width:260px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:12px;--left-pane-bg:#050505;--left-pane-border-right:1px solid #1b1b1b;--left-pane-h2-margin:0 0 8px;--left-pane-h2-font-size:14px;--left-pane-h2-color:#ddd;--left-pane-h2-font-weight:600;--sidebar-controls-gap:8px;--sidebar-actions-gap:6px}
+#sidebar{max-width:45vw;overflow:auto}
 #notices{margin-top:10px}
 pre{margin:0;padding:12px;background:#111;border:1px solid #222;border-radius:4px;overflow:auto}
 code{font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;font-size:12px;line-height:1.5;white-space:pre}
