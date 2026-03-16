@@ -80,6 +80,10 @@ body{
 	color:#b9d8ff;
 }
 
+#content{
+	font-size:85%;
+}
+
 pre,
 code{
 	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;
