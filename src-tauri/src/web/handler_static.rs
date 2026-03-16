@@ -277,8 +277,8 @@ __HIGHLIGHT_CSS_LINK__
 body{line-height:1.6;min-height:100vh;--source-sidebar-width:260px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:12px;--left-pane-bg:#050505;--left-pane-border-right:1px solid #1b1b1b;--left-pane-h2-margin:0 0 8px;--left-pane-h2-font-size:14px;--left-pane-h2-color:#ddd;--left-pane-h2-font-weight:600;--sidebar-controls-gap:8px;--sidebar-actions-gap:6px}
 #sidebar{max-width:45vw;overflow:auto}
 #notices{margin-top:10px}
-pre{margin:0;padding:12px;background:#111;border:1px solid #222;border-radius:4px;overflow:auto}
-code{font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;font-size:12px;line-height:1.5;white-space:pre}
+pre{margin:0;padding:12px;background:#111;border:1px solid #222;border-radius:4px;overflow-x:auto;overflow-y:hidden;overflow-wrap:normal;word-break:normal}
+code{font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;font-size:12px;line-height:1.5;white-space:pre;overflow-wrap:normal;word-break:normal}
 </style>
 </head>
 <body class="mclocks-source">

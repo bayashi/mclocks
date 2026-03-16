@@ -91,6 +91,14 @@ pre{
 	color:#fff;
 	padding-left:16px;
 	margin-bottom:0;
-	white-space:pre-wrap;
+	white-space:pre;
+	overflow-x:auto;
+	overflow-y:hidden;
+}
+
+pre,
+pre code{
+	overflow-wrap:normal;
+	word-break:normal;
 }
 
