@@ -82,6 +82,11 @@ body{
 	margin:0 0 24px;
 }
 
+#summary-list{
+	list-style:none;
+	padding:0;
+}
+
 #summary-list li{
 	display:flex;
 	gap:4px;

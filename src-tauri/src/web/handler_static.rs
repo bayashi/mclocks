@@ -280,7 +280,7 @@ body{min-height:100vh}
 #sidebar-controls{display:flex;flex-direction:column;gap:8px}
 #sidebar-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 #sidebar h2{margin:0 0 8px;color:#ddd;font-size:14px;font-weight:600}
-#summary-list{list-style:none;margin:0;padding:0}
+#summary-list{margin:0}
 #summary-list li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid #111;font-size:12px}
 #summary-list .label{color:#666}
 #summary-list .value{color:#bbb;font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace}
