@@ -38,7 +38,17 @@ These are independent from the root `package.json` dependencies. The root packag
 
 ## Local Development
 
+### Clone repository
+
+```bash
+git clone git@github.com:bayashi/mclocks.git
+cd mclocks
+```
+
 ### Install dependencies
+
+The MCP server implementation is located under `src-mcp` derectory.
+Dependencies can be installed all at once with `npm` commands.
 
 ```bash
 cd src-mcp
@@ -80,7 +90,7 @@ Add to `.cursor/mcp.json`:
 
 After saving, restart Cursor to pick up the changes.
 
-### Lint
+### Lint check
 
 ```bash
 pnpm exec eslint .
@@ -88,7 +98,7 @@ pnpm exec eslint .
 
 The ESLint config (`eslint.config.js`) includes a dedicated entry for `src-mcp/**/*.js` with Node.js globals enabled.
 
-### Test
+### Run Test
 
 ```bash
 pnpm test:mcp
@@ -102,106 +112,6 @@ npm test
 ```
 
 Tests use the MCP Client SDK to launch the server as a subprocess and call tools via stdio. The test environment sets `MCLOCKS_CONFIG_PATH` to a non-existent path to ensure consistent fallback defaults regardless of the developer's machine config.
-
-## mclocks MCP Tools
-
-The server exposes the following tools:
-
-### `convert-time`
-
-Converts a datetime string or epoch timestamp to multiple timezones.
-
-Parameters:
-- `source` (required) - Datetime string or epoch number
-- `timezones` (optional) - Target timezone array
-- `source_timezone` (optional) - Source timezone for interpretation
-- `epoch_unit` (optional) - `"seconds"` | `"milliseconds"` | `"microseconds"` | `"nanoseconds"`
-
-### `current-time`
-
-Returns the current time in specified timezones.
-
-Parameters:
-- `timezones` (optional) - Target timezone array
-
-### `next-weekday`
-
-Finds the date of the next occurrence of a given weekday from today.
-
-Parameters:
-- `weekday` (required) - Day of the week in English (e.g. `"Monday"`, `"fri"`, `"tu"`)
-- `timezone` (optional) - Timezone to determine "today"
-
-### `date-to-weekday`
-
-Returns the day of the week for a given date.
-
-Parameters:
-- `date` (required) - Date string (e.g. `"2026-02-20"`, `"March 15, 2026"`)
-
-### `days-until`
-
-Counts the number of days from today until a specified date. Supports smart defaults when year/month/day are omitted.
-
-Parameters:
-- `year` (optional) - If omitted, uses current year (or next year if date has passed)
-- `month` (optional) - If omitted, defaults to January (or current month when only day is specified)
-- `day` (optional) - If omitted, defaults to 1
-- `timezone` (optional) - Timezone to determine "today"
-
-### `days-between`
-
-Counts the number of days between two dates. The start date is not included in the count.
-
-Parameters:
-- `from` (required) - Start date string
-- `to` (required) - End date string
-
-### `date-offset`
-
-Calculates the date that is N days before or after a given date.
-
-Parameters:
-- `date` (required) - Base date string (e.g. `"2026-01-01"`, `"March 15, 2026"`)
-- `days` (required) - Number of days to add (positive) or subtract (negative)
-
-### Config integration
-
-The server reads mclocks `config.json` automatically:
-
-- Config path resolution (highest priority first):
-  1. `--config <path>` command-line argument
-  2. `MCLOCKS_CONFIG_PATH` environment variable
-  3. Auto-detect from OS-specific location (Windows: `%APPDATA%`, macOS: `~/Library/Application Support`)
-- Fields used from config: `clocks` (default timezones), `convtz` (source timezone), `usetz` (strict TZ mode for historically accurate UTC offsets), `locale` (weekday name localization)
-- If no config is found, falls back to built-in defaults
-
-#### Environment variable overrides
-
-The following environment variables override individual config fields (env > config.json > fallback):
-
-| Variable | Overrides | Default |
-|----------|-----------|---------|
-| `MCLOCKS_LOCALE` | `locale` | `"en"` |
-| `MCLOCKS_CONVTZ` | `convtz` | `""` |
-| `MCLOCKS_USETZ` | `usetz` | `false` (set `"true"` to enable historically accurate timezone conversion) |
-
-This allows configuring the MCP server via `mcp.json` without requiring the mclocks app config:
-
-```json
-{
-  "mcpServers": {
-    "mclocks-datetime-util": {
-      "command": "npx",
-      "args": ["-y", "mclocks-datetime-util"],
-      "env": {
-        "MCLOCKS_LOCALE": "ja",
-        "MCLOCKS_CONVTZ": "Asia/Tokyo"
-      }
-    }
-  }
-}
-```
 
 ## Updating Dependencies
 
