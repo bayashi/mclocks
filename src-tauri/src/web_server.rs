@@ -186,44 +186,47 @@ const EMBEDDED_HIGHLIGHT_JS: &str = include_str!("../../web-assets/highlight/hig
 const EMBEDDED_HIGHLIGHT_CSS: &str = include_str!("../../web-assets/highlight/github-dark.min.css");
 const EMBEDDED_MCLOCKS_MAIN_CSS: &str = include_str!("../../web-assets/mclocks/main.css");
 const EMBEDDED_MCLOCKS_MAIN_JS: &str = include_str!("../../web-assets/mclocks/main.js");
-const EMBEDDED_MCLOCKS_STATIC_MD_CSS: &str = include_str!("../../web-assets/mclocks/static/md.css");
-const EMBEDDED_MCLOCKS_STATIC_MD_JS: &str = include_str!("../../web-assets/mclocks/static/md.js");
+const EMBEDDED_MCLOCKS_STATIC_MD_CSS: &str =
+    include_str!("../../web-assets/mclocks/static/structured/md.css");
+const EMBEDDED_MCLOCKS_STATIC_MD_JS: &str =
+    include_str!("../../web-assets/mclocks/static/structured/md.js");
 const EMBEDDED_MCLOCKS_STATIC_STRUCTURED_COMMON_CSS: &str =
-    include_str!("../../web-assets/mclocks/static/structured-common.css");
+    include_str!("../../web-assets/mclocks/static/structured.css");
 const EMBEDDED_MCLOCKS_STATIC_STRUCTURED_COMMON_JS: &str =
-    include_str!("../../web-assets/mclocks/static/structured-common.js");
+    include_str!("../../web-assets/mclocks/static/structured.js");
 const EMBEDDED_MCLOCKS_STATIC_JSON_CSS: &str =
-    include_str!("../../web-assets/mclocks/static/json.css");
+    include_str!("../../web-assets/mclocks/static/structured/json.css");
 const EMBEDDED_MCLOCKS_STATIC_JSON_JS: &str =
-    include_str!("../../web-assets/mclocks/static/json.js");
+    include_str!("../../web-assets/mclocks/static/structured/json.js");
 const EMBEDDED_MCLOCKS_STATIC_YAML_CSS: &str =
-    include_str!("../../web-assets/mclocks/static/yaml.css");
+    include_str!("../../web-assets/mclocks/static/structured/yaml.css");
 const EMBEDDED_MCLOCKS_STATIC_YAML_JS: &str =
-    include_str!("../../web-assets/mclocks/static/yaml.js");
+    include_str!("../../web-assets/mclocks/static/structured/yaml.js");
 const EMBEDDED_MCLOCKS_STATIC_TOML_CSS: &str =
-    include_str!("../../web-assets/mclocks/static/toml.css");
+    include_str!("../../web-assets/mclocks/static/structured/toml.css");
 const EMBEDDED_MCLOCKS_STATIC_TOML_JS: &str =
-    include_str!("../../web-assets/mclocks/static/toml.js");
+    include_str!("../../web-assets/mclocks/static/structured/toml.js");
 const EMBEDDED_MCLOCKS_STATIC_INI_CSS: &str =
-    include_str!("../../web-assets/mclocks/static/ini.css");
-const EMBEDDED_MCLOCKS_STATIC_INI_JS: &str = include_str!("../../web-assets/mclocks/static/ini.js");
+    include_str!("../../web-assets/mclocks/static/structured/ini.css");
+const EMBEDDED_MCLOCKS_STATIC_INI_JS: &str =
+    include_str!("../../web-assets/mclocks/static/structured/ini.js");
 const HIGHLIGHT_JS_REL_PATH: &str = "highlight/highlight.min.js";
 const HIGHLIGHT_CSS_REL_PATH: &str = "highlight/github-dark.min.css";
 const MCLOCKS_MAIN_JS_REL_PATH: &str = "mclocks/main.js";
 const MCLOCKS_MAIN_CSS_REL_PATH: &str = "mclocks/main.css";
-const MCLOCKS_STATIC_MD_JS_REL_PATH: &str = "mclocks/static/md.js";
-const MCLOCKS_STATIC_MD_CSS_REL_PATH: &str = "mclocks/static/md.css";
-const MCLOCKS_STATIC_STRUCTURED_COMMON_JS_REL_PATH: &str = "mclocks/static/structured-common.js";
-const MCLOCKS_STATIC_STRUCTURED_COMMON_CSS_REL_PATH: &str = "mclocks/static/structured-common.css";
-const MCLOCKS_STATIC_JSON_JS_REL_PATH: &str = "mclocks/static/json.js";
-const MCLOCKS_STATIC_JSON_CSS_REL_PATH: &str = "mclocks/static/json.css";
-const MCLOCKS_STATIC_YAML_JS_REL_PATH: &str = "mclocks/static/yaml.js";
-const MCLOCKS_STATIC_YAML_CSS_REL_PATH: &str = "mclocks/static/yaml.css";
-const MCLOCKS_STATIC_TOML_JS_REL_PATH: &str = "mclocks/static/toml.js";
-const MCLOCKS_STATIC_TOML_CSS_REL_PATH: &str = "mclocks/static/toml.css";
-const MCLOCKS_STATIC_INI_JS_REL_PATH: &str = "mclocks/static/ini.js";
-const MCLOCKS_STATIC_INI_CSS_REL_PATH: &str = "mclocks/static/ini.css";
-const MCLOCKS_ASSETS_VERSION: &str = "20260314-2";
+const MCLOCKS_STATIC_MD_JS_REL_PATH: &str = "mclocks/static/structured/md.js";
+const MCLOCKS_STATIC_MD_CSS_REL_PATH: &str = "mclocks/static/structured/md.css";
+const MCLOCKS_STATIC_STRUCTURED_COMMON_JS_REL_PATH: &str = "mclocks/static/structured.js";
+const MCLOCKS_STATIC_STRUCTURED_COMMON_CSS_REL_PATH: &str = "mclocks/static/structured.css";
+const MCLOCKS_STATIC_JSON_JS_REL_PATH: &str = "mclocks/static/structured/json.js";
+const MCLOCKS_STATIC_JSON_CSS_REL_PATH: &str = "mclocks/static/structured/json.css";
+const MCLOCKS_STATIC_YAML_JS_REL_PATH: &str = "mclocks/static/structured/yaml.js";
+const MCLOCKS_STATIC_YAML_CSS_REL_PATH: &str = "mclocks/static/structured/yaml.css";
+const MCLOCKS_STATIC_TOML_JS_REL_PATH: &str = "mclocks/static/structured/toml.js";
+const MCLOCKS_STATIC_TOML_CSS_REL_PATH: &str = "mclocks/static/structured/toml.css";
+const MCLOCKS_STATIC_INI_JS_REL_PATH: &str = "mclocks/static/structured/ini.js";
+const MCLOCKS_STATIC_INI_CSS_REL_PATH: &str = "mclocks/static/structured/ini.css";
+const MCLOCKS_ASSETS_VERSION: &str = "20260314-3";
 
 pub fn start_web_server(
     root: String,
@@ -330,6 +333,18 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
         .map_err(|e| format!("Failed to create mclocks assets dir: {}", e))?;
     fs::create_dir_all(assets_root.join("mclocks").join("static"))
         .map_err(|e| format!("Failed to create mclocks static assets dir: {}", e))?;
+    fs::create_dir_all(
+        assets_root
+            .join("mclocks")
+            .join("static")
+            .join("structured"),
+    )
+    .map_err(|e| {
+        format!(
+            "Failed to create mclocks static structured assets dir: {}",
+            e
+        )
+    })?;
     fs::write(
         assets_root.join(HIGHLIGHT_JS_REL_PATH),
         EMBEDDED_HIGHLIGHT_JS,
@@ -366,7 +381,7 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
     )
     .map_err(|e| {
         format!(
-            "Failed to write embedded mclocks static/structured-common.js: {}",
+            "Failed to write embedded mclocks static/structured.js: {}",
             e
         )
     })?;
@@ -376,7 +391,7 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
     )
     .map_err(|e| {
         format!(
-            "Failed to write embedded mclocks static/structured-common.css: {}",
+            "Failed to write embedded mclocks static/structured.css: {}",
             e
         )
     })?;
@@ -384,42 +399,82 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
         assets_root.join(MCLOCKS_STATIC_JSON_JS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_JSON_JS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static/json.js: {}", e))?;
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured/json.js: {}",
+            e
+        )
+    })?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_JSON_CSS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_JSON_CSS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static/json.css: {}", e))?;
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured/json.css: {}",
+            e
+        )
+    })?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_YAML_JS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_YAML_JS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static/yaml.js: {}", e))?;
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured/yaml.js: {}",
+            e
+        )
+    })?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_YAML_CSS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_YAML_CSS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static/yaml.css: {}", e))?;
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured/yaml.css: {}",
+            e
+        )
+    })?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_TOML_JS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_TOML_JS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static/toml.js: {}", e))?;
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured/toml.js: {}",
+            e
+        )
+    })?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_TOML_CSS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_TOML_CSS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static/toml.css: {}", e))?;
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured/toml.css: {}",
+            e
+        )
+    })?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_INI_JS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_INI_JS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static/ini.js: {}", e))?;
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured/ini.js: {}",
+            e
+        )
+    })?;
     fs::write(
         assets_root.join(MCLOCKS_STATIC_INI_CSS_REL_PATH),
         EMBEDDED_MCLOCKS_STATIC_INI_CSS,
     )
-    .map_err(|e| format!("Failed to write embedded mclocks static/ini.css: {}", e))?;
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured/ini.css: {}",
+            e
+        )
+    })?;
     Ok(assets_root.to_string_lossy().to_string())
 }
 
