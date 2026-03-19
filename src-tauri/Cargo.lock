@@ -2239,6 +2239,7 @@ dependencies = [
  "pulldown-cmark",
  "rand 0.8.5",
  "reqwest 0.11.27",
+ "roxmltree",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -3557,6 +3558,15 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "windows-sys 0.60.2",
+]
+
+[[package]]
+name = "roxmltree"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1964b10c76125c36f8afe190065a4bf9a87bf324842c05701330bba9f1cacbb"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]

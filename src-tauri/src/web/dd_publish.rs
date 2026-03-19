@@ -239,6 +239,20 @@ mod tests {
     }
 
     #[test]
+    fn test_register_temp_file_accepts_xml() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let file_path = temp_dir.path().join("sample.xml");
+        fs::write(&file_path, "<root><name>alice</name></root>").expect("Failed to write XML file");
+
+        let result = register_temp_file(&file_path);
+
+        assert!(
+            result.is_ok(),
+            "XML file should be accepted for temp sharing"
+        );
+    }
+
+    #[test]
     fn test_build_temp_share_url_appends_render_mode() {
         let url = build_temp_share_url(3030, "abc12345");
         assert_eq!(url, "http://127.0.0.1:3030/tmpdir-abc12345/?mode=source");

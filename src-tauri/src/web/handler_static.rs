@@ -24,6 +24,8 @@ mod structured_renderer;
 mod template_common;
 #[path = "handler_static_source/toml.rs"]
 mod toml;
+#[path = "handler_static_source/xml.rs"]
+mod xml;
 #[path = "handler_static_source/yaml.rs"]
 mod yaml;
 

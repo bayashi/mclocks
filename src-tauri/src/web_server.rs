@@ -89,6 +89,8 @@ pub struct WebMarkdownHighlightConfig {
     pub static_toml_js_url: String,
     pub static_ini_css_url: String,
     pub static_ini_js_url: String,
+    pub static_xml_css_url: String,
+    pub static_xml_js_url: String,
     pub css_url: String,
     pub js_url: String,
 }
@@ -210,6 +212,10 @@ const EMBEDDED_MCLOCKS_STATIC_INI_CSS: &str =
     include_str!("../../web-assets/mclocks/static/structured/ini.css");
 const EMBEDDED_MCLOCKS_STATIC_INI_JS: &str =
     include_str!("../../web-assets/mclocks/static/structured/ini.js");
+const EMBEDDED_MCLOCKS_STATIC_XML_CSS: &str =
+    include_str!("../../web-assets/mclocks/static/structured/xml.css");
+const EMBEDDED_MCLOCKS_STATIC_XML_JS: &str =
+    include_str!("../../web-assets/mclocks/static/structured/xml.js");
 const HIGHLIGHT_JS_REL_PATH: &str = "highlight/highlight.min.js";
 const HIGHLIGHT_CSS_REL_PATH: &str = "highlight/github-dark.min.css";
 const MCLOCKS_MAIN_JS_REL_PATH: &str = "mclocks/main.js";
@@ -226,6 +232,8 @@ const MCLOCKS_STATIC_TOML_JS_REL_PATH: &str = "mclocks/static/structured/toml.js
 const MCLOCKS_STATIC_TOML_CSS_REL_PATH: &str = "mclocks/static/structured/toml.css";
 const MCLOCKS_STATIC_INI_JS_REL_PATH: &str = "mclocks/static/structured/ini.js";
 const MCLOCKS_STATIC_INI_CSS_REL_PATH: &str = "mclocks/static/structured/ini.css";
+const MCLOCKS_STATIC_XML_JS_REL_PATH: &str = "mclocks/static/structured/xml.js";
+const MCLOCKS_STATIC_XML_CSS_REL_PATH: &str = "mclocks/static/structured/xml.css";
 const MCLOCKS_ASSETS_VERSION: &str = "20260314-3";
 
 pub fn start_web_server(
@@ -475,6 +483,26 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
             e
         )
     })?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_XML_JS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_XML_JS,
+    )
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured/xml.js: {}",
+            e
+        )
+    })?;
+    fs::write(
+        assets_root.join(MCLOCKS_STATIC_XML_CSS_REL_PATH),
+        EMBEDDED_MCLOCKS_STATIC_XML_CSS,
+    )
+    .map_err(|e| {
+        format!(
+            "Failed to write embedded mclocks static/structured/xml.css: {}",
+            e
+        )
+    })?;
     Ok(assets_root.to_string_lossy().to_string())
 }
 
@@ -600,6 +628,14 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         static_ini_js_url: format!(
             "http://127.0.0.1:{}/{}?v={}",
             assets_port, MCLOCKS_STATIC_INI_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_xml_css_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_XML_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        static_xml_js_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MCLOCKS_STATIC_XML_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
         ),
         css_url: format!(
             "http://127.0.0.1:{}/{}?v={}",
@@ -1596,6 +1632,96 @@ mod tests {
         );
         let body = response.text().expect("Body should be readable");
         assert_eq!(body, "name: raw\ncount: 1\n");
+    }
+
+    #[test]
+    fn test_handle_web_request_xml_file_renders_html_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let xml_file = root_path.join("data.xml");
+        fs::write(
+            &xml_file,
+            "<root><user enabled=\"true\"><name>alice</name></user><items><item>1</item><item>2</item></items></root>",
+        )
+        .expect("Failed to create data.xml");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/data.xml?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "XML view response should be HTML, got: {}",
+            content_type
+        );
+
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("id=\"summary-list\""),
+            "XML view should include summary pane"
+        );
+        assert!(
+            body.contains("id=\"outline-list\""),
+            "XML view should include outline pane"
+        );
+        assert!(
+            body.contains("data-mode=\"raw\"")
+                && body.contains("href=\"/data.xml?mode=raw\"")
+                && body.contains("data-mode=\"content\"")
+                && body.contains("href=\"/data.xml\""),
+            "XML view should include mode switch links"
+        );
+        assert!(
+            body.contains("xml-key") && body.contains("xml-string"),
+            "XML view should include colorized tokens"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_xml_file_raw_query_returns_raw_xml() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let xml_file = root_path.join("raw.xml");
+        let xml_source = "<root><name>raw</name><count>1</count></root>";
+        fs::write(&xml_file, xml_source).expect("Failed to create raw.xml");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/raw.xml?mode=raw", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/plain"),
+            "Raw XML response should be text/plain, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert_eq!(body, xml_source);
     }
 
     #[test]
