@@ -368,6 +368,151 @@ if (summaryList) {
 		value.textContent = toLocalTime(value.textContent?.trim() || "-");
 	});
 }
+const updateSummaryValue = (labelName, valueText) => {
+	if (!summaryList) {
+		return;
+	}
+	const target = Array.from(summaryList.querySelectorAll("li")).find((li) => {
+		const label = li.querySelector(".label");
+		return label && label.textContent?.trim() === labelName;
+	});
+	if (!target) {
+		return;
+	}
+	const value = target.querySelector(".value");
+	if (value) {
+		value.textContent = valueText;
+	}
+};
+const formatDuration = (seconds) => {
+	if (!Number.isFinite(seconds) || seconds < 0) {
+		return "-";
+	}
+	const total = Math.floor(seconds);
+	const h = Math.floor(total / 3600);
+	const m = Math.floor((total % 3600) / 60);
+	const s = total % 60;
+	const pad2 = (n) => String(n).padStart(2, "0");
+	if (h > 0) {
+		return `${h}:${pad2(m)}:${pad2(s)}`;
+	}
+	return `${m}:${pad2(s)}`;
+};
+const mediaImage = document.getElementById("source-media-image");
+if (mediaImage) {
+	const applyImageSize = () => {
+		const w = Number(mediaImage.naturalWidth);
+		const h = Number(mediaImage.naturalHeight);
+		updateSummaryValue("Width", Number.isFinite(w) && w > 0 ? `${w}px` : "-");
+		updateSummaryValue("Height", Number.isFinite(h) && h > 0 ? `${h}px` : "-");
+	};
+	mediaImage.addEventListener("load", applyImageSize);
+	mediaImage.addEventListener("error", () => {
+		updateSummaryValue("Width", "-");
+		updateSummaryValue("Height", "-");
+	});
+	if (mediaImage.complete) {
+		applyImageSize();
+	}
+}
+const mediaAudio = document.getElementById("source-media-audio");
+if (mediaAudio) {
+	const applyDuration = () => {
+		updateSummaryValue("Duration", formatDuration(mediaAudio.duration));
+	};
+	mediaAudio.addEventListener("loadedmetadata", applyDuration);
+	mediaAudio.addEventListener("durationchange", applyDuration);
+	mediaAudio.addEventListener("error", () => updateSummaryValue("Duration", "-"));
+}
+const mediaVideo = document.getElementById("source-media-video");
+if (mediaVideo) {
+	const applyDuration = () => {
+		updateSummaryValue("Duration", formatDuration(mediaVideo.duration));
+	};
+	mediaVideo.addEventListener("loadedmetadata", applyDuration);
+	mediaVideo.addEventListener("durationchange", applyDuration);
+	mediaVideo.addEventListener("error", () => updateSummaryValue("Duration", "-"));
+}
+</script>
+</body>
+</html>
+"##;
+
+const SOURCE_MEDIA_VIEW_TEMPLATE: &str = r##"<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>__PAGE_TITLE__</title>
+__MAIN_CSS_LINK__
+<style>
+body{line-height:1.6;min-height:100vh;--source-sidebar-width:200px;--left-pane-width:var(--source-sidebar-width);--left-pane-padding:16px 12px;--left-pane-bg:#050505;--left-pane-border-right:1px solid #1b1b1b;--left-pane-h2-margin:0 0 8px 4px;--sidebar-controls-gap:8px;--sidebar-actions-gap:6px}
+#sidebar{max-width:45vw;overflow:auto}
+#notices{margin-top:10px}
+#source-media-wrap{margin:0;padding:12px;background:#111;border:1px solid #222;border-radius:4px}
+#source-media-wrap img{display:block;max-width:100%;height:auto}
+#source-media-wrap audio,#source-media-wrap video{display:block;max-width:100%;width:100%}
+</style>
+</head>
+<body class="mclocks-source">
+<aside id="sidebar">
+<div id="sidebar-controls">
+<div id="sidebar-actions">
+__MODE_SWITCH_HTML__
+</div>
+</div>
+<h2>Summary</h2>
+<ul id="summary-list">__SUMMARY_ITEMS__</ul>
+<div id="notices"></div>
+</aside>
+<div id="main">
+__COMMON_HEADER_HTML__
+<div id="main-separator"></div>
+<div id="source-media-wrap">__MEDIA_HTML__</div>
+</div>
+__MAIN_JS_SCRIPT__
+<script>
+const pathCopyBtn = document.getElementById("path-copy-btn");
+const pathLabel = document.getElementById("main-header-path");
+if (pathCopyBtn && pathLabel) {
+	pathCopyBtn.addEventListener("click", () => {
+		navigator.clipboard.writeText(pathLabel.textContent || "");
+		pathCopyBtn.textContent = "Copied!";
+		pathCopyBtn.blur();
+		setTimeout(() => {
+			pathCopyBtn.textContent = "Copy";
+			pathCopyBtn.blur();
+		}, 2000);
+	});
+}
+const summaryList = document.getElementById("summary-list");
+if (summaryList) {
+	const pad2 = (n) => String(n).padStart(2, "0");
+	const toLocalTime = (value) => {
+		const n = Number(value);
+		if (!Number.isFinite(n)) {
+			return value;
+		}
+		const d = new Date(n);
+		const y = d.getFullYear();
+		const mo = pad2(d.getMonth() + 1);
+		const da = pad2(d.getDate());
+		const h = pad2(d.getHours());
+		const mi = pad2(d.getMinutes());
+		const s = pad2(d.getSeconds());
+		return `${y}-${mo}-${da} ${h}:${mi}:${s}`;
+	};
+	summaryList.querySelectorAll("li").forEach((li) => {
+		const label = li.querySelector(".label");
+		const value = li.querySelector(".value");
+		if (!label || !value) {
+			return;
+		}
+		if (label.textContent?.trim() !== "Last Mod") {
+			return;
+		}
+		value.textContent = toLocalTime(value.textContent?.trim() || "-");
+	});
+}
 </script>
 </body>
 </html>
@@ -862,6 +1007,957 @@ fn create_source_text_response(
     }
 }
 
+#[derive(Clone, Copy)]
+enum SourceMediaKind {
+    ImagePng,
+    ImageJpeg,
+    ImageGif,
+    ImageWebp,
+    ImageBmp,
+    AudioMp3,
+    AudioM4a,
+    AudioWav,
+    AudioOgg,
+    AudioFlac,
+    AudioAac,
+    VideoMp4,
+    VideoM4v,
+    VideoMov,
+    VideoWebm,
+    VideoOgv,
+}
+
+fn is_png_content(content: &[u8]) -> bool {
+    let sig = b"\x89PNG\r\n\x1a\n";
+    content.len() >= sig.len() && &content[..sig.len()] == sig
+}
+
+fn is_mp3_content(content: &[u8]) -> bool {
+    if content.len() >= 3 && &content[..3] == b"ID3" {
+        return true;
+    }
+    content.len() >= 2 && content[0] == 0xFF && (content[1] & 0xE0) == 0xE0
+}
+
+fn is_mp4_content(content: &[u8]) -> bool {
+    content.len() >= 12 && &content[4..8] == b"ftyp"
+}
+
+fn is_jpeg_content(content: &[u8]) -> bool {
+    content.len() >= 3 && content[0] == 0xFF && content[1] == 0xD8 && content[2] == 0xFF
+}
+
+fn is_gif_content(content: &[u8]) -> bool {
+    content.len() >= 6 && (&content[..6] == b"GIF87a" || &content[..6] == b"GIF89a")
+}
+
+fn is_webp_content(content: &[u8]) -> bool {
+    content.len() >= 12 && &content[..4] == b"RIFF" && &content[8..12] == b"WEBP"
+}
+
+fn is_bmp_content(content: &[u8]) -> bool {
+    content.len() >= 26 && &content[..2] == b"BM"
+}
+
+fn is_webm_content(content: &[u8]) -> bool {
+    if content.len() < 4 {
+        return false;
+    }
+    if content[0] != 0x1A || content[1] != 0x45 || content[2] != 0xDF || content[3] != 0xA3 {
+        return false;
+    }
+    let window_len = content.len().min(512);
+    let window = &content[..window_len];
+    window.windows(4).any(|w| w.eq_ignore_ascii_case(b"webm"))
+}
+
+fn is_wav_content(content: &[u8]) -> bool {
+    content.len() >= 12 && &content[..4] == b"RIFF" && &content[8..12] == b"WAVE"
+}
+
+fn is_ogg_content(content: &[u8]) -> bool {
+    content.len() >= 4 && &content[..4] == b"OggS"
+}
+
+fn is_flac_content(content: &[u8]) -> bool {
+    content.len() >= 4 && &content[..4] == b"fLaC"
+}
+
+fn is_aac_adts_content(content: &[u8]) -> bool {
+    content.len() >= 2 && content[0] == 0xFF && (content[1] & 0xF0) == 0xF0
+}
+
+fn parse_png_dimensions(content: &[u8]) -> Option<(u32, u32)> {
+    if content.len() < 24 {
+        return None;
+    }
+    let sig = b"\x89PNG\r\n\x1a\n";
+    if &content[..8] != sig {
+        return None;
+    }
+    if &content[12..16] != b"IHDR" {
+        return None;
+    }
+    let width = u32::from_be_bytes([content[16], content[17], content[18], content[19]]);
+    let height = u32::from_be_bytes([content[20], content[21], content[22], content[23]]);
+    if width == 0 || height == 0 {
+        return None;
+    }
+    Some((width, height))
+}
+
+fn parse_jpeg_dimensions(content: &[u8]) -> Option<(u32, u32)> {
+    if !is_jpeg_content(content) {
+        return None;
+    }
+    let mut pos = 2usize;
+    while pos + 3 < content.len() {
+        while pos < content.len() && content[pos] != 0xFF {
+            pos += 1;
+        }
+        if pos + 1 >= content.len() {
+            return None;
+        }
+        while pos + 1 < content.len() && content[pos + 1] == 0xFF {
+            pos += 1;
+        }
+        if pos + 1 >= content.len() {
+            return None;
+        }
+        let marker = content[pos + 1];
+        pos += 2;
+        if marker == 0xD8 || marker == 0xD9 || marker == 0x01 || (0xD0..=0xD7).contains(&marker) {
+            continue;
+        }
+        if pos + 1 >= content.len() {
+            return None;
+        }
+        let segment_len = usize::from(u16::from_be_bytes([content[pos], content[pos + 1]]));
+        if segment_len < 2 || pos + segment_len > content.len() {
+            return None;
+        }
+        let is_sof = matches!(
+            marker,
+            0xC0 | 0xC1
+                | 0xC2
+                | 0xC3
+                | 0xC5
+                | 0xC6
+                | 0xC7
+                | 0xC9
+                | 0xCA
+                | 0xCB
+                | 0xCD
+                | 0xCE
+                | 0xCF
+        );
+        if is_sof {
+            if segment_len < 7 {
+                return None;
+            }
+            let base = pos + 2;
+            let height = u32::from(u16::from_be_bytes([content[base + 1], content[base + 2]]));
+            let width = u32::from(u16::from_be_bytes([content[base + 3], content[base + 4]]));
+            if width == 0 || height == 0 {
+                return None;
+            }
+            return Some((width, height));
+        }
+        pos += segment_len;
+    }
+    None
+}
+
+fn parse_gif_dimensions(content: &[u8]) -> Option<(u32, u32)> {
+    if !is_gif_content(content) || content.len() < 10 {
+        return None;
+    }
+    let width = u32::from(u16::from_le_bytes([content[6], content[7]]));
+    let height = u32::from(u16::from_le_bytes([content[8], content[9]]));
+    if width == 0 || height == 0 {
+        return None;
+    }
+    Some((width, height))
+}
+
+fn parse_webp_dimensions(content: &[u8]) -> Option<(u32, u32)> {
+    if !is_webp_content(content) {
+        return None;
+    }
+    let mut pos = 12usize;
+    while pos + 8 <= content.len() {
+        let chunk_type = &content[pos..pos + 4];
+        let chunk_size = usize::try_from(u32::from_le_bytes([
+            content[pos + 4],
+            content[pos + 5],
+            content[pos + 6],
+            content[pos + 7],
+        ]))
+        .ok()?;
+        let data_start = pos + 8;
+        let data_end = data_start.checked_add(chunk_size)?;
+        if data_end > content.len() {
+            return None;
+        }
+        if chunk_type == b"VP8X" && chunk_size >= 10 {
+            let width_minus_one = u32::from(content[data_start + 4])
+                | (u32::from(content[data_start + 5]) << 8)
+                | (u32::from(content[data_start + 6]) << 16);
+            let height_minus_one = u32::from(content[data_start + 7])
+                | (u32::from(content[data_start + 8]) << 8)
+                | (u32::from(content[data_start + 9]) << 16);
+            let width = width_minus_one.saturating_add(1);
+            let height = height_minus_one.saturating_add(1);
+            if width > 0 && height > 0 {
+                return Some((width, height));
+            }
+            return None;
+        }
+        if chunk_type == b"VP8 " && chunk_size >= 10 {
+            let payload = &content[data_start..data_end];
+            if payload[3] == 0x9D && payload[4] == 0x01 && payload[5] == 0x2A {
+                let width = u32::from(u16::from_le_bytes([payload[6], payload[7]]) & 0x3FFF);
+                let height = u32::from(u16::from_le_bytes([payload[8], payload[9]]) & 0x3FFF);
+                if width > 0 && height > 0 {
+                    return Some((width, height));
+                }
+                return None;
+            }
+        }
+        if chunk_type == b"VP8L" && chunk_size >= 5 {
+            let payload = &content[data_start..data_end];
+            if payload[0] == 0x2F {
+                let bits = u32::from_le_bytes([payload[1], payload[2], payload[3], payload[4]]);
+                let width = (bits & 0x3FFF).saturating_add(1);
+                let height = ((bits >> 14) & 0x3FFF).saturating_add(1);
+                if width > 0 && height > 0 {
+                    return Some((width, height));
+                }
+                return None;
+            }
+        }
+        let padded = chunk_size + (chunk_size % 2);
+        pos = data_start.checked_add(padded)?;
+    }
+    None
+}
+
+fn parse_bmp_dimensions(content: &[u8]) -> Option<(u32, u32)> {
+    if !is_bmp_content(content) || content.len() < 26 {
+        return None;
+    }
+    let dib_size = u32::from_le_bytes([content[14], content[15], content[16], content[17]]);
+    if dib_size == 12 {
+        if content.len() < 26 {
+            return None;
+        }
+        let width = u32::from(u16::from_le_bytes([content[18], content[19]]));
+        let height = u32::from(u16::from_le_bytes([content[20], content[21]]));
+        if width == 0 || height == 0 {
+            return None;
+        }
+        return Some((width, height));
+    }
+    if dib_size >= 40 {
+        if content.len() < 26 {
+            return None;
+        }
+        let width_i32 = i32::from_le_bytes([content[18], content[19], content[20], content[21]]);
+        let height_i32 = i32::from_le_bytes([content[22], content[23], content[24], content[25]]);
+        let width = width_i32.unsigned_abs();
+        let height = height_i32.unsigned_abs();
+        if width == 0 || height == 0 {
+            return None;
+        }
+        return Some((width, height));
+    }
+    None
+}
+
+fn parse_wav_duration_seconds(content: &[u8]) -> Option<f64> {
+    if !is_wav_content(content) {
+        return None;
+    }
+    let mut pos = 12usize;
+    let mut byte_rate: Option<u32> = None;
+    let mut data_size: Option<u32> = None;
+    while pos + 8 <= content.len() {
+        let chunk_id = &content[pos..pos + 4];
+        let chunk_size = usize::try_from(u32::from_le_bytes([
+            content[pos + 4],
+            content[pos + 5],
+            content[pos + 6],
+            content[pos + 7],
+        ]))
+        .ok()?;
+        let chunk_start = pos + 8;
+        let chunk_end = chunk_start.checked_add(chunk_size)?;
+        if chunk_end > content.len() {
+            return None;
+        }
+        if chunk_id == b"fmt " && chunk_size >= 16 {
+            byte_rate = Some(u32::from_le_bytes([
+                content[chunk_start + 8],
+                content[chunk_start + 9],
+                content[chunk_start + 10],
+                content[chunk_start + 11],
+            ]));
+        } else if chunk_id == b"data" {
+            data_size = Some(u32::try_from(chunk_size).ok()?);
+        }
+        let padded = chunk_size + (chunk_size % 2);
+        pos = chunk_start.checked_add(padded)?;
+    }
+    let br = byte_rate?;
+    let ds = data_size?;
+    if br == 0 || ds == 0 {
+        return None;
+    }
+    Some((ds as f64) / (br as f64))
+}
+
+fn parse_ogg_duration_seconds(content: &[u8]) -> Option<f64> {
+    if !is_ogg_content(content) {
+        return None;
+    }
+    let mut pos = 0usize;
+    let mut sample_rate: Option<u32> = None;
+    let mut last_granule: Option<u64> = None;
+    while pos + 27 <= content.len() {
+        if &content[pos..pos + 4] != b"OggS" {
+            return None;
+        }
+        let page_segments = usize::from(content[pos + 26]);
+        if pos + 27 + page_segments > content.len() {
+            return None;
+        }
+        let seg_table_start = pos + 27;
+        let payload_size: usize = content[seg_table_start..seg_table_start + page_segments]
+            .iter()
+            .map(|v| usize::from(*v))
+            .sum();
+        let payload_start = seg_table_start + page_segments;
+        let payload_end = payload_start.checked_add(payload_size)?;
+        if payload_end > content.len() {
+            return None;
+        }
+        let granule = u64::from_le_bytes([
+            content[pos + 6],
+            content[pos + 7],
+            content[pos + 8],
+            content[pos + 9],
+            content[pos + 10],
+            content[pos + 11],
+            content[pos + 12],
+            content[pos + 13],
+        ]);
+        if granule != u64::MAX {
+            last_granule = Some(granule);
+        }
+        if sample_rate.is_none() && payload_size >= 16 {
+            let payload = &content[payload_start..payload_end];
+            if payload.len() >= 19 && &payload[..8] == b"OpusHead" {
+                sample_rate = Some(u32::from_le_bytes([
+                    payload[12],
+                    payload[13],
+                    payload[14],
+                    payload[15],
+                ]));
+            } else if payload.len() >= 16 && payload[0] == 0x01 && &payload[1..7] == b"vorbis" {
+                sample_rate = Some(u32::from_le_bytes([
+                    payload[12],
+                    payload[13],
+                    payload[14],
+                    payload[15],
+                ]));
+            }
+        }
+        pos = payload_end;
+    }
+    let sr = sample_rate?;
+    let lg = last_granule?;
+    if sr == 0 {
+        return None;
+    }
+    Some((lg as f64) / (sr as f64))
+}
+
+fn parse_flac_duration_seconds(content: &[u8]) -> Option<f64> {
+    if !is_flac_content(content) || content.len() < 42 {
+        return None;
+    }
+    let mut pos = 4usize;
+    while pos + 4 <= content.len() {
+        let header = content[pos];
+        let is_last = (header & 0x80) != 0;
+        let block_type = header & 0x7F;
+        let block_len = (u32::from(content[pos + 1]) << 16)
+            | (u32::from(content[pos + 2]) << 8)
+            | u32::from(content[pos + 3]);
+        let block_len_usize = usize::try_from(block_len).ok()?;
+        let block_start = pos + 4;
+        let block_end = block_start.checked_add(block_len_usize)?;
+        if block_end > content.len() {
+            return None;
+        }
+        if block_type == 0 && block_len_usize >= 34 {
+            let p = &content[block_start..block_end];
+            let sample_rate =
+                (u32::from(p[10]) << 12) | (u32::from(p[11]) << 4) | (u32::from(p[12]) >> 4);
+            let total_samples = (u64::from(p[13] & 0x0F) << 32)
+                | (u64::from(p[14]) << 24)
+                | (u64::from(p[15]) << 16)
+                | (u64::from(p[16]) << 8)
+                | u64::from(p[17]);
+            if sample_rate == 0 || total_samples == 0 {
+                return None;
+            }
+            return Some((total_samples as f64) / (sample_rate as f64));
+        }
+        pos = block_end;
+        if is_last {
+            break;
+        }
+    }
+    None
+}
+
+fn parse_aac_adts_duration_seconds(content: &[u8]) -> Option<f64> {
+    if !is_aac_adts_content(content) {
+        return None;
+    }
+    let sample_rate_table = [
+        96000u32, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350,
+        0, 0, 0,
+    ];
+    let mut pos = 0usize;
+    let mut sample_rate: Option<u32> = None;
+    let mut frames = 0u64;
+    while pos + 7 <= content.len() {
+        if content[pos] != 0xFF || (content[pos + 1] & 0xF0) != 0xF0 {
+            break;
+        }
+        let sr_index = usize::from((content[pos + 2] & 0x3C) >> 2);
+        if sr_index >= sample_rate_table.len() || sample_rate_table[sr_index] == 0 {
+            return None;
+        }
+        if sample_rate.is_none() {
+            sample_rate = Some(sample_rate_table[sr_index]);
+        }
+        let frame_len = (usize::from(content[pos + 3] & 0x03) << 11)
+            | (usize::from(content[pos + 4]) << 3)
+            | usize::from((content[pos + 5] & 0xE0) >> 5);
+        if frame_len < 7 {
+            return None;
+        }
+        let next = pos.checked_add(frame_len)?;
+        if next > content.len() {
+            break;
+        }
+        frames += 1;
+        pos = next;
+    }
+    let sr = sample_rate?;
+    if frames == 0 || sr == 0 {
+        return None;
+    }
+    Some((frames as f64) * 1024.0 / (sr as f64))
+}
+
+fn parse_image_dimensions(kind: SourceMediaKind, content: &[u8]) -> Option<(u32, u32)> {
+    match kind {
+        SourceMediaKind::ImagePng => parse_png_dimensions(content),
+        SourceMediaKind::ImageJpeg => parse_jpeg_dimensions(content),
+        SourceMediaKind::ImageGif => parse_gif_dimensions(content),
+        SourceMediaKind::ImageWebp => parse_webp_dimensions(content),
+        SourceMediaKind::ImageBmp => parse_bmp_dimensions(content),
+        _ => None,
+    }
+}
+
+fn id3v2_tag_size(content: &[u8]) -> usize {
+    if content.len() < 10 || &content[..3] != b"ID3" {
+        return 0;
+    }
+    let b6 = usize::from(content[6] & 0x7F);
+    let b7 = usize::from(content[7] & 0x7F);
+    let b8 = usize::from(content[8] & 0x7F);
+    let b9 = usize::from(content[9] & 0x7F);
+    10 + (b6 << 21) + (b7 << 14) + (b8 << 7) + b9
+}
+
+fn parse_mp3_bitrate_kbps(content: &[u8]) -> Option<u32> {
+    let start = id3v2_tag_size(content);
+    if content.len() < start + 4 {
+        return None;
+    }
+    let h = u32::from_be_bytes([
+        content[start],
+        content[start + 1],
+        content[start + 2],
+        content[start + 3],
+    ]);
+    if (h >> 21) & 0x7FF != 0x7FF {
+        return None;
+    }
+    let version_id = (h >> 19) & 0x3;
+    let layer = (h >> 17) & 0x3;
+    if layer != 0x1 {
+        return None;
+    }
+    let bitrate_index = ((h >> 12) & 0xF) as usize;
+    if bitrate_index == 0 || bitrate_index == 0xF {
+        return None;
+    }
+    let bitrate = match version_id {
+        0x3 => [
+            0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0,
+        ][bitrate_index],
+        0x2 | 0x0 => [
+            0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0,
+        ][bitrate_index],
+        _ => 0,
+    };
+    if bitrate == 0 { None } else { Some(bitrate) }
+}
+
+fn estimate_mp3_duration_seconds(content: &[u8]) -> Option<f64> {
+    let bitrate_kbps = parse_mp3_bitrate_kbps(content)?;
+    let mut audio_bytes = content.len().saturating_sub(id3v2_tag_size(content));
+    if audio_bytes >= 128 && &content[content.len() - 128..content.len() - 125] == b"TAG" {
+        audio_bytes = audio_bytes.saturating_sub(128);
+    }
+    if audio_bytes == 0 {
+        return None;
+    }
+    let bits = (audio_bytes as f64) * 8.0;
+    let bps = (bitrate_kbps as f64) * 1000.0;
+    Some(bits / bps)
+}
+
+fn parse_mp4_duration_seconds(content: &[u8]) -> Option<f64> {
+    fn parse_boxes(data: &[u8], start: usize, end: usize) -> Option<(u32, u64)> {
+        let mut pos = start;
+        while pos + 8 <= end {
+            let size32 =
+                u32::from_be_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]]);
+            let box_type = &data[pos + 4..pos + 8];
+            let mut header_len = 8usize;
+            let box_end = if size32 == 0 {
+                end
+            } else if size32 == 1 {
+                if pos + 16 > end {
+                    return None;
+                }
+                header_len = 16;
+                let large_size = u64::from_be_bytes([
+                    data[pos + 8],
+                    data[pos + 9],
+                    data[pos + 10],
+                    data[pos + 11],
+                    data[pos + 12],
+                    data[pos + 13],
+                    data[pos + 14],
+                    data[pos + 15],
+                ]);
+                let large_size_usize = usize::try_from(large_size).ok()?;
+                pos.checked_add(large_size_usize)?
+            } else {
+                pos.checked_add(size32 as usize)?
+            };
+            if box_end > end || box_end < pos + header_len {
+                return None;
+            }
+            if box_type == b"moov" {
+                if let Some(found) = parse_boxes(data, pos + header_len, box_end) {
+                    return Some(found);
+                }
+            } else if box_type == b"mvhd" {
+                if box_end < pos + header_len + 4 {
+                    return None;
+                }
+                let payload = &data[pos + header_len..box_end];
+                let version = payload[0];
+                if version == 0 {
+                    if payload.len() < 20 {
+                        return None;
+                    }
+                    let timescale =
+                        u32::from_be_bytes([payload[12], payload[13], payload[14], payload[15]]);
+                    let duration =
+                        u32::from_be_bytes([payload[16], payload[17], payload[18], payload[19]])
+                            as u64;
+                    return Some((timescale, duration));
+                }
+                if version == 1 {
+                    if payload.len() < 32 {
+                        return None;
+                    }
+                    let timescale =
+                        u32::from_be_bytes([payload[20], payload[21], payload[22], payload[23]]);
+                    let duration = u64::from_be_bytes([
+                        payload[24],
+                        payload[25],
+                        payload[26],
+                        payload[27],
+                        payload[28],
+                        payload[29],
+                        payload[30],
+                        payload[31],
+                    ]);
+                    return Some((timescale, duration));
+                }
+            }
+            pos = box_end;
+        }
+        None
+    }
+    let (timescale, duration) = parse_boxes(content, 0, content.len())?;
+    if timescale == 0 || duration == 0 {
+        return None;
+    }
+    Some((duration as f64) / (timescale as f64))
+}
+
+fn format_duration_text(seconds: f64) -> Option<String> {
+    if !seconds.is_finite() || seconds < 0.0 {
+        return None;
+    }
+    let total = seconds.round() as u64;
+    let h = total / 3600;
+    let m = (total % 3600) / 60;
+    let s = total % 60;
+    if h > 0 {
+        Some(format!("{}:{:02}:{:02}", h, m, s))
+    } else {
+        Some(format!("{}:{:02}", m, s))
+    }
+}
+
+fn detect_source_media_kind(
+    file_path: &Path,
+    content_type: &str,
+    content: &[u8],
+    is_binary_content: bool,
+) -> Option<SourceMediaKind> {
+    if !is_binary_content {
+        return None;
+    }
+    let ext = file_path
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if ext == "png" && (content_type == "image/png" || content_type == "application/octet-stream") {
+        if is_png_content(content) {
+            return Some(SourceMediaKind::ImagePng);
+        }
+    }
+    if (ext == "jpg" || ext == "jpeg")
+        && (content_type == "image/jpeg" || content_type == "application/octet-stream")
+        && is_jpeg_content(content)
+    {
+        return Some(SourceMediaKind::ImageJpeg);
+    }
+    if ext == "gif" && (content_type == "image/gif" || content_type == "application/octet-stream") {
+        if is_gif_content(content) {
+            return Some(SourceMediaKind::ImageGif);
+        }
+    }
+    if ext == "webp"
+        && (content_type == "image/webp" || content_type == "application/octet-stream")
+        && is_webp_content(content)
+    {
+        return Some(SourceMediaKind::ImageWebp);
+    }
+    if ext == "bmp"
+        && (content_type == "image/bmp" || content_type == "application/octet-stream")
+        && is_bmp_content(content)
+    {
+        return Some(SourceMediaKind::ImageBmp);
+    }
+    if ext == "m4a"
+        && (content_type == "audio/mp4"
+            || content_type == "audio/m4a"
+            || content_type == "audio/x-m4a"
+            || content_type == "application/octet-stream")
+        && is_mp4_content(content)
+    {
+        return Some(SourceMediaKind::AudioM4a);
+    }
+    if ext == "wav"
+        && (content_type == "audio/wav"
+            || content_type == "audio/x-wav"
+            || content_type == "application/octet-stream")
+        && is_wav_content(content)
+    {
+        return Some(SourceMediaKind::AudioWav);
+    }
+    if ext == "ogg"
+        && (content_type == "audio/ogg" || content_type == "application/octet-stream")
+        && is_ogg_content(content)
+    {
+        return Some(SourceMediaKind::AudioOgg);
+    }
+    if ext == "flac"
+        && (content_type == "audio/flac"
+            || content_type == "audio/x-flac"
+            || content_type == "application/octet-stream")
+        && is_flac_content(content)
+    {
+        return Some(SourceMediaKind::AudioFlac);
+    }
+    if ext == "aac"
+        && (content_type == "audio/aac"
+            || content_type == "audio/x-aac"
+            || content_type == "application/octet-stream")
+        && is_aac_adts_content(content)
+    {
+        return Some(SourceMediaKind::AudioAac);
+    }
+    if ext == "mp3" && (content_type == "audio/mpeg" || content_type == "application/octet-stream")
+    {
+        if is_mp3_content(content) {
+            return Some(SourceMediaKind::AudioMp3);
+        }
+    }
+    if ext == "mp4" && (content_type == "video/mp4" || content_type == "application/octet-stream") {
+        if is_mp4_content(content) {
+            return Some(SourceMediaKind::VideoMp4);
+        }
+    }
+    if ext == "m4v" && (content_type == "video/mp4" || content_type == "application/octet-stream") {
+        if is_mp4_content(content) {
+            return Some(SourceMediaKind::VideoM4v);
+        }
+    }
+    if ext == "m4v" && content_type == "video/x-m4v" && is_mp4_content(content) {
+        return Some(SourceMediaKind::VideoM4v);
+    }
+    if ext == "mov"
+        && (content_type == "video/quicktime"
+            || content_type == "video/mp4"
+            || content_type == "application/octet-stream")
+    {
+        if is_mp4_content(content) {
+            return Some(SourceMediaKind::VideoMov);
+        }
+    }
+    if ext == "webm"
+        && (content_type == "video/webm" || content_type == "application/octet-stream")
+        && is_webm_content(content)
+    {
+        return Some(SourceMediaKind::VideoWebm);
+    }
+    if ext == "ogv"
+        && (content_type == "video/ogg" || content_type == "application/octet-stream")
+        && is_ogg_content(content)
+    {
+        return Some(SourceMediaKind::VideoOgv);
+    }
+    None
+}
+
+fn render_source_media_html(
+    media_kind: SourceMediaKind,
+    raw_href: &str,
+    file_name: &str,
+) -> String {
+    match media_kind {
+        SourceMediaKind::ImagePng
+        | SourceMediaKind::ImageJpeg
+        | SourceMediaKind::ImageGif
+        | SourceMediaKind::ImageWebp
+        | SourceMediaKind::ImageBmp => {
+            format!(
+                "<img id=\"source-media-image\" src=\"{}\" alt=\"{}\" />",
+                html_escape(raw_href),
+                html_escape(file_name)
+            )
+        }
+        SourceMediaKind::AudioMp3 => format!(
+            "<audio id=\"source-media-audio\" controls preload=\"metadata\"><source src=\"{}\" type=\"audio/mpeg\" />Your browser does not support audio playback.</audio>",
+            html_escape(raw_href)
+        ),
+        SourceMediaKind::AudioM4a => format!(
+            "<audio id=\"source-media-audio\" controls preload=\"metadata\"><source src=\"{}\" type=\"audio/mp4\" />Your browser does not support audio playback.</audio>",
+            html_escape(raw_href)
+        ),
+        SourceMediaKind::AudioWav => format!(
+            "<audio id=\"source-media-audio\" controls preload=\"metadata\"><source src=\"{}\" type=\"audio/wav\" />Your browser does not support audio playback.</audio>",
+            html_escape(raw_href)
+        ),
+        SourceMediaKind::AudioOgg => format!(
+            "<audio id=\"source-media-audio\" controls preload=\"metadata\"><source src=\"{}\" type=\"audio/ogg\" />Your browser does not support audio playback.</audio>",
+            html_escape(raw_href)
+        ),
+        SourceMediaKind::AudioFlac => format!(
+            "<audio id=\"source-media-audio\" controls preload=\"metadata\"><source src=\"{}\" type=\"audio/flac\" />Your browser does not support audio playback.</audio>",
+            html_escape(raw_href)
+        ),
+        SourceMediaKind::AudioAac => format!(
+            "<audio id=\"source-media-audio\" controls preload=\"metadata\"><source src=\"{}\" type=\"audio/aac\" />Your browser does not support audio playback.</audio>",
+            html_escape(raw_href)
+        ),
+        SourceMediaKind::VideoMp4 => format!(
+            "<video id=\"source-media-video\" controls preload=\"metadata\"><source src=\"{}\" type=\"video/mp4\" />Your browser does not support video playback.</video>",
+            html_escape(raw_href)
+        ),
+        SourceMediaKind::VideoM4v => format!(
+            "<video id=\"source-media-video\" controls preload=\"metadata\"><source src=\"{}\" type=\"video/mp4\" />Your browser does not support video playback.</video>",
+            html_escape(raw_href)
+        ),
+        SourceMediaKind::VideoMov => format!(
+            "<video id=\"source-media-video\" controls preload=\"metadata\"><source src=\"{}\" type=\"video/quicktime\" />Your browser does not support video playback.</video>",
+            html_escape(raw_href)
+        ),
+        SourceMediaKind::VideoWebm => format!(
+            "<video id=\"source-media-video\" controls preload=\"metadata\"><source src=\"{}\" type=\"video/webm\" />Your browser does not support video playback.</video>",
+            html_escape(raw_href)
+        ),
+        SourceMediaKind::VideoOgv => format!(
+            "<video id=\"source-media-video\" controls preload=\"metadata\"><source src=\"{}\" type=\"video/ogg\" />Your browser does not support video playback.</video>",
+            html_escape(raw_href)
+        ),
+    }
+}
+
+fn render_source_media_summary_items(
+    media_kind: SourceMediaKind,
+    content: &[u8],
+    size_bytes: usize,
+    last_modified_ms: Option<u64>,
+) -> String {
+    let mut html = String::new();
+    let mut fields: Vec<(&str, String)> = vec![
+        ("Raw Size", human_bytes(size_bytes)),
+        (
+            "Last Mod",
+            last_modified_ms
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "-".to_string()),
+        ),
+        ("Status", "Media Preview".to_string()),
+    ];
+    match media_kind {
+        SourceMediaKind::ImagePng
+        | SourceMediaKind::ImageJpeg
+        | SourceMediaKind::ImageGif
+        | SourceMediaKind::ImageWebp
+        | SourceMediaKind::ImageBmp => {
+            if let Some((w, h)) = parse_image_dimensions(media_kind, content) {
+                fields.push(("Width", format!("{}px", w)));
+                fields.push(("Height", format!("{}px", h)));
+            }
+        }
+        SourceMediaKind::AudioMp3
+        | SourceMediaKind::AudioM4a
+        | SourceMediaKind::AudioWav
+        | SourceMediaKind::AudioOgg
+        | SourceMediaKind::AudioFlac
+        | SourceMediaKind::AudioAac
+        | SourceMediaKind::VideoMp4
+        | SourceMediaKind::VideoM4v
+        | SourceMediaKind::VideoMov
+        | SourceMediaKind::VideoWebm
+        | SourceMediaKind::VideoOgv => {
+            let duration = match media_kind {
+                SourceMediaKind::AudioMp3 => estimate_mp3_duration_seconds(content),
+                SourceMediaKind::AudioM4a => parse_mp4_duration_seconds(content),
+                SourceMediaKind::AudioWav => parse_wav_duration_seconds(content),
+                SourceMediaKind::AudioOgg => parse_ogg_duration_seconds(content),
+                SourceMediaKind::AudioFlac => parse_flac_duration_seconds(content),
+                SourceMediaKind::AudioAac => parse_aac_adts_duration_seconds(content),
+                SourceMediaKind::VideoMp4
+                | SourceMediaKind::VideoM4v
+                | SourceMediaKind::VideoMov => parse_mp4_duration_seconds(content),
+                SourceMediaKind::VideoWebm | SourceMediaKind::VideoOgv => None,
+                SourceMediaKind::ImagePng
+                | SourceMediaKind::ImageJpeg
+                | SourceMediaKind::ImageGif
+                | SourceMediaKind::ImageWebp
+                | SourceMediaKind::ImageBmp => None,
+            };
+            if let Some(duration_text) = duration.and_then(format_duration_text) {
+                fields.push(("Duration", duration_text));
+            }
+        }
+    }
+    for (label, value) in fields {
+        html.push_str("<li><span class=\"label\">");
+        html.push_str(label);
+        html.push_str("</span><span class=\"value\">");
+        html.push_str(&html_escape(&value));
+        html.push_str("</span></li>");
+    }
+    html
+}
+
+fn create_source_media_response(
+    file_path: &Path,
+    content: &[u8],
+    source_size_bytes: usize,
+    parent_directory_href: &str,
+    markdown_highlight: Option<&WebMarkdownHighlightConfig>,
+    mode_switch_html: &str,
+    media_kind: SourceMediaKind,
+    raw_href: &str,
+) -> Response<std::io::Cursor<Vec<u8>>> {
+    let page_title = file_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .map(html_escape)
+        .unwrap_or_else(|| "Source".to_string());
+    let absolute_path = format_display_path(file_path);
+    let summary_items = render_source_media_summary_items(
+        media_kind,
+        content,
+        source_size_bytes,
+        get_last_modified_ms(file_path),
+    );
+    let (main_css_link, main_js_script) = match markdown_highlight {
+        Some(cfg) => (
+            format!(
+                "<link rel=\"stylesheet\" href=\"{}\" />",
+                html_escape(&cfg.main_css_url)
+            ),
+            format!(
+                "<script src=\"{}\"></script>",
+                html_escape(&cfg.main_js_url)
+            ),
+        ),
+        None => ("".to_string(), "".to_string()),
+    };
+    let file_name = file_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("media");
+    let media_html = render_source_media_html(media_kind, raw_href, file_name);
+    let html = SOURCE_MEDIA_VIEW_TEMPLATE
+        .replace("__PAGE_TITLE__", &page_title)
+        .replace("__MAIN_CSS_LINK__", &main_css_link)
+        .replace("__MAIN_JS_SCRIPT__", &main_js_script)
+        .replace(
+            "__COMMON_HEADER_HTML__",
+            &template_common::render_main_header_html(
+                &absolute_path,
+                Some(parent_directory_href),
+                None,
+            ),
+        )
+        .replace("__MODE_SWITCH_HTML__", mode_switch_html)
+        .replace("__SUMMARY_ITEMS__", &summary_items)
+        .replace("__MEDIA_HTML__", &media_html);
+    let content_type = "text/html; charset=utf-8";
+    if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
+        Response::from_string(html)
+            .with_header(header)
+            .with_status_code(StatusCode(200))
+    } else {
+        Response::from_string(html).with_status_code(StatusCode(200))
+    }
+}
+
 fn resolve_content_type_and_download(file_path: &Path, content: &[u8]) -> (String, bool) {
     let detected = get_content_type(&file_path.to_path_buf());
     if detected != "application/octet-stream" {
@@ -943,6 +2039,33 @@ fn create_file_response(
             let (base_content_type, should_download) =
                 resolve_content_type_and_download(file_path.as_path(), &content);
             let is_binary_content = is_probably_binary(&content);
+            if content_mode == ContentMode::Source && !should_download {
+                if let Some(media_kind) = detect_source_media_kind(
+                    file_path.as_path(),
+                    &base_content_type,
+                    &content,
+                    is_binary_content,
+                ) {
+                    let parent_directory_href = resolve_source_parent_directory_href(
+                        url_path,
+                        url_query,
+                        content_mode,
+                        file_path.as_path(),
+                    );
+                    let raw_href =
+                        template_common::build_mode_href(url_path, url_query, ContentMode::Raw);
+                    return create_source_media_response(
+                        file_path.as_path(),
+                        &content,
+                        content.len(),
+                        &parent_directory_href,
+                        markdown_highlight,
+                        &mode_switch_html,
+                        media_kind,
+                        &raw_href,
+                    );
+                }
+            }
             if content_mode == ContentMode::Source
                 && !should_download
                 && is_text_type(&base_content_type)
