@@ -1,0 +1,64 @@
+.xml-key{
+	color:#93c5fd;
+	font-weight:700;
+}
+
+.xml-tag{
+	color:#ddd;
+}
+
+.xml-tag-name{
+	color:#93c5fd;
+	font-weight:700;
+}
+
+.xml-attr-name{
+	color:#fca5a5;
+}
+
+.xml-attr-value{
+	color:#86efac;
+}
+
+.xml-attr-quote{
+	color:#ddd;
+}
+
+.xml-text{
+	color:#86efac;
+}
+
+.xml-string{
+	color:#86efac;
+}
+
+.xml-number{
+	color:#fdba74;
+}
+
+.xml-bool{
+	color:#c4b5fd;
+}
+
+.xml-null{
+	color:#9ca3af;
+}
+
+.xml-delim{
+	color:#ddd;
+}
+
+.json-node.is-hovered .xml-key{
+	font-weight:800;
+	text-shadow:0 0 8px rgba(147,197,253,.5);
+}
+
+.json-node.is-hovered .xml-delim{
+	font-weight:800;
+	text-shadow:0 0 8px rgba(56,189,248,.55);
+}
+
+.json-node.is-hovered .xml-tag-name{
+	font-weight:800;
+	text-shadow:0 0 8px rgba(147,197,253,.5);
+}

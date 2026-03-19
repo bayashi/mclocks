@@ -44,6 +44,7 @@ pub enum StructuredViewKind {
     Yaml,
     Toml,
     Ini,
+    Xml,
 }
 
 pub fn html_escape(s: &str) -> String {
@@ -317,6 +318,7 @@ pub fn build_html_response(
                     StructuredViewKind::Yaml => &cfg.static_yaml_css_url,
                     StructuredViewKind::Toml => &cfg.static_toml_css_url,
                     StructuredViewKind::Ini => &cfg.static_ini_css_url,
+                    StructuredViewKind::Xml => &cfg.static_xml_css_url,
                 })
             ),
             format!(
@@ -334,6 +336,7 @@ pub fn build_html_response(
                     StructuredViewKind::Yaml => &cfg.static_yaml_js_url,
                     StructuredViewKind::Toml => &cfg.static_toml_js_url,
                     StructuredViewKind::Ini => &cfg.static_ini_js_url,
+                    StructuredViewKind::Xml => &cfg.static_xml_js_url,
                 })
             ),
         ),
@@ -449,4 +452,68 @@ pub fn convert_toml_to_json(value: toml::Value) -> serde_json::Value {
             serde_json::Value::Object(map)
         }
     }
+}
+
+fn xml_element_to_json(node: roxmltree::Node<'_, '_>) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    for attr in node.attributes() {
+        map.insert(
+            format!("@{}", attr.name()),
+            serde_json::Value::String(attr.value().to_string()),
+        );
+    }
+    let mut text_parts = Vec::new();
+    let mut grouped_children: std::collections::BTreeMap<String, Vec<serde_json::Value>> =
+        std::collections::BTreeMap::new();
+    for child in node.children() {
+        match child.node_type() {
+            roxmltree::NodeType::Element => {
+                let child_name = child.tag_name().name().to_string();
+                grouped_children
+                    .entry(child_name)
+                    .or_default()
+                    .push(xml_element_to_json(child));
+            }
+            roxmltree::NodeType::Text => {
+                if let Some(text) = child.text() {
+                    let trimmed = text.trim();
+                    if !trimmed.is_empty() {
+                        text_parts.push(trimmed.to_string());
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    for (child_name, values) in grouped_children {
+        if values.len() == 1 {
+            if let Some(single) = values.into_iter().next() {
+                map.insert(child_name, single);
+            }
+        } else {
+            map.insert(child_name, serde_json::Value::Array(values));
+        }
+    }
+    if !text_parts.is_empty() {
+        map.insert(
+            "#text".to_string(),
+            serde_json::Value::String(text_parts.join(" ")),
+        );
+    }
+    if map.is_empty() {
+        serde_json::Value::Null
+    } else {
+        serde_json::Value::Object(map)
+    }
+}
+
+pub fn parse_xml_to_json(source: &str) -> Result<serde_json::Value, String> {
+    let doc = roxmltree::Document::parse(source).map_err(|err| err.to_string())?;
+    let root = doc.root_element();
+    let mut top = serde_json::Map::new();
+    top.insert(
+        root.tag_name().name().to_string(),
+        xml_element_to_json(root),
+    );
+    Ok(serde_json::Value::Object(top))
 }

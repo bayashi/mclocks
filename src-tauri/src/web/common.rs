@@ -14,6 +14,7 @@ pub fn is_supported_web_file(path: &Path) -> bool {
         Some(ext) if ext.eq_ignore_ascii_case("css") => true,
         Some(ext) if ext.eq_ignore_ascii_case("js") => true,
         Some(ext) if ext.eq_ignore_ascii_case("json") => true,
+        Some(ext) if ext.eq_ignore_ascii_case("xml") => true,
         Some(ext) if ext.eq_ignore_ascii_case("yaml") || ext.eq_ignore_ascii_case("yml") => true,
         Some(ext)
             if ext.eq_ignore_ascii_case("ini")
