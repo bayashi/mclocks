@@ -1725,6 +1725,795 @@ mod tests {
     }
 
     #[test]
+    fn test_handle_web_request_png_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let png_file = root_path.join("image.png");
+        let png_bytes: Vec<u8> = vec![
+            0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, // signature
+            0x00, 0x00, 0x00, 0x0D, // IHDR chunk length
+            b'I', b'H', b'D', b'R', // IHDR
+            0x00, 0x00, 0x00, 0x02, // width = 2
+            0x00, 0x00, 0x00, 0x03, // height = 3
+            0x08, 0x02, 0x00, 0x00, 0x00, // bit depth / color type / etc.
+            0x00, 0x00, 0x00, 0x00, // fake CRC (not validated by parser)
+        ];
+        fs::write(&png_file, png_bytes).expect("Failed to create image.png");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/image.png?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "PNG source view response should be HTML, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("id=\"sidebar-controls\"")
+                && body.contains("id=\"summary-list\"")
+                && body.contains("id=\"source-media-wrap\""),
+            "PNG source view should be rendered in three-pane layout"
+        );
+        assert!(
+            body.contains("<img id=\"source-media-image\" src=\"/image.png?mode=raw\""),
+            "PNG source view should include image media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Width</span>")
+                && body.contains("<span class=\"label\">Height</span>"),
+            "PNG source view summary should include Width/Height placeholders"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Width</span><span class=\"value\">2px</span>")
+                && body.contains(
+                    "<span class=\"label\">Height</span><span class=\"value\">3px</span>"
+                ),
+            "PNG source view summary should include dimensions from file bytes"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_mp3_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let mp3_file = root_path.join("sample.mp3");
+        let mut mp3_bytes: Vec<u8> = vec![0xFF, 0xFB, 0x90, 0x64];
+        mp3_bytes.resize(160_000, 0x00);
+        fs::write(&mp3_file, mp3_bytes).expect("Failed to create sample.mp3");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/sample.mp3?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "MP3 source view response should be HTML, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("id=\"sidebar-controls\"")
+                && body.contains("id=\"summary-list\"")
+                && body.contains("id=\"source-media-wrap\""),
+            "MP3 source view should be rendered in three-pane layout"
+        );
+        assert!(
+            body.contains("<audio id=\"source-media-audio\" controls preload=\"metadata\">")
+                && body.contains("src=\"/sample.mp3?mode=raw\"")
+                && body.contains("type=\"audio/mpeg\""),
+            "MP3 source view should include audio media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span>"),
+            "MP3 source view summary should include Duration placeholder"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span><span class=\"value\">0:10</span>"),
+            "MP3 source view summary should include estimated duration from file bytes"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_mp4_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let mp4_file = root_path.join("sample.mp4");
+        let mut mp4_bytes: Vec<u8> = vec![
+            // ftyp box (24 bytes)
+            0x00, 0x00, 0x00, 0x18, b'f', b't', b'y', b'p', b'i', b's', b'o', b'm', 0x00, 0x00,
+            0x02, 0x00, b'i', b's', b'o', b'm', b'i', b's', b'o', b'2',
+            // moov box (36 bytes)
+            0x00, 0x00, 0x00, 0x24, b'm', b'o', b'o', b'v', // mvhd box (28 bytes)
+            0x00, 0x00, 0x00, 0x1C, b'm', b'v', b'h', b'd', 0x00, 0x00, 0x00,
+            0x00, // version + flags
+            0x00, 0x00, 0x00, 0x00, // creation time
+            0x00, 0x00, 0x00, 0x00, // modification time
+            0x00, 0x00, 0x03, 0xE8, // timescale = 1000
+            0x00, 0x00, 0x13, 0x88, // duration = 5000 (5 sec)
+        ];
+        mp4_bytes.resize(4096, 0x00);
+        fs::write(&mp4_file, mp4_bytes).expect("Failed to create sample.mp4");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/sample.mp4?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "MP4 source view response should be HTML, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("id=\"sidebar-controls\"")
+                && body.contains("id=\"summary-list\"")
+                && body.contains("id=\"source-media-wrap\""),
+            "MP4 source view should be rendered in three-pane layout"
+        );
+        assert!(
+            body.contains("<video id=\"source-media-video\" controls preload=\"metadata\">")
+                && body.contains("src=\"/sample.mp4?mode=raw\"")
+                && body.contains("type=\"video/mp4\""),
+            "MP4 source view should include video media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span>"),
+            "MP4 source view summary should include Duration placeholder"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span><span class=\"value\">0:05</span>"),
+            "MP4 source view summary should include parsed duration from mvhd"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_jpg_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let jpg_file = root_path.join("image.jpg");
+        let jpg_bytes: Vec<u8> = vec![
+            0xFF, 0xD8, // SOI
+            0xFF, 0xE0, 0x00, 0x10, // APP0 (len=16)
+            b'J', b'F', b'I', b'F', 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
+            0xFF, 0xC0, 0x00, 0x11, // SOF0 (len=17)
+            0x08, // precision
+            0x00, 0x03, // height = 3
+            0x00, 0x02, // width = 2
+            0x03, // components
+            0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00, 0xFF, 0xD9, // EOI
+        ];
+        fs::write(&jpg_file, jpg_bytes).expect("Failed to create image.jpg");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/image.jpg?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "JPG source view response should be HTML, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("<img id=\"source-media-image\" src=\"/image.jpg?mode=raw\""),
+            "JPG source view should include image media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Width</span><span class=\"value\">2px</span>")
+                && body.contains(
+                    "<span class=\"label\">Height</span><span class=\"value\">3px</span>"
+                ),
+            "JPG source view summary should include dimensions from file bytes"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_gif_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let gif_file = root_path.join("image.gif");
+        let gif_bytes: Vec<u8> = vec![
+            b'G', b'I', b'F', b'8', b'9', b'a', // header
+            0x02, 0x00, // width = 2 (LE)
+            0x03, 0x00, // height = 3 (LE)
+            0x80, 0x00, 0x00, // packed, bg, aspect
+            0x00, 0x00, 0x00, // global color table #0
+            0xFF, 0xFF, 0xFF, // global color table #1
+            0x3B, // trailer
+        ];
+        fs::write(&gif_file, gif_bytes).expect("Failed to create image.gif");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/image.gif?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "GIF source view response should be HTML, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("<img id=\"source-media-image\" src=\"/image.gif?mode=raw\""),
+            "GIF source view should include image media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Width</span><span class=\"value\">2px</span>")
+                && body.contains(
+                    "<span class=\"label\">Height</span><span class=\"value\">3px</span>"
+                ),
+            "GIF source view summary should include dimensions from file bytes"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_webp_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let webp_file = root_path.join("image.webp");
+        let webp_bytes: Vec<u8> = vec![
+            b'R', b'I', b'F', b'F', 0x16, 0x00, 0x00, 0x00, b'W', b'E', b'B',
+            b'P', // RIFF WEBP
+            b'V', b'P', b'8', b'X', 0x0A, 0x00, 0x00, 0x00, // VP8X chunk header
+            0x00, 0x00, 0x00, 0x00, // flags + reserved
+            0x01, 0x00, 0x00, // width-1 = 1 (width=2)
+            0x02, 0x00, 0x00, // height-1 = 2 (height=3)
+        ];
+        fs::write(&webp_file, webp_bytes).expect("Failed to create image.webp");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/image.webp?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "WEBP source view response should be HTML, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("<img id=\"source-media-image\" src=\"/image.webp?mode=raw\""),
+            "WEBP source view should include image media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Width</span><span class=\"value\">2px</span>")
+                && body.contains(
+                    "<span class=\"label\">Height</span><span class=\"value\">3px</span>"
+                ),
+            "WEBP source view summary should include dimensions from file bytes"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_bmp_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let bmp_file = root_path.join("image.bmp");
+        let bmp_bytes: Vec<u8> = vec![
+            // BITMAPFILEHEADER (14)
+            b'B', b'M', 0x3A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x36, 0x00, 0x00,
+            0x00, // BITMAPINFOHEADER (40)
+            0x28, 0x00, 0x00, 0x00, // DIB size
+            0x02, 0x00, 0x00, 0x00, // width = 2
+            0x03, 0x00, 0x00, 0x00, // height = 3
+            0x01, 0x00, // planes
+            0x18, 0x00, // bpp
+            0x00, 0x00, 0x00, 0x00, // compression
+            0x04, 0x00, 0x00, 0x00, // image size (dummy)
+            0x13, 0x0B, 0x00, 0x00, // x ppm
+            0x13, 0x0B, 0x00, 0x00, // y ppm
+            0x00, 0x00, 0x00, 0x00, // colors used
+            0x00, 0x00, 0x00, 0x00, // important colors
+            // pixel bytes (dummy)
+            0x00, 0x00, 0x00, 0x00,
+        ];
+        fs::write(&bmp_file, bmp_bytes).expect("Failed to create image.bmp");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/image.bmp?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should exist")
+            .to_str()
+            .expect("Content-Type should be valid string");
+        assert!(
+            content_type.starts_with("text/html"),
+            "BMP source view response should be HTML, got: {}",
+            content_type
+        );
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("<img id=\"source-media-image\" src=\"/image.bmp?mode=raw\""),
+            "BMP source view should include image media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Width</span><span class=\"value\">2px</span>")
+                && body.contains(
+                    "<span class=\"label\">Height</span><span class=\"value\">3px</span>"
+                ),
+            "BMP source view summary should include dimensions from file bytes"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_invalid_png_source_hides_image_dimensions() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let png_file = root_path.join("broken.png");
+        // Valid PNG signature, but corrupted header (no IHDR at expected offset).
+        let mut png_bytes: Vec<u8> = vec![0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
+        png_bytes.resize(32, 0x00);
+        fs::write(&png_file, png_bytes).expect("Failed to create broken.png");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/broken.png?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("<img id=\"source-media-image\" src=\"/broken.png?mode=raw\""),
+            "Broken PNG should still render media view"
+        );
+        assert!(
+            !body.contains("<span class=\"label\">Width</span>")
+                && !body.contains("<span class=\"label\">Height</span>"),
+            "Width/Height labels should be hidden when dimensions are unavailable"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_m4a_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let m4a_file = root_path.join("sample.m4a");
+        let m4a_bytes: Vec<u8> = vec![
+            // ftyp box (24 bytes)
+            0x00, 0x00, 0x00, 0x18, b'f', b't', b'y', b'p', b'M', b'4', b'A', b' ', 0x00, 0x00,
+            0x00, 0x00, b'M', b'4', b'A', b' ', b'i', b's', b'o', b'm',
+            // moov box (36 bytes)
+            0x00, 0x00, 0x00, 0x24, b'm', b'o', b'o', b'v', // mvhd box (28 bytes)
+            0x00, 0x00, 0x00, 0x1C, b'm', b'v', b'h', b'd', 0x00, 0x00, 0x00,
+            0x00, // version + flags
+            0x00, 0x00, 0x00, 0x00, // creation time
+            0x00, 0x00, 0x00, 0x00, // modification time
+            0x00, 0x00, 0x03, 0xE8, // timescale = 1000
+            0x00, 0x00, 0x13, 0x88, // duration = 5000 (5 sec)
+        ];
+        fs::write(&m4a_file, m4a_bytes).expect("Failed to create sample.m4a");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/sample.m4a?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("<audio id=\"source-media-audio\" controls preload=\"metadata\">")
+                && body.contains("src=\"/sample.m4a?mode=raw\"")
+                && body.contains("type=\"audio/mp4\""),
+            "M4A source view should include audio media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span><span class=\"value\">0:05</span>"),
+            "M4A source view summary should include parsed duration"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_wav_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let wav_file = root_path.join("sample.wav");
+        let mut wav_bytes: Vec<u8> = vec![
+            b'R', b'I', b'F', b'F', 0xA4, 0x3E, 0x00, 0x00, // RIFF size
+            b'W', b'A', b'V', b'E', // WAVE
+            b'f', b'm', b't', b' ', 0x10, 0x00, 0x00, 0x00, // fmt chunk
+            0x01, 0x00, // PCM
+            0x01, 0x00, // channels
+            0x40, 0x1F, 0x00, 0x00, // sample rate 8000
+            0x80, 0x3E, 0x00, 0x00, // byte rate 16000
+            0x02, 0x00, // block align
+            0x10, 0x00, // bits per sample
+            b'd', b'a', b't', b'a', 0x80, 0x3E, 0x00, 0x00, // data chunk size 16000
+        ];
+        wav_bytes.resize(44 + 16_000, 0x00);
+        fs::write(&wav_file, wav_bytes).expect("Failed to create sample.wav");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/sample.wav?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("src=\"/sample.wav?mode=raw\"") && body.contains("type=\"audio/wav\""),
+            "WAV source view should include audio media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span><span class=\"value\">0:01</span>"),
+            "WAV source view summary should include parsed duration"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_ogg_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let ogg_file = root_path.join("sample.ogg");
+        let mut ogg_bytes: Vec<u8> = Vec::new();
+        // First page with OpusHead packet (19 bytes)
+        ogg_bytes.extend_from_slice(b"OggS");
+        ogg_bytes.push(0x00); // version
+        ogg_bytes.push(0x02); // header type
+        ogg_bytes.extend_from_slice(&0u64.to_le_bytes()); // granule
+        ogg_bytes.extend_from_slice(&1u32.to_le_bytes()); // serial
+        ogg_bytes.extend_from_slice(&0u32.to_le_bytes()); // seq
+        ogg_bytes.extend_from_slice(&0u32.to_le_bytes()); // crc
+        ogg_bytes.push(1); // segments
+        ogg_bytes.push(19); // lacing
+        ogg_bytes.extend_from_slice(b"OpusHead");
+        ogg_bytes.push(1); // version
+        ogg_bytes.push(2); // channels
+        ogg_bytes.extend_from_slice(&0u16.to_le_bytes()); // pre-skip
+        ogg_bytes.extend_from_slice(&48000u32.to_le_bytes()); // input sample rate
+        ogg_bytes.extend_from_slice(&0u16.to_le_bytes()); // output gain
+        ogg_bytes.push(0); // mapping family
+        // Last page with granule = 48000 (1 sec)
+        ogg_bytes.extend_from_slice(b"OggS");
+        ogg_bytes.push(0x00); // version
+        ogg_bytes.push(0x04); // eos
+        ogg_bytes.extend_from_slice(&48000u64.to_le_bytes()); // granule
+        ogg_bytes.extend_from_slice(&1u32.to_le_bytes()); // serial
+        ogg_bytes.extend_from_slice(&1u32.to_le_bytes()); // seq
+        ogg_bytes.extend_from_slice(&0u32.to_le_bytes()); // crc
+        ogg_bytes.push(1); // segments
+        ogg_bytes.push(1); // lacing
+        ogg_bytes.push(0); // payload
+        fs::write(&ogg_file, ogg_bytes).expect("Failed to create sample.ogg");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/sample.ogg?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("src=\"/sample.ogg?mode=raw\"") && body.contains("type=\"audio/ogg\""),
+            "OGG source view should include audio media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span><span class=\"value\">0:01</span>"),
+            "OGG source view summary should include parsed duration"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_flac_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let flac_file = root_path.join("sample.flac");
+        let sample_rate = 48000u64;
+        let total_samples = 96_000u64; // 2 sec
+        let channels_minus_one = 1u64;
+        let bits_minus_one = 15u64;
+        let packed = (sample_rate << 44)
+            | (channels_minus_one << 41)
+            | (bits_minus_one << 36)
+            | total_samples;
+        let mut flac_bytes: Vec<u8> = vec![
+            b'f', b'L', b'a', b'C', // signature
+            0x80, 0x00, 0x00, 0x22, // last-metadata + STREAMINFO length=34
+            0x04, 0x00, // min block size
+            0x04, 0x00, // max block size
+            0x00, 0x00, 0x00, // min frame size
+            0x00, 0x00, 0x00, // max frame size
+        ];
+        flac_bytes.extend_from_slice(&packed.to_be_bytes());
+        flac_bytes.extend_from_slice(&[0u8; 16]); // md5
+        fs::write(&flac_file, flac_bytes).expect("Failed to create sample.flac");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!(
+                "http://127.0.0.1:{}/sample.flac?mode=source",
+                port
+            ))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("src=\"/sample.flac?mode=raw\"") && body.contains("type=\"audio/flac\""),
+            "FLAC source view should include audio media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span><span class=\"value\">0:02</span>"),
+            "FLAC source view summary should include parsed duration"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_aac_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let aac_file = root_path.join("sample.aac");
+        let mut aac_bytes: Vec<u8> = Vec::new();
+        // 43 ADTS frames, each 20 bytes => about 1 second at 44.1kHz
+        for _ in 0..43 {
+            aac_bytes.extend_from_slice(&[0xFF, 0xF1, 0x50, 0x80, 0x02, 0x9F, 0xFC]);
+            aac_bytes.extend_from_slice(&[0u8; 13]);
+        }
+        fs::write(&aac_file, aac_bytes).expect("Failed to create sample.aac");
+        let port = find_available_port();
+
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/sample.aac?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("src=\"/sample.aac?mode=raw\"") && body.contains("type=\"audio/aac\""),
+            "AAC source view should include audio media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span><span class=\"value\">0:01</span>"),
+            "AAC source view summary should include estimated duration"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_m4v_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let m4v_file = root_path.join("sample.m4v");
+        let m4v_bytes: Vec<u8> = vec![
+            0x00, 0x00, 0x00, 0x18, b'f', b't', b'y', b'p', b'i', b's', b'o', b'm', 0x00, 0x00,
+            0x00, 0x00, b'i', b's', b'o', b'm', b'm', b'p', b'4', b'1', 0x00, 0x00, 0x00, 0x24,
+            b'm', b'o', b'o', b'v', 0x00, 0x00, 0x00, 0x1C, b'm', b'v', b'h', b'd', 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xE8,
+            0x00, 0x00, 0x13, 0x88,
+        ];
+        fs::write(&m4v_file, m4v_bytes).expect("Failed to create sample.m4v");
+        let port = find_available_port();
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/sample.m4v?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("src=\"/sample.m4v?mode=raw\"") && body.contains("type=\"video/mp4\""),
+            "M4V source view should include video media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span><span class=\"value\">0:05</span>"),
+            "M4V source view summary should include parsed duration"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_mov_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let mov_file = root_path.join("sample.mov");
+        let mov_bytes: Vec<u8> = vec![
+            0x00, 0x00, 0x00, 0x14, b'f', b't', b'y', b'p', b'q', b't', b' ', b' ', 0x00, 0x00,
+            0x00, 0x00, b'q', b't', b' ', b' ', 0x00, 0x00, 0x00, 0x24, b'm', b'o', b'o', b'v',
+            0x00, 0x00, 0x00, 0x1C, b'm', b'v', b'h', b'd', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xE8, 0x00, 0x00, 0x13, 0x88,
+        ];
+        fs::write(&mov_file, mov_bytes).expect("Failed to create sample.mov");
+        let port = find_available_port();
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/sample.mov?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("src=\"/sample.mov?mode=raw\"")
+                && body.contains("type=\"video/quicktime\""),
+            "MOV source view should include video media element"
+        );
+        assert!(
+            body.contains("<span class=\"label\">Duration</span><span class=\"value\">0:05</span>"),
+            "MOV source view summary should include parsed duration"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_webm_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let webm_file = root_path.join("sample.webm");
+        let webm_bytes: Vec<u8> = vec![
+            0x1A, 0x45, 0xDF, 0xA3, // EBML
+            0x00, 0x00, 0x00, 0x00, b'w', b'e', b'b', b'm',
+        ];
+        fs::write(&webm_file, webm_bytes).expect("Failed to create sample.webm");
+        let port = find_available_port();
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!(
+                "http://127.0.0.1:{}/sample.webm?mode=source",
+                port
+            ))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("src=\"/sample.webm?mode=raw\"") && body.contains("type=\"video/webm\""),
+            "WEBM source view should include video media element"
+        );
+        assert!(
+            !body.contains("<span class=\"label\">Duration</span>"),
+            "WEBM source view summary should hide Duration when unavailable"
+        );
+    }
+
+    #[test]
+    fn test_handle_web_request_ogv_file_source_renders_media_view() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let root_path = temp_dir.path().to_path_buf();
+        let ogv_file = root_path.join("sample.ogv");
+        let ogv_bytes: Vec<u8> = vec![b'O', b'g', b'g', b'S', 0x00, 0x00, 0, 0, 0, 0, 0, 0];
+        fs::write(&ogv_file, ogv_bytes).expect("Failed to create sample.ogv");
+        let port = find_available_port();
+        let _server_handle = start_test_server(root_path, port, false, false, false);
+        thread::sleep(std::time::Duration::from_millis(100));
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .get(&format!("http://127.0.0.1:{}/sample.ogv?mode=source", port))
+            .send()
+            .expect("Failed to send request");
+        assert_eq!(response.status(), 200);
+        let body = response.text().expect("Body should be readable");
+        assert!(
+            body.contains("src=\"/sample.ogv?mode=raw\"") && body.contains("type=\"video/ogg\""),
+            "OGV source view should include video media element"
+        );
+        assert!(
+            !body.contains("<span class=\"label\">Duration</span>"),
+            "OGV source view summary should hide Duration when unavailable"
+        );
+    }
+
+    #[test]
     fn test_handle_web_request_ini_family_extensions_render_html_view() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let root_path = temp_dir.path().to_path_buf();
