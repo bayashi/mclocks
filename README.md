@@ -39,7 +39,7 @@ A developer is never without a clock:
     * such as easily creating SQL `IN` clauses
 * 🌐 Web server
     * serves static files
-        * richly render markdown
+        * richly render content
         * drag-and-drop based content viewer
     * dump request and response server
     * slow endpoints for debugging
