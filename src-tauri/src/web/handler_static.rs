@@ -286,11 +286,44 @@ if (pathCopyBtn && pathLabel) {
 		}, 2000);
 	});
 }
-if (window.hljs) {
-	document.querySelectorAll("pre code").forEach((code) => {
-		window.hljs.highlightElement(code);
+const loadCsvTsvLanguageIfNeeded = () => {
+	if (!window.hljs || typeof window.hljs.getLanguage !== "function") {
+		return Promise.resolve(false);
+	}
+	const hasCsvOrTsvCode = Array.from(document.querySelectorAll("pre code")).some((code) => {
+		const classes = (code.className || "").split(/\s+/);
+		return classes.includes("language-csv") || classes.includes("language-tsv");
 	});
-}
+	const hasLanguageSupport = window.hljs.getLanguage("csv") && window.hljs.getLanguage("tsv");
+	if (!hasCsvOrTsvCode || hasLanguageSupport) {
+		return Promise.resolve(true);
+	}
+	const highlightScript = document.querySelector('script[src*="/highlight/highlight.min.js"]');
+	if (!highlightScript || !highlightScript.src) {
+		return Promise.resolve(false);
+	}
+	let highlightUrl;
+	try {
+		highlightUrl = new URL(highlightScript.src, window.location.href);
+	} catch (_) {
+		return Promise.resolve(false);
+	}
+	const script = document.createElement("script");
+	script.src = `${highlightUrl.origin}/highlight/languages/csv.min.js${highlightUrl.search}`;
+	script.async = true;
+	return new Promise((resolve) => {
+		script.onload = () => resolve(true);
+		script.onerror = () => resolve(false);
+		document.head.appendChild(script);
+	});
+};
+loadCsvTsvLanguageIfNeeded().finally(() => {
+	if (window.hljs) {
+		document.querySelectorAll("pre code").forEach((code) => {
+			window.hljs.highlightElement(code);
+		});
+	}
+});
 const summaryList = document.getElementById("summary-list");
 if (summaryList) {
 	const pad2 = (n) => String(n).padStart(2, "0");

@@ -234,7 +234,7 @@ const MCLOCKS_STATIC_INI_JS_REL_PATH: &str = "mclocks/static/structured/ini.js";
 const MCLOCKS_STATIC_INI_CSS_REL_PATH: &str = "mclocks/static/structured/ini.css";
 const MCLOCKS_STATIC_XML_JS_REL_PATH: &str = "mclocks/static/structured/xml.js";
 const MCLOCKS_STATIC_XML_CSS_REL_PATH: &str = "mclocks/static/structured/xml.css";
-const MCLOCKS_ASSETS_VERSION: &str = "20260319-1";
+const MCLOCKS_ASSETS_VERSION: &str = "20260320-3";
 
 pub fn start_web_server(
     root: String,
@@ -337,6 +337,8 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
         .to_path_buf();
     fs::create_dir_all(assets_root.join("highlight"))
         .map_err(|e| format!("Failed to create markdown assets dir: {}", e))?;
+    fs::create_dir_all(assets_root.join("highlight").join("languages"))
+        .map_err(|e| format!("Failed to create highlight languages dir: {}", e))?;
     fs::create_dir_all(assets_root.join("mclocks"))
         .map_err(|e| format!("Failed to create mclocks assets dir: {}", e))?;
     fs::create_dir_all(assets_root.join("mclocks").join("static"))
@@ -363,6 +365,21 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
         EMBEDDED_HIGHLIGHT_CSS,
     )
     .map_err(|e| format!("Failed to write embedded highlight.css: {}", e))?;
+    let source_csv_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../web-assets/highlight/languages/csv.min.js");
+    if source_csv_path.exists() && source_csv_path.is_file() {
+        let dest_csv_path = assets_root
+            .join("highlight")
+            .join("languages")
+            .join("csv.min.js");
+        fs::copy(&source_csv_path, &dest_csv_path).map_err(|e| {
+            format!(
+                "Failed to copy highlight language asset {}: {}",
+                source_csv_path.display(),
+                e
+            )
+        })?;
+    }
     fs::write(
         assets_root.join(MCLOCKS_MAIN_JS_REL_PATH),
         EMBEDDED_MCLOCKS_MAIN_JS,
