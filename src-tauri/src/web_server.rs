@@ -771,10 +771,10 @@ mod tests {
         assert!(body.contains("file2.html"), "Should list file2.html");
         assert!(body.contains("subdir/"), "Should list subdir");
         assert!(
-            body.contains("mclocks.web.content.mode")
-                && body.contains("data-mode=\"raw\"")
-                && body.contains("data-active-mode=\"raw\""),
-            "Directory listing should include mode switch UI"
+            !body.contains("mclocks.web.content.mode")
+                && !body.contains("data-active-mode=\"raw\"")
+                && !body.contains("raw-switch"),
+            "Directory listing should not include mode switch UI"
         );
     }
 
@@ -833,7 +833,7 @@ mod tests {
             "Should show directory icon link in header"
         );
         assert!(
-            body.contains("href=\"/\""),
+            body.contains("href=\"/?mode=source\""),
             "Directory icon link should point to parent directory"
         );
         assert!(!body.contains(". . /"), "Should not show ../ entry");
