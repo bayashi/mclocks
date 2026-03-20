@@ -21,7 +21,7 @@ reqwest = { version = "0.11", features = ["blocking", "json"] }
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["macos-private-api", "image-png"] }
+tauri = { version = "2", features = ["macos-private-api", "image-png", "tray-icon"] }
 serde = { version = "1", features = [
     "derive",
 ] }

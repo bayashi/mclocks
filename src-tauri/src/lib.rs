@@ -1,5 +1,6 @@
 mod config;
 mod sticky;
+mod tray;
 mod util;
 mod web;
 mod web_server;
@@ -11,7 +12,8 @@ use tauri::Manager;
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use util::open_text_in_editor;
 use web::dd_publish::{
-    build_temp_file_url, build_temp_share_url, register_temp_file, register_temp_root,
+    build_temp_file_url, build_temp_share_url, clear_temp_shares, register_temp_file,
+    register_temp_root,
 };
 use web_server::{
     default_web_server_config, load_web_config, open_url_in_browser, start_web_server,
@@ -75,6 +77,19 @@ fn register_temp_web_root(
 const IS_DEV: bool = tauri::is_dev();
 
 const WINDOW_NAME: &str = "main";
+
+fn reset_temp_web_session_impl() -> Result<String, String> {
+    let cleared = clear_temp_shares()?;
+    Ok(format!(
+        "Temporary D&D session reset ({} roots, {} files).",
+        cleared.cleared_roots, cleared.cleared_files
+    ))
+}
+
+#[tauri::command]
+fn reset_temp_web_session() -> Result<String, String> {
+    reset_temp_web_session_impl()
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -151,6 +166,11 @@ pub fn run() {
     let error_msg = web_error.clone();
     let web_main_port_at_startup = web_config_for_startup.as_ref().map(|c| c.port);
     tbr = tbr.setup(move |app| {
+        #[cfg(desktop)]
+        {
+            tray::setup_tray_menu(app.handle(), WINDOW_NAME, reset_temp_web_session_impl)?;
+        }
+
         let store = app.state::<WebMainPortStore>();
         if let Ok(mut guard) = store.0.lock() {
             *guard = web_main_port_at_startup;
@@ -187,10 +207,10 @@ pub fn run() {
 
     if !IS_DEV {
         tbr = tbr.plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {
-            let _ = _app
-                .get_webview_window(WINDOW_NAME)
-                .expect(&format!("execute only {} window", WINDOW_NAME))
-                .set_focus();
+            if let Some(window) = _app.get_webview_window(WINDOW_NAME) {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
         }))
     }
 
@@ -213,6 +233,7 @@ pub fn run() {
         get_config_path,
         open_text_in_editor,
         register_temp_web_root,
+        reset_temp_web_session,
         save_window_state_exclusive,
         sticky::create_sticky,
         sticky::create_sticky_image,
