@@ -84,6 +84,22 @@ body{
 	font-size:85%;
 }
 
+#content table{
+	border-collapse:collapse;
+	border-spacing:0;
+	margin:8px 0 12px;
+}
+
+#content th,
+#content td{
+	border:1px solid #666;
+	padding:2px 6px;
+}
+
+#content th{
+	font-weight:700;
+}
+
 pre,
 code{
 	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;

@@ -37,6 +37,7 @@ A developer is never without a clock:
 
 * 🔀 Simple text convertor
     * such as easily creating SQL `IN` clauses
+    * Excel/TSV table to Markdown tatble
 * 🌐 Web server
     * serves static files
         * richly render content
@@ -229,6 +230,8 @@ Click `mclocks` app window, then use the following keyboard shortcuts to process
 
 * `Ctrl + i`: Quotes each line of clipboard text with double quotes and appends a comma to the end (except the last line)
 * `Ctrl + Shift + i`: Appends a comma to the end of each line (no quotes) for INT list IN condition (except the last line)
+* `Ctrl + t`: Converts clipboard Excel/TSV text into a Markdown table and opens it in editor
+* `Ctrl + Shift + t`: Opens a Markdown table template in editor
 
 Empty lines are preserved as-is in all operations.
 
@@ -280,6 +283,8 @@ Empty lines are preserved as-is in all operations.
 |----------|-------------|
 | `Ctrl + i` | Quote each line of clipboard text with double quotes, append comma to the end (except the last line), and open in editor |
 | `Ctrl + Shift + i` | Append comma to the end of each line (no quotes) for INT list IN condition (except the last line), and open in editor |
+| `Ctrl + t` | Convert clipboard Excel/TSV text to Markdown table and open in editor |
+| `Ctrl + Shift + t` | Open a Markdown table template in editor |
 
 ## 📝 Sticky Note
 
