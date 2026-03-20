@@ -471,7 +471,7 @@ if (summaryList) {
 "##;
 
 fn append_directory_entry(list_items: &mut String, dir_url: &str, dir_name: &str) {
-    let source_href = template_common::build_mode_href(dir_url, "", ContentMode::Source);
+    let source_href = template_common::build_mode_href(dir_url, "", ContentMode::Content);
     let _ = write!(
         list_items,
         "<li class=\"dir\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📁</span>{}/</a></li>\n",
@@ -482,7 +482,7 @@ fn append_directory_entry(list_items: &mut String, dir_url: &str, dir_name: &str
 }
 
 fn append_file_entry(list_items: &mut String, file_url: &str, file_name: &str) {
-    let source_href = template_common::build_mode_href(file_url, "", ContentMode::Source);
+    let source_href = template_common::build_mode_href(file_url, "", ContentMode::Content);
     let _ = write!(
         list_items,
         "<li class=\"file\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📄</span>{}</a></li>\n",
@@ -490,6 +490,11 @@ fn append_file_entry(list_items: &mut String, file_url: &str, file_name: &str) {
         html_escape(file_name),
         html_escape(file_name)
     );
+}
+
+fn encode_path_segment_for_href(segment: &str) -> String {
+    let encoded = encode(segment).into_owned();
+    encoded.replace("%2E", ".").replace("%2e", ".")
 }
 
 fn parse_content_mode(url: &str) -> ContentMode {
@@ -675,7 +680,7 @@ fn create_directory_listing(
 
             // Add directory entries
             for dir in dirs {
-                let encoded_dir = encode(&dir);
+                let encoded_dir = encode_path_segment_for_href(&dir);
                 let dir_url = if url_path == "/" {
                     format!("/{}/", encoded_dir)
                 } else {
@@ -688,7 +693,7 @@ fn create_directory_listing(
 
             // Add file entries
             for file in files {
-                let encoded_file = encode(&file);
+                let encoded_file = encode_path_segment_for_href(&file);
                 let file_url = if url_path == "/" {
                     format!("/{}", encoded_file)
                 } else {
