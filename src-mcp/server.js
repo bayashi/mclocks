@@ -4,6 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { cdate } from "cdate";
+import { parse as parseJsonc } from "jsonc-parser";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -76,7 +77,12 @@ function loadMclocksConfig() {
   }
   try {
     const raw = readFileSync(configPath, "utf-8");
-    return JSON.parse(raw);
+    const errors = [];
+    const parsed = parseJsonc(raw, errors, { allowTrailingComma: true });
+    if (errors.length > 0 || parsed === null || typeof parsed !== "object") {
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
