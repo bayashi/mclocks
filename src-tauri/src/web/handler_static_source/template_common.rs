@@ -7,12 +7,6 @@ pub enum ContentMode {
     Source,
 }
 
-#[derive(Clone, Copy)]
-pub enum ModeSwitchVariant {
-    DirectoryRawSwitch,
-    SourceView,
-}
-
 impl ContentMode {
     pub fn as_query_value(self) -> Option<&'static str> {
         match self {
@@ -73,59 +67,30 @@ pub fn build_mode_switch_html(
     query: &str,
     current_mode: ContentMode,
     id: &str,
-    variant: ModeSwitchVariant,
 ) -> String {
-    let container_class = match variant {
-        ModeSwitchVariant::DirectoryRawSwitch => "mode-switch directory-switch",
-        ModeSwitchVariant::SourceView => "mode-switch",
-    };
     let mut html = String::new();
     let _ = write!(
         html,
         "<div class=\"{}\" role=\"group\" aria-label=\"Display mode\">",
-        container_class
+        "mode-switch"
     );
-    match variant {
-        ModeSwitchVariant::DirectoryRawSwitch => {
-            let is_raw = current_mode == ContentMode::Raw;
-            let target_mode = if is_raw {
-                ContentMode::Source
-            } else {
-                ContentMode::Raw
-            };
-            let active_class = if is_raw { " is-active" } else { "" };
-            let href = build_mode_href(path, query, target_mode);
-            let store_mode = target_mode.as_query_value().unwrap_or("source");
-            let _ = write!(
-                html,
-                "<a id=\"{}-raw\" class=\"header-action-btn mode-btn raw-switch{}\" href=\"{}\" data-mode=\"raw\" data-active-mode=\"raw\" data-store-mode=\"{}\" aria-pressed=\"{}\"><span class=\"switch-label\">Raw</span><span class=\"switch-track\" aria-hidden=\"true\"><span class=\"switch-thumb\"></span></span></a>",
-                id,
-                active_class,
-                html_escape(&href),
-                store_mode,
-                if is_raw { "true" } else { "false" }
-            );
-        }
-        ModeSwitchVariant::SourceView => {
-            for mode in [ContentMode::Raw, ContentMode::Content] {
-                let href = build_mode_href(path, query, mode);
-                let active_class = if mode == current_mode {
-                    " is-active"
-                } else {
-                    ""
-                };
-                let _ = write!(
-                    html,
-                    "<a id=\"{}-{}\" class=\"header-action-btn mode-btn{}\" href=\"{}\" data-mode=\"{}\">{}</a>",
-                    id,
-                    mode.as_query_value().unwrap_or("content"),
-                    active_class,
-                    html_escape(&href),
-                    mode.as_query_value().unwrap_or("content"),
-                    mode.as_label()
-                );
-            }
-        }
+    for mode in [ContentMode::Raw, ContentMode::Content] {
+        let href = build_mode_href(path, query, mode);
+        let active_class = if mode == current_mode {
+            " is-active"
+        } else {
+            ""
+        };
+        let _ = write!(
+            html,
+            "<a id=\"{}-{}\" class=\"header-action-btn mode-btn{}\" href=\"{}\" data-mode=\"{}\">{}</a>",
+            id,
+            mode.as_query_value().unwrap_or("content"),
+            active_class,
+            html_escape(&href),
+            mode.as_query_value().unwrap_or("content"),
+            mode.as_label()
+        );
     }
     html.push_str("</div>");
     html
