@@ -2017,10 +2017,7 @@ fn create_file_response(
                     );
                 }
             }
-            if content_mode == ContentMode::Source
-                && !should_download
-                && is_text_type(&base_content_type)
-            {
+            if content_mode == ContentMode::Source && !should_download && !is_binary_content {
                 let encoding = detect_encoding(&content);
                 let (decoded, _, _) = encoding.decode(&content);
                 let parent_directory_href = resolve_source_parent_directory_href(
