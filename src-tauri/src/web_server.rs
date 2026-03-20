@@ -93,6 +93,7 @@ pub struct WebMarkdownHighlightConfig {
     pub static_xml_js_url: String,
     pub css_url: String,
     pub js_url: String,
+    pub mermaid_js_url: String,
 }
 
 #[derive(Debug, Clone)]
@@ -186,6 +187,7 @@ fn find_available_port_downward(start_port: u16, min_port: u16, role: &str) -> R
 
 const EMBEDDED_HIGHLIGHT_JS: &str = include_str!("../../web-assets/highlight/highlight.min.js");
 const EMBEDDED_HIGHLIGHT_CSS: &str = include_str!("../../web-assets/highlight/github-dark.min.css");
+const EMBEDDED_MERMAID_JS: &str = include_str!("../../web-assets/mermaid/mermaid.min.js");
 const EMBEDDED_MCLOCKS_MAIN_CSS: &str = include_str!("../../web-assets/mclocks/main.css");
 const EMBEDDED_MCLOCKS_MAIN_JS: &str = include_str!("../../web-assets/mclocks/main.js");
 const EMBEDDED_MCLOCKS_STATIC_MD_CSS: &str =
@@ -218,6 +220,7 @@ const EMBEDDED_MCLOCKS_STATIC_XML_JS: &str =
     include_str!("../../web-assets/mclocks/static/structured/xml.js");
 const HIGHLIGHT_JS_REL_PATH: &str = "highlight/highlight.min.js";
 const HIGHLIGHT_CSS_REL_PATH: &str = "highlight/github-dark.min.css";
+const MERMAID_JS_REL_PATH: &str = "mermaid/mermaid.min.js";
 const MCLOCKS_MAIN_JS_REL_PATH: &str = "mclocks/main.js";
 const MCLOCKS_MAIN_CSS_REL_PATH: &str = "mclocks/main.css";
 const MCLOCKS_STATIC_MD_JS_REL_PATH: &str = "mclocks/static/structured/md.js";
@@ -234,7 +237,7 @@ const MCLOCKS_STATIC_INI_JS_REL_PATH: &str = "mclocks/static/structured/ini.js";
 const MCLOCKS_STATIC_INI_CSS_REL_PATH: &str = "mclocks/static/structured/ini.css";
 const MCLOCKS_STATIC_XML_JS_REL_PATH: &str = "mclocks/static/structured/xml.js";
 const MCLOCKS_STATIC_XML_CSS_REL_PATH: &str = "mclocks/static/structured/xml.css";
-const MCLOCKS_ASSETS_VERSION: &str = "20260320-3";
+const MCLOCKS_ASSETS_VERSION: &str = "20260320-4";
 
 pub fn start_web_server(
     root: String,
@@ -339,6 +342,8 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
         .map_err(|e| format!("Failed to create markdown assets dir: {}", e))?;
     fs::create_dir_all(assets_root.join("highlight").join("languages"))
         .map_err(|e| format!("Failed to create highlight languages dir: {}", e))?;
+    fs::create_dir_all(assets_root.join("mermaid"))
+        .map_err(|e| format!("Failed to create mermaid assets dir: {}", e))?;
     fs::create_dir_all(assets_root.join("mclocks"))
         .map_err(|e| format!("Failed to create mclocks assets dir: {}", e))?;
     fs::create_dir_all(assets_root.join("mclocks").join("static"))
@@ -365,6 +370,8 @@ fn prepare_markdown_assets_root(identifier: &String) -> Result<String, String> {
         EMBEDDED_HIGHLIGHT_CSS,
     )
     .map_err(|e| format!("Failed to write embedded highlight.css: {}", e))?;
+    fs::write(assets_root.join(MERMAID_JS_REL_PATH), EMBEDDED_MERMAID_JS)
+        .map_err(|e| format!("Failed to write embedded mermaid.js: {}", e))?;
     let source_csv_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../web-assets/highlight/languages/csv.min.js");
     if source_csv_path.exists() && source_csv_path.is_file() {
@@ -661,6 +668,10 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         js_url: format!(
             "http://127.0.0.1:{}/{}?v={}",
             assets_port, HIGHLIGHT_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
+        ),
+        mermaid_js_url: format!(
+            "http://127.0.0.1:{}/{}?v={}",
+            assets_port, MERMAID_JS_REL_PATH, MCLOCKS_ASSETS_VERSION
         ),
     });
     let editor_include_host = web_config

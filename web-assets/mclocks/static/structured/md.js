@@ -1,4 +1,4 @@
-(function(){
+(async function(){
 	const normalizeOpenExternalLinkInNewTab = (value) => value !== "false";
 
 	const isExternalHref = (href) => {
@@ -33,8 +33,43 @@
 		window.mclocksSetupResizer("mclocks-md-toc-width", "toc-resizer", 200, 400, "--toc-width");
 	}
 
+	const renderMermaidBlocks = async () => {
+		const codeBlocks = Array.from(document.querySelectorAll("pre code.language-mermaid"));
+		if (!codeBlocks.length || !window.mermaid || typeof window.mermaid.render !== "function") {
+			return;
+		}
+		if (typeof window.mermaid.initialize === "function") {
+			window.mermaid.initialize({ startOnLoad: false, securityLevel: "strict" });
+		}
+		for (let index = 0; index < codeBlocks.length; index += 1) {
+			const code = codeBlocks[index];
+			const pre = code.parentElement;
+			if (!pre) {
+				continue;
+			}
+			const source = code.textContent || "";
+			const container = document.createElement("div");
+			container.className = "mermaid-diagram";
+			try {
+				const id = `mclocks-mermaid-${index}`;
+				const rendered = await window.mermaid.render(id, source);
+				container.innerHTML = rendered.svg;
+				pre.replaceWith(container);
+			} catch (_) {
+				// Keep the original code block if rendering fails.
+			}
+		}
+	};
+
+	await renderMermaidBlocks();
+
 	if (window.hljs && typeof window.hljs.highlightElement === "function") {
-		document.querySelectorAll("pre code").forEach((code) => window.hljs.highlightElement(code));
+		document.querySelectorAll("pre code").forEach((code) => {
+			if ((code.className || "").split(/\s+/).includes("language-mermaid")) {
+				return;
+			}
+			window.hljs.highlightElement(code);
+		});
 	}
 
 	document.querySelectorAll("pre code").forEach((code) => {
