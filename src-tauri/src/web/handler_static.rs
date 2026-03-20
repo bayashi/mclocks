@@ -2068,7 +2068,7 @@ fn create_file_response(
             }
             if content_mode == ContentMode::Source
                 && !should_download
-                && is_text_type(&base_content_type)
+                && !is_binary_content
             {
                 let encoding = detect_encoding(&content);
                 let (decoded, _, _) = encoding.decode(&content);

@@ -1,4 +1,3 @@
-use super::common::is_supported_web_file;
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -91,10 +90,6 @@ pub fn register_temp_file(path: &Path) -> Result<String, String> {
     if !path.is_file() {
         return Err(format!("Path is not a file: {}", path.display()));
     }
-    if !is_supported_web_file(path) {
-        return Err(format!("Unsupported file type: {}", path.display()));
-    }
-
     let canonical = canonicalize_root(path)?;
     let normalized = normalize_root_key(canonical.as_path());
 
