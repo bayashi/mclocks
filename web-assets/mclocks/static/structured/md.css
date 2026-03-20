@@ -122,3 +122,16 @@ pre code{
 	word-break:normal;
 }
 
+.mermaid-diagram{
+	margin:20px 0 24px;
+	padding:8px 0 4px;
+	overflow-x:auto;
+	overflow-y:hidden;
+}
+
+.mermaid-diagram svg{
+	display:block;
+	transform:scale(0.9);
+	transform-origin:left top;
+}
+
