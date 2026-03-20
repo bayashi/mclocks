@@ -33,6 +33,7 @@ __COMMON_HEADER_HTML__
 <div id="content">__RENDERED_HTML__</div>
 </div>
 __HIGHLIGHT_JS_SCRIPT__
+__MERMAID_JS_SCRIPT__
 __MAIN_JS_SCRIPT__
 __STATIC_MD_JS_SCRIPT__
 </body>
@@ -282,6 +283,7 @@ pub fn create_markdown_response(
         static_md_js_script,
         highlight_css_link,
         highlight_js_script,
+        mermaid_js_script,
     ) = match markdown_highlight {
         Some(cfg) => (
             format!(
@@ -305,8 +307,13 @@ pub fn create_markdown_response(
                 html_escape(&cfg.css_url)
             ),
             format!("<script src=\"{}\"></script>", html_escape(&cfg.js_url)),
+            format!(
+                "<script src=\"{}\"></script>",
+                html_escape(&cfg.mermaid_js_url)
+            ),
         ),
         None => (
+            "".to_string(),
             "".to_string(),
             "".to_string(),
             "".to_string(),
@@ -338,6 +345,7 @@ pub fn create_markdown_response(
         .replace("__STATIC_MD_JS_SCRIPT__", &static_md_js_script)
         .replace("__HIGHLIGHT_CSS_LINK__", &highlight_css_link)
         .replace("__HIGHLIGHT_JS_SCRIPT__", &highlight_js_script)
+        .replace("__MERMAID_JS_SCRIPT__", &mermaid_js_script)
         .replace("__RENDERED_HTML__", &rendered_html);
     let content_type = "text/html; charset=utf-8";
     if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
