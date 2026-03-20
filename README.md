@@ -77,7 +77,7 @@ When you start `mclocks`, then press `Ctrl + o` to edit your `config.json` file.
 
 ### Example of config.json
 
-The `config.json` file should be formatted as JSON, as shown like below.
+The `config.json` file should be formatted as JSON, as shown below.
 
     {
       "clocks": [
@@ -91,6 +91,8 @@ The `config.json` file should be formatted as JSON, as shown like below.
       "margin": "1.65em",
       "forefront": false
     }
+
+You can include comments and trailing commas in config.json (JSONC-supported).
 
 ## 🔧 The fields of config.json
 
