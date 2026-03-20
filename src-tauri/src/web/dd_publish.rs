@@ -16,6 +16,11 @@ struct TempShareStore {
     normalized_file_to_hash: HashMap<String, String>,
 }
 
+pub struct TempShareClearResult {
+    pub cleared_roots: usize,
+    pub cleared_files: usize,
+}
+
 static TEMP_SHARE_STORE: OnceLock<Mutex<TempShareStore>> = OnceLock::new();
 
 fn share_store() -> &'static Mutex<TempShareStore> {
@@ -123,6 +128,22 @@ pub fn register_temp_file(path: &Path) -> Result<String, String> {
     Ok(hash)
 }
 
+pub fn clear_temp_shares() -> Result<TempShareClearResult, String> {
+    let mut store = share_store()
+        .lock()
+        .map_err(|e| format!("Failed to lock temp share store: {}", e))?;
+    let cleared_roots = store.hash_to_root.len();
+    let cleared_files = store.hash_to_file.len();
+    store.hash_to_root.clear();
+    store.normalized_root_to_hash.clear();
+    store.hash_to_file.clear();
+    store.normalized_file_to_hash.clear();
+    Ok(TempShareClearResult {
+        cleared_roots,
+        cleared_files,
+    })
+}
+
 pub fn resolve_temp_share(path: &str) -> Option<(PathBuf, String, String)> {
     if !path.starts_with(TEMP_DIR_PREFIX) {
         return None;
@@ -199,10 +220,14 @@ pub fn build_temp_file_url(port: u16, hash: &str, path: &Path) -> Result<String,
 
 #[cfg(test)]
 mod tests {
-    use super::{build_temp_file_url, build_temp_share_url, register_temp_file};
+    use super::{
+        build_temp_file_url, build_temp_share_url, clear_temp_shares, register_temp_file,
+        register_temp_root, resolve_temp_file, resolve_temp_share,
+    };
     use std::fs;
     use std::path::PathBuf;
     use tempfile::TempDir;
+    use urlencoding::encode;
 
     #[test]
     fn test_register_temp_file_accepts_toml() {
@@ -262,5 +287,24 @@ mod tests {
             url,
             "http://127.0.0.1:3030/tmpfile-abc12345/foo.md?mode=source"
         );
+    }
+
+    #[test]
+    fn test_clear_temp_shares_invalidates_registered_entries() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let file_path = temp_dir.path().join("note.md");
+        fs::write(&file_path, "# hello\n").expect("Failed to write test file");
+
+        let root_hash = register_temp_root(temp_dir.path()).expect("Failed to register temp root");
+        let file_hash = register_temp_file(&file_path).expect("Failed to register temp file");
+        let encoded_name = encode("note.md");
+
+        assert!(resolve_temp_share(&format!("/tmpdir-{}/", root_hash)).is_some());
+        assert!(resolve_temp_file(&format!("/tmpfile-{}/{}", file_hash, encoded_name)).is_some());
+
+        let _ = clear_temp_shares().expect("Failed to clear temp shares");
+
+        assert!(resolve_temp_share(&format!("/tmpdir-{}/", root_hash)).is_none());
+        assert!(resolve_temp_file(&format!("/tmpfile-{}/{}", file_hash, encoded_name)).is_none());
     }
 }
