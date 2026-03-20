@@ -2209,4 +2209,79 @@ describe('mclocks Application Launch Test', () => {
 
         console.log('Successfully verified: Ctrl+Shift+i appends comma without quotes')
     })
+
+    it('should convert Excel-like clipboard text with multiline cell into markdown table with <br> using Ctrl+t', async () => {
+        const mainElement = await $('#mclocks')
+        await mainElement.waitForExist({ timeout: 30000 })
+
+        await browser.waitUntil(
+            async () => {
+                const clockCount = await browser.execute(() => {
+                    return document.querySelectorAll('[id^="mclk-"]').length
+                })
+                return clockCount >= 3
+            },
+            {
+                timeout: 30000,
+                timeoutMsg: 'Clock elements were not rendered',
+                interval: 1000
+            }
+        )
+
+        await browser.execute(() => {
+            window.__editorText = null
+            window.__editorCalled = false
+            window.__clipboardText = null
+
+            const createInvokeWrapper = (originalInvoke) => {
+                return async function(cmd, args) {
+                    if (cmd && typeof cmd === 'string' && (cmd.includes('clipboard') || cmd.includes('read'))) {
+                        if (window.__clipboardText) return window.__clipboardText
+                        try {
+                            if (navigator.clipboard && navigator.clipboard.readText) return await navigator.clipboard.readText()
+                            return ''
+                        } catch (error) { return '' }
+                    }
+                    if (cmd === 'open_text_in_editor') {
+                        window.__editorText = args.text
+                        window.__editorCalled = true
+                        return Promise.resolve()
+                    }
+                    if (originalInvoke) {
+                        try { return await originalInvoke.call(this, cmd, args) }
+                        catch (error) { return Promise.resolve(null) }
+                    }
+                    return Promise.resolve(null)
+                }
+            }
+
+            if (window.__TAURI_INTERNALS__) {
+                const originalInvoke = window.__TAURI_INTERNALS__.invoke
+                window.__TAURI_INTERNALS__.invoke = createInvokeWrapper(originalInvoke)
+            } else {
+                window.__TAURI_INTERNALS__ = { invoke: createInvokeWrapper(null) }
+            }
+        })
+
+        const clipboardText = 'h1\th2\th3\n"a1 line1\na1 line2"\tb1\tc1\nx\ty\tz'
+        await browser.execute((text) => { window.__clipboardText = text }, clipboardText)
+
+        console.log('Pressing Ctrl+t to convert clipboard text to markdown table...')
+        await browser.keys(['Control', 't'])
+        await browser.pause(2000)
+
+        const editorResult = await browser.execute(() => ({
+            called: window.__editorCalled || false,
+            text: window.__editorText || null
+        }))
+
+        console.log(`Editor called: ${editorResult.called}`)
+        if (editorResult.text) console.log(`Editor text: ${editorResult.text}`)
+
+        expect(editorResult.called).toBe(true, 'Editor should be opened with transformed markdown table')
+        expect(editorResult.text).not.toBe(null, 'Editor text should not be null')
+        expect(editorResult.text).toContain('| h1 | h2 | h3 |', 'Header row should be converted')
+        expect(editorResult.text).toContain('| a1 line1<br>a1 line2 | b1 | c1 |', 'Multiline cell should be preserved as <br> in one cell')
+        expect(editorResult.text).toContain('| x | y | z |', 'Second data row should be converted')
+    })
 })
