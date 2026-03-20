@@ -3,7 +3,11 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, addTimerClock } from './clock_matter.js';
 import { writeClipboardText, isMacOS, isWindowsOS, openMessageDialog } from './util.js';
 import { conversionHandler } from './conversion.js';
-import { quoteAndAppendCommaClipboardHandler } from './clipboard.js';
+import {
+  quoteAndAppendCommaClipboardHandler,
+  markdownTableFromClipboardHandler,
+  openMarkdownTableTemplateInEditor
+} from './clipboard.js';
 import { createSticky } from './sticky/sticky_manager.js';
 
 // Win   ---> Ctrl
@@ -163,6 +167,18 @@ async function withBaseKey(e, pressedKeys, clockCtx, cfg, clocks) {
       await quoteAndAppendCommaClipboardHandler("");
     } else {
       await quoteAndAppendCommaClipboardHandler('"');
+    }
+    return;
+  }
+
+  // Ctrl/Cmd + t: Convert clipboard text into a markdown table and open in editor
+  // Ctrl/Cmd + Shift + t: Open a two-column markdown table template in editor
+  if (e.key === "t" || e.key === "T") {
+    e.preventDefault();
+    if (e.shiftKey) {
+      await openMarkdownTableTemplateInEditor();
+    } else {
+      await markdownTableFromClipboardHandler();
     }
     return;
   }

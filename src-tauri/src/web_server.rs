@@ -234,7 +234,7 @@ const MCLOCKS_STATIC_INI_JS_REL_PATH: &str = "mclocks/static/structured/ini.js";
 const MCLOCKS_STATIC_INI_CSS_REL_PATH: &str = "mclocks/static/structured/ini.css";
 const MCLOCKS_STATIC_XML_JS_REL_PATH: &str = "mclocks/static/structured/xml.js";
 const MCLOCKS_STATIC_XML_CSS_REL_PATH: &str = "mclocks/static/structured/xml.css";
-const MCLOCKS_ASSETS_VERSION: &str = "20260314-3";
+const MCLOCKS_ASSETS_VERSION: &str = "20260319-1";
 
 pub fn start_web_server(
     root: String,
