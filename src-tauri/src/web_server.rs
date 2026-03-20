@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs, net::TcpListener, path::PathBuf, thread};
 use tiny_http::Server;
 
-use crate::config::{AppConfig, get_config_app_path};
+use crate::config::{AppConfig, get_config_app_path, parse_config_json_to_value};
 use crate::util::open_with_system_command;
 use crate::web::handler_static::handle_web_request;
 
@@ -516,10 +516,10 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
 
     let config_json =
         fs::read_to_string(&config_path).map_err(|e| format!("Failed to read config: {}", e))?;
-    let config_value: serde_json::Value =
-        serde_json::from_str(&config_json).map_err(|e| format!("Failed to parse config: {}", e))?;
-    let config: AppConfig =
-        serde_json::from_str(&config_json).map_err(|e| format!("Failed to parse config: {}", e))?;
+    let config_value = parse_config_json_to_value(&config_json)
+        .map_err(|e| format!("Failed to parse config: {}", e))?;
+    let config: AppConfig = serde_json::from_value(config_value.clone())
+        .map_err(|e| format!("Failed to parse config: {}", e))?;
 
     let web_config = match config.web {
         Some(wc) => wc,
@@ -771,10 +771,10 @@ mod tests {
         assert!(body.contains("file2.html"), "Should list file2.html");
         assert!(body.contains("subdir/"), "Should list subdir");
         assert!(
-            body.contains("mclocks.web.content.mode")
-                && body.contains("data-mode=\"raw\"")
-                && body.contains("data-active-mode=\"raw\""),
-            "Directory listing should include mode switch UI"
+            !body.contains("mclocks.web.content.mode")
+                && !body.contains("data-active-mode=\"raw\"")
+                && !body.contains("raw-switch"),
+            "Directory listing should not include mode switch UI"
         );
     }
 
@@ -833,7 +833,7 @@ mod tests {
             "Should show directory icon link in header"
         );
         assert!(
-            body.contains("href=\"/\""),
+            body.contains("href=\"/?mode=source\""),
             "Directory icon link should point to parent directory"
         );
         assert!(!body.contains(". . /"), "Should not show ../ entry");
