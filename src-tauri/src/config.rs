@@ -168,6 +168,12 @@ fn ensure_config_file_exists(config_path: &PathBuf, config_json: &str) -> Result
     Ok(())
 }
 
+pub fn parse_config_json_to_value(config_json: &str) -> Result<serde_json::Value, String> {
+    // Parse config as JSON5 to allow JSONC-like syntax (comments and trailing commas).
+    json5::from_str::<serde_json::Value>(config_json)
+        .map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
+}
+
 #[tauri::command]
 pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
@@ -180,7 +186,8 @@ pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, St
         ensure_config_file_exists(&config_path, &config_json)?;
     }
 
-    serde_json::from_str(&config_json).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
+    let config_value = parse_config_json_to_value(&config_json)?;
+    serde_json::from_value(config_value).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
 }
 
 pub struct ContextConfig {
@@ -461,6 +468,20 @@ mod tests {
         let result: Result<AppConfig, _> = serde_json::from_str(json);
 
         assert!(result.is_err(), "Should fail to deserialize invalid JSON");
+    }
+
+    #[test]
+    fn test_parse_config_json_to_value_allows_comments() {
+        let json = "{\n  // line comment\n  \"font\": \"Arial\"\n}";
+        let result = parse_config_json_to_value(json);
+        assert!(result.is_ok(), "Should parse JSONC comments");
+    }
+
+    #[test]
+    fn test_parse_config_json_to_value_allows_trailing_commas() {
+        let json = "{\n  \"font\": \"Arial\",\n  \"clocks\": [],\n}";
+        let result = parse_config_json_to_value(json);
+        assert!(result.is_ok(), "Should parse trailing commas");
     }
 
     #[test]
