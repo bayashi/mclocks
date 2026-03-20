@@ -892,15 +892,15 @@ mod tests {
         assert!(body.contains(".hidden.txt"), "Should show hidden file name");
         assert!(body.contains(".hidden-dir/"), "Should show hidden dir name");
         assert!(
-            body.contains("href=\"/subdir/.hidden.txt\""),
+            body.contains("href=\"/subdir/.hidden.txt?mode=source\""),
             "Hidden file should be linked"
         );
         assert!(
-            body.contains("href=\"/subdir/.hidden-dir/\""),
+            body.contains("href=\"/subdir/.hidden-dir/?mode=source\""),
             "Hidden directory should be linked"
         );
         assert!(
-            body.contains("href=\"/subdir/visible.txt\""),
+            body.contains("href=\"/subdir/visible.txt?mode=source\""),
             "Visible file should be linked"
         );
     }

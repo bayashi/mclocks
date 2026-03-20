@@ -504,7 +504,7 @@ if (summaryList) {
 "##;
 
 fn append_directory_entry(list_items: &mut String, dir_url: &str, dir_name: &str) {
-    let source_href = template_common::build_mode_href(dir_url, "", ContentMode::Content);
+    let source_href = template_common::build_mode_href(dir_url, "", ContentMode::Source);
     let _ = write!(
         list_items,
         "<li class=\"dir\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📁</span>{}/</a></li>\n",
@@ -515,7 +515,7 @@ fn append_directory_entry(list_items: &mut String, dir_url: &str, dir_name: &str
 }
 
 fn append_file_entry(list_items: &mut String, file_url: &str, file_name: &str) {
-    let source_href = template_common::build_mode_href(file_url, "", ContentMode::Content);
+    let source_href = template_common::build_mode_href(file_url, "", ContentMode::Source);
     let _ = write!(
         list_items,
         "<li class=\"file\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📄</span>{}</a></li>\n",
