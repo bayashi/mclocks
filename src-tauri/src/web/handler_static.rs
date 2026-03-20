@@ -609,7 +609,6 @@ fn create_directory_listing(
     dir_path: &Path,
     url_path: &str,
     url_query: &str,
-    _current_mode: ContentMode,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let directory_mode = ContentMode::Source;
@@ -2210,7 +2209,6 @@ pub fn handle_web_request(
                         active_root_path.as_path(),
                         public_url_path.as_str(),
                         request_query,
-                        content_mode,
                         markdown_highlight,
                     );
                 }
@@ -2243,7 +2241,6 @@ pub fn handle_web_request(
                     &file_path,
                     public_url_path.as_str(),
                     request_query,
-                    content_mode,
                     markdown_highlight,
                 );
             }
@@ -2257,7 +2254,6 @@ pub fn handle_web_request(
             &normalized_path,
             public_url_path.as_str(),
             request_query,
-            content_mode,
             markdown_highlight,
         );
     }
