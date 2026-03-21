@@ -81,7 +81,7 @@ const WINDOW_NAME: &str = "main";
 fn reset_temp_web_session_impl() -> Result<String, String> {
     let cleared = clear_temp_shares()?;
     Ok(format!(
-        "Temporary D&D session reset ({} roots, {} files).",
+        "Web D&D session has been reset ({} roots, {} files).",
         cleared.cleared_roots, cleared.cleared_files
     ))
 }
