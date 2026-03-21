@@ -1,11 +1,11 @@
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Runtime};
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 #[cfg(target_os = "windows")]
 use tauri_plugin_clipboard_manager::ClipboardExt;
 #[cfg(target_os = "windows")]
 use tauri_plugin_dialog::MessageDialogResult;
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 const MENU_ID_TRAY_TOGGLE_MAIN: &str = "menu.tray.toggle_main";
 const MENU_ID_RESET_TEMP_DND_SESSION: &str = "menu.web.reset_temp_dnd_session";
@@ -63,13 +63,8 @@ pub fn setup_tray_menu<R: Runtime>(
     )?;
     let quit_item = MenuItem::with_id(app, MENU_ID_TRAY_QUIT, TRAY_LABEL_QUIT, true, None::<&str>)?;
     #[cfg(target_os = "windows")]
-    let about_item = MenuItem::with_id(
-        app,
-        MENU_ID_TRAY_ABOUT,
-        "About mclocks",
-        true,
-        None::<&str>,
-    )?;
+    let about_item =
+        MenuItem::with_id(app, MENU_ID_TRAY_ABOUT, "About mclocks", true, None::<&str>)?;
     #[cfg(target_os = "windows")]
     let tray_menu = Menu::with_items(
         app,
