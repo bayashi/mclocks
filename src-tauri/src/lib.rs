@@ -168,6 +168,8 @@ pub fn run() {
     tbr = tbr.setup(move |app| {
         #[cfg(desktop)]
         {
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             tray::setup_tray_menu(app.handle(), WINDOW_NAME, reset_temp_web_session_impl)?;
         }
 
