@@ -23,7 +23,8 @@
         "decorations": false,
         "shadow": false,
         "alwaysOnTop": false,
-        "skipTaskbar": true
+        "skipTaskbar": true,
+        "create": false
       }
     ],
     "macOSPrivateApi": true,
