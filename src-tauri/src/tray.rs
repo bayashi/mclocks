@@ -1,16 +1,16 @@
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Runtime};
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 use tauri_plugin_clipboard_manager::ClipboardExt;
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 use tauri_plugin_dialog::MessageDialogResult;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 const MENU_ID_TRAY_TOGGLE_MAIN: &str = "menu.tray.toggle_main";
 const MENU_ID_RESET_TEMP_DND_SESSION: &str = "menu.web.reset_temp_dnd_session";
 const MENU_ID_TRAY_QUIT: &str = "menu.tray.quit";
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 const MENU_ID_TRAY_ABOUT: &str = "menu.tray.about";
 const TRAY_LABEL_SHOW_MAIN: &str = "Show mclocks";
 const TRAY_LABEL_HIDE_MAIN: &str = "Hide mclocks";
@@ -62,10 +62,10 @@ pub fn setup_tray_menu<R: Runtime>(
         None::<&str>,
     )?;
     let quit_item = MenuItem::with_id(app, MENU_ID_TRAY_QUIT, TRAY_LABEL_QUIT, true, None::<&str>)?;
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
     let about_item =
         MenuItem::with_id(app, MENU_ID_TRAY_ABOUT, "About mclocks", true, None::<&str>)?;
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
     let tray_menu = Menu::with_items(
         app,
         &[
@@ -75,7 +75,7 @@ pub fn setup_tray_menu<R: Runtime>(
             &quit_item,
         ],
     )?;
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     let tray_menu = Menu::with_items(
         app,
         &[&toggle_main_item, &reset_temp_session_item, &quit_item],
@@ -91,14 +91,14 @@ pub fn setup_tray_menu<R: Runtime>(
         let _ = toggle_main_item.set_text(TRAY_LABEL_SHOW_MAIN);
     }
     let main_window_name = window_name.to_string();
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
     let about_version_text = format!("v{}", app.package_info().version);
-    #[cfg(target_os = "windows")]
+    #[cfg(any(target_os = "windows", target_os = "macos"))]
     let about_dialog_message = format!("mclocks\n{}", about_version_text);
     tray_builder
         .on_menu_event(move |app, event| {
             let menu_id = event.id().as_ref();
-            #[cfg(target_os = "windows")]
+            #[cfg(any(target_os = "windows", target_os = "macos"))]
             if menu_id == MENU_ID_TRAY_ABOUT {
                 let app_handle = app.clone();
                 let version_to_copy = about_version_text.clone();
