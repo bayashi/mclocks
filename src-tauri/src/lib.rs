@@ -81,7 +81,7 @@ const WINDOW_NAME: &str = "main";
 fn reset_temp_web_session_impl() -> Result<String, String> {
     let cleared = clear_temp_shares()?;
     Ok(format!(
-        "Temporary D&D session reset ({} roots, {} files).",
+        "Web D&D session has been reset ({} roots, {} files).",
         cleared.cleared_roots, cleared.cleared_files
     ))
 }
@@ -166,6 +166,13 @@ pub fn run() {
     let error_msg = web_error.clone();
     let web_main_port_at_startup = web_config_for_startup.as_ref().map(|c| c.port);
     tbr = tbr.setup(move |app| {
+        #[cfg(target_os = "macos")]
+        app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
+        for window_config in app.config().app.windows.iter().filter(|w| !w.create) {
+            tauri::WebviewWindowBuilder::from_config(app.handle(), window_config)?.build()?;
+        }
+
         #[cfg(desktop)]
         {
             tray::setup_tray_menu(app.handle(), WINDOW_NAME, reset_temp_web_session_impl)?;
