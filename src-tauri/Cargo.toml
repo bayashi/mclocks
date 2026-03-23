@@ -11,17 +11,17 @@ name = "mclocks_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dev-dependencies]
-tauri = { version = "2", features = [
+tauri = { version = "2.10.3", features = [
     "devtools",
 ] }
 tempfile = "3"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.5.6", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["macos-private-api", "image-png", "tray-icon"] }
+tauri = { version = "2.10.3", features = ["macos-private-api", "image-png", "tray-icon"] }
 serde = { version = "1", features = [
     "derive",
 ] }
@@ -29,14 +29,14 @@ serde_json = "1"
 serde_yaml = "0.9"
 toml = "0.9"
 directories = "6.0.0"
-tauri-plugin-os = "2"
-tauri-plugin-notification = "2.3.1"
-tauri-plugin-clipboard-manager = "2.3.0"
-tauri-plugin-dialog = "2.4.0"
-tauri-plugin-opener = "2.5.0"
+tauri-plugin-os = "2.3.2"
+tauri-plugin-notification = "2.3.3"
+tauri-plugin-clipboard-manager = "2.3.2"
+tauri-plugin-dialog = "2.6.0"
+tauri-plugin-opener = "2.5.3"
 
-tauri-plugin-single-instance = "2"
-tauri-plugin-window-state = "2"
+tauri-plugin-single-instance = "2.4.0"
+tauri-plugin-window-state = "2.4.1"
 tiny_http = "0.12"
 encoding_rs = "0.8"
 urlencoding = "2.1"
