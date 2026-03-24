@@ -73,6 +73,8 @@ macOS için yükleme amacıyla `.dmg` dosyasını edinebilirsiniz.
       "forefront": false
     }
 
+`config.json` dosyasına yorumlar ve sondaki virgüller eklenebilir (JSONC destekli).
+
 ## 🔧 config.json alanları
 
 #### clocks
@@ -265,6 +267,8 @@ Boş satırlar tüm işlemlerde olduğu gibi korunur.
 
 ## 📝 Yapışkan not
 
+![sticky-note](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-sticky-note.png)
+
 `mclocks` uygulama penceresine tıklayın, ardından pano metninden yapışkan not oluşturmak için `Ctrl + s` tuşuna basın. Pano içeriğiyle birlikte küçük bir yüzen pencere açılır.
 
 Her yapışkan not şunlara sahiptir:
@@ -278,13 +282,11 @@ Her yapışkan not şunlara sahiptir:
 
 Yapışkan notlar, `config.json`'dan `font`, `size`, `color` ve `forefront` ayarlarını miras alır. Ön plan ayarı, ön plan düğmesi kullanılarak yapışkan not başına geçersiz kılınabilir; geçersiz kılınmazsa `config.json`'daki değer kullanılır. Konumları, boyutları, açık/kapalı durumları ve ön plan geçersiz kılması kalıcı olarak saklanır ve `mclocks` yeniden başlatıldığında tüm notlar otomatik olarak geri yüklenir.
 
-🔔 NOT: macOS'ta yapışkan not pencere konumları yalnızca uygulama kapandığında kaydedilir. Windows'ta konumlar, pencereleri taşıdığınızda veya yeniden boyutlandırdığınızda otomatik olarak kaydedilir.
-
 Yapışkan not başına maksimum metin boyutu 128 KB'dir.
 
 ## 🌐 Web sunucusu
 
-`mclocks`, yerleşik bir web sunucusu aracılığıyla statik dosyalar sunabilir. Bu özellik, kod parçacıklarınızı bir tarayıcıda kolayca görüntülemenizi sağlar. `config.json`'unuza bir `web` alanı ekleyin:
+`mclocks` başlatıldığında her zaman yerleşik bir yerel web sunucusu çalıştırır. `config.json` içinde bir `web` alanı yapılandırırsanız, dizininizden statik dosyalar da sunulabilir:
 
     {
       "web": {
@@ -294,7 +296,8 @@ Yapışkan not başına maksimum metin boyutu 128 KB'dir.
         "status": true,
         "content": {
           "markdown": {
-            "allowRawHTML": false
+            "allowRawHTML": false,
+            "openExternalLinkInNewTab": true
           }
         },
         "editor": {
@@ -303,28 +306,31 @@ Yapışkan not başına maksimum metin boyutu 128 KB'dir.
       }
     }
 
-* `root`: Sunulacak dosyaları içeren dizinin yolu (zorunlu)
-* `port`: Dinlenecek port numarası (varsayılan: 3030)
-* `openBrowserAtStart`: `true` olarak ayarlanırsa, `mclocks` başladığında varsayılan tarayıcıda web sunucusu URL'sini otomatik olarak açar (varsayılan: `false`)
-* `dump`: `true` olarak ayarlanırsa, istek ayrıntılarını JSON olarak döndüren `/dump` uç noktasını etkinleştirir (varsayılan: `false`)
-* `slow`: `true` olarak ayarlanırsa, yanıtı geciktiren `/slow` uç noktasını etkinleştirir (varsayılan: `false`)
-* `status`: `true` olarak ayarlanırsa, rastgele HTTP durum kodları döndüren `/status/{code}` uç noktasını etkinleştirir (varsayılan: `false`)
-* `content.markdown.allowRawHTML`: `true` olarak ayarlanırsa Markdown işleme sırasında ham HTML'e izin verir; `false` ise Markdown içindeki ham HTML metin olarak escape edilir (varsayılan: `false`)
-* `editor`: Ayarlanmışsa ve `reposDir` içeriyorsa, tarayıcıdaki GitHub URL'lerinden editörünüzde yerel dosyaları açan `/editor` uç noktasını etkinleştirir (varsayılan: ayarlanmamış)
+* `root`: Sunulacak dosyaların bulunduğu dizinin yolu (yalnızca statik dosya barındırma kullanılırken zorunlu)
+* `port`: Ana web sunucusu için tercih edilen port (`>=2000`, varsayılan: `3030`). Meşgulse mclocks boş bir port bulana kadar port numarasını azaltarak (`-1`) dener.
+* `openBrowserAtStart`: `true` ise `mclocks` başlarken web sunucusu URL'sini varsayılan tarayıcıda açar (varsayılan: `false`)
+* `dump`: `true` ise istek ayrıntılarını JSON döndüren `/dump` uç noktasını etkinleştirir (varsayılan: `false`)
+* `slow`: `true` ise yanıtı geciktiren `/slow` uç noktasını etkinleştirir (varsayılan: `false`)
+* `status`: `true` ise rastgele HTTP durum kodları döndüren `/status/{code}` uç noktasını etkinleştirir (varsayılan: `false`)
+* `content.markdown.allowRawHTML`: `true` ise Markdown işlemesinde ham HTML'e izin verir; `false` ise ham HTML metin olarak kaçırılır (varsayılan: `false`)
+* `content.markdown.openExternalLinkInNewTab`: Harici Markdown bağlantıları yeni sekmede, dahili bağlantılar aynı sekmede açılır; `false` ise tüm Markdown bağlantıları aynı sekmede açılır (varsayılan: `true`)
+* `editor`: Ayarlanmış ve `reposDir` içeriyorsa, tarayıcıdaki GitHub URL'lerinden yerel dosyaları editörde açan `/editor` uç noktasını etkinleştirir (varsayılan: ayarlanmamış)
 
-`config.json`'unuzda `web` alanı yapılandırılmışsa, `mclocks` başlatıldığında web sunucusu otomatik olarak başlar. Dosyalara `http://127.0.0.1:3030` adresinden erişin. Web sunucusu yalnızca `127.0.0.1` (localhost) üzerinde dinler, bu nedenle yalnızca yerel makinenizden erişilebilir.
+### Sürükle-bırak tabanlı içerik görüntüleyici
 
-### Desteklenen dosya türleri
+Statik dosya barındırmaya ek olarak mclocks sürükle-bırak içerik görüntüleme akışını destekler:
 
-Web sunucusu aşağıdaki dosya türlerini destekler:
+* Bir dizini saat penceresine bırakarak geçici yerel URL ile web görüntüleyicide açın.
+* Tek bir dosyayı bırakın; tür geçici dosya görüntüleyici tarafından destekleniyorsa web görüntüleyicide açılır.
+* Oluşturulan geçici URL'ler yalnızca yereldir ve mclocks çıkışında atılır.
 
-* Metin: `html`, `css`, `js`, `json`, `md`, `txt`
-* Görüntüler: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+### İçerik modu
 
-### sürükle-bırak tabanlı içerik görüntüleyici
+Web görüntüleyici `content`, `raw` ve `source` gibi `mode` sorgu seçeneklerini destekler.
 
-Statik dosya barındırmaya ek olarak, web sunucusu sürükle-bırak tabanlı bir içerik görüntüleyici iş akışını da içerir: mclocks saat penceresine bir dosya veya dizin sürükleyip bıraktığınızda, geçici yerel URL'ler üzerinden açılıp görüntülenebilir.
-Bu geçici URL'ler mclocks kapandığında atılır.
+* `content` (varsayılan): Algılanan içerik türüyle sunar; mümkünse tarayıcı normal şekilde oluşturur.
+* `raw`: İkili olmayan dosyaları `text/plain` olarak döndürerek tarayıcı oluşturması olmadan ham metin gösterir.
+* `source`: Desteklenen biçimler için özet/kenar çubuğu olan kaynak görünüm düzenini açar; desteklenmeyen metin dosyaları için güvenli düz metin incelemesi sağlar.
 
 ### /dump uç noktası
 

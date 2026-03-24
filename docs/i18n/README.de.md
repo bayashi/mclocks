@@ -73,6 +73,8 @@ Die Datei `config.json` sollte wie unten gezeigt im JSON-Format formatiert sein.
       "forefront": false
     }
 
+In `config.json` sind Kommentare und nachgestellte Kommas erlaubt (JSONC-unterstützt).
+
 ## 🔧 Die Felder von config.json
 
 #### clocks
@@ -265,6 +267,8 @@ Leerzeilen werden bei allen Operationen beibehalten.
 
 ## 📝 Haftnotiz
 
+![sticky-note](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-sticky-note.png)
+
 Klicken Sie auf das `mclocks`-Anwendungsfenster und drücken Sie dann `Ctrl + s`, um eine Haftnotiz aus dem Zwischenablagetext zu erstellen. Ein kleines schwebendes Fenster öffnet sich mit dem Inhalt der Zwischenablage.
 
 Jede Haftnotiz hat:
@@ -278,13 +282,11 @@ Jede Haftnotiz hat:
 
 Haftnotizen erben die Einstellungen `font`, `size`, `color` und `forefront` aus `config.json`. Die Vordergrund-Einstellung kann pro Haftnotiz über die Vordergrundtaste überschrieben werden; wenn nicht überschrieben, wird der Wert aus `config.json` verwendet. Position, Größe, Öffnungs-/Schließungszustand und Vordergrund-Überschreibung werden persistent gespeichert, und alle Notizen werden beim Neustart von `mclocks` automatisch wiederhergestellt.
 
-🔔 HINWEIS: Unter macOS werden die Fensterpositionen von Haftnotizen nur beim Beenden der Anwendung gespeichert. Unter Windows werden Positionen automatisch beim Verschieben oder Größenändern der Fenster gespeichert.
-
 Die maximale Textgröße pro Haftnotiz beträgt 128 KB.
 
 ## 🌐 Webserver
 
-`mclocks` kann statische Dateien über einen integrierten Webserver bereitstellen. Diese Funktion ermöglicht es Ihnen, Ihre Code-Snippets einfach in einem Browser anzuzeigen. Fügen Sie ein `web`-Feld zu Ihrer `config.json` hinzu:
+`mclocks` startet stets einen integrierten lokalen Webserver. Wenn Sie ein `web`-Feld in `config.json` konfigurieren, kann er zusätzlich statische Dateien aus Ihrem Verzeichnis ausliefern:
 
     {
       "web": {
@@ -294,7 +296,8 @@ Die maximale Textgröße pro Haftnotiz beträgt 128 KB.
         "status": true,
         "content": {
           "markdown": {
-            "allowRawHTML": false
+            "allowRawHTML": false,
+            "openExternalLinkInNewTab": true
           }
         },
         "editor": {
@@ -303,28 +306,31 @@ Die maximale Textgröße pro Haftnotiz beträgt 128 KB.
       }
     }
 
-* `root`: Pfad zum Verzeichnis mit den bereitzustellenden Dateien (erforderlich)
-* `port`: Portnummer zum Lauschen (Standard: 3030)
-* `openBrowserAtStart`: Wenn auf `true` gesetzt, wird beim Start von `mclocks` automatisch die Webserver-URL im Standardbrowser geöffnet (Standard: `false`)
-* `dump`: Wenn auf `true` gesetzt, aktiviert den `/dump`-Endpunkt, der Anforderungsdetails als JSON zurückgibt (Standard: `false`)
-* `slow`: Wenn auf `true` gesetzt, aktiviert den `/slow`-Endpunkt, der die Antwort verzögert (Standard: `false`)
-* `status`: Wenn auf `true` gesetzt, aktiviert den `/status/{code}`-Endpunkt, der beliebige HTTP-Statuscodes zurückgibt (Standard: `false`)
-* `content.markdown.allowRawHTML`: Wenn auf `true` gesetzt, wird rohes HTML beim Markdown-Rendering zugelassen; bei `false` wird rohes HTML in Markdown als Text escaped (Standard: `false`)
-* `editor`: Wenn gesetzt und `reposDir` enthält, aktiviert den `/editor`-Endpunkt, der lokale Dateien in Ihrem Editor über GitHub-URLs im Browser öffnet (Standard: nicht gesetzt)
-
-Wenn das `web`-Feld in Ihrer `config.json` konfiguriert ist, startet der Webserver automatisch beim Start von `mclocks`. Greifen Sie auf Dateien unter `http://127.0.0.1:3030` zu. Der Webserver lauscht nur auf `127.0.0.1` (localhost) und ist daher nur von Ihrem lokalen Rechner aus erreichbar.
-
-### Unterstützte Dateitypen
-
-Der Webserver unterstützt die folgenden Dateitypen:
-
-* Text: `html`, `css`, `js`, `json`, `md`, `txt`
-* Bilder: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+* `root`: Pfad zum Verzeichnis mit den bereitzustellenden Dateien (nur erforderlich bei statischer Dateiauslieferung)
+* `port`: Bevorzugter Port des Haupt-Webservers (`>=2000`, Standard: `3030`). Ist der Port belegt, sucht mclocks abwärts (`-1`), bis ein freier Port gefunden wird.
+* `openBrowserAtStart`: Bei `true` wird die Webserver-URL beim Start von `mclocks` automatisch im Standardbrowser geöffnet (Standard: `false`)
+* `dump`: Bei `true` aktiviert den `/dump`-Endpunkt mit Anforderungsdetails als JSON (Standard: `false`)
+* `slow`: Bei `true` aktiviert den `/slow`-Endpunkt mit verzögerter Antwort (Standard: `false`)
+* `status`: Bei `true` aktiviert den `/status/{code}`-Endpunkt für beliebige HTTP-Statuscodes (Standard: `false`)
+* `content.markdown.allowRawHTML`: Bei `true` wird rohes HTML im Markdown-Rendering zugelassen; bei `false` wird es als Text escaped (Standard: `false`)
+* `content.markdown.openExternalLinkInNewTab`: Externe Markdown-Links öffnen in einem neuen Tab, interne im selben; bei `false` öffnen alle Markdown-Links im selben Tab (Standard: `true`)
+* `editor`: Wenn gesetzt und `reposDir` enthält, aktiviert den `/editor`-Endpunkt zum Öffnen lokaler Dateien aus GitHub-URLs im Browser (Standard: nicht gesetzt)
 
 ### Drag-and-drop-basierter Content-Viewer
 
-Zusätzlich zur statischen Dateibereitstellung enthält der Webserver auch einen Drag-and-drop-basierten Content-Viewer-Workflow: Wenn Sie eine Datei oder ein Verzeichnis auf das mclocks-Uhrfenster ziehen und ablegen, kann es über temporäre lokale URLs geöffnet und angezeigt werden.
-Diese temporären URLs werden verworfen, wenn mclocks beendet wird.
+Zusätzlich zur statischen Dateibereitstellung unterstützt mclocks einen Drag-and-drop-Content-Viewer:
+
+* Ziehen Sie ein Verzeichnis auf das Uhrfenster, um es über eine temporäre lokale URL im Web-Viewer zu öffnen.
+* Ziehen Sie eine einzelne Datei auf das Fenster, um sie im Web-Viewer zu öffnen, wenn der Typ vom temporären Datei-Viewer unterstützt wird.
+* Die erzeugten temporären URLs sind nur lokal und werden beim Beenden von mclocks verworfen.
+
+### Inhaltsmodus
+
+Der Web-Viewer unterstützt `mode`-Abfrageoptionen wie `content`, `raw` und `source`.
+
+* `content` (Standard): Liefert die Datei mit erkanntem Content-Type, sodass der Browser sie nach Möglichkeit normal darstellt.
+* `raw`: Liefert nicht-binäre Dateien als `text/plain`, um rohen Text ohne Browser-Rendering anzuzeigen.
+* `source`: Öffnet die Quellcode-Ansicht mit Zusammenfassung/Seitenleiste für unterstützte Formate und ermöglicht sichere Klartext-Inspektion für nicht unterstützte Textdateien.
 
 ### /dump-Endpunkt
 

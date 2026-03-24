@@ -73,6 +73,8 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
       "forefront": false
     }
 
+`config.json`에 주석과 후행 쉼표를 사용할 수 있습니다(JSONC 지원).
+
 ## 🔧 config.json의 필드
 
 #### clocks
@@ -265,6 +267,8 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
 
 ## 📝 스티커 메모
 
+![sticky-note](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-sticky-note.png)
+
 `mclocks` 앱 창을 클릭한 후 `Ctrl + s`를 눌러 클립보드 텍스트에서 스티커 메모를 생성합니다. 클립보드 내용이 담긴 작은 플로팅 창이 열립니다.
 
 각 스티커 메모에는 다음 기능이 있습니다:
@@ -278,13 +282,11 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
 
 스티커 메모는 `config.json`의 `font`, `size`, `color`, `forefront` 설정을 상속합니다. 최상위 설정은 최상위 버튼을 사용하여 스티커 메모별로 재정의할 수 있으며, 재정의하지 않으면 `config.json`의 값이 사용됩니다. 위치, 크기, 열림/닫힘 상태, 최상위 재정의는 유지되며, `mclocks` 재시작 시 모든 메모가 자동으로 복원됩니다.
 
-🔔 참고: macOS에서는 스티커 메모 창 위치가 애플리케이션 종료 시에만 저장됩니다. Windows에서는 창을 이동하거나 크기를 변경할 때 자동으로 저장됩니다.
-
 스티커 메모당 최대 텍스트 크기는 128 KB입니다.
 
 ## 🌐 웹 서버
 
-`mclocks`는 내장 웹 서버를 통해 정적 파일을 제공할 수 있습니다. 이 기능을 사용하면 코드 스니펫을 브라우저에서 쉽게 볼 수 있습니다. `config.json`에 `web` 필드를 추가하세요:
+`mclocks`는 실행 시 항상 내장 로컬 웹 서버를 시작합니다. `config.json`에 `web` 필드를 설정하면 지정한 디렉터리의 정적 파일도 제공할 수 있습니다:
 
     {
       "web": {
@@ -294,7 +296,8 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
         "status": true,
         "content": {
           "markdown": {
-            "allowRawHTML": false
+            "allowRawHTML": false,
+            "openExternalLinkInNewTab": true
           }
         },
         "editor": {
@@ -303,28 +306,31 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
       }
     }
 
-* `root`: 제공할 파일이 포함된 디렉토리 경로 (필수)
-* `port`: 수신할 포트 번호 (기본값: 3030)
-* `openBrowserAtStart`: `true`로 설정하면 `mclocks` 시작 시 기본 브라우저에서 웹 서버 URL을 자동으로 엽니다 (기본값: `false`)
-* `dump`: `true`로 설정하면 요청 세부 정보를 JSON으로 반환하는 `/dump` 엔드포인트가 활성화됩니다 (기본값: `false`)
-* `slow`: `true`로 설정하면 응답을 지연시키는 `/slow` 엔드포인트가 활성화됩니다 (기본값: `false`)
-* `status`: `true`로 설정하면 임의의 HTTP 상태 코드를 반환하는 `/status/{code}` 엔드포인트가 활성화됩니다 (기본값: `false`)
-* `content.markdown.allowRawHTML`: `true`로 설정하면 Markdown 렌더링에서 raw HTML을 허용하고, `false`이면 Markdown 내 raw HTML을 텍스트로 이스케이프합니다 (기본값: `false`)
-* `editor`: 설정되어 있고 `reposDir`을 포함하면 브라우저의 GitHub URL에서 편집기로 로컬 파일을 여는 `/editor` 엔드포인트가 활성화됩니다 (기본값: 미설정)
-
-`config.json`에 `web` 필드가 구성되어 있으면 `mclocks` 시작 시 웹 서버가 자동으로 시작됩니다. `http://127.0.0.1:3030`에서 파일에 접근할 수 있습니다. 웹 서버는 `127.0.0.1` (localhost)에서만 수신하므로 로컬 머신에서만 접근 가능합니다.
-
-### 지원되는 파일 유형
-
-웹 서버는 다음 파일 유형을 지원합니다:
-
-* 텍스트: `html`, `css`, `js`, `json`, `md`, `txt`
-* 이미지: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+* `root`: 제공할 파일이 있는 디렉터리 경로(정적 파일 호스팅을 사용할 때만 필수)
+* `port`: 메인 웹 서버의 기본 포트 번호(`>=2000`, 기본값: `3030`). 사용 중이면 mclocks는 사용 가능한 포트를 찾을 때까지 번호를 하나씩 줄여(`-1`) 시도합니다.
+* `openBrowserAtStart`: `true`이면 `mclocks` 시작 시 기본 브라우저에서 웹 서버 URL을 자동으로 엽니다(기본값: `false`)
+* `dump`: `true`이면 요청 세부 정보를 JSON으로 반환하는 `/dump` 엔드포인트를 켭니다(기본값: `false`)
+* `slow`: `true`이면 응답을 지연하는 `/slow` 엔드포인트를 켭니다(기본값: `false`)
+* `status`: `true`이면 임의의 HTTP 상태 코드를 반환하는 `/status/{code}` 엔드포인트를 켭니다(기본값: `false`)
+* `content.markdown.allowRawHTML`: `true`이면 Markdown 렌더링에서 원시 HTML을 허용하고, `false`이면 텍스트로 이스케이프합니다(기본값: `false`)
+* `content.markdown.openExternalLinkInNewTab`: 외부 Markdown 링크는 새 탭에서, 내부 링크는 같은 탭에서 열립니다. `false`이면 모든 Markdown 링크가 같은 탭에서 열립니다(기본값: `true`)
+* `editor`: 설정되어 있고 `reposDir`을 포함하면 브라우저의 GitHub URL에서 편집기로 로컬 파일을 여는 `/editor` 엔드포인트를 켭니다(기본값: 미설정)
 
 ### 드래그 앤 드롭 기반 콘텐츠 뷰어
 
-정적 파일 호스팅 외에도 웹 서버에는 드래그 앤 드롭 기반 콘텐츠 뷰어 워크플로가 포함되어 있습니다. mclocks 시계 창에 파일 또는 디렉터리를 드래그 앤 드롭하면 임시 로컬 URL을 통해 열어서 볼 수 있습니다.
-이 임시 URL은 mclocks가 종료될 때 폐기됩니다.
+정적 파일 호스팅 외에도 mclocks는 드래그 앤 드롭 콘텐츠 뷰어 흐름을 지원합니다.
+
+* 디렉터리를 시계 창에 놓으면 임시 로컬 URL로 웹 뷰어에서 엽니다.
+* 단일 파일을 놓으면 임시 파일 뷰어가 해당 형식을 지원할 때 웹 뷰어에서 엽니다.
+* 생성된 임시 URL은 로컬 전용이며 mclocks 종료 시 폐기됩니다.
+
+### 콘텐츠 모드
+
+웹 뷰어는 `content`, `raw`, `source` 등의 `mode` 쿼리 옵션을 지원합니다.
+
+* `content`(기본): 감지된 콘텐츠 유형으로 제공하여 가능하면 브라우저가 일반적으로 렌더링합니다.
+* `raw`: 비바이너리 파일을 `text/plain`으로 반환하여 브라우저 렌더링 없이 원시 텍스트를 안전하게 표시합니다.
+* `source`: 지원 형식에 대해 요약/사이드바가 있는 소스 뷰 레이아웃을 열고, 지원되지 않는 텍스트 파일도 일반 텍스트로 안전하게 확인할 수 있습니다.
 
 ### /dump 엔드포인트
 

@@ -73,6 +73,8 @@ File `config.json` harus diformat sebagai JSON, seperti ditunjukkan di bawah ini
       "forefront": false
     }
 
+Anda dapat menyertakan komentar dan koma trailing di `config.json` (didukung JSONC).
+
 ## 🔧 Field-field config.json
 
 #### clocks
@@ -265,6 +267,8 @@ Baris kosong dipertahankan apa adanya di semua operasi.
 
 ## 📝 Catatan tempel
 
+![sticky-note](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-sticky-note.png)
+
 Klik jendela aplikasi `mclocks`, lalu tekan `Ctrl + s` untuk membuat catatan tempel dari teks clipboard. Jendela mengambang kecil akan terbuka dengan konten clipboard.
 
 Setiap catatan tempel memiliki:
@@ -278,13 +282,11 @@ Setiap catatan tempel memiliki:
 
 Catatan tempel mewarisi pengaturan `font`, `size`, `color`, dan `forefront` dari `config.json`. Pengaturan depan dapat ditimpa per catatan tempel menggunakan tombol depan; jika tidak ditimpa, nilai dari `config.json` yang digunakan. Posisi, ukuran, status buka/tutup, dan penimpaan depan disimpan secara persisten, dan semua catatan dipulihkan secara otomatis saat `mclocks` dimulai ulang.
 
-🔔 CATATAN: Di macOS, posisi jendela catatan tempel hanya disimpan saat aplikasi keluar. Di Windows, posisi disimpan secara otomatis saat Anda memindahkan atau mengubah ukuran jendela.
-
 Ukuran teks maksimum per catatan tempel adalah 128 KB.
 
 ## 🌐 Server web
 
-`mclocks` dapat menyajikan file statis melalui server web bawaan. Fitur ini memungkinkan Anda dengan mudah melihat cuplikan kode di browser. Tambahkan field `web` ke `config.json` Anda:
+`mclocks` selalu menjalankan server web lokal bawaan saat diluncurkan. Jika Anda mengonfigurasi field `web` di `config.json`, server juga dapat menyajikan file statis dari direktori Anda:
 
     {
       "web": {
@@ -294,7 +296,8 @@ Ukuran teks maksimum per catatan tempel adalah 128 KB.
         "status": true,
         "content": {
           "markdown": {
-            "allowRawHTML": false
+            "allowRawHTML": false,
+            "openExternalLinkInNewTab": true
           }
         },
         "editor": {
@@ -303,28 +306,31 @@ Ukuran teks maksimum per catatan tempel adalah 128 KB.
       }
     }
 
-* `root`: Path ke direktori yang berisi file untuk disajikan (wajib)
-* `port`: Nomor port untuk didengarkan (default: 3030)
-* `openBrowserAtStart`: Jika diatur ke `true`, secara otomatis membuka URL server web di browser default saat `mclocks` dimulai (default: `false`)
-* `dump`: Jika diatur ke `true`, mengaktifkan endpoint `/dump` yang mengembalikan detail permintaan sebagai JSON (default: `false`)
-* `slow`: Jika diatur ke `true`, mengaktifkan endpoint `/slow` yang menunda respons (default: `false`)
-* `status`: Jika diatur ke `true`, mengaktifkan endpoint `/status/{code}` yang mengembalikan kode status HTTP arbitrer (default: `false`)
-* `content.markdown.allowRawHTML`: Jika diatur ke `true`, mengizinkan HTML mentah dalam rendering Markdown; jika `false`, HTML mentah dalam Markdown di-escape sebagai teks (default: `false`)
-* `editor`: Jika diatur dan berisi `reposDir`, mengaktifkan endpoint `/editor` yang membuka file lokal di editor Anda dari URL GitHub di browser (default: tidak diatur)
+* `root`: Path ke direktori berisi file yang akan disajikan (wajib hanya saat menggunakan hosting file statis)
+* `port`: Nomor port pilihan untuk server web utama (`>=2000`, default: `3030`). Jika port tersebut digunakan, mclocks mencoba port yang lebih rendah (`-1`) hingga menemukan yang tersedia.
+* `openBrowserAtStart`: Jika `true`, membuka URL server web di browser default saat `mclocks` dimulai (default: `false`)
+* `dump`: Jika `true`, mengaktifkan endpoint `/dump` yang mengembalikan detail permintaan sebagai JSON (default: `false`)
+* `slow`: Jika `true`, mengaktifkan endpoint `/slow` yang menunda respons (default: `false`)
+* `status`: Jika `true`, mengaktifkan endpoint `/status/{code}` yang mengembalikan kode status HTTP arbitrer (default: `false`)
+* `content.markdown.allowRawHTML`: Jika `true`, mengizinkan HTML mentah dalam rendering Markdown; jika `false`, HTML mentah di-escape sebagai teks (default: `false`)
+* `content.markdown.openExternalLinkInNewTab`: Tautan Markdown eksternal dibuka di tab baru dan internal di tab yang sama; jika `false`, semua tautan Markdown dibuka di tab yang sama (default: `true`)
+* `editor`: Jika diatur dan berisi `reposDir`, mengaktifkan endpoint `/editor` untuk membuka file lokal di editor dari URL GitHub di browser (default: tidak diatur)
 
-Jika field `web` dikonfigurasi di `config.json` Anda, server web dimulai secara otomatis saat `mclocks` diluncurkan. Akses file di `http://127.0.0.1:3030`. Server web hanya mendengarkan di `127.0.0.1` (localhost), jadi hanya dapat diakses dari mesin lokal Anda.
+### Penampil konten berbasis seret dan lepas
 
-### Tipe file yang didukung
+Selain hosting file statis, mclocks mendukung alur penampil konten seret-dan-lepas:
 
-Server web mendukung tipe file berikut:
+* Jatuhkan direktori ke jendela jam untuk membukanya di penampil web melalui URL lokal sementara.
+* Jatuhkan satu file untuk membukanya di penampil web jika tipe didukung oleh penampil file sementara.
+* URL sementara yang dihasilkan hanya lokal dan dibuang saat keluar dari mclocks.
 
-* Teks: `html`, `css`, `js`, `json`, `md`, `txt`
-* Gambar: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+### Mode konten
 
-### penampil konten berbasis drag-and-drop
+Penampil web mendukung opsi kueri `mode` seperti `content`, `raw`, dan `source`.
 
-Selain penyajian file statis, server web juga mencakup alur penampil konten berbasis drag-and-drop: ketika Anda menyeret dan menjatuhkan file atau direktori ke jendela jam mclocks, konten tersebut dapat dibuka dan dilihat melalui URL lokal sementara.
-URL sementara ini dibuang saat mclocks ditutup.
+* `content` (default): Menyajikan file dengan tipe konten yang terdeteksi agar browser merender secara normal jika memungkinkan.
+* `raw`: Mengembalikan file non-biner sebagai `text/plain` untuk menampilkan teks mentah tanpa rendering browser.
+* `source`: Membuka tata letak penampil sumber dengan ringkasan/sidebar untuk format yang didukung, sambil tetap memungkinkan inspeksi teks biasa yang aman untuk file teks yang tidak didukung.
 
 ### Endpoint /dump
 

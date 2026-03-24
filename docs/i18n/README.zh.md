@@ -73,6 +73,8 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
       "forefront": false
     }
 
+可以在 `config.json` 中使用注释和尾随逗号（支持 JSONC）。
+
 ## 🔧 config.json 的各字段
 
 #### clocks
@@ -265,6 +267,8 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 
 ## 📝 便签
 
+![sticky-note](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-sticky-note.png)
+
 点击 `mclocks` 应用窗口，然后按 `Ctrl + s` 从剪贴板文本创建便签。将打开一个显示剪贴板内容的小型浮动窗口。
 
 每个便签具有以下功能：
@@ -278,13 +282,11 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 
 便签继承 `config.json` 中的 `font`、`size`、`color` 和 `forefront` 设置。置顶设置可通过置顶按钮按便签单独覆盖；如果未覆盖，则使用 `config.json` 中的值。位置、大小、展开/折叠状态和置顶覆盖设置会被持久化，`mclocks` 重启时所有便签会自动恢复。
 
-🔔 注意：在 macOS 上，便签窗口位置仅在应用程序退出时保存。在 Windows 上，移动或调整窗口大小时会自动保存位置。
-
 每个便签的最大文本大小为 128 KB。
 
 ## 🌐 Web 服务器
 
-`mclocks` 可以通过内置 Web 服务器提供静态文件服务。此功能使您可以轻松在浏览器中查看代码片段。在 `config.json` 中添加 `web` 字段：
+`mclocks` 在启动时始终会运行内置的本地 Web 服务器。若在 `config.json` 中配置 `web` 字段，则还可以从指定目录提供静态文件：
 
     {
       "web": {
@@ -294,7 +296,8 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
         "status": true,
         "content": {
           "markdown": {
-            "allowRawHTML": false
+            "allowRawHTML": false,
+            "openExternalLinkInNewTab": true
           }
         },
         "editor": {
@@ -303,28 +306,31 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
       }
     }
 
-* `root`：包含要提供的文件的目录路径（必需）
-* `port`：监听的端口号（默认：3030）
-* `openBrowserAtStart`：如果设置为 `true`，`mclocks` 启动时自动在默认浏览器中打开 Web 服务器 URL（默认：`false`）
-* `dump`：如果设置为 `true`，启用以 JSON 返回请求详情的 `/dump` 端点（默认：`false`）
-* `slow`：如果设置为 `true`，启用延迟响应的 `/slow` 端点（默认：`false`）
-* `status`：如果设置为 `true`，启用返回任意 HTTP 状态码的 `/status/{code}` 端点（默认：`false`）
-* `content.markdown.allowRawHTML`：如果设置为 `true`，允许在 Markdown 渲染中使用原始 HTML；如果为 `false`，Markdown 中的原始 HTML 会被转义为文本（默认：`false`）
-* `editor`：如果设置并包含 `reposDir`，启用从浏览器的 GitHub URL 在编辑器中打开本地文件的 `/editor` 端点（默认：未设置）
-
-如果 `config.json` 中配置了 `web` 字段，Web 服务器将在 `mclocks` 启动时自动开始。通过 `http://127.0.0.1:3030` 访问文件。Web 服务器仅在 `127.0.0.1`（localhost）上监听，因此只能从本地机器访问。
-
-### 支持的文件类型
-
-Web 服务器支持以下文件类型：
-
-* 文本：`html`、`css`、`js`、`json`、`md`、`txt`
-* 图片：`png`、`jpg`、`jpeg`、`gif`、`svg`、`ico`
+* `root`：包含要提供的文件的目录路径（仅在使用静态文件托管时必需）
+* `port`：主 Web 服务器的首选端口号（`>=2000`，默认：`3030`）。若该端口被占用，mclocks 会依次尝试更小的端口号（`-1`）直到找到可用端口。
+* `openBrowserAtStart`：若为 `true`，`mclocks` 启动时会在默认浏览器中自动打开 Web 服务器 URL（默认：`false`）
+* `dump`：若为 `true`，启用以 JSON 返回请求详情的 `/dump` 端点（默认：`false`）
+* `slow`：若为 `true`，启用延迟响应的 `/slow` 端点（默认：`false`）
+* `status`：若为 `true`，启用返回任意 HTTP 状态码的 `/status/{code}` 端点（默认：`false`）
+* `content.markdown.allowRawHTML`：若为 `true`，允许在 Markdown 渲染中使用原始 HTML；若为 `false`，原始 HTML 会被转义为文本（默认：`false`）
+* `content.markdown.openExternalLinkInNewTab`：外部 Markdown 链接在新标签页打开，内部链接在同一标签页；若为 `false`，所有 Markdown 链接在同一标签页打开（默认：`true`）
+* `editor`：若已设置且包含 `reposDir`，启用从浏览器 GitHub URL 在编辑器中打开本地文件的 `/editor` 端点（默认：未设置）
 
 ### 基于拖放的内容查看器
 
-除了静态文件托管之外，Web 服务器还包含基于拖放的内容查看流程：当您将文件或目录拖放到 mclocks 时钟窗口上时，可以通过临时本地 URL 打开并查看。
-这些临时 URL 会在 mclocks 退出时被丢弃。
+除静态文件托管外，mclocks 还支持拖放式内容查看流程：
+
+* 将目录拖放到时钟窗口，可通过临时本地 URL 在 Web 查看器中打开。
+* 拖放单个文件时，若临时文件查看器支持该类型，则在 Web 查看器中打开。
+* 生成的临时 URL 仅本地有效，并在退出 mclocks 时丢弃。
+
+### 内容模式
+
+Web 查看器支持 `content`、`raw`、`source` 等 `mode` 查询参数。
+
+* `content`（默认）：按检测到的内容类型提供文件，以便浏览器在可能时正常渲染。
+* `raw`：以 `text/plain` 返回非二进制文件，安全显示原始文本而避免浏览器渲染。
+* `source`：对支持的格式打开带摘要/侧栏的源码查看布局，对不支持的文本文件仍可安全地以纯文本查看。
 
 ### /dump 端点
 
