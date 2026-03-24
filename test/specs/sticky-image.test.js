@@ -41,6 +41,9 @@ describe('Sticky Note - Image sticky behavior', () => {
 				deleteStickyCalled: false,
 			};
 
+			// E2E clipboard mock uses readText(), not invoke (see test/mocks/tauri-plugin-clipboard-manager.js).
+			window.__clipboardText = '';
+
 			window.__TAURI_INTERNALS__ = window.__TAURI_INTERNALS__ || {};
 			window.__TAURI_INTERNALS__.metadata = {
 				currentWindow: { label: 'sticky-test-image' },
