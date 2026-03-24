@@ -305,8 +305,6 @@ Each sticky note has:
 
 Sticky notes inherit `font`, `size`, `color`, and `forefront` settings from `config.json`. The forefront setting can be overridden per sticky note using the forefront button; if not overridden, the value from `config.json` is used. Their position, size, open/close state, and forefront override are persisted, and all notes are automatically restored when `mclocks` restarts.
 
-🔔 NOTE: On macOS, sticky note window positions are only saved when the application exits. On Windows, positions are saved automatically as you move or resize the windows.
-
 The maximum text size per sticky note is 128 KB.
 
 ## 🌐 Web Server
