@@ -68,7 +68,8 @@ export const config = {
         // Check if the application is running
         // Note: You need to start the app with `pnpm tauri dev` before running tests
         console.log('Make sure mclocks is running on http://localhost:1420')
-        console.log('You can start it with: pnpm tauri dev')
+        console.log('For WDIO (Vite + Chrome): pnpm dev:e2e')
+        console.log('For the real app: pnpm tauri dev')
     },
     afterTest: async function (test, context, { error, result, duration, passed, retries }) {
         // If test failed, keep browser open for debugging

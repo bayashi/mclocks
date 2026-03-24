@@ -48,7 +48,12 @@ This project uses **WebdriverIO** to run E2E tests.
 
 **You need to start the application** before running JavaScript tests.
 
-1. Start the application in a separate terminal:
+1. Start the dev server in a separate terminal (pick one):
+   ```bash
+   # WebdriverIO hits Vite in Chrome; clipboard uses a test-only mock (vite --mode e2e)
+   pnpm dev:e2e
+   ```
+   Alternatively, run the full desktop app (real Tauri clipboard):
    ```bash
    pnpm tauri dev
    ```

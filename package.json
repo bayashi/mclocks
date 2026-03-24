@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:e2e": "vite --mode e2e",
     "build": "vite build",
     "preview": "vite preview",
     "fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml && pnpm exec eslint --fix \"src/**/*.js\" \"*.config.js\" \"src-mcp/**/*.js\"",
