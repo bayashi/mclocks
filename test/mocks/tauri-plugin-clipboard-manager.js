@@ -9,6 +9,10 @@ export async function writeText(text) {
 }
 
 export async function readText() {
+  // WDIO sets window.__clipboardText while the real plugin used invoke(); keep both paths aligned.
+  if (typeof window !== 'undefined' && window.__clipboardText != null) {
+    return window.__clipboardText;
+  }
   if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
     return navigator.clipboard.readText();
   }

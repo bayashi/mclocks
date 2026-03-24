@@ -37,6 +37,9 @@ describe('Sticky Note - Ctrl+s creates new sticky from sticky window', () => {
 				dialogMessage: null,
 			};
 
+			// E2E replaces @tauri-apps/plugin-clipboard-manager with test/mocks/... (readText, not invoke).
+			window.__clipboardText = cbText === null || cbText === undefined ? '' : cbText;
+
 			window.__TAURI_INTERNALS__ = window.__TAURI_INTERNALS__ || {};
 			window.__TAURI_INTERNALS__.metadata = {
 				currentWindow: { label: 'sticky-test-ctrl-s' },
