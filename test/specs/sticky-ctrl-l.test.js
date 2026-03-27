@@ -33,6 +33,9 @@ describe('Sticky Note - Ctrl+l lock/unlock behavior', () => {
 				saveStateCalls: [],
 			};
 
+			// E2E clipboard mock uses readText(); avoid OS clipboard under parallel WDIO workers.
+			window.__clipboardText = '';
+
 			window.__TAURI_INTERNALS__ = window.__TAURI_INTERNALS__ || {};
 			window.__TAURI_INTERNALS__.metadata = {
 				currentWindow: { label: 'sticky-test-ctrl-l' },

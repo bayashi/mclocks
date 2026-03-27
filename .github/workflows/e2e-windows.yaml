@@ -9,6 +9,7 @@ on:
       - "src/**"
       - "src-tauri/**"
       - "package.json"
+      - "vite.config.js"
       - "wdio.conf.js"
 
 jobs:
@@ -20,24 +21,6 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install WebView2
-        shell: pwsh
-        run: |
-          winget install --id=Microsoft.EdgeWebView2Runtime -e --accept-package-agreements --accept-source-agreements 2>&1 | Out-Null; if ($LASTEXITCODE -ne 0) { Write-Host "WebView2 may already be installed" }; $LASTEXITCODE = 0
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-rust-
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -54,10 +37,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Start Tauri app and run E2E tests
+      - name: Start Vite (e2e mode) and run E2E tests
         shell: pwsh
         run: |
-          $job = Start-Job -ScriptBlock { pnpm tauri dev }
+          $root = $env:GITHUB_WORKSPACE
+          $job = Start-Job -ArgumentList $root -ScriptBlock {
+            param($workspace)
+            Set-Location $workspace
+            pnpm dev:e2e
+          }
           Write-Host "Waiting for app to start..."
           $maxWait = 30
           for ($i = 0; $i -lt $maxWait; $i++) {

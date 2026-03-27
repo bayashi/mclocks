@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:e2e": "vite --mode e2e",
     "build": "vite build",
     "preview": "vite preview",
     "fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml && pnpm exec eslint --fix \"src/**/*.js\" \"*.config.js\" \"src-mcp/**/*.js\"",
@@ -15,13 +16,13 @@
     "test:mcp": "npm test --prefix src-mcp"
   },
   "dependencies": {
-    "@tauri-apps/api": "2.7.0",
-    "@tauri-apps/plugin-clipboard-manager": "2.3.0",
-    "@tauri-apps/plugin-dialog": "2.3.2",
-    "@tauri-apps/plugin-notification": "2.3.0",
-    "@tauri-apps/plugin-opener": "2.4.0",
-    "@tauri-apps/plugin-os": "2.3.0",
-    "@tauri-apps/plugin-window-state": "2.4.0",
+    "@tauri-apps/api": "2.10.1",
+    "@tauri-apps/plugin-clipboard-manager": "2.3.2",
+    "@tauri-apps/plugin-dialog": "2.6.0",
+    "@tauri-apps/plugin-notification": "2.3.3",
+    "@tauri-apps/plugin-opener": "2.5.3",
+    "@tauri-apps/plugin-os": "2.3.2",
+    "@tauri-apps/plugin-window-state": "2.4.1",
     "basic-ftp": "5.2.0",
     "cdate": "0.0.7",
     "diff": "8.0.3",
@@ -31,7 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@tauri-apps/cli": "2.7.1",
+    "@tauri-apps/cli": "2.10.1",
     "@wdio/cli": "^9.21.1",
     "@wdio/local-runner": "^9.21.0",
     "@wdio/mocha-framework": "^9.21.0",
