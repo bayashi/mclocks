@@ -296,7 +296,7 @@ export async function stickyEntry(mainElement) {
 	// Flag blocks subsequent onMoved triggers until save completes (matches app.js pattern).
 	// pointer-events:none blocks user interaction during save to prevent OS modal loop deadlock.
 	const saveStickyWindowLocation = () => {
-		if (isMacOS() || ignoreSaveStickyWindowLocation) {
+		if (ignoreSaveStickyWindowLocation) {
 			return;
 		}
 		ignoreSaveStickyWindowLocation = true;
@@ -605,7 +605,7 @@ export async function stickyEntry(mainElement) {
 		// ignore
 	}
 
-	// Save window position on move (non-macOS only, flag pattern)
+	// Save window position on move (flag pattern)
 	try {
 		await currentWindow.onMoved(() => {
 			saveStickyWindowLocation();

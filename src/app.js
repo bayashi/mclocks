@@ -109,7 +109,7 @@ const updateDropHoverState = (mainElement, payload) => {
  * @param {ClockCtx} clockCtx - Application context
  */
 const clockGlobalInit = async (clockCtx) => {
-  // Window move handler with debouncing for non-macOS platforms
+  // Window move handler with debouncing (save position after idle)
   // Fallback for testing environment where Tauri APIs are not available
   let currentClockWindow;
   try {
@@ -122,8 +122,7 @@ const clockGlobalInit = async (clockCtx) => {
 
   try {
     await currentClockWindow.onMoved(() => {
-      // Skip saving window state on macOS due to platform-specific issues
-      if (clockCtx.ignoreOnMoved() || clockCtx.isMacOS()) {
+      if (clockCtx.ignoreOnMoved()) {
         return;
       }
 
