@@ -57,7 +57,8 @@
       "flatted": "3.4.2",
       "express-rate-limit": "8.2.2",
       "yauzl": "3.2.1",
-      "serialize-javascript": "7.0.3"
+      "serialize-javascript": "7.0.3",
+      "picomatch@4.0.3": "4.0.4"
     }
   }
 }
