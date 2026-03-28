@@ -1,0 +1,13 @@
+# Chains local actions: _install-linux-tauri-deps, _setup-rust-cache
+name: Linux Tauri APT + Rust cache
+description: |
+  Bundles local actions:
+  - _install-linux-tauri-deps (APT)
+  - _setup-rust-cache (Rust toolchain + Cargo cache)
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/_install-linux-tauri-deps
+
+    - uses: ./.github/actions/_setup-rust-cache

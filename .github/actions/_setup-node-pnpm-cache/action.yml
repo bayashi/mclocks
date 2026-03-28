@@ -1,0 +1,24 @@
+name: Setup Node, pnpm, and pnpm cache
+description: Node LTS, global pnpm, and shared pnpm/node_modules cache
+
+runs:
+  using: composite
+  steps:
+    - name: setup node
+      uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+
+    - name: install pnpm
+      shell: bash
+      run: npm install -g pnpm
+
+    - name: pnpm dependencies cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pnpm-store
+          node_modules
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-

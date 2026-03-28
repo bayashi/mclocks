@@ -15,41 +15,13 @@ on:
 
 jobs:
   setup:
-    runs-on: "macos-latest"
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/_setup-rust-cache
 
-      - name: Cache Rust dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-rust-
-
-      - name: setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: install pnpm
-        run: |
-          npm install -g pnpm
-
-      - name: Cache pnpm dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+      - uses: ./.github/actions/_setup-node-pnpm-cache
 
       - name: install frontend dependencies
         run: |
@@ -57,34 +29,13 @@ jobs:
 
   lint-front:
     needs: setup
-    runs-on: "macos-latest"
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
+      - uses: ./.github/actions/_setup-node-pnpm-cache
 
-      - name: install pnpm
-        run: |
-          npm install -g pnpm
-
-      - name: Restore pnpm dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: install frontend dependencies if needed
-        run: |
-          if [ ! -d "node_modules" ]; then
-            pnpm install
-          fi
+      - uses: ./.github/actions/_install-pnpm-modules
 
       - name: verify LF line endings
         shell: bash
@@ -108,22 +59,11 @@ jobs:
 
   lint-server:
     needs: setup
-    runs-on: "macos-latest"
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Restore Rust dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-rust-
+      - uses: ./.github/actions/setup-linux-tauri-rust
 
       - name: verify Rust formatting
         run: |
@@ -136,47 +76,15 @@ jobs:
 
   build:
     needs: setup
-    runs-on: "macos-latest"
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/setup-linux-tauri-rust
 
-      - name: Restore Rust dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-rust-
+      - uses: ./.github/actions/_setup-node-pnpm-cache
 
-      - name: setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: install pnpm
-        run: |
-          npm install -g pnpm
-
-      - name: Restore pnpm dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: install frontend dependencies if needed
-        run: |
-          if [ ! -d "node_modules" ]; then
-            pnpm install
-          fi
+      - uses: ./.github/actions/_install-pnpm-modules
 
       - name: display version info
         run: |
