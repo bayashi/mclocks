@@ -19,6 +19,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: verify LF line endings
+        shell: bash
+        run: |
+          set -euo pipefail
+          crlf_lines="$(git ls-files --eol | awk '$2 == "w/crlf" { print }')"
+          if [[ -n "${crlf_lines}" ]]; then
+            echo "CRLF detected in tracked files:"
+            echo "${crlf_lines}"
+            exit 1
+          fi
+
       - uses: ./.github/actions/_setup-rust-cache
 
       - uses: ./.github/actions/_setup-node-pnpm-cache
@@ -36,17 +47,6 @@ jobs:
       - uses: ./.github/actions/_setup-node-pnpm-cache
 
       - uses: ./.github/actions/_install-pnpm-modules
-
-      - name: verify LF line endings
-        shell: bash
-        run: |
-          set -euo pipefail
-          crlf_lines="$(git ls-files --eol | awk '$2 == "w/crlf" { print }')"
-          if [[ -n "${crlf_lines}" ]]; then
-            echo "CRLF detected in tracked files:"
-            echo "${crlf_lines}"
-            exit 1
-          fi
 
       - name: run ESLint
         run: |
