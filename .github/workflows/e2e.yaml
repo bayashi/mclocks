@@ -1,8 +1,19 @@
 name: E2E Tests
 
 on:
-  workflow_dispatch:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    paths:
+      - ".github/workflows/e2e.yaml"
+      - "test/**"
+      - "src/**"
+      - "src-tauri/**"
+      - "package.json"
+      - "vite.config.js"
+      - "wdio.conf.js"
+  push:
+    branches:
+      - main
     paths:
       - ".github/workflows/e2e.yaml"
       - "test/**"
@@ -15,6 +26,7 @@ on:
 jobs:
   test:
     name: E2E Test (${{ matrix.os }})
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-E2E-test')) }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
