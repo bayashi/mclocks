@@ -75,7 +75,7 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 
 可以在 `config.json` 中使用注释和尾随逗号（支持 JSONC）。
 
-## 🔧 config.json 的各字段
+### 🔧 config.json 的各字段
 
 #### clocks
 
@@ -324,7 +324,7 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 * 拖放单个文件时，若临时文件查看器支持该类型，则在 Web 查看器中打开。
 * 生成的临时 URL 仅本地有效，并在退出 mclocks 时丢弃。
 
-### 内容模式
+#### 内容模式
 
 Web 查看器支持 `content`、`raw`、`source` 等 `mode` 查询参数。
 
