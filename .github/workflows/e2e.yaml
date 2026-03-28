@@ -1,11 +1,10 @@
-name: E2E Tests (Windows)
+name: E2E Tests
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+  pull_request:
     paths:
-      - ".github/workflows/e2e-windows.yaml"
+      - ".github/workflows/e2e.yaml"
       - "test/**"
       - "src/**"
       - "src-tauri/**"
@@ -15,10 +14,15 @@ on:
 
 jobs:
   test:
-    name: E2E Test (Windows)
-    runs-on: windows-latest
+    name: E2E Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
     permissions:
       contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
 
@@ -37,7 +41,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Start Vite (e2e mode) and run E2E tests
+      - name: Start Vite (e2e mode) and run E2E tests (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $root = $env:GITHUB_WORKSPACE
@@ -64,3 +69,24 @@ jobs:
             Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
             Get-Process -Name node,tauri -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           }
+
+      - name: Start Vite (e2e mode) and run E2E tests (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          pnpm dev:e2e &
+          DEV_PID=$!
+          cleanup() {
+            kill $DEV_PID 2>/dev/null || true
+            wait $DEV_PID 2>/dev/null || true
+            pkill -f "node.*vite" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          echo "Waiting for app to start..."
+          for i in {1..30}; do
+            if curl -sf "http://localhost:1420" >/dev/null; then
+              echo "App is ready"
+              break
+            fi
+            sleep 1
+          done
+          pnpm test
