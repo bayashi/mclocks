@@ -1,3 +1,5 @@
+import { e2eChordBase } from '../helpers/e2e-keys.js';
+
 // Minimal 1x1 red pixel PNG as base64
 const TINY_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==';
 
@@ -184,7 +186,7 @@ describe('Sticky Note - Image sticky behavior', () => {
 	it('should lock on Ctrl+l for image sticky', async () => {
 		await setupImageStickyWindow();
 
-		await browser.keys(['Control', 'l']);
+		await browser.keys(e2eChordBase('l'));
 		await browser.pause(100);
 
 		const state = await getUIState();
@@ -195,9 +197,9 @@ describe('Sticky Note - Image sticky behavior', () => {
 	it('should unlock on second Ctrl+l for image sticky', async () => {
 		await setupImageStickyWindow();
 
-		await browser.keys(['Control', 'l']);
+		await browser.keys(e2eChordBase('l'));
 		await browser.pause(100);
-		await browser.keys(['Control', 'l']);
+		await browser.keys(e2eChordBase('l'));
 		await browser.pause(100);
 
 		const state = await getUIState();
@@ -216,7 +218,7 @@ describe('Sticky Note - Image sticky behavior', () => {
 	it('should persist locked=true via save_sticky_state after Ctrl+l on image sticky', async () => {
 		await setupImageStickyWindow();
 
-		await browser.keys(['Control', 'l']);
+		await browser.keys(e2eChordBase('l'));
 		await browser.pause(1000);
 
 		const results = await getTestResults();

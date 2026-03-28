@@ -15,93 +15,27 @@ on:
 
 jobs:
   setup:
-    runs-on: "macos-latest"
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/_setup-rust-cache
 
-      - name: Cache Rust dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-rust-
-
-      - name: setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: install pnpm
-        run: |
-          npm install -g pnpm
-
-      - name: Cache pnpm dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+      - uses: ./.github/actions/_setup-node-pnpm-cache
 
       - name: install frontend dependencies
         run: |
           pnpm install
 
-  lint-and-test:
+  lint-front:
     needs: setup
-    runs-on: "macos-latest"
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/_setup-node-pnpm-cache
 
-      - name: Restore Rust dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-rust-
-
-      - name: setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: install pnpm
-        run: |
-          npm install -g pnpm
-
-      - name: Restore pnpm dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: install frontend dependencies if needed
-        run: |
-          if [ ! -d "node_modules" ]; then
-            pnpm install
-          fi
-
-      - name: display version info
-        run: |
-          pnpm tauri info
+      - uses: ./.github/actions/_install-pnpm-modules
 
       - name: verify LF line endings
         shell: bash
@@ -118,11 +52,22 @@ jobs:
         run: |
           pnpm exec eslint .
 
-      - name: verify formatting
+      - name: verify JS formatting (eslint --fix produces no diff)
         run: |
-          cargo fmt --manifest-path src-tauri/Cargo.toml
           pnpm exec eslint --fix "src/**/*.js" "*.config.js" "src-mcp/**/*.js"
           git diff --exit-code
+
+  lint-server:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-linux-tauri-rust
+
+      - name: verify Rust formatting
+        run: |
+          cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 
       - name: run Rust tests
         run: |
@@ -131,47 +76,15 @@ jobs:
 
   build:
     needs: setup
-    runs-on: "macos-latest"
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/setup-linux-tauri-rust
 
-      - name: Restore Rust dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-rust-
+      - uses: ./.github/actions/_setup-node-pnpm-cache
 
-      - name: setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: install pnpm
-        run: |
-          npm install -g pnpm
-
-      - name: Restore pnpm dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: install frontend dependencies if needed
-        run: |
-          if [ ! -d "node_modules" ]; then
-            pnpm install
-          fi
+      - uses: ./.github/actions/_install-pnpm-modules
 
       - name: display version info
         run: |

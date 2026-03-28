@@ -1,3 +1,5 @@
+import { e2eChordBase } from '../helpers/e2e-keys.js';
+
 describe('Sticky Note - Create from main window (Ctrl+s)', () => {
 	const testConfig = {
 		clocks: [
@@ -134,7 +136,7 @@ describe('Sticky Note - Create from main window (Ctrl+s)', () => {
 		await installInvokeMock('Hello sticky note');
 
 		console.log('Pressing Ctrl+s to create sticky...');
-		await browser.keys(['Control', 's']);
+		await browser.keys(e2eChordBase('s'));
 		await browser.pause(1500);
 
 		const result = await getStickyTestResult();
@@ -148,7 +150,7 @@ describe('Sticky Note - Create from main window (Ctrl+s)', () => {
 		await installInvokeMock('');
 
 		console.log('Pressing Ctrl+s with empty clipboard...');
-		await browser.keys(['Control', 's']);
+		await browser.keys(e2eChordBase('s'));
 		await browser.pause(1500);
 
 		const result = await getStickyTestResult();
@@ -164,7 +166,7 @@ describe('Sticky Note - Create from main window (Ctrl+s)', () => {
 		await installInvokeMock(oversizedText);
 
 		console.log('Pressing Ctrl+s with oversized clipboard text...');
-		await browser.keys(['Control', 's']);
+		await browser.keys(e2eChordBase('s'));
 		await browser.pause(1500);
 
 		const result = await getStickyTestResult();
@@ -179,7 +181,7 @@ describe('Sticky Note - Create from main window (Ctrl+s)', () => {
 		await installInvokeMock(multilineText);
 
 		console.log('Pressing Ctrl+s with multiline text...');
-		await browser.keys(['Control', 's']);
+		await browser.keys(e2eChordBase('s'));
 		await browser.pause(1500);
 
 		const result = await getStickyTestResult();

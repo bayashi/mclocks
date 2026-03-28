@@ -1,3 +1,5 @@
+import { e2eChordBase, e2eChordBaseAlt, e2eChordBaseShift, e2eChordBaseAltShift } from '../helpers/e2e-keys.js';
+
 describe('mclocks Application Launch Test', () => {
     // Set up test configuration
     const testConfig = {
@@ -426,7 +428,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+e to toggle Epoch time display
         console.log('Pressing Ctrl+e to toggle Epoch time display...')
-        await browser.keys(['Control', 'e'])
+        await browser.keys(e2eChordBase('e'))
 
         // Wait for the Epoch clock to become visible
         await browser.waitUntil(
@@ -529,7 +531,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+u to toggle Epoch time display
         console.log('Pressing Ctrl+u to toggle Epoch time display...')
-        await browser.keys(['Control', 'u'])
+        await browser.keys(e2eChordBase('u'))
 
         // Wait for the Epoch clock to become visible
         await browser.waitUntil(
@@ -623,7 +625,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+1 to start 1-minute timer
         console.log('Pressing Ctrl+1 to start 1-minute timer...')
-        await browser.keys(['Control', '1'])
+        await browser.keys(e2eChordBase('1'))
 
         // Wait for timer clock to be added
         await browser.waitUntil(
@@ -728,7 +730,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Start a timer with Ctrl+1
         console.log('Pressing Ctrl+1 to start timer...')
-        await browser.keys(['Control', '1'])
+        await browser.keys(e2eChordBase('1'))
 
         // Wait for timer to be added
         await browser.waitUntil(
@@ -765,7 +767,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+p to pause timer
         console.log('Pressing Ctrl+p to pause timer...')
-        await browser.keys(['Control', 'p'])
+        await browser.keys(e2eChordBase('p'))
 
         // Wait a bit for pause to take effect
         await browser.pause(1000)
@@ -791,7 +793,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+p again to resume timer
         console.log('Pressing Ctrl+p again to resume timer...')
-        await browser.keys(['Control', 'p'])
+        await browser.keys(e2eChordBase('p'))
 
         // Wait a bit for resume to take effect
         await browser.pause(500)
@@ -857,11 +859,11 @@ describe('mclocks Application Launch Test', () => {
 
         // Start two timers
         console.log('Starting first timer with Ctrl+1...')
-        await browser.keys(['Control', '1'])
+        await browser.keys(e2eChordBase('1'))
         await browser.pause(500)
 
         console.log('Starting second timer with Ctrl+2...')
-        await browser.keys(['Control', '2'])
+        await browser.keys(e2eChordBase('2'))
         await browser.pause(500)
 
         // Wait for timers to be added
@@ -891,7 +893,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+0 to remove oldest timer (leftmost)
         console.log('Pressing Ctrl+0 to remove oldest timer...')
-        await browser.keys(['Control', '0'])
+        await browser.keys(e2eChordBase('0'))
 
         // Wait for timer to be removed
         await browser.pause(500)
@@ -911,7 +913,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Start another timer
         console.log('Starting another timer with Ctrl+3...')
-        await browser.keys(['Control', '3'])
+        await browser.keys(e2eChordBase('3'))
         await browser.pause(500)
 
         // Wait for new timer to be added
@@ -941,7 +943,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+Alt+0 to remove newest timer (rightmost)
         console.log('Pressing Ctrl+Alt+0 to remove newest timer...')
-        await browser.keys(['Control', 'Alt', '0'])
+        await browser.keys(e2eChordBaseAlt('0'))
 
         // Wait for timer to be removed
         await browser.pause(500)
@@ -999,7 +1001,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+Alt+9 to start 90-minute timer (10 minutes × 9)
         console.log('Pressing Ctrl+Alt+9 to start 90-minute timer...')
-        await browser.keys(['Control', 'Alt', '9'])
+        await browser.keys(e2eChordBaseAlt('9'))
 
         // Wait for timer clock to be added
         await browser.waitUntil(
@@ -1124,7 +1126,7 @@ describe('mclocks Application Launch Test', () => {
         // Check if format2 is defined by trying to switch format
         // If format2 is not defined, the format should remain the same
         console.log('Pressing Ctrl+f to switch format...')
-        await browser.keys(['Control', 'f'])
+        await browser.keys(e2eChordBase('f'))
 
         // Wait a bit for format switch to take effect
         await browser.pause(500)
@@ -1169,7 +1171,7 @@ describe('mclocks Application Launch Test', () => {
         // If format2 is defined, switch back to original format
         if (formatChanged) {
             console.log('Pressing Ctrl+f again to switch back to original format...')
-            await browser.keys(['Control', 'f'])
+            await browser.keys(e2eChordBase('f'))
 
             // Wait a bit for format switch to take effect
             await browser.pause(500)
@@ -1280,7 +1282,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+c to copy to clipboard
         console.log('Pressing Ctrl+c to copy to clipboard...')
-        await browser.keys(['Control', 'c'])
+        await browser.keys(e2eChordBase('c'))
 
         // Wait a bit for clipboard operation to complete
         await browser.pause(500)
@@ -1520,7 +1522,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+v to convert clipboard content
         console.log('Pressing Ctrl+v to convert clipboard content...')
-        await browser.keys(['Control', 'v'])
+        await browser.keys(e2eChordBase('v'))
 
         // Wait for conversion and editor to open
         await browser.pause(2000)
@@ -1763,7 +1765,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+v to convert clipboard content
         console.log('Pressing Ctrl+v to convert epoch time from clipboard...')
-        await browser.keys(['Control', 'v'])
+        await browser.keys(e2eChordBase('v'))
 
         // Wait for conversion and editor to open
         await browser.pause(2000)
@@ -1862,7 +1864,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+Alt+v to convert clipboard content as milliseconds
         console.log('Pressing Ctrl+Alt+v to convert epoch time in milliseconds...')
-        await browser.keys(['Control', 'Alt', 'v'])
+        await browser.keys(e2eChordBaseAlt('v'))
         await browser.pause(2000)
 
         const editorResult = await browser.execute(() => ({
@@ -1942,7 +1944,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+Alt+Shift+v to convert clipboard content as microseconds
         console.log('Pressing Ctrl+Alt+Shift+v to convert epoch time in microseconds...')
-        await browser.keys(['Control', 'Alt', 'Shift', 'v'])
+        await browser.keys(e2eChordBaseAltShift('v'))
         await browser.pause(2000)
 
         const editorResult = await browser.execute(() => ({
@@ -2025,7 +2027,7 @@ describe('mclocks Application Launch Test', () => {
         // Press Ctrl+Alt+Shift+n+v to convert clipboard content as nanoseconds
         // The 'n' key must be pressed before 'v' so that pressedKeys contains 'N' when 'v' handler fires
         console.log('Pressing Ctrl+Alt+Shift+n+v to convert epoch time in nanoseconds...')
-        await browser.keys(['Control', 'Alt', 'Shift', 'n', 'v'])
+        await browser.keys(e2eChordBaseAltShift('n', 'v'))
         await browser.pause(2000)
 
         const editorResult = await browser.execute(() => ({
@@ -2105,7 +2107,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+i to quote each line with double quotes and append comma
         console.log('Pressing Ctrl+i to quote and append comma...')
-        await browser.keys(['Control', 'i'])
+        await browser.keys(e2eChordBase('i'))
         await browser.pause(2000)
 
         const editorResult = await browser.execute(() => ({
@@ -2187,7 +2189,7 @@ describe('mclocks Application Launch Test', () => {
 
         // Press Ctrl+Shift+i to append comma to each line without quotes
         console.log('Pressing Ctrl+Shift+i to append comma without quotes...')
-        await browser.keys(['Control', 'Shift', 'i'])
+        await browser.keys(e2eChordBaseShift('i'))
         await browser.pause(2000)
 
         const editorResult = await browser.execute(() => ({
@@ -2267,7 +2269,7 @@ describe('mclocks Application Launch Test', () => {
         await browser.execute((text) => { window.__clipboardText = text }, clipboardText)
 
         console.log('Pressing Ctrl+t to convert clipboard text to markdown table...')
-        await browser.keys(['Control', 't'])
+        await browser.keys(e2eChordBase('t'))
         await browser.pause(2000)
 
         const editorResult = await browser.execute(() => ({

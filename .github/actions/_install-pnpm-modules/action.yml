@@ -1,0 +1,12 @@
+name: install pnpm modules
+description: pnpm install when node_modules is missing
+
+runs:
+  using: composite
+  steps:
+    - name: install frontend dependencies
+      shell: bash
+      run: |
+        if [ ! -d "node_modules" ]; then
+          pnpm install
+        fi

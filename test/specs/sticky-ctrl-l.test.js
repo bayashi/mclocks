@@ -1,3 +1,5 @@
+import { e2eChordBase } from '../helpers/e2e-keys.js';
+
 describe('Sticky Note - Ctrl+l lock/unlock behavior', () => {
 	beforeEach(async () => {
 		await browser.url('/');
@@ -146,7 +148,7 @@ describe('Sticky Note - Ctrl+l lock/unlock behavior', () => {
 	it('should lock on Ctrl+l: hide close button, show lock mark, make textarea readOnly', async () => {
 		await setupStickyWindow(null);
 
-		await browser.keys(['Control', 'l']);
+		await browser.keys(e2eChordBase('l'));
 		await browser.pause(100);
 
 		const state = await getUIState();
@@ -159,11 +161,11 @@ describe('Sticky Note - Ctrl+l lock/unlock behavior', () => {
 		await setupStickyWindow(null);
 
 		// First Ctrl+l: lock
-		await browser.keys(['Control', 'l']);
+		await browser.keys(e2eChordBase('l'));
 		await browser.pause(100);
 
 		// Second Ctrl+l: unlock
-		await browser.keys(['Control', 'l']);
+		await browser.keys(e2eChordBase('l'));
 		await browser.pause(100);
 
 		const state = await getUIState();
@@ -197,7 +199,7 @@ describe('Sticky Note - Ctrl+l lock/unlock behavior', () => {
 	it('should persist locked=true via save_sticky_state after Ctrl+l', async () => {
 		await setupStickyWindow(null);
 
-		await browser.keys(['Control', 'l']);
+		await browser.keys(e2eChordBase('l'));
 		// Wait for debounced save (500ms + buffer)
 		await browser.pause(1000);
 
@@ -212,11 +214,11 @@ describe('Sticky Note - Ctrl+l lock/unlock behavior', () => {
 		await setupStickyWindow(null);
 
 		// Lock
-		await browser.keys(['Control', 'l']);
+		await browser.keys(e2eChordBase('l'));
 		await browser.pause(600);
 
 		// Unlock
-		await browser.keys(['Control', 'l']);
+		await browser.keys(e2eChordBase('l'));
 		await browser.pause(1000);
 
 		const results = await getTestResults();
