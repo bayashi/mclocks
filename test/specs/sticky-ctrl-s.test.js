@@ -1,3 +1,5 @@
+import { e2eChordBase } from '../helpers/e2e-keys.js';
+
 describe('Sticky Note - Ctrl+s creates new sticky from sticky window', () => {
 	beforeEach(async () => {
 		await browser.url('/');
@@ -124,7 +126,7 @@ describe('Sticky Note - Ctrl+s creates new sticky from sticky window', () => {
 		await setupStickyWindow('Hello from sticky');
 
 		console.log('Pressing Ctrl+s in sticky window...');
-		await browser.keys(['Control', 's']);
+		await browser.keys(e2eChordBase('s'));
 		await browser.pause(1500);
 
 		const result = await getTestResult();
@@ -138,7 +140,7 @@ describe('Sticky Note - Ctrl+s creates new sticky from sticky window', () => {
 		await setupStickyWindow('');
 
 		console.log('Pressing Ctrl+s with empty clipboard in sticky window...');
-		await browser.keys(['Control', 's']);
+		await browser.keys(e2eChordBase('s'));
 		await browser.pause(1500);
 
 		const result = await getTestResult();
@@ -153,7 +155,7 @@ describe('Sticky Note - Ctrl+s creates new sticky from sticky window', () => {
 		await setupStickyWindow(oversizedText);
 
 		console.log('Pressing Ctrl+s with oversized text in sticky window...');
-		await browser.keys(['Control', 's']);
+		await browser.keys(e2eChordBase('s'));
 		await browser.pause(1500);
 
 		const result = await getTestResult();
@@ -168,7 +170,7 @@ describe('Sticky Note - Ctrl+s creates new sticky from sticky window', () => {
 		await setupStickyWindow(multilineText);
 
 		console.log('Pressing Ctrl+s with multiline text in sticky window...');
-		await browser.keys(['Control', 's']);
+		await browser.keys(e2eChordBase('s'));
 		await browser.pause(1500);
 
 		const result = await getTestResult();
