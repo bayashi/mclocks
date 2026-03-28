@@ -73,6 +73,8 @@ El archivo `config.json` debe estar formateado como JSON, como se muestra a cont
       "forefront": false
     }
 
+Puedes incluir comentarios y comas finales en `config.json` (compatible con JSONC).
+
 ## 🔧 Los campos de config.json
 
 #### clocks
@@ -265,6 +267,8 @@ Las líneas vacías se preservan tal cual en todas las operaciones.
 
 ## 📝 Nota adhesiva
 
+![sticky-note](https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-sticky-note.png)
+
 Haz clic en la ventana de la aplicación `mclocks`, luego presiona `Ctrl + s` para crear una nota adhesiva a partir del texto del portapapeles. Se abrirá una pequeña ventana flotante con el contenido del portapapeles.
 
 Cada nota adhesiva tiene:
@@ -278,13 +282,11 @@ Cada nota adhesiva tiene:
 
 Las notas adhesivas heredan las configuraciones de `font`, `size`, `color` y `forefront` de `config.json`. La configuración de primer plano se puede anular por nota adhesiva usando el botón de primer plano; si no se anula, se usa el valor de `config.json`. Su posición, tamaño, estado de apertura/cierre y la anulación de primer plano se persisten, y todas las notas se restauran automáticamente cuando `mclocks` se reinicia.
 
-🔔 NOTA: En macOS, las posiciones de las ventanas de notas adhesivas solo se guardan cuando la aplicación se cierra. En Windows, las posiciones se guardan automáticamente al mover o redimensionar las ventanas.
-
 El tamaño máximo de texto por nota adhesiva es de 128 KB.
 
 ## 🌐 Servidor web
 
-`mclocks` puede servir archivos estáticos a través de un servidor web integrado. Esta función te permite ver fácilmente tus fragmentos de código en un navegador. Añade un campo `web` a tu `config.json`:
+`mclocks` siempre inicia un servidor web local integrado al arrancar. Si configuras un campo `web` en `config.json`, también puede servir archivos estáticos desde tu directorio:
 
     {
       "web": {
@@ -294,7 +296,8 @@ El tamaño máximo de texto por nota adhesiva es de 128 KB.
         "status": true,
         "content": {
           "markdown": {
-            "allowRawHTML": false
+            "allowRawHTML": false,
+            "openExternalLinkInNewTab": true
           }
         },
         "editor": {
@@ -303,28 +306,31 @@ El tamaño máximo de texto por nota adhesiva es de 128 KB.
       }
     }
 
-* `root`: Ruta al directorio que contiene los archivos a servir (obligatorio)
-* `port`: Número de puerto para escuchar (por defecto: 3030)
-* `openBrowserAtStart`: Si se establece en `true`, abre automáticamente la URL del servidor web en el navegador predeterminado cuando `mclocks` se inicia (por defecto: `false`)
-* `dump`: Si se establece en `true`, habilita el endpoint `/dump` que devuelve los detalles de la solicitud como JSON (por defecto: `false`)
-* `slow`: Si se establece en `true`, habilita el endpoint `/slow` que retrasa la respuesta (por defecto: `false`)
-* `status`: Si se establece en `true`, habilita el endpoint `/status/{code}` que devuelve códigos de estado HTTP arbitrarios (por defecto: `false`)
-* `content.markdown.allowRawHTML`: Si se establece en `true`, permite HTML sin procesar dentro del renderizado de Markdown; si es `false`, el HTML sin procesar en Markdown se escapa como texto (por defecto: `false`)
-* `editor`: Si se establece y contiene `reposDir`, habilita el endpoint `/editor` que abre archivos locales en tu editor desde URLs de GitHub del navegador (por defecto: no establecido)
+* `root`: Ruta al directorio con los archivos a servir (solo obligatoria si usas alojamiento de archivos estáticos)
+* `port`: Puerto preferido del servidor web principal (`>=2000`, por defecto: `3030`). Si está en uso, mclocks prueba puertos descendentes (`-1`) hasta encontrar uno libre.
+* `openBrowserAtStart`: Si es `true`, abre automáticamente la URL del servidor web en el navegador predeterminado al iniciar `mclocks` (por defecto: `false`)
+* `dump`: Si es `true`, habilita el endpoint `/dump` que devuelve los detalles de la solicitud como JSON (por defecto: `false`)
+* `slow`: Si es `true`, habilita el endpoint `/slow` que retrasa la respuesta (por defecto: `false`)
+* `status`: Si es `true`, habilita el endpoint `/status/{code}` que devuelve códigos de estado HTTP arbitrarios (por defecto: `false`)
+* `content.markdown.allowRawHTML`: Si es `true`, permite HTML sin procesar en el renderizado de Markdown; si es `false`, el HTML sin procesar se escapa como texto (por defecto: `false`)
+* `content.markdown.openExternalLinkInNewTab`: Los enlaces Markdown externos se abren en una pestaña nueva y los internos en la misma; si es `false`, todos los enlaces Markdown se abren en la misma pestaña (por defecto: `true`)
+* `editor`: Si está definido e incluye `reposDir`, habilita el endpoint `/editor` que abre archivos locales en tu editor desde URLs de GitHub en el navegador (por defecto: no establecido)
 
-Si el campo `web` está configurado en tu `config.json`, el servidor web se inicia automáticamente cuando `mclocks` se lanza. Accede a los archivos en `http://127.0.0.1:3030`. El servidor web solo escucha en `127.0.0.1` (localhost), por lo que solo es accesible desde tu máquina local.
+### Visor de contenido basado en arrastrar y soltar
 
-### Tipos de archivo soportados
+Además del alojamiento de archivos estáticos, mclocks admite un flujo de visor por arrastrar y soltar:
 
-El servidor web soporta los siguientes tipos de archivo:
+* Arrastra un directorio a la ventana del reloj para abrirlo en el visor web mediante una URL local temporal.
+* Arrastra un solo archivo para abrirlo en el visor web cuando el tipo sea compatible con el visor de archivos temporales.
+* Las URLs temporales generadas son solo locales y se descartan al salir de mclocks.
 
-* Texto: `html`, `css`, `js`, `json`, `md`, `txt`
-* Imágenes: `png`, `jpg`, `jpeg`, `gif`, `svg`, `ico`
+### Modo de contenido
 
-### visor de contenido basado en arrastrar y soltar
+El visor web admite opciones de consulta `mode` como `content`, `raw` y `source`.
 
-Además del alojamiento de archivos estáticos, el servidor web también incluye un flujo de visor de contenido basado en arrastrar y soltar: cuando arrastras y sueltas un archivo o directorio sobre la ventana del reloj de mclocks, se puede abrir y visualizar mediante URLs locales temporales.
-Estas URLs temporales se eliminan cuando mclocks se cierra.
+* `content` (por defecto): Sirve el archivo con el tipo de contenido detectado para que el navegador lo renderice con normalidad cuando sea posible.
+* `raw`: Devuelve archivos no binarios como `text/plain` para mostrar el texto sin renderizado del navegador.
+* `source`: Abre el diseño del visor de código con resumen/barra lateral para formatos admitidos y permite inspección en texto plano para archivos de texto no admitidos.
 
 ### Endpoint /dump
 
