@@ -90,10 +90,12 @@ jobs:
         run: |
           pnpm tauri info
 
-      # PR branches: tauri check
-      - name: Tauri check
+      # Non-main
+      - name: Vite production build
         if: github.event_name != 'push' || github.ref != 'refs/heads/main'
-        run: pnpm tauri check
+        run: |
+          pnpm build
+          cargo check --manifest-path src-tauri/Cargo.toml
 
       # main push: full release build
       - name: Tauri build
