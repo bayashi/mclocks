@@ -37,7 +37,7 @@ A developer is never without a clock:
 
 * 🔀 Simple text convertor
     * such as easily creating SQL `IN` clauses
-    * Excel/TSV table to Markdown tatble
+    * Excel/TSV table to Markdown table
 * 🌐 Web server
     * serves static files
         * richly render content
