@@ -55,24 +55,11 @@ jobs:
         run: |
           pnpm install
 
-  lint-and-test:
+  lint-front:
     needs: setup
     runs-on: "macos-latest"
     steps:
       - uses: actions/checkout@v4
-
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Restore Rust dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/target
-            ~/.cargo
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-rust-
 
       - name: setup node
         uses: actions/setup-node@v4
@@ -99,10 +86,6 @@ jobs:
             pnpm install
           fi
 
-      - name: display version info
-        run: |
-          pnpm tauri info
-
       - name: verify LF line endings
         shell: bash
         run: |
@@ -118,11 +101,33 @@ jobs:
         run: |
           pnpm exec eslint .
 
-      - name: verify formatting
+      - name: verify JS formatting (eslint --fix produces no diff)
         run: |
-          cargo fmt --manifest-path src-tauri/Cargo.toml
           pnpm exec eslint --fix "src/**/*.js" "*.config.js" "src-mcp/**/*.js"
           git diff --exit-code
+
+  lint-server:
+    needs: setup
+    runs-on: "macos-latest"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Rust dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            src-tauri/target
+            ~/.cargo
+          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rust-
+
+      - name: verify Rust formatting
+        run: |
+          cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 
       - name: run Rust tests
         run: |
