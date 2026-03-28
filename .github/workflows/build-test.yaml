@@ -90,6 +90,12 @@ jobs:
         run: |
           pnpm tauri info
 
-      - name: try to build
-        run: |
-          pnpm tauri build
+      # PR branches: tauri check
+      - name: Tauri check
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        run: pnpm tauri check
+
+      # main push: full release build
+      - name: Tauri build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: pnpm tauri build
