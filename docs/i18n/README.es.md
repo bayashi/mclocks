@@ -75,7 +75,7 @@ El archivo `config.json` debe estar formateado como JSON, como se muestra a cont
 
 Puedes incluir comentarios y comas finales en `config.json` (compatible con JSONC).
 
-## 🔧 Los campos de config.json
+### 🔧 Los campos de config.json
 
 #### clocks
 
@@ -324,7 +324,7 @@ Además del alojamiento de archivos estáticos, mclocks admite un flujo de visor
 * Arrastra un solo archivo para abrirlo en el visor web cuando el tipo sea compatible con el visor de archivos temporales.
 * Las URLs temporales generadas son solo locales y se descartan al salir de mclocks.
 
-### Modo de contenido
+#### Modo de contenido
 
 El visor web admite opciones de consulta `mode` como `content`, `raw` y `source`.
 

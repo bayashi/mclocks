@@ -75,7 +75,7 @@ Die Datei `config.json` sollte wie unten gezeigt im JSON-Format formatiert sein.
 
 In `config.json` sind Kommentare und nachgestellte Kommas erlaubt (JSONC-unterstützt).
 
-## 🔧 Die Felder von config.json
+### 🔧 Die Felder von config.json
 
 #### clocks
 
@@ -324,7 +324,7 @@ Zusätzlich zur statischen Dateibereitstellung unterstützt mclocks einen Drag-a
 * Ziehen Sie eine einzelne Datei auf das Fenster, um sie im Web-Viewer zu öffnen, wenn der Typ vom temporären Datei-Viewer unterstützt wird.
 * Die erzeugten temporären URLs sind nur lokal und werden beim Beenden von mclocks verworfen.
 
-### Inhaltsmodus
+#### Inhaltsmodus
 
 Der Web-Viewer unterstützt `mode`-Abfrageoptionen wie `content`, `raw` und `source`.
 

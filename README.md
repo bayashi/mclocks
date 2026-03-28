@@ -94,7 +94,7 @@ The `config.json` file should be formatted as JSON, as shown below.
 
 You can include comments and trailing commas in config.json (JSONC-supported).
 
-## 🔧 The fields of config.json
+### 🔧 The fields of config.json
 
 #### clocks
 
@@ -347,7 +347,7 @@ In addition to static file hosting, mclocks supports a drag-and-drop content vie
 * Drop a single file to open it in the web viewer when the file type is supported by the temporary-file viewer.
 * The generated temporary URLs are local-only and are discarded when mclocks exits.
 
-### Content mode
+#### Content mode
 
 The web viewer supports `mode` query options such as `content`, `raw`, and `source`.
 

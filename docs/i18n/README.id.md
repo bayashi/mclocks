@@ -75,7 +75,7 @@ File `config.json` harus diformat sebagai JSON, seperti ditunjukkan di bawah ini
 
 Anda dapat menyertakan komentar dan koma trailing di `config.json` (didukung JSONC).
 
-## 🔧 Field-field config.json
+### 🔧 Field-field config.json
 
 #### clocks
 
@@ -324,7 +324,7 @@ Selain hosting file statis, mclocks mendukung alur penampil konten seret-dan-lep
 * Jatuhkan satu file untuk membukanya di penampil web jika tipe didukung oleh penampil file sementara.
 * URL sementara yang dihasilkan hanya lokal dan dibuang saat keluar dari mclocks.
 
-### Mode konten
+#### Mode konten
 
 Penampil web mendukung opsi kueri `mode` seperti `content`, `raw`, dan `source`.
 

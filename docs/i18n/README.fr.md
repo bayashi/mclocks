@@ -75,7 +75,7 @@ Le fichier `config.json` doit être formaté en JSON, comme indiqué ci-dessous.
 
 Vous pouvez inclure des commentaires et des virgules finales dans `config.json` (compatible JSONC).
 
-## 🔧 Les champs de config.json
+### 🔧 Les champs de config.json
 
 #### clocks
 
@@ -324,7 +324,7 @@ En plus de l'hébergement de fichiers statiques, mclocks prend en charge un flux
 * Déposez un fichier unique pour l'ouvrir dans le visionneur web lorsque le type est pris en charge par le visionneur de fichiers temporaires.
 * Les URLs temporaires générées sont locales uniquement et sont supprimées à la fermeture de mclocks.
 
-### Mode de contenu
+#### Mode de contenu
 
 Le visionneur web prend en charge les options de requête `mode` telles que `content`, `raw` et `source`.
 
