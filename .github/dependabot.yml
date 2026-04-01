@@ -7,6 +7,8 @@ updates:
   directory: "/.github"
   schedule:
     interval: "monthly"
+  cooldown:
+    default-days: 15
   target-branch: "update-lib"
 
 - package-ecosystem: "npm"
@@ -14,6 +16,8 @@ updates:
   directory: "/"
   schedule:
     interval: "monthly"
+  cooldown:
+    default-days: 15
   target-branch: "update-lib"
 
 - package-ecosystem: "cargo"
@@ -21,4 +25,6 @@ updates:
   directory: "/src-tauri"
   schedule:
     interval: "monthly"
+  cooldown:
+    default-days: 15
   target-branch: "update-lib"
