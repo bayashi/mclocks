@@ -1,4 +1,4 @@
-# mclocks
+# mclocks　🕒🌍🕕
 
 <p align="center"><small>
 <a href="docs/i18n/README.ja.md">日本語</a> /
@@ -16,7 +16,8 @@
 
 ----------
 
-<p align="center">The desktop clock application for multiple time zones🕒🌍🕕</p>
+<p align="center">The desktop text clock application for multiple time zones<br>
+with Sticky note, Text convertor, Local debug web server and Markdown viewer</p>
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png" alt="screenshot" />
