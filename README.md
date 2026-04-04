@@ -1,4 +1,4 @@
-# mclocks　🕒🌍🕕
+# mclocks🕒🌍🕕
 
 <p align="center"><small>
 <a href="docs/i18n/README.ja.md">日本語</a> /
