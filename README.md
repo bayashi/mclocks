@@ -17,7 +17,7 @@
 ----------
 
 <p align="center">The desktop text clock application for multiple time zones<br>
-with Sticky note, Text convertor, Local debug web server and Markdown viewer</p>
+with Sticky note, Text convertor, Local debug web server, Markdown viewer and etc.</p>
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png" alt="screenshot" />
