@@ -97,7 +97,8 @@ export function buildCountdown(clockCtx, clock) {
     diffMS = diffMS > 0 ? diffMS : 0;
 
     if (diffMS > 0) {
-      diffSec = Math.floor(diffMS / 1000) + 1;
+      // ceil(ms/1000): floor+1 showed one extra second at exact boundaries (e.g. 90:01 for 90 min)
+      diffSec = Math.ceil(diffMS / 1000);
       diffMin = Math.floor(diffSec / 60);
       diffHour = Math.floor(diffMin / 60);
       diffDay = Math.floor(diffHour / 24);
