@@ -43,7 +43,8 @@ export default defineConfig(({ mode }) => ({
     'TAURI_ENV_*',
   ],
   build: {
-    target: process.env.TAURI_ENV_PLATFORM == 'windows' ? 'chrome105' : 'safari13',
+    // safari13 breaks esbuild when lowering destructuring in some dependencies
+    target: process.env.TAURI_ENV_PLATFORM == 'windows' ? 'chrome105' : 'safari15',
     minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
   },
