@@ -92,16 +92,17 @@ pub fn setup_tray_menu<R: Runtime>(
     }
     let main_window_name = window_name.to_string();
     #[cfg(any(target_os = "windows", target_os = "macos"))]
-    let about_version_text = format!("v{}", app.package_info().version);
+    let about_copy_text =
+        crate::about_env::format_about_clipboard_text(&app.package_info().version.to_string());
     #[cfg(any(target_os = "windows", target_os = "macos"))]
-    let about_dialog_message = format!("mclocks\n{}", about_version_text);
+    let about_dialog_message = about_copy_text.clone();
     tray_builder
         .on_menu_event(move |app, event| {
             let menu_id = event.id().as_ref();
             #[cfg(any(target_os = "windows", target_os = "macos"))]
             if menu_id == MENU_ID_TRAY_ABOUT {
                 let app_handle = app.clone();
-                let version_to_copy = about_version_text.clone();
+                let text_to_copy = about_copy_text.clone();
                 let message = about_dialog_message.clone();
                 app_handle
                     .dialog()
@@ -117,7 +118,7 @@ pub fn setup_tray_menu<R: Runtime>(
                             res,
                             MessageDialogResult::Custom(ref s) if s == "Copy version"
                         ) {
-                            let _ = app_handle.clipboard().write_text(&version_to_copy);
+                            let _ = app_handle.clipboard().write_text(&text_to_copy);
                         }
                     });
                 return;

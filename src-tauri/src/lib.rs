@@ -1,3 +1,4 @@
+mod about_env;
 mod config;
 mod sticky;
 mod tray;
