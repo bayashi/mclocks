@@ -1,4 +1,4 @@
-use rand::RngCore;
+use rand::TryRngCore;
 use rand::rngs::OsRng;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -466,7 +466,9 @@ fn token_store() -> &'static Mutex<HashMap<String, TokenEntry>> {
 
 fn issue_one_time_token(expected_path: &str) -> String {
     let mut bytes = [0u8; 16];
-    OsRng.fill_bytes(&mut bytes);
+    OsRng
+        .try_fill_bytes(&mut bytes)
+        .expect("OS RNG should fill token bytes");
     let token: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
 
     let now = Instant::now();
