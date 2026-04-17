@@ -16,6 +16,7 @@ use web::dd_publish::{
     build_temp_file_url, build_temp_share_url, clear_temp_shares, register_temp_file,
     register_temp_root,
 };
+use web::markdown_live_reload::start_markdown_live_reload_server;
 use web_server::{
     default_web_server_config, load_web_config, open_url_in_browser, start_web_server,
 };
@@ -126,6 +127,12 @@ pub fn run() {
     let port_to_open = web_config_for_startup
         .as_ref()
         .map(|config| {
+            let mut markdown_live_reload_ws_port = config.markdown_live_reload_ws_port;
+            if let Some(ws_port) = markdown_live_reload_ws_port {
+                if !start_markdown_live_reload_server(ws_port) {
+                    markdown_live_reload_ws_port = None;
+                }
+            }
             start_web_server(
                 config.root.clone(),
                 config.port,
@@ -139,6 +146,7 @@ pub fn run() {
                 config.editor_include_host,
                 config.editor_command.clone(),
                 config.editor_args.clone(),
+                markdown_live_reload_ws_port,
             );
             if let Some(assets_server) = &config.assets_server {
                 start_web_server(
@@ -154,6 +162,7 @@ pub fn run() {
                     false,
                     "code".to_string(),
                     vec!["-g".to_string(), "{file}:{line}".to_string()],
+                    None,
                 );
             }
             if config.open_browser_at_start {

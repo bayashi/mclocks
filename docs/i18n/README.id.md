@@ -332,6 +332,8 @@ Penampil web mendukung opsi kueri `mode` seperti `content`, `raw`, dan `source`.
 * `raw`: Mengembalikan file non-biner sebagai `text/plain` untuk menampilkan teks mentah tanpa rendering browser.
 * `source`: Membuka tata letak penampil sumber dengan ringkasan/sidebar untuk format yang didukung, sambil tetap memungkinkan inspeksi teks biasa yang aman untuk file teks yang tidak didukung.
 
+**Markdown** **secara otomatis mendeteksi perubahan dan memperbarui tampilan di browser secara real-time** (tampilan ter-render mode **`source`**).
+
 ### Endpoint /dump
 
 Ketika `dump: true` diatur dalam konfigurasi `web`, server web menyediakan endpoint `/dump` yang mengembalikan detail permintaan sebagai JSON.

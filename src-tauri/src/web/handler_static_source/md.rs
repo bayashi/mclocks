@@ -36,6 +36,7 @@ __HIGHLIGHT_JS_SCRIPT__
 __MERMAID_JS_SCRIPT__
 __MAIN_JS_SCRIPT__
 __STATIC_MD_JS_SCRIPT__
+__MD_LIVE_RELOAD_SCRIPT__
 </body>
 </html>
 "##;
@@ -255,6 +256,7 @@ pub fn create_markdown_response(
     markdown_open_external_link_in_new_tab: bool,
     markdown_highlight: Option<&WebMarkdownHighlightConfig>,
     mode_switch_html: &str,
+    live_reload: Option<&(u16, String)>,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let headings = extract_markdown_headings(markdown_source);
     let rendered_html = render_markdown_html(markdown_source, allow_html_in_md);
@@ -322,6 +324,21 @@ pub fn create_markdown_response(
             "".to_string(),
         ),
     };
+    let live_reload_script = match live_reload {
+        Some((port, token)) => format!(
+            r#"<script>
+(function(){{
+var u="ws://127.0.0.1:{}/live/{}/";
+try {{
+var w=new WebSocket(u);
+w.onmessage=function(e){{if(e.data==="reload")location.reload();}};
+}}catch(e){{}}
+}})();
+</script>"#,
+            port, token
+        ),
+        None => String::new(),
+    };
     let html = MARKDOWN_RENDER_TEMPLATE
         .replace("__PAGE_TITLE__", &page_title)
         .replace("__SUMMARY_ITEMS__", &summary_items)
@@ -346,7 +363,8 @@ pub fn create_markdown_response(
         .replace("__HIGHLIGHT_CSS_LINK__", &highlight_css_link)
         .replace("__HIGHLIGHT_JS_SCRIPT__", &highlight_js_script)
         .replace("__MERMAID_JS_SCRIPT__", &mermaid_js_script)
-        .replace("__RENDERED_HTML__", &rendered_html);
+        .replace("__RENDERED_HTML__", &rendered_html)
+        .replace("__MD_LIVE_RELOAD_SCRIPT__", &live_reload_script);
     let content_type = "text/html; charset=utf-8";
     if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()) {
         Response::from_string(html)
