@@ -332,6 +332,8 @@ Le visionneur web prend en charge les options de requête `mode` telles que `con
 * `raw` : Renvoie les fichiers non binaires en `text/plain` pour afficher le texte brut sans rendu navigateur.
 * `source` : Ouvre la mise en page du visionneur source avec résumé/barre latérale pour les formats pris en charge, et permet l'inspection en texte brut pour les fichiers texte non pris en charge.
 
+Le **Markdown** **détecte automatiquement les changements et met à jour le navigateur en temps réel** (affichage rendu en mode **`source`**).
+
 ### Endpoint /dump
 
 Lorsque `dump: true` est défini dans la configuration `web`, le serveur web fournit un endpoint `/dump` qui retourne les détails de la requête en JSON.

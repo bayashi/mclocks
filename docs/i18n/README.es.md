@@ -332,6 +332,8 @@ El visor web admite opciones de consulta `mode` como `content`, `raw` y `source`
 * `raw`: Devuelve archivos no binarios como `text/plain` para mostrar el texto sin renderizado del navegador.
 * `source`: Abre el diseño del visor de código con resumen/barra lateral para formatos admitidos y permite inspección en texto plano para archivos de texto no admitidos.
 
+**Markdown** **detecta los cambios automáticamente y actualiza el navegador en tiempo real** (vista renderizada en modo **`source`**).
+
 ### Endpoint /dump
 
 Cuando se establece `dump: true` en la configuración `web`, el servidor web proporciona un endpoint `/dump` que devuelve los detalles de la solicitud como JSON.
