@@ -7,6 +7,7 @@ mod web;
 mod web_server;
 
 use config::{get_config_path, load_config};
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::Manager;
@@ -41,6 +42,38 @@ impl Default for WebMainPortStore {
     }
 }
 
+fn parse_mc_preview_flag(argv: &[String]) -> Option<String> {
+    let mut i = 0usize;
+    while i < argv.len() {
+        let s = &argv[i];
+        if s == "--mc-preview" {
+            return argv.get(i + 1).cloned();
+        }
+        if let Some(rest) = s.strip_prefix("--mc-preview=") {
+            if !rest.is_empty() {
+                return Some(rest.to_string());
+            }
+        }
+        i += 1;
+    }
+    None
+}
+
+fn open_temp_web_preview_for_path(port: u16, dropped_path: &str) -> Result<String, String> {
+    let dropped = Path::new(dropped_path);
+    let url = if dropped.is_dir() {
+        let hash = register_temp_root(dropped)?;
+        build_temp_share_url(port, &hash)
+    } else if dropped.is_file() {
+        let hash = register_temp_file(dropped)?;
+        build_temp_file_url(port, &hash, dropped)?
+    } else {
+        return Err(format!("Invalid preview path: {}", dropped.display()));
+    };
+    open_url_in_browser(&url)?;
+    Ok(url)
+}
+
 #[tauri::command]
 fn save_window_state_exclusive(
     app: tauri::AppHandle,
@@ -62,18 +95,7 @@ fn register_temp_web_root(
         guard.ok_or("Web server is not available.".to_string())?
     };
 
-    let dropped = std::path::Path::new(&dropped_path);
-    let url = if dropped.is_dir() {
-        let hash = register_temp_root(dropped)?;
-        build_temp_share_url(port, &hash)
-    } else if dropped.is_file() {
-        let hash = register_temp_file(dropped)?;
-        build_temp_file_url(port, &hash, dropped)?
-    } else {
-        return Err(format!("Invalid drop target: {}", dropped.display()));
-    };
-    open_url_in_browser(&url)?;
-    Ok(url)
+    open_temp_web_preview_for_path(port, &dropped_path)
 }
 
 const IS_DEV: bool = tauri::is_dev();
@@ -219,12 +241,36 @@ pub fn run() {
                     .blocking_show();
             }
         }
+
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        {
+            let argv: Vec<String> = std::env::args().collect();
+            if let Some(preview_path) = parse_mc_preview_flag(&argv) {
+                if let Ok(guard) = app.state::<WebMainPortStore>().0.lock() {
+                    if let Some(port) = *guard {
+                        if let Err(e) = open_temp_web_preview_for_path(port, &preview_path) {
+                            eprintln!("mclocks --mc-preview: {}", e);
+                        }
+                    }
+                }
+            }
+        }
         Ok(())
     });
 
-    if !IS_DEV {
-        tbr = tbr.plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {
-            if let Some(window) = _app.get_webview_window(WINDOW_NAME) {
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        tbr = tbr.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            if let Some(path) = parse_mc_preview_flag(&argv) {
+                if let Ok(guard) = app.state::<WebMainPortStore>().0.lock() {
+                    if let Some(port) = *guard {
+                        if let Err(e) = open_temp_web_preview_for_path(port, &path) {
+                            eprintln!("mclocks --mc-preview (single instance): {}", e);
+                        }
+                    }
+                }
+            }
+            if let Some(window) = app.get_webview_window(WINDOW_NAME) {
                 let _ = window.show();
                 let _ = window.set_focus();
             }

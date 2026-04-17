@@ -5,10 +5,15 @@ description = "The desktop clock application for multiple time zones🕒🌍🕕
 authors = ["bayashi"]
 license = "Artistic-2.0"
 edition = "2024"
+default-run = "mclocks"
 
 [lib]
 name = "mclocks_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "mc-preview"
+path = "src/bin/mc-preview.rs"
 
 [dev-dependencies]
 tauri = { version = "2.10.3", features = [
