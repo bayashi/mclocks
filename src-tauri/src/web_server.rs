@@ -114,6 +114,8 @@ pub struct WebServerConfig {
     pub markdown_open_external_link_in_new_tab: bool,
     pub markdown_highlight: Option<WebMarkdownHighlightConfig>,
     pub assets_server: Option<WebAssetsServerConfig>,
+    /// Local WebSocket port for rendered-Markdown live reload (below assets port when present).
+    pub markdown_live_reload_ws_port: Option<u16>,
     pub editor_repos_dir: Option<String>,
     pub editor_include_host: bool,
     pub editor_command: String,
@@ -252,6 +254,7 @@ pub fn start_web_server(
     editor_include_host: bool,
     editor_command: String,
     editor_args: Vec<String>,
+    markdown_live_reload_ws_port: Option<u16>,
 ) {
     thread::spawn(move || {
         let server = match Server::http(format!("127.0.0.1:{}", port)) {
@@ -290,6 +293,7 @@ pub fn start_web_server(
                 editor_include_host,
                 &editor_command,
                 &editor_args,
+                markdown_live_reload_ws_port,
             );
             if let Err(e) = request.respond(response) {
                 eprintln!("Failed to send response: {}", e);
@@ -309,6 +313,14 @@ fn build_unconfigured_web_root_path(identifier: &String) -> Result<String, Strin
 
 pub fn default_web_server_config(identifier: &String) -> Result<WebServerConfig, String> {
     let main_port = find_available_port_downward(df_web_port(), MIN_WEB_PORT, "main web")?;
+    let markdown_ws_start = main_port.checked_sub(1).ok_or(
+        "Failed to resolve markdown live reload ws port: main web port is too low",
+    )?;
+    let markdown_live_reload_ws_port = Some(find_available_port_downward(
+        markdown_ws_start,
+        MIN_WEB_PORT,
+        "markdown live reload ws",
+    )?);
     Ok(WebServerConfig {
         root: build_unconfigured_web_root_path(identifier)?,
         port: main_port,
@@ -320,6 +332,7 @@ pub fn default_web_server_config(identifier: &String) -> Result<WebServerConfig,
         markdown_open_external_link_in_new_tab: true,
         markdown_highlight: None,
         assets_server: None,
+        markdown_live_reload_ws_port,
         editor_repos_dir: None,
         editor_include_host: false,
         editor_command: "code".to_string(),
@@ -591,6 +604,14 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         .checked_sub(1)
         .ok_or("Failed to resolve assets port: main web port is too low to derive assets port")?;
     let assets_port = find_available_port_downward(assets_start_port, MIN_WEB_PORT, "assets")?;
+    let markdown_ws_start = assets_port.checked_sub(1).ok_or(
+        "Failed to resolve markdown live reload ws port: assets port is too low",
+    )?;
+    let markdown_live_reload_ws_port = Some(find_available_port_downward(
+        markdown_ws_start,
+        MIN_WEB_PORT,
+        "markdown live reload ws",
+    )?);
     let assets_root = prepare_markdown_assets_root(identifier)?;
     let assets_server = Some(WebAssetsServerConfig {
         root: assets_root,
@@ -703,6 +724,7 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         markdown_open_external_link_in_new_tab,
         markdown_highlight,
         assets_server,
+        markdown_live_reload_ws_port,
         editor_repos_dir,
         editor_include_host,
         editor_command,
@@ -3162,6 +3184,7 @@ mod tests {
                     false,
                     &editor_command,
                     &editor_args,
+                    None,
                 );
                 let _ = request.respond(response);
             }
@@ -3618,6 +3641,13 @@ mod tests {
             config.markdown_highlight.is_none(),
             "Markdown highlight assets should be disabled in temp-share only mode"
         );
+        let md_ws = config
+            .markdown_live_reload_ws_port
+            .expect("markdown live reload ws port should be set");
+        assert!(
+            md_ws < config.port,
+            "markdown ws port should be below main web port"
+        );
     }
 
     #[test]
@@ -3820,6 +3850,13 @@ mod tests {
                 "http://127.0.0.1:{}/{}?v={}",
                 expected_assets_port, HIGHLIGHT_CSS_REL_PATH, MCLOCKS_ASSETS_VERSION
             )
+        );
+        let md_ws = config
+            .markdown_live_reload_ws_port
+            .expect("markdown live reload ws port");
+        assert!(
+            md_ws < assets_server.port,
+            "markdown ws should be strictly below assets port (sequential downward bind)"
         );
 
         let _ = fs::remove_file(&config_path);

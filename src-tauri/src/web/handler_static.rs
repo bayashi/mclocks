@@ -1973,6 +1973,7 @@ fn create_file_response(
     content_mode: ContentMode,
     url_path: &str,
     url_query: &str,
+    markdown_live_reload_ws_port: Option<u16>,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     match fs::read(file_path) {
         Ok(content) => {
@@ -1991,6 +1992,12 @@ fn create_file_response(
                     content_mode,
                     file_path.as_path(),
                 );
+                let live_reload = markdown_live_reload_ws_port.and_then(|port| {
+                    super::markdown_live_reload::register_markdown_live_reload_session(
+                        file_path.as_path(),
+                    )
+                    .map(|token| (port, token))
+                });
                 return create_markdown_response(
                     file_path.as_path(),
                     &decoded,
@@ -2000,6 +2007,7 @@ fn create_file_response(
                     markdown_open_external_link_in_new_tab,
                     markdown_highlight,
                     &mode_switch_html,
+                    live_reload.as_ref(),
                 );
             }
             if is_structured_data_file(file_path.as_path()) && content_mode == ContentMode::Source {
@@ -2125,6 +2133,7 @@ pub fn handle_web_request(
     editor_include_host: bool,
     editor_command: &str,
     editor_args: &[String],
+    markdown_live_reload_ws_port: Option<u16>,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
     let url = request.url();
     let (path, request_query) = split_url_path_and_query(url);
@@ -2138,6 +2147,7 @@ pub fn handle_web_request(
             content_mode,
             path,
             request_query,
+            markdown_live_reload_ws_port,
         );
     }
     let (active_root_path, active_path, public_url_path) = match resolve_temp_share(path) {
@@ -2263,6 +2273,7 @@ pub fn handle_web_request(
                     content_mode,
                     public_url_path.as_str(),
                     request_query,
+                    markdown_live_reload_ws_port,
                 );
             }
             // Check if it's a directory request
@@ -2302,5 +2313,6 @@ pub fn handle_web_request(
         content_mode,
         public_url_path.as_str(),
         request_query,
+        markdown_live_reload_ws_port,
     )
 }

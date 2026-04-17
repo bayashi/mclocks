@@ -1,5 +1,6 @@
 pub mod common;
 pub mod dd_publish;
+pub mod markdown_live_reload;
 pub mod handler_dump;
 pub mod handler_editor;
 pub mod handler_resource_meta;
