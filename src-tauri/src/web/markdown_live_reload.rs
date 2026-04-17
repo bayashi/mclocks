@@ -8,9 +8,9 @@ use std::thread;
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 use tokio_tungstenite::accept_hdr_async;
+use tungstenite::Message;
 use tungstenite::handshake::server::{ErrorResponse, Request, Response};
 use tungstenite::http::StatusCode;
-use tungstenite::Message;
 use uuid::Uuid;
 
 const LIVE_PATH_PREFIX: &str = "/live/";
@@ -44,10 +44,7 @@ fn spawn_path_watcher(watch_path: PathBuf, tx: broadcast::Sender<()>) {
             .is_err()
         {
             if let Some(parent) = watch_path.parent() {
-                if watcher
-                    .watch(parent, RecursiveMode::NonRecursive)
-                    .is_err()
-                {
+                if watcher.watch(parent, RecursiveMode::NonRecursive).is_err() {
                     eprintln!(
                         "md live reload: failed to watch {} or parent",
                         watch_path.display()
@@ -55,10 +52,7 @@ fn spawn_path_watcher(watch_path: PathBuf, tx: broadcast::Sender<()>) {
                     return;
                 }
             } else {
-                eprintln!(
-                    "md live reload: failed to watch {}",
-                    watch_path.display()
-                );
+                eprintln!("md live reload: failed to watch {}", watch_path.display());
                 return;
             }
         }
@@ -176,7 +170,8 @@ fn forbidden_response() -> ErrorResponse {
 }
 
 fn parse_live_token(path: &str) -> Option<&str> {
-    path.strip_prefix(LIVE_PATH_PREFIX).map(|s| s.trim_end_matches('/'))
+    path.strip_prefix(LIVE_PATH_PREFIX)
+        .map(|s| s.trim_end_matches('/'))
 }
 
 async fn handle_connection(stream: tokio::net::TcpStream) {
@@ -187,10 +182,7 @@ async fn handle_connection(stream: tokio::net::TcpStream) {
             Some(t) if !t.is_empty() && !t.contains('/') => t.to_string(),
             _ => return Err(forbidden_response()),
         };
-        let ok = hub()
-            .lock()
-            .ok()
-            .is_some_and(|h| h.token_valid(&token));
+        let ok = hub().lock().ok().is_some_and(|h| h.token_valid(&token));
         if !ok {
             return Err(forbidden_response());
         }

@@ -335,8 +335,7 @@ w.onmessage=function(e){{if(e.data==="reload")location.reload();}};
 }}catch(e){{}}
 }})();
 </script>"#,
-            port,
-            token
+            port, token
         ),
         None => String::new(),
     };

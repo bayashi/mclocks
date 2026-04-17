@@ -313,9 +313,9 @@ fn build_unconfigured_web_root_path(identifier: &String) -> Result<String, Strin
 
 pub fn default_web_server_config(identifier: &String) -> Result<WebServerConfig, String> {
     let main_port = find_available_port_downward(df_web_port(), MIN_WEB_PORT, "main web")?;
-    let markdown_ws_start = main_port.checked_sub(1).ok_or(
-        "Failed to resolve markdown live reload ws port: main web port is too low",
-    )?;
+    let markdown_ws_start = main_port
+        .checked_sub(1)
+        .ok_or("Failed to resolve markdown live reload ws port: main web port is too low")?;
     let markdown_live_reload_ws_port = Some(find_available_port_downward(
         markdown_ws_start,
         MIN_WEB_PORT,
@@ -604,9 +604,9 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         .checked_sub(1)
         .ok_or("Failed to resolve assets port: main web port is too low to derive assets port")?;
     let assets_port = find_available_port_downward(assets_start_port, MIN_WEB_PORT, "assets")?;
-    let markdown_ws_start = assets_port.checked_sub(1).ok_or(
-        "Failed to resolve markdown live reload ws port: assets port is too low",
-    )?;
+    let markdown_ws_start = assets_port
+        .checked_sub(1)
+        .ok_or("Failed to resolve markdown live reload ws port: assets port is too low")?;
     let markdown_live_reload_ws_port = Some(find_available_port_downward(
         markdown_ws_start,
         MIN_WEB_PORT,
