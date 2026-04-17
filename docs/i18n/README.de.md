@@ -332,6 +332,8 @@ Der Web-Viewer unterstützt `mode`-Abfrageoptionen wie `content`, `raw` und `sou
 * `raw`: Liefert nicht-binäre Dateien als `text/plain`, um rohen Text ohne Browser-Rendering anzuzeigen.
 * `source`: Öffnet die Quellcode-Ansicht mit Zusammenfassung/Seitenleiste für unterstützte Formate und ermöglicht sichere Klartext-Inspektion für nicht unterstützte Textdateien.
 
+**Markdown** erkennt Änderungen automatisch und aktualisiert die Anzeige im Browser in Echtzeit (gerenderte **`source`**-Ansicht).
+
 ### /dump-Endpunkt
 
 Wenn `dump: true` in der `web`-Konfiguration gesetzt ist, stellt der Webserver einen `/dump`-Endpunkt bereit, der Anforderungsdetails als JSON zurückgibt.

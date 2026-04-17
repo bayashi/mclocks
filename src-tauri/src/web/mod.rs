@@ -6,4 +6,5 @@ pub mod handler_resource_meta;
 pub mod handler_slow;
 pub mod handler_static;
 pub mod handler_status;
+pub mod markdown_live_reload;
 pub mod status_code;

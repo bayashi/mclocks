@@ -332,6 +332,8 @@ O visualizador web aceita opções de consulta `mode`, como `content`, `raw` e `
 * `raw`: Retorna arquivos não binários como `text/plain` para exibir texto bruto sem renderização do navegador.
 * `source`: Abre o layout do visualizador de código com resumo/barra lateral para formatos suportados e permite inspeção em texto simples para arquivos de texto não suportados.
 
+O **Markdown** **detecta alterações automaticamente e atualiza o navegador em tempo real** (exibição renderizada no modo **`source`**).
+
 ### Endpoint /dump
 
 Quando `dump: true` é definido na configuração `web`, o servidor web fornece um endpoint `/dump` que retorna detalhes da requisição como JSON.

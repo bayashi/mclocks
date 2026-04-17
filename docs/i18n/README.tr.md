@@ -332,6 +332,8 @@ Web görüntüleyici `content`, `raw` ve `source` gibi `mode` sorgu seçenekleri
 * `raw`: İkili olmayan dosyaları `text/plain` olarak döndürerek tarayıcı oluşturması olmadan ham metin gösterir.
 * `source`: Desteklenen biçimler için özet/kenar çubuğu olan kaynak görünüm düzenini açar; desteklenmeyen metin dosyaları için güvenli düz metin incelemesi sağlar.
 
+**Markdown**, **değişiklikleri otomatik algılar ve tarayıcıda gerçek zamanlı güncellenir** (**`source`** modunda işlenmiş görünüm).
+
 ### /dump uç noktası
 
 `web` yapılandırmasında `dump: true` ayarlandığında, web sunucusu istek ayrıntılarını JSON olarak döndüren bir `/dump` uç noktası sağlar.

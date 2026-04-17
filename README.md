@@ -356,6 +356,8 @@ The web viewer supports `mode` query options such as `content`, `raw`, and `sour
 * `raw`: Returns non-binary files as `text/plain` to show the raw text safely without browser-side rendering.
 * `source`: Opens the source viewer layout with summary/sidebar navigation for supported formats, while still allowing safe plain-text inspection for unsupported text files.
 
+**Markdown** **automatically detects changes and updates in real time** in the browser (rendered **`source`** mode).
+
 ### /dump endpoint
 
 When `dump: true` is set in the `web` configuration, the web server provides a `/dump` endpoint that returns request details as JSON.
