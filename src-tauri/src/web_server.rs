@@ -1,5 +1,7 @@
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::{fs, net::TcpListener, path::PathBuf, thread};
 use tiny_http::Server;
 
@@ -71,6 +73,8 @@ pub struct WebConfig {
     pub assets: Option<WebAssetsConfig>,
     #[serde(default)]
     pub editor: Option<EditorConfig>,
+    #[serde(default)]
+    pub enable_preview_api: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -120,6 +124,8 @@ pub struct WebServerConfig {
     pub editor_include_host: bool,
     pub editor_command: String,
     pub editor_args: Vec<String>,
+    /// When `true`, the main web server handles `POST /preview`. Set from `web.enablePreviewApi` at startup.
+    pub local_preview_api_enabled: Arc<AtomicBool>,
 }
 
 fn df_web_port() -> u16 {
@@ -241,6 +247,37 @@ const MCLOCKS_STATIC_XML_JS_REL_PATH: &str = "mclocks/static/structured/xml.js";
 const MCLOCKS_STATIC_XML_CSS_REL_PATH: &str = "mclocks/static/structured/xml.css";
 const MCLOCKS_ASSETS_VERSION: &str = "20260320-4";
 
+#[derive(Clone, Copy, Debug)]
+pub enum WebServerListenKind {
+    Main,
+    Assets,
+}
+
+impl WebServerListenKind {
+    const fn log_label(self) -> &'static str {
+        match self {
+            WebServerListenKind::Main => "Main Server",
+            WebServerListenKind::Assets => "Assets Server",
+        }
+    }
+
+    /// Parenthetical purpose in the startup log when the document root exists.
+    const fn log_purpose_with_root(self) -> &'static str {
+        match self {
+            WebServerListenKind::Main => "User web root",
+            WebServerListenKind::Assets => "Bundled app static assets",
+        }
+    }
+
+    /// Parenthetical purpose when there is no on-disk root (temp-share only).
+    const fn log_purpose_no_root(self) -> &'static str {
+        match self {
+            WebServerListenKind::Main => "Temp-share only",
+            WebServerListenKind::Assets => "Bundled assets",
+        }
+    }
+}
+
 pub fn start_web_server(
     root: String,
     port: u16,
@@ -255,6 +292,8 @@ pub fn start_web_server(
     editor_command: String,
     editor_args: Vec<String>,
     markdown_live_reload_ws_port: Option<u16>,
+    local_preview_api: Option<Arc<AtomicBool>>,
+    listen_kind: WebServerListenKind,
 ) {
     thread::spawn(move || {
         let server = match Server::http(format!("127.0.0.1:{}", port)) {
@@ -266,16 +305,22 @@ pub fn start_web_server(
         };
 
         let root_path = PathBuf::from(root);
+        let label = listen_kind.log_label();
         if root_path.exists() && root_path.is_dir() {
             println!(
-                "Web server started on http://localhost:{} (serving root: {})",
+                "{}: http://localhost:{} ({}) {}",
+                label,
                 port,
+                listen_kind.log_purpose_with_root(),
                 root_path.display()
             );
         } else {
             println!(
-                "Web server started on http://localhost:{} (temp-share only mode)",
-                port
+                "{}: http://localhost:{} ({}) {}",
+                label,
+                port,
+                listen_kind.log_purpose_no_root(),
+                "-"
             );
         }
 
@@ -294,6 +339,8 @@ pub fn start_web_server(
                 &editor_command,
                 &editor_args,
                 markdown_live_reload_ws_port,
+                local_preview_api.as_ref(),
+                port,
             );
             if let Err(e) = request.respond(response) {
                 eprintln!("Failed to send response: {}", e);
@@ -337,6 +384,7 @@ pub fn default_web_server_config(identifier: &String) -> Result<WebServerConfig,
         editor_include_host: false,
         editor_command: "code".to_string(),
         editor_args: vec!["-g".to_string(), "{file}:{line}".to_string()],
+        local_preview_api_enabled: Arc::new(AtomicBool::new(false)),
     })
 }
 
@@ -729,6 +777,7 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         editor_include_host,
         editor_command,
         editor_args,
+        local_preview_api_enabled: Arc::new(AtomicBool::new(web_config.enable_preview_api)),
     }))
 }
 
@@ -3162,6 +3211,8 @@ mod tests {
         status_enabled: bool,
         allow_html_in_md: bool,
     ) -> std::thread::JoinHandle<()> {
+        use std::sync::Arc;
+        use std::sync::atomic::AtomicBool;
         thread::spawn(move || {
             let server = match Server::http(format!("127.0.0.1:{}", port)) {
                 Ok(s) => s,
@@ -3169,6 +3220,7 @@ mod tests {
             };
             let editor_args: Vec<String> = vec!["-g".to_string(), "{file}:{line}".to_string()];
             let editor_command = "code".to_string();
+            let preview_off = Arc::new(AtomicBool::new(false));
 
             for mut request in server.incoming_requests() {
                 let response = handle_web_request(
@@ -3185,6 +3237,8 @@ mod tests {
                     &editor_command,
                     &editor_args,
                     None,
+                    Some(&preview_off),
+                    port,
                 );
                 let _ = request.respond(response);
             }
@@ -4040,6 +4094,10 @@ mod tests {
             "Default open_browser_at_start should be false"
         );
         assert_eq!(config.dump, false, "Default dump should be false");
+        assert_eq!(
+            config.enable_preview_api, false,
+            "Default enable_preview_api should be false"
+        );
     }
 
     #[test]

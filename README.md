@@ -318,6 +318,7 @@ The maximum text size per sticky note is 128 KB.
         "dump": true,
         "slow": true,
         "status": true,
+        "enablePreviewApi": false,
         "content": {
           "markdown": {
             "allowRawHTML": false,
@@ -333,6 +334,7 @@ The maximum text size per sticky note is 128 KB.
 * `root`: Path to the directory containing files to serve (required only when using static file hosting)
 * `port`: Preferred port number for the main web server (`>=2000`, default: `3030`). If the preferred port is in use, mclocks searches downward (`-1`) until it finds an available port.
 * `openBrowserAtStart`: If set to `true`, automatically opens the web server URL in the default browser when `mclocks` starts (default: `false`)
+* `enablePreviewApi`: If set to `true`, enables `POST /preview` so you can open Markdown in the browser from the CLI (default: `false`).
 * `dump`: If set to `true`, enables the `/dump` endpoint that returns request details as JSON (default: `false`)
 * `slow`: If set to `true`, enables the `/slow` endpoint that delays the response (default: `false`)
 * `status`: If set to `true`, enables the `/status/{code}` endpoint that returns arbitrary HTTP status codes (default: `false`)
@@ -479,6 +481,46 @@ You can specify a line number using the hash fragment in the URL:
 2. Click the bookmarklet or manually navigate to: `http://127.0.0.1:3030/editor/bayashi/mclocks/blob/main/src/app.js#L42`
 3. If `~/repos/mclocks/src/app.js` exists in your local, VS Code opens it at line 42
 4. If the file doesn't exist, an error page shows with a link to `https://github.com/bayashi/mclocks` for cloning
+
+### POST /preview
+
+**POST /preview** is for **opening Markdown from the CLI**. **`curl`** (or any client that can POST) sends **a local `.md` / `.markdown` path** to **`/preview`**; mclocks **opens your browser** on a rendered preview.
+
+```json
+"web": {
+  "enablePreviewApi": true
+}
+```
+
+Absolute path (one line):
+
+```bash
+curl -sS -X POST http://127.0.0.1:3030/preview -d '/absolute/path/to/notes.md'
+```
+
+Relative path: You should send PWD as well
+
+```bash
+printf '%s\n%s' './notes.md' "$PWD" | curl -sS -X POST http://127.0.0.1:3030/preview --data-binary @-
+```
+
+#### `mc-preview` helper (Bash)
+
+The repo includes [`scripts/mc-preview`](scripts/mc-preview): it sends the **two-line** body (file path + `pwd -P`) and runs **`curl`** against **`POST /preview`**. Works for **relative or absolute** file paths.
+
+Install (pick a directory on your `PATH`, e.g. `~/bin`):
+
+```bash
+cd ~/bin
+wget -O ./mc-preview 'https://raw.githubusercontent.com/bayashi/mclocks/main/scripts/mc-preview'
+chmod +x ./mc-preview
+
+mc-preview relative/path/example.md
+mc-preview /absolute/path/to/notes.md
+mc-preview "./My Notes.md"
+```
+
+On success, your browser shows the Markdown rendered for viewing.
 
 ----------
 
