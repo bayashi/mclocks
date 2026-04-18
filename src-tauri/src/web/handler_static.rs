@@ -6,6 +6,8 @@ use encoding_rs::{Encoding, UTF_8};
 use std::fmt::Write;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tiny_http::{Header, Response, StatusCode};
 use urlencoding::{decode, encode};
@@ -35,6 +37,7 @@ use self::template_common::ContentMode;
 use super::common::{create_error_response, format_display_path, get_web_content_type};
 use super::handler_dump::handle_dump_request;
 use super::handler_editor::handle_editor_request;
+use super::handler_local_preview::{is_preview_route_request, try_handle_local_preview_request};
 use super::handler_resource_meta::{handle_resource_meta_request, is_resource_meta_request};
 use super::handler_slow::handle_slow_request;
 use super::handler_status::handle_status_request;
@@ -2134,7 +2137,19 @@ pub fn handle_web_request(
     editor_command: &str,
     editor_args: &[String],
     markdown_live_reload_ws_port: Option<u16>,
+    local_preview_api: Option<&Arc<AtomicBool>>,
+    server_port: u16,
 ) -> Response<std::io::Cursor<Vec<u8>>> {
+    if let Some(flag) = local_preview_api {
+        if let Some(resp) = try_handle_local_preview_request(request, flag, server_port) {
+            return resp;
+        }
+    } else if is_preview_route_request(request) {
+        return create_error_response(
+            StatusCode(404),
+            "POST /preview is only on the main server HTTP port (see startup log line starting with \"Main Server:\"). This listener does not serve the local preview API.",
+        );
+    }
     let url = request.url();
     let (path, request_query) = split_url_path_and_query(url);
     let content_mode = parse_content_mode(url);

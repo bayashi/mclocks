@@ -18,7 +18,8 @@ use web::dd_publish::{
 };
 use web::markdown_live_reload::start_markdown_live_reload_server;
 use web_server::{
-    default_web_server_config, load_web_config, open_url_in_browser, start_web_server,
+    WebServerListenKind, default_web_server_config, load_web_config, open_url_in_browser,
+    start_web_server,
 };
 
 /// Global lock to serialize all saveWindowState calls across windows.
@@ -147,6 +148,8 @@ pub fn run() {
                 config.editor_command.clone(),
                 config.editor_args.clone(),
                 markdown_live_reload_ws_port,
+                Some(config.local_preview_api_enabled.clone()),
+                WebServerListenKind::Main,
             );
             if let Some(assets_server) = &config.assets_server {
                 start_web_server(
@@ -163,6 +166,8 @@ pub fn run() {
                     "code".to_string(),
                     vec!["-g".to_string(), "{file}:{line}".to_string()],
                     None,
+                    None,
+                    WebServerListenKind::Assets,
                 );
             }
             if config.open_browser_at_start {

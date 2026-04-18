@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Open a Markdown file in mclocks via POST /preview (macOS / bash; works on Linux too).
+# Usage: mc-preview <path-to-markdown.md>
+# Relative paths are resolved from the shell's current directory (PWD sent as line 2).
+set -euo pipefail
+
+usage() {
+	echo "usage: mc-preview <path-to-markdown.md>" >&2
+	echo "  Relative paths are resolved from your shell's current directory." >&2
+	echo "  Environment: MCLOCKS_WEB_HOST (default 127.0.0.1), MCLOCKS_WEB_PORT (default 3030)." >&2
+	exit 1
+}
+
+[ "$#" -ge 1 ] || usage
+
+FILE="$*"
+lc=$(printf '%s' "$FILE" | tr '[:upper:]' '[:lower:]')
+if [[ "$lc" != *.md && "$lc" != *.markdown ]]; then
+	echo "mc-preview: path must end in .md or .markdown" >&2
+	exit 1
+fi
+
+HOST="${MCLOCKS_WEB_HOST:-127.0.0.1}"
+PORT="${MCLOCKS_WEB_PORT:-3030}"
+URL="http://${HOST}:${PORT}/preview"
+
+printf '%s\n%s' "$FILE" "$(pwd -P)" | curl -sS -X POST "$URL" --data-binary @-

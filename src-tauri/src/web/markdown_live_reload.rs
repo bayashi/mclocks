@@ -246,6 +246,10 @@ async fn run_ws_server(port: u16, ready_tx: std::sync::mpsc::SyncSender<()>) {
             return;
         }
     };
+    println!(
+        "WebSocket Server: ws://127.0.0.1:{} (Markdown live reload)",
+        port
+    );
     if ready_tx.send(()).is_err() {
         return;
     }
