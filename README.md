@@ -46,6 +46,7 @@ A developer is never without a clock:
     * dump request and response server
     * slow endpoints for debugging
     * open files in your editor from GitHub URLs
+    * preview Markdown file from CLI
 
 🔔 NOTE: `mclocks` doesn't need an internet connection — everything runs 100% locally.
 
@@ -506,15 +507,21 @@ printf '%s\n%s' './notes.md' "$PWD" | curl -sS -X POST http://127.0.0.1:3030/pre
 
 #### `mc-preview` helper (Bash)
 
-The repo includes [`scripts/mc-preview`](scripts/mc-preview): it sends the **two-line** body (file path + `pwd -P`) and runs **`curl`** against **`POST /preview`**. Works for **relative or absolute** file paths.
+The repo includes [`scripts/mc-preview`](scripts/mc-preview): It's a wrapper for curl requests. All you need to do is pass markdown file path.
 
-Install (pick a directory on your `PATH`, e.g. `~/bin`):
+Install:
 
 ```bash
 cd ~/bin
-wget -O ./mc-preview 'https://raw.githubusercontent.com/bayashi/mclocks/main/scripts/mc-preview'
+curl -o mc-preview 'https://raw.githubusercontent.com/bayashi/mclocks/main/scripts/mc-preview'
 chmod +x ./mc-preview
+```
 
+🔔 NOTE: If you changed the HTTP port, edit the mc-preview script.
+
+Examples:
+
+```bash
 mc-preview relative/path/example.md
 mc-preview /absolute/path/to/notes.md
 mc-preview "./My Notes.md"
