@@ -1,6 +1,6 @@
 [package]
 name = "mclocks"
-version = "0.2.43"
+version = "0.2.44"
 description = "The desktop clock application for multiple time zones🕒🌍🕕"
 authors = ["bayashi"]
 license = "Artistic-2.0"
