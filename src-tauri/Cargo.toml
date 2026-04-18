@@ -47,7 +47,7 @@ tiny_http = "0.12"
 encoding_rs = "0.8"
 urlencoding = "2.1"
 chardetng = "0.1.17"
-rand = "0.8"
+rand = "=0.9.3"
 uuid = { version = "1", features = ["v4"] }
 base64 = "0.22"
 tempfile = "3"

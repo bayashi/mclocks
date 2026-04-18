@@ -12,7 +12,7 @@ updates:
   target-branch: "update-lib"
 
 - package-ecosystem: "npm"
-  open-pull-requests-limit: 10
+  open-pull-requests-limit: 30
   directory: "/"
   schedule:
     interval: "monthly"
@@ -21,7 +21,7 @@ updates:
   target-branch: "update-lib"
 
 - package-ecosystem: "cargo"
-  open-pull-requests-limit: 10
+  open-pull-requests-limit: 20
   directory: "/src-tauri"
   schedule:
     interval: "monthly"
