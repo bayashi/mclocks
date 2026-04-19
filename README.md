@@ -243,52 +243,7 @@ Empty lines are preserved as-is in all operations.
 
 ## ⌨️ Keyboard Shortcuts
 
-### Show Help
-
-`F1` (Windows) or `Cmd + Shift + /` (macOS) to open help page (this README) in browser
-
-### Configuration, Display Formats
-
-| Shortcut | Description |
-|----------|-------------|
-| `Ctrl + o` | Open `config.json` file in editor |
-| `Ctrl + f` | Switch between `format` and `format2` (if `format2` is defined in `config.json`) |
-| `Ctrl + e` or `Ctrl + u` | Toggle to display Epoch time |
-
-### Timer
-
-| Shortcut | Description |
-|----------|-------------|
-| `Ctrl + 1` to `Ctrl + 9` | Start timer (1 minute × number key) |
-| `Ctrl + Alt + 1` to `Ctrl + Alt + 9` | Start timer (10 minutes × number key) |
-| `Ctrl + p` | Pause / resume all timers |
-| `Ctrl + 0` | Delete the oldest timer |
-| `Ctrl + Alt + 0` | Delete the newest timer |
-
-### Sticky Note
-
-| Shortcut | Description |
-|----------|-------------|
-| `Ctrl + s` | Create a new sticky note from clipboard text |
-
-### Clipboard datetime Operations
-
-| Shortcut | Description |
-|----------|-------------|
-| `Ctrl + c` | Copy current mclocks text to clipboard |
-| `Ctrl + v` | Convert clipboard content (Epoch time as seconds, or date-time) |
-| `Ctrl + Alt + v` | Convert clipboard content (Epoch time as milliseconds) |
-| `Ctrl + Alt + Shift + V` | Convert clipboard content (Epoch time as microseconds) |
-| `Ctrl + Alt + Shift + N + V` | Convert clipboard content (Epoch time as nanoseconds) |
-
-### Text Conversion
-
-| Shortcut | Description |
-|----------|-------------|
-| `Ctrl + i` | Quote each line of clipboard text with double quotes, append comma to the end (except the last line), and open in editor |
-| `Ctrl + Shift + i` | Append comma to the end of each line (no quotes) for INT list IN condition (except the last line), and open in editor |
-| `Ctrl + t` | Convert clipboard Excel/TSV text to Markdown table and open in editor |
-| `Ctrl + Shift + t` | Open a Markdown table template in editor |
+The shortcut tables is in **[`docs/mclocks-cheat-sheet.md`](docs/mclocks-cheat-sheet.md)**.
 
 ## 📝 Sticky Note
 
