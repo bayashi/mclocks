@@ -37,6 +37,8 @@ pub struct WebMarkdownConfig {
         alias = "openLinksInNewTab"
     )]
     pub open_external_link_in_new_tab: bool,
+    #[serde(default)]
+    pub enable_preview_api: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -73,8 +75,6 @@ pub struct WebConfig {
     pub assets: Option<WebAssetsConfig>,
     #[serde(default)]
     pub editor: Option<EditorConfig>,
-    #[serde(default)]
-    pub enable_preview_api: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -124,7 +124,7 @@ pub struct WebServerConfig {
     pub editor_include_host: bool,
     pub editor_command: String,
     pub editor_args: Vec<String>,
-    /// When `true`, the main web server handles `POST /preview`. Set from `web.enablePreviewApi` at startup.
+    /// When `true`, the main web server handles `POST /preview`. Set from `web.content.markdown.enablePreviewApi` at startup.
     pub local_preview_api_enabled: Arc<AtomicBool>,
 }
 
@@ -636,6 +636,12 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         .and_then(|c| c.markdown.as_ref())
         .map(|m| m.open_external_link_in_new_tab)
         .unwrap_or(true);
+    let enable_preview_api = web_config
+        .content
+        .as_ref()
+        .and_then(|c| c.markdown.as_ref())
+        .map(|m| m.enable_preview_api)
+        .unwrap_or(false);
     let has_explicit_web_port = config_value.pointer("/web/port").is_some();
     let main_port = if has_explicit_web_port {
         if !is_local_port_available(web_config.port) {
@@ -777,7 +783,7 @@ pub fn load_web_config(identifier: &String) -> Result<Option<WebServerConfig>, S
         editor_include_host,
         editor_command,
         editor_args,
-        local_preview_api_enabled: Arc::new(AtomicBool::new(web_config.enable_preview_api)),
+        local_preview_api_enabled: Arc::new(AtomicBool::new(enable_preview_api)),
     }))
 }
 
@@ -4094,9 +4100,28 @@ mod tests {
             "Default open_browser_at_start should be false"
         );
         assert_eq!(config.dump, false, "Default dump should be false");
-        assert_eq!(
-            config.enable_preview_api, false,
-            "Default enable_preview_api should be false"
+        let preview = config
+            .content
+            .as_ref()
+            .and_then(|c| c.markdown.as_ref())
+            .map(|m| m.enable_preview_api)
+            .unwrap_or(false);
+        assert_eq!(preview, false, "Default enable_preview_api should be false");
+    }
+
+    #[test]
+    fn test_web_config_markdown_enable_preview_api() {
+        let json = r#"{"root": "/x", "content": {"markdown": {"enablePreviewApi": true}}}"#;
+        let config: WebConfig = serde_json::from_str(json).expect("deserialize");
+        assert!(
+            config
+                .content
+                .as_ref()
+                .expect("content")
+                .markdown
+                .as_ref()
+                .expect("markdown")
+                .enable_preview_api
         );
     }
 
