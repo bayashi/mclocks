@@ -38,43 +38,7 @@ jobs:
         run: |
           pnpm install
 
-  lint-front:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: ./.github/actions/_setup-node-pnpm-cache
-
-      - uses: ./.github/actions/_install-pnpm-modules
-
-      - name: run ESLint
-        run: |
-          pnpm exec eslint .
-
-      - name: verify JS formatting (eslint --fix produces no diff)
-        run: |
-          pnpm exec eslint --fix "src/**/*.js" "*.config.js" "src-mcp/**/*.js"
-          git diff --exit-code
-
-  lint-server:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: ./.github/actions/setup-linux-tauri-rust
-
-      - name: verify Rust formatting
-        run: |
-          cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-
-      - name: run Rust tests
-        run: |
-          cd src-tauri
-          cargo test
-
-  build:
+  tauri-build:
     needs: setup
     runs-on: ubuntu-latest
     steps:
@@ -101,3 +65,41 @@ jobs:
       - name: Tauri build
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: pnpm tauri build
+
+  # Frontend changes are expected to have been manually verified in a running app.
+  # E2E tests run only on pull requests that have the required label, and on pushes to main after merge.
+  lint-front:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/_setup-node-pnpm-cache
+
+      - uses: ./.github/actions/_install-pnpm-modules
+
+      - name: run ESLint
+        run: |
+          pnpm exec eslint .
+
+      - name: verify JS formatting (eslint --fix produces no diff)
+        run: |
+          pnpm exec eslint --fix "src/**/*.js" "*.config.js" "src-mcp/**/*.js"
+          git diff --exit-code
+
+  lint-and-test-server:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-linux-tauri-rust
+
+      - name: verify Rust formatting
+        run: |
+          cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+
+      - name: run Rust tests
+        run: |
+          cd src-tauri
+          cargo test

@@ -2,10 +2,15 @@
 //!
 //! Linux webview line: best-effort `dpkg`/`rpm` on common package names, not the loaded
 //! `libwebkit2gtk` (Tauri/wry does not expose it). Flatpak/AppImage/snap may disagree.
+//!
+//! The tray "About" action exists only on Windows and macOS (`tray.rs`), so this module
+//! is compiled only for those targets to avoid `dead_code` on Linux CI.
 
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 use tauri_plugin_os::{arch, platform, version};
 
 /// Multi-line text: app version, then OS line, then webview runtime (no field labels).
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 pub fn format_about_clipboard_text(app_version: &str) -> String {
     format!(
         "mclocks v{}\n{} {} ({})\n{}",
@@ -17,6 +22,7 @@ pub fn format_about_clipboard_text(app_version: &str) -> String {
     )
 }
 
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 fn webview_runtime_label() -> String {
     #[cfg(windows)]
     {
