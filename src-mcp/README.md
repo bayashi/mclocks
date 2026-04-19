@@ -4,7 +4,7 @@ An MCP (Model Context Protocol) server that gives AI assistants the ability to a
 
 ## Features
 
-7 tools for datetime operations:
+8 tools for datetime operations:
 
 | Tool | Description |
 |------|-------------|
@@ -24,6 +24,7 @@ An MCP (Model Context Protocol) server that gives AI assistants the ability to a
 - **Epoch conversion** — supports seconds, milliseconds, microseconds, and nanoseconds
 - **Flexible input** — accepts ISO 8601, common date formats (e.g. `March 15, 2026`), and BigQuery-style datetime (`2024-01-01 12:00:00 UTC`)
 - **Locale support** — weekday names in multiple languages via the `locale` setting
+- **DST hint** — `convert-time`, `current-time`, and `local-time` may append a sparse trailing DST flag as JSON. `usetz` / `MCLOCKS_USETZ` — when strict historic offset mode is on, no DST flag is appended.
 
 ## Prerequisites
 

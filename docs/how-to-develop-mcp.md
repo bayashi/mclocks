@@ -12,7 +12,8 @@ For end-user setup instructions, see the **MCP Server** section in the main [REA
 
 | File | Description |
 |------|-------------|
-| `src-mcp/server.js` | MCP server implementation (single file) |
+| `src-mcp/server.js` | MCP server implementation |
+| `src-mcp/dst.js` | DST meta (Jan/Jul heuristic, `dstMetaMap` / `appendDstMeta`) |
 | `src-mcp/package.json` | npm package definition for `mclocks-datetime-util` |
 | `src-mcp/test/mcp-tools.test.js` | MCP tool tests (Mocha + MCP Client) |
 | `package.json` | Root package.json (`mcp`, `test:mcp` scripts for local dev) |

@@ -12,6 +12,14 @@ function text(result) {
   return result.content[0].text;
 }
 
+function trailingDstMetaJson(out) {
+  const i = out.lastIndexOf("\n{");
+  if (i === -1) {
+    return null;
+  }
+  return JSON.parse(out.slice(i + 1));
+}
+
 describe("mclocks MCP Tools", function () {
   let client;
 
@@ -98,6 +106,56 @@ describe("mclocks MCP Tools", function () {
       });
       assert.ok(result.isError, "should be an error");
       assert.ok(text(result).includes("Error"));
+    });
+
+    it("should append trailing JSON dst meta for America/Los_Angeles (summer/winter)", async function () {
+      const summer = await client.callTool({
+        name: "convert-time",
+        arguments: {
+          source: "2024-07-15T12:00:00Z",
+          timezones: ["America/Los_Angeles"],
+        },
+      });
+      const summerMeta = trailingDstMetaJson(text(summer));
+      assert.ok(summerMeta);
+      assert.strictEqual(summerMeta["America/Los_Angeles"].dst, true);
+
+      const winter = await client.callTool({
+        name: "convert-time",
+        arguments: {
+          source: "2024-01-15T18:00:00Z",
+          timezones: ["America/Los_Angeles"],
+        },
+      });
+      const winterMeta = trailingDstMetaJson(text(winter));
+      assert.ok(winterMeta);
+      assert.strictEqual(winterMeta["America/Los_Angeles"].dst, false);
+    });
+
+    it("should omit dst meta for Asia/Tokyo-only convert", async function () {
+      const result = await client.callTool({
+        name: "convert-time",
+        arguments: {
+          source: "2024-07-15T12:00:00Z",
+          timezones: ["Asia/Tokyo"],
+        },
+      });
+      const out = text(result);
+      assert.strictEqual(trailingDstMetaJson(out), null, `unexpected trailing dst JSON: ${out.slice(-80)}`);
+    });
+
+    it("should include only Los_Angeles in dst meta when paired with Tokyo", async function () {
+      const result = await client.callTool({
+        name: "convert-time",
+        arguments: {
+          source: "2024-07-15T12:00:00Z",
+          timezones: ["America/Los_Angeles", "Asia/Tokyo"],
+        },
+      });
+      const meta = trailingDstMetaJson(text(result));
+      assert.ok(meta);
+      assert.strictEqual(meta["America/Los_Angeles"].dst, true);
+      assert.ok(!Object.prototype.hasOwnProperty.call(meta, "Asia/Tokyo"));
     });
   });
 
@@ -540,5 +598,38 @@ describe("mclocks MCP env overrides", function () {
       arguments: { year: 2030, month: 1, day: 1 },
     });
     assert.ok(text(result).includes("Europe/Lisbon"), "should use MCLOCKS_CONVTZ as default");
+  });
+});
+
+describe("mclocks MCP MCLOCKS_USETZ and dst meta", function () {
+  let client;
+
+  before(async function () {
+    const transport = new StdioClientTransport({
+      command: "node",
+      args: [serverPath],
+      env: {
+        ...process.env,
+        MCLOCKS_CONFIG_PATH: "__nonexistent__",
+        MCLOCKS_USETZ: "true",
+      },
+    });
+    client = new Client({ name: "test-client-usetz-dst", version: "1.0.0" });
+    await client.connect(transport);
+  });
+
+  after(async function () {
+    await client.close();
+  });
+
+  it("should omit trailing dst JSON when MCLOCKS_USETZ is true", async function () {
+    const result = await client.callTool({
+      name: "convert-time",
+      arguments: {
+        source: "2024-07-15T12:00:00Z",
+        timezones: ["America/Los_Angeles"],
+      },
+    });
+    assert.strictEqual(trailingDstMetaJson(text(result)), null);
   });
 });

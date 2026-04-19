@@ -7,6 +7,7 @@ import { cdate } from "cdate";
 import { parse as parseJsonc } from "jsonc-parser";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { appendDstMeta, dstMetaMap } from "./dst.js";
 
 const APP_IDENTIFIER = "com.bayashi.mclocks";
 const CONFIG_FILE = "config.json";
@@ -144,6 +145,41 @@ function convertToTimezone(cdt, src, tz, usetz) {
   }
 }
 
+function pushValidZones(lines, validTimezones, results) {
+  for (const r of results) {
+    if (r.error) {
+      lines.push(`  ${r.timezone}: ERROR - ${r.error}`);
+    } else {
+      validTimezones.push(r.timezone);
+      lines.push(`  ${r.timezone}: ${r.result}`);
+    }
+  }
+}
+
+function nowRows(cdt, now, targetTimezones) {
+  return targetTimezones.map((tz) => {
+    try {
+      const offset = cdt().tz(tz).utcOffset();
+      const result = cdt(now).utcOffset(offset).text();
+      return { timezone: tz, result };
+    } catch (error) {
+      return { timezone: tz, error: String(error) };
+    }
+  });
+}
+
+function pushEpoch(lines, epochMs) {
+  lines.push("");
+  lines.push(`Epoch (seconds):      ${Math.floor(epochMs / 1000)}`);
+  lines.push(`Epoch (milliseconds): ${epochMs}`);
+}
+
+function replyWithDst(bodyText, validTimezones, instant, historicMode) {
+  return {
+    content: [{ type: "text", text: appendDstMeta(bodyText, dstMetaMap(validTimezones, instant, historicMode)) }],
+  };
+}
+
 const server = new McpServer({
   name: "mclocks-datetime-util",
   version: "0.1.0",
@@ -152,7 +188,8 @@ const server = new McpServer({
 server.tool(
   "convert-time",
   "Convert a datetime string or epoch timestamp to multiple timezones. " +
-  "Accepts ISO 8601 datetime, common date formats, or epoch numbers.",
+  "Accepts ISO 8601 datetime, common date formats, or epoch numbers. " +
+  "Trailing JSON may include a DST flag.",
   {
     source: z.string().describe(
       "The source value to convert. Can be a datetime string (e.g. '2024-01-15T10:30:00Z', '2024-01-15 10:30:00 UTC') or an epoch number (e.g. '1705312200')."
@@ -216,31 +253,22 @@ server.tool(
     }
 
     const lines = [`Input: ${inputDescription}`, ""];
-    for (const r of results) {
-      if (r.error) {
-        lines.push(`  ${r.timezone}: ERROR - ${r.error}`);
-      } else {
-        lines.push(`  ${r.timezone}: ${r.result}`);
-      }
-    }
+    const validTimezones = [];
+    pushValidZones(lines, validTimezones, results);
 
-    // Add epoch values when input is a datetime string
     if (!isNumeric) {
-      const epochMs = cdt(parsedSrc).t;
-      lines.push("");
-      lines.push(`Epoch (seconds):      ${epochMs / 1000}`);
-      lines.push(`Epoch (milliseconds): ${epochMs}`);
+      pushEpoch(lines, cdt(parsedSrc).t);
     }
 
-    return {
-      content: [{ type: "text", text: lines.join("\n") }],
-    };
+    const instant = new Date(isNumeric ? parsedSrc : cdt(parsedSrc).t);
+    return replyWithDst(lines.join("\n"), validTimezones, instant, usetz);
   }
 );
 
 server.tool(
   "current-time",
-  "Get the current time in specified timezones.",
+  "Get the current time in specified timezones. " +
+  "Trailing JSON may include a DST flag.",
   {
     timezones: z.array(z.string()).optional().describe(
       "Timezones in IANA tz database format. If omitted, uses timezones from mclocks config or built-in defaults. You should usually omit this parameter to use the user's mclocks configured timezones."
@@ -250,32 +278,20 @@ server.tool(
     const targetTimezones = timezones?.length > 0 ? timezones : defaultTimezones;
     const now = new Date();
     const cdt = cdate().cdateFn();
-
+    const results = nowRows(cdt, now, targetTimezones);
     const lines = [];
-    for (const tz of targetTimezones) {
-      try {
-        const offset = cdt().tz(tz).utcOffset();
-        const result = cdt(now).utcOffset(offset).text();
-        lines.push(`  ${tz}: ${result}`);
-      } catch (error) {
-        lines.push(`  ${tz}: ERROR - ${error}`);
-      }
-    }
+    const validTimezones = [];
+    pushValidZones(lines, validTimezones, results);
+    pushEpoch(lines, now.getTime());
 
-    const epochSec = Math.floor(now.getTime() / 1000);
-    lines.push("");
-    lines.push(`Epoch (seconds):      ${epochSec}`);
-    lines.push(`Epoch (milliseconds): ${now.getTime()}`);
-
-    return {
-      content: [{ type: "text", text: lines.join("\n") }],
-    };
+    return replyWithDst(lines.join("\n"), validTimezones, now, configUseTZ);
   }
 );
 
 server.tool(
   "local-time",
-  "Get the current local time in the user's timezone (from convtz config or system default). Use this when other MCP tools or prompts need the user's local date/time.",
+  "Get the current local time in the user's timezone (from convtz config or system default). Use this when other MCP tools or prompts need the user's local date/time. " +
+  "Trailing JSON may include a DST flag.",
   {},
   async () => {
     const tz = configConvTZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -284,9 +300,8 @@ server.tool(
     const cdt = cdate().cdateFn();
     const offset = cdt().tz(tz).utcOffset();
     const result = cdt(now).utcOffset(offset).text();
-    return {
-      content: [{ type: "text", text: `${result} in ${tz} (source: ${source})` }],
-    };
+    const line = `${result} in ${tz} (source: ${source})`;
+    return replyWithDst(line, [tz], now, configUseTZ);
   }
 );
 
