@@ -56,9 +56,9 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
 
 `mclocks`를 시작한 후 `Ctrl + o`를 눌러 `config.json` 파일을 편집할 수 있습니다.
 
-### config.json 예제
+### 시계용 config.json 예제
 
-`config.json` 파일은 아래와 같이 JSON 형식으로 작성해야 합니다.
+`config.json` 파일은 아래와 같이 JSON 형식(JSONC 지원)으로 작성해야 합니다.
 
     {
       "clocks": [
@@ -73,9 +73,7 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
       "forefront": false
     }
 
-`config.json`에 주석과 후행 쉼표를 사용할 수 있습니다(JSONC 지원).
-
-### 🔧 config.json의 필드
+아래 각 절에서는 `config.json`에 설정할 수 있는 필드를 설명합니다.
 
 #### clocks
 
@@ -362,7 +360,7 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
 
 **설정:**
 
-`web` 설정에 다음을 추가하세요:
+`editor`용 `web` 설정에 다음을 추가하세요:
 
     {
       "web": {

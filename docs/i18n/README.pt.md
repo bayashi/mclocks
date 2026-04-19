@@ -56,9 +56,9 @@ O arquivo `config.json` deve estar localizado nos seguintes diretórios:
 
 Ao iniciar o `mclocks`, pressione `Ctrl + o` para editar seu arquivo `config.json`.
 
-### Exemplo de config.json
+### Exemplo de config.json para o relógio
 
-O arquivo `config.json` deve ser formatado como JSON, conforme mostrado abaixo.
+O arquivo `config.json` deve ser formatado como JSON (compatível com JSONC), conforme mostrado abaixo.
 
     {
       "clocks": [
@@ -73,9 +73,7 @@ O arquivo `config.json` deve ser formatado como JSON, conforme mostrado abaixo.
       "forefront": false
     }
 
-Você pode incluir comentários e vírgulas finais em `config.json` (compatível com JSONC).
-
-### 🔧 Os campos do config.json
+As seções abaixo explicam os campos que você pode definir em `config.json`.
 
 #### clocks
 
@@ -362,7 +360,7 @@ Quando `web.editor.reposDir` é definido no arquivo de configuração, o servido
 
 **Configuração:**
 
-Adicione o seguinte à sua configuração `web`:
+Adicione o seguinte à configuração `web` de `editor`:
 
     {
       "web": {
