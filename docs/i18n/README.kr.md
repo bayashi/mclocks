@@ -220,50 +220,7 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
 
 ## ⌨️ 키보드 단축키
 
-### 도움말 표시
-
-`F1` (Windows) 또는 `Cmd + Shift + /` (macOS)로 브라우저에서 도움말 페이지(이 README)를 엽니다
-
-### 설정, 표시 형식
-
-| 단축키 | 설명 |
-|----------|-------------|
-| `Ctrl + o` | 편집기에서 `config.json` 파일 열기 |
-| `Ctrl + f` | `format`과 `format2` 간 전환 (`config.json`에 `format2`가 정의된 경우) |
-| `Ctrl + e` 또는 `Ctrl + u` | Epoch 시간 표시 전환 |
-
-### 타이머
-
-| 단축키 | 설명 |
-|----------|-------------|
-| `Ctrl + 1` ~ `Ctrl + 9` | 타이머 시작 (1분 × 숫자 키) |
-| `Ctrl + Alt + 1` ~ `Ctrl + Alt + 9` | 타이머 시작 (10분 × 숫자 키) |
-| `Ctrl + p` | 모든 타이머 일시 정지 / 재개 |
-| `Ctrl + 0` | 가장 오래된 타이머 삭제 |
-| `Ctrl + Alt + 0` | 가장 최근 타이머 삭제 |
-
-### 스티커 메모
-
-| 단축키 | 설명 |
-|----------|-------------|
-| `Ctrl + s` | 클립보드 텍스트에서 새 스티커 메모 생성 |
-
-### 클립보드 날짜-시간 작업
-
-| 단축키 | 설명 |
-|----------|-------------|
-| `Ctrl + c` | 현재 mclocks 텍스트를 클립보드에 복사 |
-| `Ctrl + v` | 클립보드 내용 변환 (Epoch 시간을 초로, 또는 날짜-시간) |
-| `Ctrl + Alt + v` | 클립보드 내용 변환 (Epoch 시간을 밀리초로) |
-| `Ctrl + Alt + Shift + V` | 클립보드 내용 변환 (Epoch 시간을 마이크로초로) |
-| `Ctrl + Alt + Shift + N + V` | 클립보드 내용 변환 (Epoch 시간을 나노초로) |
-
-### 텍스트 변환
-
-| 단축키 | 설명 |
-|----------|-------------|
-| `Ctrl + i` | 클립보드의 각 줄을 큰따옴표로 감싸고 끝에 쉼표를 추가하여 편집기에서 열기 (마지막 줄 제외) |
-| `Ctrl + Shift + i` | 각 줄 끝에 쉼표 추가 (따옴표 없음, INT 리스트 IN 조건용)하여 편집기에서 열기 (마지막 줄 제외) |
+단축키 표(도움말 표시, 설정·표시 형식, 타이머, 스티커 메모, 클립보드 날짜·시간 작업, 텍스트 변환)는 **[`mclocks-cheat-sheet.md`](../mclocks-cheat-sheet.md)** 에서 관리합니다.
 
 ## 📝 스티커 메모
 
@@ -314,6 +271,7 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
 * `status`: `true`이면 임의의 HTTP 상태 코드를 반환하는 `/status/{code}` 엔드포인트를 켭니다(기본값: `false`)
 * `content.markdown.allowRawHTML`: `true`이면 Markdown 렌더링에서 원시 HTML을 허용하고, `false`이면 텍스트로 이스케이프합니다(기본값: `false`)
 * `content.markdown.openExternalLinkInNewTab`: 외부 Markdown 링크는 새 탭에서, 내부 링크는 같은 탭에서 열립니다. `false`이면 모든 Markdown 링크가 같은 탭에서 열립니다(기본값: `true`)
+* `content.markdown.enablePreviewApi`: `true`이면 CLI에서 `POST /preview`로 Markdown을 브라우저에서 미리볼 수 있습니다(기본값: `false`).
 * `editor`: 설정되어 있고 `reposDir`을 포함하면 브라우저의 GitHub URL에서 편집기로 로컬 파일을 여는 `/editor` 엔드포인트를 켭니다(기본값: 미설정)
 
 ### 드래그 앤 드롭 기반 콘텐츠 뷰어

@@ -220,50 +220,7 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 
 ## ⌨️ 键盘快捷键
 
-### 显示帮助
-
-`F1`（Windows）或 `Cmd + Shift + /`（macOS）在浏览器中打开帮助页面（此 README）
-
-### 配置、显示格式
-
-| 快捷键 | 说明 |
-|----------|-------------|
-| `Ctrl + o` | 在编辑器中打开 `config.json` 文件 |
-| `Ctrl + f` | 在 `format` 和 `format2` 之间切换（如果在 `config.json` 中定义了 `format2`） |
-| `Ctrl + e` 或 `Ctrl + u` | 切换 Epoch 时间的显示 |
-
-### 计时器
-
-| 快捷键 | 说明 |
-|----------|-------------|
-| `Ctrl + 1` 到 `Ctrl + 9` | 启动计时器（1 分钟 × 数字键） |
-| `Ctrl + Alt + 1` 到 `Ctrl + Alt + 9` | 启动计时器（10 分钟 × 数字键） |
-| `Ctrl + p` | 暂停/恢复所有计时器 |
-| `Ctrl + 0` | 删除最早的计时器 |
-| `Ctrl + Alt + 0` | 删除最新的计时器 |
-
-### 便签
-
-| 快捷键 | 说明 |
-|----------|-------------|
-| `Ctrl + s` | 从剪贴板文本创建新便签 |
-
-### 剪贴板日期时间操作
-
-| 快捷键 | 说明 |
-|----------|-------------|
-| `Ctrl + c` | 将当前 mclocks 文本复制到剪贴板 |
-| `Ctrl + v` | 转换剪贴板内容（Epoch 时间按秒处理，或日期时间） |
-| `Ctrl + Alt + v` | 转换剪贴板内容（Epoch 时间按毫秒处理） |
-| `Ctrl + Alt + Shift + V` | 转换剪贴板内容（Epoch 时间按微秒处理） |
-| `Ctrl + Alt + Shift + N + V` | 转换剪贴板内容（Epoch 时间按纳秒处理） |
-
-### 文本转换
-
-| 快捷键 | 说明 |
-|----------|-------------|
-| `Ctrl + i` | 将剪贴板的每行用双引号括起来，末尾添加逗号，在编辑器中打开（最后一行除外） |
-| `Ctrl + Shift + i` | 在每行末尾添加逗号（不加引号，用于 INT 列表的 IN 条件），在编辑器中打开（最后一行除外） |
+快捷键对照表（显示帮助、配置与显示格式、计时器、便签、剪贴板日期与时间操作、文本转换）载于 **[`mclocks-cheat-sheet.md`](../mclocks-cheat-sheet.md)**。
 
 ## 📝 便签
 
@@ -314,6 +271,7 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 * `status`：若为 `true`，启用返回任意 HTTP 状态码的 `/status/{code}` 端点（默认：`false`）
 * `content.markdown.allowRawHTML`：若为 `true`，允许在 Markdown 渲染中使用原始 HTML；若为 `false`，原始 HTML 会被转义为文本（默认：`false`）
 * `content.markdown.openExternalLinkInNewTab`：外部 Markdown 链接在新标签页打开，内部链接在同一标签页；若为 `false`，所有 Markdown 链接在同一标签页打开（默认：`true`）
+* `content.markdown.enablePreviewApi`：若为 `true`，启用 `POST /preview`，以便在浏览器中从 CLI 预览 Markdown（默认：`false`）。
 * `editor`：若已设置且包含 `reposDir`，启用从浏览器 GitHub URL 在编辑器中打开本地文件的 `/editor` 端点（默认：未设置）
 
 ### 基于拖放的内容查看器

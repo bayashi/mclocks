@@ -220,50 +220,7 @@ Linhas vazias são preservadas como estão em todas as operações.
 
 ## ⌨️ Atalhos de teclado
 
-### Mostrar ajuda
-
-`F1` (Windows) ou `Cmd + Shift + /` (macOS) para abrir a página de ajuda (este README) no navegador
-
-### Configuração, formatos de exibição
-
-| Atalho | Descrição |
-|----------|-------------|
-| `Ctrl + o` | Abrir o arquivo `config.json` no editor |
-| `Ctrl + f` | Alternar entre `format` e `format2` (se `format2` estiver definido no `config.json`) |
-| `Ctrl + e` ou `Ctrl + u` | Alternar a exibição do tempo Epoch |
-
-### Temporizador
-
-| Atalho | Descrição |
-|----------|-------------|
-| `Ctrl + 1` a `Ctrl + 9` | Iniciar temporizador (1 minuto × tecla numérica) |
-| `Ctrl + Alt + 1` a `Ctrl + Alt + 9` | Iniciar temporizador (10 minutos × tecla numérica) |
-| `Ctrl + p` | Pausar / retomar todos os temporizadores |
-| `Ctrl + 0` | Excluir o temporizador mais antigo |
-| `Ctrl + Alt + 0` | Excluir o temporizador mais recente |
-
-### Nota adesiva
-
-| Atalho | Descrição |
-|----------|-------------|
-| `Ctrl + s` | Criar uma nova nota adesiva a partir do texto da área de transferência |
-
-### Operações de data-hora da área de transferência
-
-| Atalho | Descrição |
-|----------|-------------|
-| `Ctrl + c` | Copiar o texto atual do mclocks para a área de transferência |
-| `Ctrl + v` | Converter o conteúdo da área de transferência (tempo Epoch como segundos, ou data-hora) |
-| `Ctrl + Alt + v` | Converter o conteúdo da área de transferência (tempo Epoch como milissegundos) |
-| `Ctrl + Alt + Shift + V` | Converter o conteúdo da área de transferência (tempo Epoch como microssegundos) |
-| `Ctrl + Alt + Shift + N + V` | Converter o conteúdo da área de transferência (tempo Epoch como nanossegundos) |
-
-### Conversão de texto
-
-| Atalho | Descrição |
-|----------|-------------|
-| `Ctrl + i` | Colocar cada linha da área de transferência entre aspas duplas, adicionar vírgula no final e abrir no editor (exceto a última linha) |
-| `Ctrl + Shift + i` | Adicionar vírgula no final de cada linha (sem aspas) para condição IN de lista INT e abrir no editor (exceto a última linha) |
+As tabelas de atalhos (ajuda, configuração e formatos de exibição, temporizador, nota adesiva, data e hora da área de transferência, conversão de texto) estão em **[`mclocks-cheat-sheet.md`](../mclocks-cheat-sheet.md)**.
 
 ## 📝 Nota adesiva
 
@@ -314,6 +271,7 @@ O `mclocks` sempre inicia um servidor web local integrado na inicialização. Se
 * `status`: Se `true`, habilita o endpoint `/status/{code}` que retorna códigos de status HTTP arbitrários (padrão: `false`)
 * `content.markdown.allowRawHTML`: Se `true`, permite HTML bruto na renderização Markdown; se `false`, o HTML bruto é escapado como texto (padrão: `false`)
 * `content.markdown.openExternalLinkInNewTab`: Links Markdown externos abrem em nova aba e internos na mesma; se `false`, todos os links Markdown abrem na mesma aba (padrão: `true`)
+* `content.markdown.enablePreviewApi`: Se `true`, habilita `POST /preview` para pré-visualizar Markdown a partir da CLI no navegador (padrão: `false`).
 * `editor`: Se definido e contiver `reposDir`, habilita o endpoint `/editor` que abre arquivos locais no editor a partir de URLs do GitHub no navegador (padrão: não definido)
 
 ### Visualizador de conteúdo por arrastar e soltar

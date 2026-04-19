@@ -220,50 +220,7 @@ Baris kosong dipertahankan apa adanya di semua operasi.
 
 ## ⌨️ Pintasan keyboard
 
-### Tampilkan bantuan
-
-`F1` (Windows) atau `Cmd + Shift + /` (macOS) untuk membuka halaman bantuan (README ini) di browser
-
-### Konfigurasi, format tampilan
-
-| Pintasan | Deskripsi |
-|----------|-------------|
-| `Ctrl + o` | Buka file `config.json` di editor |
-| `Ctrl + f` | Beralih antara `format` dan `format2` (jika `format2` didefinisikan di `config.json`) |
-| `Ctrl + e` atau `Ctrl + u` | Aktifkan/nonaktifkan tampilan waktu Epoch |
-
-### Timer
-
-| Pintasan | Deskripsi |
-|----------|-------------|
-| `Ctrl + 1` sampai `Ctrl + 9` | Mulai timer (1 menit × tombol angka) |
-| `Ctrl + Alt + 1` sampai `Ctrl + Alt + 9` | Mulai timer (10 menit × tombol angka) |
-| `Ctrl + p` | Jeda / lanjutkan semua timer |
-| `Ctrl + 0` | Hapus timer tertua |
-| `Ctrl + Alt + 0` | Hapus timer terbaru |
-
-### Catatan tempel
-
-| Pintasan | Deskripsi |
-|----------|-------------|
-| `Ctrl + s` | Buat catatan tempel baru dari teks clipboard |
-
-### Operasi tanggal-waktu clipboard
-
-| Pintasan | Deskripsi |
-|----------|-------------|
-| `Ctrl + c` | Salin teks mclocks saat ini ke clipboard |
-| `Ctrl + v` | Konversi konten clipboard (waktu Epoch sebagai detik, atau tanggal-waktu) |
-| `Ctrl + Alt + v` | Konversi konten clipboard (waktu Epoch sebagai milidetik) |
-| `Ctrl + Alt + Shift + V` | Konversi konten clipboard (waktu Epoch sebagai mikrodetik) |
-| `Ctrl + Alt + Shift + N + V` | Konversi konten clipboard (waktu Epoch sebagai nanodetik) |
-
-### Konversi teks
-
-| Pintasan | Deskripsi |
-|----------|-------------|
-| `Ctrl + i` | Mengapit setiap baris clipboard dengan tanda kutip ganda, menambahkan koma di akhir, dan membuka di editor (kecuali baris terakhir) |
-| `Ctrl + Shift + i` | Menambahkan koma di akhir setiap baris (tanpa tanda kutip) untuk kondisi IN daftar INT dan membuka di editor (kecuali baris terakhir) |
+Tabel pintasan (bantuan, konfigurasi dan format tampilan, timer, catatan tempel, tanggal-waktu clipboard, konversi teks) dikelola di **[`mclocks-cheat-sheet.md`](../mclocks-cheat-sheet.md)**.
 
 ## 📝 Catatan tempel
 
@@ -314,6 +271,7 @@ Ukuran teks maksimum per catatan tempel adalah 128 KB.
 * `status`: Jika `true`, mengaktifkan endpoint `/status/{code}` yang mengembalikan kode status HTTP arbitrer (default: `false`)
 * `content.markdown.allowRawHTML`: Jika `true`, mengizinkan HTML mentah dalam rendering Markdown; jika `false`, HTML mentah di-escape sebagai teks (default: `false`)
 * `content.markdown.openExternalLinkInNewTab`: Tautan Markdown eksternal dibuka di tab baru dan internal di tab yang sama; jika `false`, semua tautan Markdown dibuka di tab yang sama (default: `true`)
+* `content.markdown.enablePreviewApi`: Jika `true`, mengaktifkan `POST /preview` untuk pratinjau Markdown dari CLI di peramban (default: `false`).
 * `editor`: Jika diatur dan berisi `reposDir`, mengaktifkan endpoint `/editor` untuk membuka file lokal di editor dari URL GitHub di browser (default: tidak diatur)
 
 ### Penampil konten berbasis seret dan lepas

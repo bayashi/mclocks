@@ -220,50 +220,7 @@ Las líneas vacías se preservan tal cual en todas las operaciones.
 
 ## ⌨️ Atajos de teclado
 
-### Mostrar ayuda
-
-`F1` (Windows) o `Cmd + Shift + /` (macOS) para abrir la página de ayuda (este README) en el navegador
-
-### Configuración, formatos de visualización
-
-| Atajo | Descripción |
-|----------|-------------|
-| `Ctrl + o` | Abrir el archivo `config.json` en el editor |
-| `Ctrl + f` | Alternar entre `format` y `format2` (si `format2` está definido en `config.json`) |
-| `Ctrl + e` o `Ctrl + u` | Alternar la visualización del tiempo Epoch |
-
-### Temporizador
-
-| Atajo | Descripción |
-|----------|-------------|
-| `Ctrl + 1` a `Ctrl + 9` | Iniciar temporizador (1 minuto × tecla numérica) |
-| `Ctrl + Alt + 1` a `Ctrl + Alt + 9` | Iniciar temporizador (10 minutos × tecla numérica) |
-| `Ctrl + p` | Pausar / reanudar todos los temporizadores |
-| `Ctrl + 0` | Eliminar el temporizador más antiguo |
-| `Ctrl + Alt + 0` | Eliminar el temporizador más reciente |
-
-### Nota adhesiva
-
-| Atajo | Descripción |
-|----------|-------------|
-| `Ctrl + s` | Crear una nueva nota adhesiva a partir del texto del portapapeles |
-
-### Operaciones de fecha-hora del portapapeles
-
-| Atajo | Descripción |
-|----------|-------------|
-| `Ctrl + c` | Copiar el texto actual de mclocks al portapapeles |
-| `Ctrl + v` | Convertir el contenido del portapapeles (tiempo Epoch como segundos, o fecha-hora) |
-| `Ctrl + Alt + v` | Convertir el contenido del portapapeles (tiempo Epoch como milisegundos) |
-| `Ctrl + Alt + Shift + V` | Convertir el contenido del portapapeles (tiempo Epoch como microsegundos) |
-| `Ctrl + Alt + Shift + N + V` | Convertir el contenido del portapapeles (tiempo Epoch como nanosegundos) |
-
-### Conversión de texto
-
-| Atajo | Descripción |
-|----------|-------------|
-| `Ctrl + i` | Encerrar cada línea del portapapeles entre comillas dobles, añadir coma al final y abrir en el editor (excepto la última línea) |
-| `Ctrl + Shift + i` | Añadir coma al final de cada línea (sin comillas) para condiciones IN de listas INT y abrir en el editor (excepto la última línea) |
+Las tablas de atajos (mostrar ayuda, configuración y formatos de visualización, temporizador, nota adhesiva, fecha y hora del portapapeles, conversión de texto) se mantienen en **[`mclocks-cheat-sheet.md`](../mclocks-cheat-sheet.md)**.
 
 ## 📝 Nota adhesiva
 
@@ -314,6 +271,7 @@ El tamaño máximo de texto por nota adhesiva es de 128 KB.
 * `status`: Si es `true`, habilita el endpoint `/status/{code}` que devuelve códigos de estado HTTP arbitrarios (por defecto: `false`)
 * `content.markdown.allowRawHTML`: Si es `true`, permite HTML sin procesar en el renderizado de Markdown; si es `false`, el HTML sin procesar se escapa como texto (por defecto: `false`)
 * `content.markdown.openExternalLinkInNewTab`: Los enlaces Markdown externos se abren en una pestaña nueva y los internos en la misma; si es `false`, todos los enlaces Markdown se abren en la misma pestaña (por defecto: `true`)
+* `content.markdown.enablePreviewApi`: Si es `true`, habilita `POST /preview` para previsualizar Markdown desde la CLI en el navegador (por defecto: `false`).
 * `editor`: Si está definido e incluye `reposDir`, habilita el endpoint `/editor` que abre archivos locales en tu editor desde URLs de GitHub en el navegador (por defecto: no establecido)
 
 ### Visor de contenido basado en arrastrar y soltar

@@ -220,50 +220,7 @@ Boş satırlar tüm işlemlerde olduğu gibi korunur.
 
 ## ⌨️ Klavye kısayolları
 
-### Yardımı göster
-
-`F1` (Windows) veya `Cmd + Shift + /` (macOS) ile yardım sayfasını (bu README) tarayıcıda açın
-
-### Yapılandırma, görüntüleme biçimleri
-
-| Kısayol | Açıklama |
-|----------|-------------|
-| `Ctrl + o` | `config.json` dosyasını editörde aç |
-| `Ctrl + f` | `format` ve `format2` arasında geçiş yap (`config.json`'da `format2` tanımlıysa) |
-| `Ctrl + e` veya `Ctrl + u` | Epoch zamanı görüntülemesini aç/kapat |
-
-### Zamanlayıcı
-
-| Kısayol | Açıklama |
-|----------|-------------|
-| `Ctrl + 1` - `Ctrl + 9` | Zamanlayıcı başlat (1 dakika × sayı tuşu) |
-| `Ctrl + Alt + 1` - `Ctrl + Alt + 9` | Zamanlayıcı başlat (10 dakika × sayı tuşu) |
-| `Ctrl + p` | Tüm zamanlayıcıları duraklat / devam ettir |
-| `Ctrl + 0` | En eski zamanlayıcıyı sil |
-| `Ctrl + Alt + 0` | En yeni zamanlayıcıyı sil |
-
-### Yapışkan not
-
-| Kısayol | Açıklama |
-|----------|-------------|
-| `Ctrl + s` | Pano metninden yeni bir yapışkan not oluştur |
-
-### Pano tarih-saat işlemleri
-
-| Kısayol | Açıklama |
-|----------|-------------|
-| `Ctrl + c` | Geçerli mclocks metnini panoya kopyala |
-| `Ctrl + v` | Pano içeriğini dönüştür (Epoch zamanı saniye olarak veya tarih-saat) |
-| `Ctrl + Alt + v` | Pano içeriğini dönüştür (Epoch zamanı milisaniye olarak) |
-| `Ctrl + Alt + Shift + V` | Pano içeriğini dönüştür (Epoch zamanı mikrosaniye olarak) |
-| `Ctrl + Alt + Shift + N + V` | Pano içeriğini dönüştür (Epoch zamanı nanosaniye olarak) |
-
-### Metin dönüştürme
-
-| Kısayol | Açıklama |
-|----------|-------------|
-| `Ctrl + i` | Panonun her satırını çift tırnak içine al, sonuna virgül ekle ve editörde aç (son satır hariç) |
-| `Ctrl + Shift + i` | Her satırın sonuna virgül ekle (tırnak olmadan) INT listesi IN koşulu için ve editörde aç (son satır hariç) |
+Kısayol tabloları (yardım, yapılandırma ve görüntüleme biçimleri, zamanlayıcı, yapışkan not, pano tarih-saati, metin dönüştürme) **[`mclocks-cheat-sheet.md`](../mclocks-cheat-sheet.md)** dosyasında tutulur.
 
 ## 📝 Yapışkan not
 
@@ -314,6 +271,7 @@ Yapışkan not başına maksimum metin boyutu 128 KB'dir.
 * `status`: `true` ise rastgele HTTP durum kodları döndüren `/status/{code}` uç noktasını etkinleştirir (varsayılan: `false`)
 * `content.markdown.allowRawHTML`: `true` ise Markdown işlemesinde ham HTML'e izin verir; `false` ise ham HTML metin olarak kaçırılır (varsayılan: `false`)
 * `content.markdown.openExternalLinkInNewTab`: Harici Markdown bağlantıları yeni sekmede, dahili bağlantılar aynı sekmede açılır; `false` ise tüm Markdown bağlantıları aynı sekmede açılır (varsayılan: `true`)
+* `content.markdown.enablePreviewApi`: `true` ise CLI'dan `POST /preview` ile Markdown'ı tarayıcıda önizlemeyi etkinleştirir (varsayılan: `false`).
 * `editor`: Ayarlanmış ve `reposDir` içeriyorsa, tarayıcıdaki GitHub URL'lerinden yerel dosyaları editörde açan `/editor` uç noktasını etkinleştirir (varsayılan: ayarlanmamış)
 
 ### Sürükle-bırak tabanlı içerik görüntüleyici
