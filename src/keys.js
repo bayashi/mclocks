@@ -19,11 +19,11 @@ const pressingBaseKey = (e) => isMacOS() ? e.metaKey : e.ctrlKey;
 const pressingAltKey = (e) => isMacOS() ? e.ctrlKey : e.altKey;
 
 /**
- * Opens the help page in the default browser
+ * Opens the keyboard shortcut cheat sheet in the default browser
  */
 async function openHelpPage() {
   try {
-    await openUrl("https://github.com/bayashi/mclocks?tab=readme-ov-file#keyboard-shortcuts");
+    await openUrl("https://github.com/bayashi/mclocks/blob/main/docs/mclocks-cheat-sheet.md#keyboard-shortcuts");
   } catch (error) {
     await openMessageDialog(`Failed to open help page: ${error}`, "mclocks Error", "error");
   }

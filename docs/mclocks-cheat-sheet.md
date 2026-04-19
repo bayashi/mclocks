@@ -10,7 +10,7 @@ Quick reference for keyboard shortcuts, the full `config.json` shape (with defau
 
 | Shortcut | Description |
 |----------|-------------|
-| `F1` (Windows) or `Cmd + Shift + /` (macOS) | Open help page (README) in browser |
+| `F1` (Windows) or `Cmd + Shift + /` (macOS) | Open this cheat sheet in the browser |
 
 ### Configuration, Display Formats
 
