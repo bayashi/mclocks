@@ -314,6 +314,7 @@ macOS 向けには、インストール用の `.dmg` ファイルを入手でき
 * `status`: `true` にすると、任意の HTTP ステータスコードを返す `/status/{code}` エンドポイントを有効にします（デフォルト: `false`）
 * `content.markdown.allowRawHTML`: `true` にすると Markdown レンダリングで生 HTML を許可します。`false` の場合、Markdown 内の生 HTML はテキストとしてエスケープされます（デフォルト: `false`）
 * `content.markdown.openExternalLinkInNewTab`: 外部の Markdown リンクは新しいタブで開き、内部リンクは同じタブで開きます。`false` にすると、すべての Markdown リンクが同じタブで開きます（デフォルト: `true`）
+* `content.markdown.enablePreviewApi`: `true` にすると CLI から `POST /preview` で Markdown をブラウザでプレビューできるようにします（デフォルト: `false`）
 * `editor`: 設定され `reposDir` を含む場合、ブラウザの GitHub URL からエディタでローカルファイルを開く `/editor` エンドポイントを有効にします（デフォルト: 未設定）
 
 ### ドラッグ＆ドロップベースのコンテンツビューアー

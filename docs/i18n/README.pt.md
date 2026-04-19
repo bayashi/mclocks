@@ -314,6 +314,7 @@ O `mclocks` sempre inicia um servidor web local integrado na inicialização. Se
 * `status`: Se `true`, habilita o endpoint `/status/{code}` que retorna códigos de status HTTP arbitrários (padrão: `false`)
 * `content.markdown.allowRawHTML`: Se `true`, permite HTML bruto na renderização Markdown; se `false`, o HTML bruto é escapado como texto (padrão: `false`)
 * `content.markdown.openExternalLinkInNewTab`: Links Markdown externos abrem em nova aba e internos na mesma; se `false`, todos os links Markdown abrem na mesma aba (padrão: `true`)
+* `content.markdown.enablePreviewApi`: Se `true`, habilita `POST /preview` para pré-visualizar Markdown a partir da CLI no navegador (padrão: `false`).
 * `editor`: Se definido e contiver `reposDir`, habilita o endpoint `/editor` que abre arquivos locais no editor a partir de URLs do GitHub no navegador (padrão: não definido)
 
 ### Visualizador de conteúdo por arrastar e soltar

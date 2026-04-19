@@ -314,6 +314,7 @@ Ukuran teks maksimum per catatan tempel adalah 128 KB.
 * `status`: Jika `true`, mengaktifkan endpoint `/status/{code}` yang mengembalikan kode status HTTP arbitrer (default: `false`)
 * `content.markdown.allowRawHTML`: Jika `true`, mengizinkan HTML mentah dalam rendering Markdown; jika `false`, HTML mentah di-escape sebagai teks (default: `false`)
 * `content.markdown.openExternalLinkInNewTab`: Tautan Markdown eksternal dibuka di tab baru dan internal di tab yang sama; jika `false`, semua tautan Markdown dibuka di tab yang sama (default: `true`)
+* `content.markdown.enablePreviewApi`: Jika `true`, mengaktifkan `POST /preview` untuk pratinjau Markdown dari CLI di peramban (default: `false`).
 * `editor`: Jika diatur dan berisi `reposDir`, mengaktifkan endpoint `/editor` untuk membuka file lokal di editor dari URL GitHub di browser (default: tidak diatur)
 
 ### Penampil konten berbasis seret dan lepas

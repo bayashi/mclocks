@@ -314,6 +314,7 @@
 * `status`: إذا كان `true`، يُفعّل نقطة النهاية `/status/{code}` التي تُعيد رموز حالة HTTP عشوائية (الافتراضي: `false`)
 * `content.markdown.allowRawHTML`: إذا كان `true`، يسمح بـ HTML الخام في عرض Markdown؛ إذا كان `false`، يُهرب HTML الخام كنص (الافتراضي: `false`)
 * `content.markdown.openExternalLinkInNewTab`: تفتح روابط Markdown الخارجية في علامة تبويب جديدة والداخلية في نفس العلامة؛ إذا كان `false`، تفتح جميع روابط Markdown في نفس العلامة (الافتراضي: `true`)
+* `content.markdown.enablePreviewApi`: إذا كان `true`، يُفعّل `POST /preview` لمعاينة Markdown من سطر الأوامر في المتصفح (الافتراضي: `false`).
 * `editor`: إذا تم تعيينه ويحتوي على `reposDir`، يُفعّل نقطة النهاية `/editor` لفتح الملفات المحلية في المحرر من روابط GitHub في المتصفح (الافتراضي: غير معيّن)
 
 ### عارض محتوى بالسحب والإفلات

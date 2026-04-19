@@ -314,6 +314,7 @@ Yapışkan not başına maksimum metin boyutu 128 KB'dir.
 * `status`: `true` ise rastgele HTTP durum kodları döndüren `/status/{code}` uç noktasını etkinleştirir (varsayılan: `false`)
 * `content.markdown.allowRawHTML`: `true` ise Markdown işlemesinde ham HTML'e izin verir; `false` ise ham HTML metin olarak kaçırılır (varsayılan: `false`)
 * `content.markdown.openExternalLinkInNewTab`: Harici Markdown bağlantıları yeni sekmede, dahili bağlantılar aynı sekmede açılır; `false` ise tüm Markdown bağlantıları aynı sekmede açılır (varsayılan: `true`)
+* `content.markdown.enablePreviewApi`: `true` ise CLI'dan `POST /preview` ile Markdown'ı tarayıcıda önizlemeyi etkinleştirir (varsayılan: `false`).
 * `editor`: Ayarlanmış ve `reposDir` içeriyorsa, tarayıcıdaki GitHub URL'lerinden yerel dosyaları editörde açan `/editor` uç noktasını etkinleştirir (varsayılan: ayarlanmamış)
 
 ### Sürükle-bırak tabanlı içerik görüntüleyici

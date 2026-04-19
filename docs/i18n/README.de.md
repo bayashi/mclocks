@@ -314,6 +314,7 @@ Die maximale Textgröße pro Haftnotiz beträgt 128 KB.
 * `status`: Bei `true` aktiviert den `/status/{code}`-Endpunkt für beliebige HTTP-Statuscodes (Standard: `false`)
 * `content.markdown.allowRawHTML`: Bei `true` wird rohes HTML im Markdown-Rendering zugelassen; bei `false` wird es als Text escaped (Standard: `false`)
 * `content.markdown.openExternalLinkInNewTab`: Externe Markdown-Links öffnen in einem neuen Tab, interne im selben; bei `false` öffnen alle Markdown-Links im selben Tab (Standard: `true`)
+* `content.markdown.enablePreviewApi`: Bei `true` wird `POST /preview` aktiviert, um Markdown aus der CLI im Browser voranzusehen (Standard: `false`).
 * `editor`: Wenn gesetzt und `reposDir` enthält, aktiviert den `/editor`-Endpunkt zum Öffnen lokaler Dateien aus GitHub-URLs im Browser (Standard: nicht gesetzt)
 
 ### Drag-and-drop-basierter Content-Viewer

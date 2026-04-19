@@ -314,6 +314,7 @@ La taille maximale de texte par note adhésive est de 128 Ko.
 * `status` : Si `true`, active l'endpoint `/status/{code}` qui retourne des codes de statut HTTP arbitraires (par défaut : `false`)
 * `content.markdown.allowRawHTML` : Si `true`, autorise le HTML brut dans le rendu Markdown ; si `false`, le HTML brut est échappé comme texte (par défaut : `false`)
 * `content.markdown.openExternalLinkInNewTab` : Les liens Markdown externes s'ouvrent dans un nouvel onglet et les liens internes dans le même ; si `false`, tous les liens Markdown s'ouvrent dans le même onglet (par défaut : `true`)
+* `content.markdown.enablePreviewApi` : Si `true`, active `POST /preview` pour prévisualiser le Markdown depuis la CLI dans le navigateur (par défaut : `false`).
 * `editor` : Si défini et contient `reposDir`, active l'endpoint `/editor` qui ouvre des fichiers locaux dans votre éditeur depuis des URLs GitHub du navigateur (par défaut : non défini)
 
 ### Visionneuse de contenu par glisser-déposer

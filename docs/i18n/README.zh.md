@@ -314,6 +314,7 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 * `status`：若为 `true`，启用返回任意 HTTP 状态码的 `/status/{code}` 端点（默认：`false`）
 * `content.markdown.allowRawHTML`：若为 `true`，允许在 Markdown 渲染中使用原始 HTML；若为 `false`，原始 HTML 会被转义为文本（默认：`false`）
 * `content.markdown.openExternalLinkInNewTab`：外部 Markdown 链接在新标签页打开，内部链接在同一标签页；若为 `false`，所有 Markdown 链接在同一标签页打开（默认：`true`）
+* `content.markdown.enablePreviewApi`：若为 `true`，启用 `POST /preview`，以便在浏览器中从 CLI 预览 Markdown（默认：`false`）。
 * `editor`：若已设置且包含 `reposDir`，启用从浏览器 GitHub URL 在编辑器中打开本地文件的 `/editor` 端点（默认：未设置）
 
 ### 基于拖放的内容查看器

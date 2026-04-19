@@ -314,6 +314,7 @@ macOS의 경우 설치를 위한 `.dmg` 파일을 받을 수 있습니다.
 * `status`: `true`이면 임의의 HTTP 상태 코드를 반환하는 `/status/{code}` 엔드포인트를 켭니다(기본값: `false`)
 * `content.markdown.allowRawHTML`: `true`이면 Markdown 렌더링에서 원시 HTML을 허용하고, `false`이면 텍스트로 이스케이프합니다(기본값: `false`)
 * `content.markdown.openExternalLinkInNewTab`: 외부 Markdown 링크는 새 탭에서, 내부 링크는 같은 탭에서 열립니다. `false`이면 모든 Markdown 링크가 같은 탭에서 열립니다(기본값: `true`)
+* `content.markdown.enablePreviewApi`: `true`이면 CLI에서 `POST /preview`로 Markdown을 브라우저에서 미리볼 수 있습니다(기본값: `false`).
 * `editor`: 설정되어 있고 `reposDir`을 포함하면 브라우저의 GitHub URL에서 편집기로 로컬 파일을 여는 `/editor` 엔드포인트를 켭니다(기본값: 미설정)
 
 ### 드래그 앤 드롭 기반 콘텐츠 뷰어
