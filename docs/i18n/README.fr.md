@@ -220,50 +220,7 @@ Les lignes vides sont préservées telles quelles dans toutes les opérations.
 
 ## ⌨️ Raccourcis clavier
 
-### Afficher l'aide
-
-`F1` (Windows) ou `Cmd + Shift + /` (macOS) pour ouvrir la page d'aide (ce README) dans le navigateur
-
-### Configuration, formats d'affichage
-
-| Raccourci | Description |
-|----------|-------------|
-| `Ctrl + o` | Ouvrir le fichier `config.json` dans l'éditeur |
-| `Ctrl + f` | Basculer entre `format` et `format2` (si `format2` est défini dans `config.json`) |
-| `Ctrl + e` ou `Ctrl + u` | Basculer l'affichage du temps Epoch |
-
-### Minuteur
-
-| Raccourci | Description |
-|----------|-------------|
-| `Ctrl + 1` à `Ctrl + 9` | Démarrer un minuteur (1 minute × touche numérique) |
-| `Ctrl + Alt + 1` à `Ctrl + Alt + 9` | Démarrer un minuteur (10 minutes × touche numérique) |
-| `Ctrl + p` | Mettre en pause / reprendre tous les minuteurs |
-| `Ctrl + 0` | Supprimer le minuteur le plus ancien |
-| `Ctrl + Alt + 0` | Supprimer le minuteur le plus récent |
-
-### Note adhésive
-
-| Raccourci | Description |
-|----------|-------------|
-| `Ctrl + s` | Créer une nouvelle note adhésive à partir du texte du presse-papiers |
-
-### Opérations de date-heure du presse-papiers
-
-| Raccourci | Description |
-|----------|-------------|
-| `Ctrl + c` | Copier le texte actuel de mclocks dans le presse-papiers |
-| `Ctrl + v` | Convertir le contenu du presse-papiers (temps Epoch en secondes, ou date-heure) |
-| `Ctrl + Alt + v` | Convertir le contenu du presse-papiers (temps Epoch en millisecondes) |
-| `Ctrl + Alt + Shift + V` | Convertir le contenu du presse-papiers (temps Epoch en microsecondes) |
-| `Ctrl + Alt + Shift + N + V` | Convertir le contenu du presse-papiers (temps Epoch en nanosecondes) |
-
-### Conversion de texte
-
-| Raccourci | Description |
-|----------|-------------|
-| `Ctrl + i` | Entourer chaque ligne du presse-papiers de guillemets doubles, ajouter une virgule à la fin et ouvrir dans l'éditeur (sauf la dernière ligne) |
-| `Ctrl + Shift + i` | Ajouter une virgule à la fin de chaque ligne (sans guillemets) pour les conditions IN de listes INT et ouvrir dans l'éditeur (sauf la dernière ligne) |
+Les tableaux des raccourcis (aide, configuration et formats d'affichage, minuteur, note adhésive, date-heure du presse-papiers, conversion de texte) sont tenus dans **[`mclocks-cheat-sheet.md`](../mclocks-cheat-sheet.md)**.
 
 ## 📝 Note adhésive
 

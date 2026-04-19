@@ -220,50 +220,7 @@ Leerzeilen werden bei allen Operationen beibehalten.
 
 ## ⌨️ Tastenkombinationen
 
-### Hilfe anzeigen
-
-`F1` (Windows) oder `Cmd + Shift + /` (macOS) zum Öffnen der Hilfeseite (dieses README) im Browser
-
-### Konfiguration, Anzeigeformate
-
-| Tastenkombination | Beschreibung |
-|----------|-------------|
-| `Ctrl + o` | `config.json`-Datei im Editor öffnen |
-| `Ctrl + f` | Zwischen `format` und `format2` wechseln (wenn `format2` in `config.json` definiert ist) |
-| `Ctrl + e` oder `Ctrl + u` | Epoch-Zeit-Anzeige umschalten |
-
-### Timer
-
-| Tastenkombination | Beschreibung |
-|----------|-------------|
-| `Ctrl + 1` bis `Ctrl + 9` | Timer starten (1 Minute × Zifferntaste) |
-| `Ctrl + Alt + 1` bis `Ctrl + Alt + 9` | Timer starten (10 Minuten × Zifferntaste) |
-| `Ctrl + p` | Alle Timer pausieren / fortsetzen |
-| `Ctrl + 0` | Ältesten Timer löschen |
-| `Ctrl + Alt + 0` | Neuesten Timer löschen |
-
-### Haftnotiz
-
-| Tastenkombination | Beschreibung |
-|----------|-------------|
-| `Ctrl + s` | Neue Haftnotiz aus Zwischenablagetext erstellen |
-
-### Zwischenablage-Datum/Uhrzeit-Operationen
-
-| Tastenkombination | Beschreibung |
-|----------|-------------|
-| `Ctrl + c` | Aktuellen mclocks-Text in die Zwischenablage kopieren |
-| `Ctrl + v` | Zwischenablageinhalt konvertieren (Epoch-Zeit als Sekunden oder Datum/Uhrzeit) |
-| `Ctrl + Alt + v` | Zwischenablageinhalt konvertieren (Epoch-Zeit als Millisekunden) |
-| `Ctrl + Alt + Shift + V` | Zwischenablageinhalt konvertieren (Epoch-Zeit als Mikrosekunden) |
-| `Ctrl + Alt + Shift + N + V` | Zwischenablageinhalt konvertieren (Epoch-Zeit als Nanosekunden) |
-
-### Textkonvertierung
-
-| Tastenkombination | Beschreibung |
-|----------|-------------|
-| `Ctrl + i` | Jede Zeile der Zwischenablage mit Anführungszeichen umschließen, Komma am Ende hinzufügen und im Editor öffnen (außer der letzten Zeile) |
-| `Ctrl + Shift + i` | Komma am Ende jeder Zeile hinzufügen (ohne Anführungszeichen) für INT-Listen-IN-Bedingungen und im Editor öffnen (außer der letzten Zeile) |
+Die Tabellen der Tastenkürzel (Hilfe, Konfiguration und Anzeigeformate, Timer, Haftnotiz, Zwischenablage mit Datum und Uhrzeit, Textkonvertierung) stehen in **[`mclocks-cheat-sheet.md`](../mclocks-cheat-sheet.md)**.
 
 ## 📝 Haftnotiz
 
