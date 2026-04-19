@@ -319,11 +319,11 @@ The maximum text size per sticky note is 128 KB.
         "dump": true,
         "slow": true,
         "status": true,
-        "enablePreviewApi": false,
         "content": {
           "markdown": {
             "allowRawHTML": false,
-            "openExternalLinkInNewTab": true
+            "openExternalLinkInNewTab": true,
+            "enablePreviewApi": false
           }
         },
         "editor": {
@@ -335,12 +335,12 @@ The maximum text size per sticky note is 128 KB.
 * `root`: Path to the directory containing files to serve (required only when using static file hosting)
 * `port`: Preferred port number for the main web server (`>=2000`, default: `3030`). If the preferred port is in use, mclocks searches downward (`-1`) until it finds an available port.
 * `openBrowserAtStart`: If set to `true`, automatically opens the web server URL in the default browser when `mclocks` starts (default: `false`)
-* `enablePreviewApi`: If set to `true`, enables `POST /preview` so you can open Markdown in the browser from the CLI (default: `false`).
 * `dump`: If set to `true`, enables the `/dump` endpoint that returns request details as JSON (default: `false`)
 * `slow`: If set to `true`, enables the `/slow` endpoint that delays the response (default: `false`)
 * `status`: If set to `true`, enables the `/status/{code}` endpoint that returns arbitrary HTTP status codes (default: `false`)
 * `content.markdown.allowRawHTML`: If set to `true`, allows raw HTML inside Markdown rendering; if `false`, raw HTML in Markdown is escaped as text (default: `false`)
 * `content.markdown.openExternalLinkInNewTab`: External Markdown links open in a new tab while internal links open in the same tab; if `false`, all Markdown links open in the same tab (default: `true`)
+* `content.markdown.enablePreviewApi`: If set to `true`, enables `POST /preview` so you can open Markdown in the browser from the CLI (default: `false`)
 * `editor`: If set and contains `reposDir`, enables the `/editor` endpoint that opens local files in your editor from browser's GitHub URLs (default: not set)
 
 ### drag-and-drop based content viewer
@@ -489,7 +489,11 @@ You can specify a line number using the hash fragment in the URL:
 
 ```json
 "web": {
-  "enablePreviewApi": true
+  "content": {
+    "markdown": {
+      "enablePreviewApi": true
+    }
+  }
 }
 ```
 
