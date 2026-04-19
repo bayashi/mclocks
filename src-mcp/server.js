@@ -7,6 +7,7 @@ import { cdate } from "cdate";
 import { parse as parseJsonc } from "jsonc-parser";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { appendDstMeta, dstMetaMap } from "./dst.js";
 
 const APP_IDENTIFIER = "com.bayashi.mclocks";
 const CONFIG_FILE = "config.json";
@@ -152,7 +153,8 @@ const server = new McpServer({
 server.tool(
   "convert-time",
   "Convert a datetime string or epoch timestamp to multiple timezones. " +
-  "Accepts ISO 8601 datetime, common date formats, or epoch numbers.",
+  "Accepts ISO 8601 datetime, common date formats, or epoch numbers. " +
+  "Trailing JSON may include a DST flag.",
   {
     source: z.string().describe(
       "The source value to convert. Can be a datetime string (e.g. '2024-01-15T10:30:00Z', '2024-01-15 10:30:00 UTC') or an epoch number (e.g. '1705312200')."
@@ -216,10 +218,12 @@ server.tool(
     }
 
     const lines = [`Input: ${inputDescription}`, ""];
+    const validTimezones = [];
     for (const r of results) {
       if (r.error) {
         lines.push(`  ${r.timezone}: ERROR - ${r.error}`);
       } else {
+        validTimezones.push(r.timezone);
         lines.push(`  ${r.timezone}: ${r.result}`);
       }
     }
@@ -232,15 +236,19 @@ server.tool(
       lines.push(`Epoch (milliseconds): ${epochMs}`);
     }
 
+    const instant = new Date(isNumeric ? parsedSrc : cdt(parsedSrc).t);
+    const body = appendDstMeta(lines.join("\n"), dstMetaMap(validTimezones, instant, usetz));
+
     return {
-      content: [{ type: "text", text: lines.join("\n") }],
+      content: [{ type: "text", text: body }],
     };
   }
 );
 
 server.tool(
   "current-time",
-  "Get the current time in specified timezones.",
+  "Get the current time in specified timezones. " +
+  "Trailing JSON may include a DST flag.",
   {
     timezones: z.array(z.string()).optional().describe(
       "Timezones in IANA tz database format. If omitted, uses timezones from mclocks config or built-in defaults. You should usually omit this parameter to use the user's mclocks configured timezones."
@@ -252,10 +260,12 @@ server.tool(
     const cdt = cdate().cdateFn();
 
     const lines = [];
+    const validTimezones = [];
     for (const tz of targetTimezones) {
       try {
         const offset = cdt().tz(tz).utcOffset();
         const result = cdt(now).utcOffset(offset).text();
+        validTimezones.push(tz);
         lines.push(`  ${tz}: ${result}`);
       } catch (error) {
         lines.push(`  ${tz}: ERROR - ${error}`);
@@ -267,15 +277,18 @@ server.tool(
     lines.push(`Epoch (seconds):      ${epochSec}`);
     lines.push(`Epoch (milliseconds): ${now.getTime()}`);
 
+    const body = appendDstMeta(lines.join("\n"), dstMetaMap(validTimezones, now, configUseTZ));
+
     return {
-      content: [{ type: "text", text: lines.join("\n") }],
+      content: [{ type: "text", text: body }],
     };
   }
 );
 
 server.tool(
   "local-time",
-  "Get the current local time in the user's timezone (from convtz config or system default). Use this when other MCP tools or prompts need the user's local date/time.",
+  "Get the current local time in the user's timezone (from convtz config or system default). Use this when other MCP tools or prompts need the user's local date/time. " +
+  "Trailing JSON may include a DST flag.",
   {},
   async () => {
     const tz = configConvTZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -284,8 +297,10 @@ server.tool(
     const cdt = cdate().cdateFn();
     const offset = cdt().tz(tz).utcOffset();
     const result = cdt(now).utcOffset(offset).text();
+    const line = `${result} in ${tz} (source: ${source})`;
+    const body = appendDstMeta(line, dstMetaMap([tz], now, configUseTZ));
     return {
-      content: [{ type: "text", text: `${result} in ${tz} (source: ${source})` }],
+      content: [{ type: "text", text: body }],
     };
   }
 );
