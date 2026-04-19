@@ -56,9 +56,9 @@ macOS için yükleme amacıyla `.dmg` dosyasını edinebilirsiniz.
 
 `mclocks`'u başlattığınızda, `config.json` dosyanızı düzenlemek için `Ctrl + o` tuşlarına basın.
 
-### config.json örneği
+### Saat için config.json örneği
 
-`config.json` dosyası aşağıda gösterildiği gibi JSON formatında olmalıdır.
+`config.json` dosyası aşağıda gösterildiği gibi JSON formatında olmalıdır (JSONC destekli).
 
     {
       "clocks": [
@@ -73,9 +73,7 @@ macOS için yükleme amacıyla `.dmg` dosyasını edinebilirsiniz.
       "forefront": false
     }
 
-`config.json` dosyasına yorumlar ve sondaki virgüller eklenebilir (JSONC destekli).
-
-### 🔧 config.json alanları
+Aşağıdaki bölümler `config.json` içinde ayarlayabileceğiniz alanları açıklar.
 
 #### clocks
 
@@ -362,7 +360,7 @@ Yapılandırma dosyasında `web.editor.reposDir` ayarlandığında, web sunucusu
 
 **Yapılandırma:**
 
-`web` yapılandırmanıza aşağıdakini ekleyin:
+`editor` için `web` yapılandırmanıza aşağıdakini ekleyin:
 
     {
       "web": {

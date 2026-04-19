@@ -56,9 +56,9 @@ File `config.json` harus berada di direktori berikut:
 
 Saat Anda memulai `mclocks`, tekan `Ctrl + o` untuk mengedit file `config.json` Anda.
 
-### Contoh config.json
+### Contoh config.json untuk jam
 
-File `config.json` harus diformat sebagai JSON, seperti ditunjukkan di bawah ini.
+File `config.json` harus diformat sebagai JSON (didukung JSONC), seperti ditunjukkan di bawah ini.
 
     {
       "clocks": [
@@ -73,9 +73,7 @@ File `config.json` harus diformat sebagai JSON, seperti ditunjukkan di bawah ini
       "forefront": false
     }
 
-Anda dapat menyertakan komentar dan koma trailing di `config.json` (didukung JSONC).
-
-### 🔧 Field-field config.json
+Bagian di bawah menjelaskan bidang yang dapat Anda atur di `config.json`.
 
 #### clocks
 
@@ -362,7 +360,7 @@ Ketika `web.editor.reposDir` diatur dalam file konfigurasi, server web menyediak
 
 **Konfigurasi:**
 
-Tambahkan yang berikut ke konfigurasi `web` Anda:
+Tambahkan yang berikut ke konfigurasi `web` untuk `editor`:
 
     {
       "web": {

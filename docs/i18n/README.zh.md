@@ -56,9 +56,9 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 
 启动 `mclocks` 后，按 `Ctrl + o` 编辑您的 `config.json` 文件。
 
-### config.json 示例
+### 时钟用 config.json 示例
 
-`config.json` 文件应按如下所示的 JSON 格式编写。
+`config.json` 文件应按如下所示以 JSON 格式编写（支持 JSONC）。
 
     {
       "clocks": [
@@ -73,9 +73,7 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
       "forefront": false
     }
 
-可以在 `config.json` 中使用注释和尾随逗号（支持 JSONC）。
-
-### 🔧 config.json 的各字段
+以下各节说明可在 `config.json` 中设置的字段。
 
 #### clocks
 
@@ -362,7 +360,7 @@ Web 查看器支持 `content`、`raw`、`source` 等 `mode` 查询参数。
 
 **配置：**
 
-在 `web` 配置中添加以下内容：
+在用于 `editor` 的 `web` 配置中添加以下内容：
 
     {
       "web": {
