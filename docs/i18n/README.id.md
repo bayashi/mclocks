@@ -56,6 +56,8 @@ File `config.json` harus berada di direktori berikut:
 
 Saat Anda memulai `mclocks`, tekan `Ctrl + o` untuk mengedit file `config.json` Anda.
 
+Pembuat `config.json` online: https://bayashi.github.io/mclocks/mclocks-config-generator/
+
 ### Contoh config.json untuk jam
 
 File `config.json` harus diformat sebagai JSON (didukung JSONC), seperti ditunjukkan di bawah ini.

@@ -77,6 +77,8 @@ The `config.json` file should be located in the following directories:
 
 When you start `mclocks`, then press `Ctrl + o` to edit your `config.json` file.
 
+You can also use the online `config.json` generator: https://bayashi.github.io/mclocks/mclocks-config-generator/
+
 ### Example config.json for the clock
 
 The `config.json` file should be formatted as JSON (JSONC-supported), as shown below.

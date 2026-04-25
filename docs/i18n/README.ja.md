@@ -56,6 +56,8 @@ macOS 向けには、インストール用の `.dmg` ファイルを入手でき
 
 `mclocks` を起動し、`Ctrl + o` を押すと `config.json` ファイルを編集できます。
 
+ブラウザ上の `config.json` 生成ツール: https://bayashi.github.io/mclocks/mclocks-config-generator/
+
 ### 時計用の config.json の例
 
 `config.json` ファイルは以下のように JSON 形式（JSONC 互換）で記述します。
