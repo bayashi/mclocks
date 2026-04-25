@@ -12,6 +12,7 @@ on:
       - '**/dependabot.yml'
       - 'src-mcp/**'
       - 'web-assets/**/*.css'
+      - '**/*.html'
 
 jobs:
   setup:
