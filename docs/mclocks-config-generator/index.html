@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>mclocks config.json generator</title>
+<style>
+:root{
+	--bg:#0f1115;
+	--panel:#161a22;
+	--panel2:#1b2030;
+	--fg:#e8ebf2;
+	--muted:#aab2c5;
+	--border:#2a3144;
+	--accent:#6ea8fe;
+	--danger:#ff6b6b;
+	--ok:#44d19a;
+	--shadow:0 12px 36px rgba(0,0,0,.35);
+	--mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+	--sans:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif;
+}
+html,body{
+	height:100%;
+}
+body{
+	margin:0;
+	background:linear-gradient(180deg,#0b0d12 0%,var(--bg) 40%,#0b0d12 100%);
+	color:var(--fg);
+	font-family:var(--sans);
+}
+a{
+	color:var(--accent);
+}
+button,input,select,textarea{
+	font:inherit;
+}
+code,pre,textarea{
+	font-family:var(--mono);
+}
+.wrap{
+	max-width:1180px;
+	margin:0 auto;
+	padding:20px 14px 40px;
+}
+.top{
+	display:flex;
+	gap:10px;
+	align-items:flex-end;
+	justify-content:space-between;
+	flex-wrap:wrap;
+	margin-bottom:14px;
+}
+.title{
+	display:flex;
+	flex-direction:column;
+	gap:4px;
+}
+.title h1{
+	margin:0;
+	font-size:26px;
+	font-weight:700;
+	letter-spacing:.2px;
+}
+.title p{
+	margin:0;
+	color:var(--muted);
+	font-size:12px;
+	line-height:1.35;
+}
+.actions{
+	display:flex;
+	gap:8px;
+	flex-wrap:wrap;
+	align-items:flex-end;
+}
+.top-github{
+	font-size:14px;
+	font-weight:600;
+	text-decoration:none;
+	padding-bottom:3px;
+}
+.top-github:hover{
+	text-decoration:underline;
+}
+.btn{
+	background:linear-gradient(180deg,#222941 0%,#1a1f31 100%);
+	border:1px solid var(--border);
+	color:var(--fg);
+	border-radius:10px;
+	padding:9px 12px;
+	cursor:pointer;
+	box-shadow:0 6px 20px rgba(0,0,0,.25);
+}
+.btn:hover{
+	border-color:#3a4460;
+}
+.btn:active{
+	transform:translateY(1px);
+}
+.btn.primary{
+	background:linear-gradient(180deg,#2b67ff 0%,#2456d8 100%);
+	border-color:#2c63ee;
+}
+.btn.danger{
+	background:linear-gradient(180deg,#3a1f23 0%,#2b161a 100%);
+	border-color:#5a2c33;
+	color:#ffd7dc;
+}
+.pill{
+	border:1px solid var(--border);
+	background:rgba(22,26,34,.85);
+	border-radius:999px;
+	padding:7px 10px;
+	color:var(--muted);
+	font-size:12px;
+}
+.grid{
+	display:grid;
+	grid-template-columns:1fr;
+	gap:12px;
+}
+@media(min-width:980px){
+	.grid{
+		grid-template-columns:1.3fr .7fr;
+		align-items:start;
+	}
+}
+.panel{
+	background:transparent;
+	border:none;
+	border-radius:0;
+	box-shadow:none;
+	backdrop-filter:none;
+}
+.panel .hd{
+	display:flex;
+	justify-content:space-between;
+	align-items:center;
+	padding:0 0 10px;
+	border-bottom:none;
+	gap:10px;
+	flex-wrap:wrap;
+}
+.panel .hd h2{
+	margin:0;
+	font-size:13px;
+	letter-spacing:.2px;
+}
+.panel .bd{
+	padding:0;
+}
+.note{
+	color:var(--muted);
+	font-size:12px;
+	line-height:1.45;
+}
+.form{
+	display:flex;
+	flex-direction:column;
+	gap:18px;
+}
+.sect{
+	background:rgba(27,32,48,.55);
+	border:1px solid rgba(42,49,68,.85);
+	border-radius:12px;
+	padding:12px 9px;
+	display:flex;
+	flex-direction:column;
+	gap:14px;
+}
+.sect .st{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:8px;
+	flex-wrap:wrap;
+}
+.sect .st.clockhd{
+	flex-wrap:nowrap;
+}
+.sect .st h3{
+	margin:0;
+	font-size:14px;
+	font-weight:700;
+	color:#d6dbeb;
+	letter-spacing:.2px;
+}
+.row{
+	display:grid;
+	grid-template-columns:1fr;
+	row-gap:40px;
+	column-gap:28px;
+}
+.sect .row + .row{
+	margin-top:22px;
+}
+.sect .row.cdToggleRow + .row.cdFieldsRow{
+	margin-top:5.5px;
+}
+@media(min-width:640px){
+	.row.two{
+		grid-template-columns:1fr 1fr;
+	}
+	.row.three{
+		grid-template-columns:1fr 1fr 1fr;
+	}
+}
+.field{
+	display:flex;
+	flex-direction:column;
+	gap:8px;
+	min-width:0;
+}
+.field label{
+	font-size:12px;
+	color:var(--muted);
+	display:flex;
+	align-items:center;
+	gap:8px;
+}
+.field label[title]{
+	cursor:help;
+}
+h3[title]{
+	cursor:help;
+}
+label.hint[title]{
+	cursor:help;
+}
+.field label .k{
+	color:#d6dbeb;
+}
+.field label .k .tzLink{
+	margin-left:12px;
+}
+.field input[type="text"],
+.field input[type="number"],
+.field select,
+.field textarea{
+	background:rgba(15,17,21,.55);
+	border:1px solid rgba(42,49,68,.95);
+	color:var(--fg);
+	border-radius:10px;
+	padding:9px 10px;
+	outline:none;
+	min-width:0;
+}
+.field input::placeholder,
+.field textarea::placeholder{
+	color:rgba(170,178,197,.55);
+}
+.field textarea{
+	min-height:88px;
+	resize:vertical;
+	line-height:1.35;
+}
+.field input[type="checkbox"]{
+	transform:translateY(1px);
+	align-self:flex-start;
+}
+.inline{
+	display:flex;
+	gap:10px;
+	align-items:center;
+	flex-wrap:wrap;
+}
+.stack{
+	display:flex;
+	flex-direction:column;
+	gap:10px;
+}
+.hint{
+	font-size:11px;
+	color:var(--muted);
+	line-height:1.35;
+}
+.smallbtn{
+	padding:7px 10px;
+	border-radius:10px;
+	border:1px solid rgba(42,49,68,.95);
+	background:rgba(15,17,21,.55);
+	color:var(--fg);
+	cursor:pointer;
+}
+.smallbtn.copied{
+	border-color:rgba(68,209,154,.9);
+	background:rgba(68,209,154,.12);
+	color:#dffbf0;
+}
+.smallbtn:hover{
+	border-color:#3a4460;
+}
+.smallbtn.danger{
+	border-color:#5a2c33;
+	color:#ffd7dc;
+}
+@keyframes copyGlow{
+	0%{
+		box-shadow:0 0 0 0 rgba(68,209,154,.55),0 0 20px 3px rgba(68,209,154,.4);
+		border-color:rgba(68,209,154,.95);
+	}
+	45%{
+		box-shadow:0 0 0 10px rgba(68,209,154,.1),0 0 32px 8px rgba(68,209,154,.28);
+		border-color:rgba(68,209,154,.9);
+	}
+	100%{
+		box-shadow:0 0 0 0 rgba(68,209,154,0),0 0 0 0 rgba(68,209,154,0);
+		border-color:rgba(68,209,154,.45);
+	}
+}
+.out-actions .smallbtn-copy{
+	border:1px solid rgba(68,209,154,.45);
+	background:rgba(68,209,154,.16);
+	color:#dffbf0;
+}
+.out-actions .smallbtn-copy:hover:not(:disabled){
+	border-color:rgba(68,209,154,.85);
+	background:rgba(68,209,154,.26);
+}
+.out-actions .smallbtn-copy.copied{
+	animation:copyGlow .65s ease-out;
+	color:#dffbf0;
+	background:rgba(68,209,154,.16);
+}
+.out{
+	width:100%;
+	box-sizing:border-box;
+	white-space:pre;
+	tab-size:2;
+	background:rgba(15,17,21,.55);
+	border:1px solid rgba(42,49,68,.95);
+	color:var(--fg);
+	border-radius:10px;
+	padding:10px;
+	outline:none;
+	overflow:hidden;
+	resize:none;
+}
+.out.out-json{
+	margin:0;
+	white-space:pre;
+}
+.json-line{
+	display:block;
+	white-space:pre;
+	tab-size:2;
+	border-left:3px solid transparent;
+	padding-left:6px;
+	box-sizing:border-box;
+}
+.json-line--changed{
+	background:rgba(68,209,154,.12);
+	border-left-color:var(--ok);
+}
+.out-actions{
+	display:flex;
+	flex-direction:column;
+	gap:10px;
+	width:100%;
+	box-sizing:border-box;
+}
+.out-actions .btn,
+.out-actions .smallbtn{
+	width:100%;
+	box-sizing:border-box;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+	<div class="top">
+		<div class="title">
+			<h1>mclocks `config.json` genenrator</h1>
+		</div>
+		<div class="actions">
+			<a class="top-github" href="https://github.com/bayashi/mclocks" target="_blank" rel="noopener noreferrer">README</a>
+		</div>
+	</div>
+	<div class="grid">
+		<div class="panel">
+			<div class="bd">
+				<div class="form" id="formRoot"></div>
+			</div>
+		</div>
+		<div class="panel">
+			<div class="bd">
+				<div class="sect">
+					<div class="out-actions">
+						<button class="btn danger" id="btnResetDefaults" type="button">Reset to defaults</button>
+					</div>
+					<pre id="outText" class="out out-json" spellcheck="false" role="textbox" aria-readonly="true" aria-label="Generated JSON"></pre>
+					<p class="note out-edit-hint">Press Ctrl+O (Command+O on macOS)<br>to open and edit <code>config.json</code> in mclocks.</p>
+					<div class="out-actions">
+						<button class="smallbtn smallbtn-copy" id="btnCopy" type="button">Copy</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+(() => {
+	"use strict";
+
+	const DEFAULT_CONFIG = {
+		clocks: [
+			{
+				name: "UTC",
+				timezone: "UTC"
+			}
+		],
+		font: "Courier, monospace",
+		size: 14,
+		color: "#fff",
+		format: "MM-DD ddd HH:mm",
+		format2: null,
+		locale: "en",
+		forefront: false,
+		margin: "1.65em",
+		timerIcon: "⧖ ",
+		withoutNotification: false,
+		maxTimerClockNumber: 5,
+		epochClockName: "Epoch",
+		usetz: false,
+		convtz: "",
+		disableHover: true,
+		web: {
+			root: "/path/to/your/webroot",
+			port: 3030,
+			openBrowserAtStart: false,
+			dump: false,
+			slow: false,
+			status: false,
+			content: {
+				markdown: {
+					allowRawHTML: false,
+					openExternalLinkInNewTab: true,
+					enablePreviewApi: false
+				}
+			},
+			assets: {
+				port: 0
+			},
+			editor: {
+				reposDir: null,
+				includeHost: false,
+				command: "code",
+				args: ["-g", "{file}:{line}"]
+			}
+		}
+	};
+
+	const TIPS = {
+		clocksRow: "One object in the clocks array.",
+		name: "Label shown for this clock row. Each clock object has name and timezone.",
+		timezone: "IANA time zone name (e.g. Asia/Tokyo, UTC). Use a String from the tz database list.",
+		countdownClockToggle: "Makes the clock a countdown clock. When on, mclocks won't use the name value.",
+		countdown: "Countdown row: a label plus template string. With target, shows time left to target. Template verbs include %TG (target string), %D (days left), %h %m %s (parts of remaining time), etc. Example line: WAC Tokyo D-159 12:34:56.",
+		target: "Target date-time for the countdown clock row (e.g. 2025-09-13). Used together with the countdown format string (countdown) and timezone in clocks.",
+		font: "CSS font-family for the clock text. Use a monospaced font: proportional fonts often make numerals shift as the time changes.",
+		size: "Text font size: CSS font-size (e.g. 125%, 1.5em).",
+		color: "Color of the date-time text: named colors, hex, rgb(), or any valid CSS color.",
+		margin: "Horizontal space between clock rows as a CSS length string (e.g. 1.65em).",
+		format: "Chrono/moment-style format tokens for the main clock line.",
+		format2: "Second format; Ctrl+f toggles between format and format2. Leave null if unused.",
+		locale: "Locale for date-time language/wording.",
+		timerIcon: "String prefixed to each simple-timer line.",
+		epochClockName: "Label for the extra Epoch time row when you toggle epoch display (Ctrl+e / Ctrl+u).",
+		maxTimerClockNumber: "Max number of simple-timer rows.",
+		convtz: "When you paste a date-time without a timezone, it is treated as local time. Set convtz to an IANA zone (e.g. UTC) to interpret those pasted values in that zone for the converter dialog. Empty string = unset.",
+		usetz: "Set true if you need historically accurate offset conversion, not for typical current-only clock labels.",
+		forefront: "If true, the mclocks stays on top of other application windows.",
+		withoutNotification: "Countdown and simple timers send OS notifications by default when they finish. Set to true to skip those notifications.",
+		disableHover: "If true, hover tooltips on clock rows are disabled. Boolean to reduce on-screen help popups if you do not need them.",
+		web: "Web server settings.",
+		webEnable: "When checked, the generated JSON includes the full web { ... } object. When off, the web key is omitted entirely.",
+		root: "Path to the directory to publish. Use an absolute path to your static webroot when you use file hosting.",
+		port: "Preferred port for the main web server (>= 2000, default 3030). If the port is in use, mclocks searches downward by 1 until it finds a free port.",
+		openBrowserAtStart: "If true, opens the local web server URL in the default browser when the app starts.",
+		dump: "If true, enables the `/dump` endpoint: returns request details (method, path, query, headers, body) as JSON for debugging.",
+		slow: "If true, enables the `/slow` endpoint: delays the response (default 30s, or N seconds for `/slow/N`) to test timeouts and slow connections.",
+		status: "If true, enables the `/status/{code}` endpoint: returns arbitrary HTTP status codes (100-599) for testing client behavior.",
+		"assets.port": "Assets listen port. If 0, the actual port is derived from the main port when web is active.",
+		contentMarkdown: "Markdown rendering options.",
+		allowRawHTML: "If true, raw HTML inside Markdown is allowed; if false, raw HTML is escaped as text when rendering.",
+		openExternalLinkInNewTab: "If true, external Markdown links open in a new tab; if false, all links open in the same tab.",
+		enablePreviewApi: "If true, enables `POST /preview` to open a local `.md` / `.markdown` file in the browser.",
+		editor: "Lets you open local files from browser GitHub URLs when reposDir is set and valid.",
+		reposDir: "Local directory of cloned repos for the `/editor` endpoint. Path can use `~` for HOME directory. If unset or missing, `/editor` is not enabled. This directory must exist.",
+		includeHost: "If true, local path includes the original host as a directory segment: `{reposDir}/{host}/owner/...`; if false, `{reposDir}/owner/...`.",
+		command: "Editor command or path to launch from `/editor`.",
+		args: "Arguments template list for the editor. Use `{file}` and `{line}` placeholders. This form accepts a comma-separated string and outputs a JSON array (e.g. `-g,{file}:{line}`)."
+	};
+
+	const $ = (id) => {
+		const el = document.getElementById(id);
+		if (!el) throw new Error("Missing element: " + id);
+		return el;
+	};
+
+	const els = {
+		formRoot: $("formRoot"),
+		outText: $("outText"),
+		btnCopy: $("btnCopy"),
+		btnResetDefaults: $("btnResetDefaults")
+	};
+
+	const deepClone = (v) => JSON.parse(JSON.stringify(v));
+
+	const isPlainObject = (v) => {
+		if (!v || typeof v !== "object") return false;
+		return Object.getPrototypeOf(v) === Object.prototype;
+	};
+
+	const toJSON = (obj) => JSON.stringify(obj, null, "\t");
+
+	const state = {
+		cfg: deepClone(DEFAULT_CONFIG),
+		ui: {
+			countdownClockByIndex: {}
+		}
+	};
+
+	const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+
+	const el = (tag, attrs, children) => {
+		const node = document.createElement(tag);
+		if (attrs) {
+			for (const [k, v] of Object.entries(attrs)) {
+				if (k === "class") node.className = v;
+				else if (k === "text") node.textContent = v;
+				else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
+				else node.setAttribute(k, v);
+			}
+		}
+		if (children) {
+			for (const ch of children) {
+				if (ch === null || ch === undefined) continue;
+				node.appendChild(typeof ch === "string" ? document.createTextNode(ch) : ch);
+			}
+		}
+		return node;
+	};
+
+	const getByPath = (obj, path) => {
+		let cur = obj;
+		for (const p of path) {
+			if (!cur) return undefined;
+			cur = cur[p];
+		}
+		return cur;
+	};
+
+	const setByPath = (obj, path, value) => {
+		let cur = obj;
+		for (let i = 0; i < path.length - 1; i++) {
+			const p = path[i];
+			const q = path[i + 1];
+			const useArray = typeof q === "number" || (typeof q === "string" && /^\d+$/.test(String(q)));
+			if (cur[p] == null || typeof cur[p] !== "object") {
+				cur[p] = useArray ? [] : {};
+			} else if (!Array.isArray(cur[p]) && !isPlainObject(cur[p])) {
+				cur[p] = {};
+			}
+			cur = cur[p];
+		}
+		cur[path[path.length - 1]] = value;
+	};
+
+	const mkField = (labelKey, inputEl, hintText, opts) => {
+		const t = TIPS[labelKey];
+		let kEl;
+		if (opts && opts.tzListLink) {
+			kEl = el("span", { class: "k" }, [
+				document.createTextNode(labelKey),
+				el("a", {
+					class: "tzLink",
+					href: "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones",
+					target: "_blank",
+					rel: "noopener noreferrer",
+					text: "tz database list"
+				})
+			]);
+		} else if (opts && opts.formatMomentLink) {
+			kEl = el("span", { class: "k" }, [
+				document.createTextNode(labelKey),
+				el("a", {
+					class: "tzLink",
+					href: "https://momentjs.com/docs/#/parsing/string-format/",
+					target: "_blank",
+					rel: "noopener noreferrer",
+					text: "verbs"
+				})
+			]);
+		} else if (opts && opts.countdownVerbsLink) {
+			kEl = el("span", { class: "k" }, [
+				document.createTextNode(labelKey),
+				el("a", {
+					class: "tzLink",
+					href: "https://github.com/bayashi/mclocks#countdown-format-verbs",
+					target: "_blank",
+					rel: "noopener noreferrer",
+					text: "verbs"
+				})
+			]);
+		} else {
+			kEl = el("span", { class: "k", text: labelKey });
+		}
+		const lab = el("label", t ? { title: t } : null, [
+			kEl,
+			hintText ? el("span", { class: "hint", text: hintText }) : null
+		]);
+		return el("div", { class: "field" }, [lab, inputEl]);
+	};
+
+	// Mirrors https://raw.githubusercontent.com/kawanet/cdate-locale/refs/heads/main/locales.yml
+	const CDATE_LOCALES = Object.freeze([
+		"de", "en", "en_GB", "es", "es_MX", "fr", "it", "ja", "ko", "nl", "pt", "zh_CN", "zh_TW"
+	]);
+
+	const inputLocaleSelect = () => {
+		const path = ["locale"];
+		const sel = el("select", null, []);
+		const raw = getByPath(state.cfg, path);
+		const cur = raw === undefined || raw === null || raw === "" ? "" : String(raw);
+		const inList = cur !== "" && CDATE_LOCALES.includes(cur);
+		if (cur !== "" && !inList) {
+			sel.appendChild(el("option", { value: cur, text: cur + " (custom)" }));
+		}
+		for (const loc of CDATE_LOCALES) {
+			sel.appendChild(el("option", { value: loc, text: loc }));
+		}
+		if (cur === "") {
+			setByPath(state.cfg, path, "en");
+			sel.value = "en";
+		} else {
+			sel.value = cur;
+		}
+		sel.addEventListener("change", () => {
+			setByPath(state.cfg, path, sel.value);
+			generate();
+		});
+		return sel;
+	};
+
+	const inputText = (path, placeholder) => {
+		const inp = el("input", { type: "text", placeholder: placeholder || "" });
+		inp.value = String(getByPath(state.cfg, path) ?? "");
+		inp.addEventListener("input", () => {
+			setByPath(state.cfg, path, inp.value);
+			generate();
+		});
+		return inp;
+	};
+
+	const inputOptionalText = (path, placeholder) => {
+		const inp = el("input", { type: "text", placeholder: placeholder || "" });
+		const v = getByPath(state.cfg, path);
+		inp.value = v === null || v === undefined ? "" : String(v);
+		inp.addEventListener("input", () => {
+			const raw = inp.value;
+			setByPath(state.cfg, path, raw === "" ? "" : raw);
+			generate();
+		});
+		return inp;
+	};
+
+	const inputNumber = (path, min, step) => {
+		const inp = el("input", { type: "number" });
+		if (min !== undefined) inp.min = String(min);
+		if (step !== undefined) inp.step = String(step);
+		const v = getByPath(state.cfg, path);
+		inp.value = v === null || v === undefined ? "" : String(v);
+		inp.addEventListener("input", () => {
+			const raw = inp.value.trim();
+			if (raw === "") {
+				setByPath(state.cfg, path, null);
+			} else {
+				const n = Number(raw);
+				setByPath(state.cfg, path, Number.isFinite(n) ? n : null);
+			}
+			generate();
+		});
+		return inp;
+	};
+
+	const inputCheckbox = (path) => {
+		const inp = el("input", { type: "checkbox" });
+		inp.checked = Boolean(getByPath(state.cfg, path));
+		inp.addEventListener("change", () => {
+			setByPath(state.cfg, path, inp.checked);
+			generate();
+		});
+		return inp;
+	};
+
+	const inputNullableText = (path, placeholder) => {
+		const sel = el("select", null, [
+			el("option", { value: "null", text: "null" }),
+			el("option", { value: "text", text: "string" })
+		]);
+		const inp = el("input", { type: "text", placeholder: placeholder || "" });
+		const box = el("div", { class: "inline" }, [sel, inp]);
+		const v = getByPath(state.cfg, path);
+		if (v === null || v === undefined) {
+			sel.value = "null";
+			inp.value = "";
+			inp.disabled = true;
+		} else {
+			sel.value = "text";
+			inp.value = String(v);
+			inp.disabled = false;
+		}
+		const apply = () => {
+			if (sel.value === "null") {
+				inp.disabled = true;
+				setByPath(state.cfg, path, null);
+			} else {
+				inp.disabled = false;
+				setByPath(state.cfg, path, inp.value);
+			}
+			generate();
+		};
+		sel.addEventListener("change", apply);
+		inp.addEventListener("input", apply);
+		return box;
+	};
+
+	const renderClocks = () => {
+		const clocks = Array.isArray(state.cfg.clocks) ? state.cfg.clocks : [];
+		const rows = [];
+		for (let idx = 0; idx < clocks.length; idx++) {
+			const basePath = ["clocks", idx];
+			const rowObj = clocks[idx] || {};
+			if (!isPlainObject(rowObj)) {
+				state.cfg.clocks[idx] = {};
+			}
+			const countdownOn = Boolean(state.ui.countdownClockByIndex[idx]);
+			const cdToggle = el("input", { type: "checkbox" });
+			cdToggle.checked = countdownOn;
+			const cdToggleLab = el("label", { class: "hint", title: TIPS.countdownClockToggle }, [
+				cdToggle,
+				" this clock is countdown clock"
+			]);
+			cdToggle.addEventListener("change", () => {
+				state.ui.countdownClockByIndex[idx] = cdToggle.checked;
+				const r = state.cfg.clocks[idx];
+				if (!cdToggle.checked) {
+					delete r.countdown;
+					delete r.target;
+				} else {
+					if (!hasOwn(r, "countdown")) r.countdown = null;
+					if (!hasOwn(r, "target")) r.target = null;
+				}
+				render();
+			});
+			const delBtn = idx === 0 ? null : el("button", {
+				type: "button",
+				class: "smallbtn danger",
+				text: "remove",
+				onclick: () => {
+					state.cfg.clocks.splice(idx, 1);
+					const next = {};
+					for (const [k, v] of Object.entries(state.ui.countdownClockByIndex)) {
+						const n = Number(k);
+						if (!Number.isFinite(n)) continue;
+						if (n < idx) next[n] = v;
+						else if (n > idx) next[n - 1] = v;
+					}
+					state.ui.countdownClockByIndex = next;
+					render();
+				}
+			});
+			const row = el("div", { class: "sect" }, [
+				el("div", { class: "st clockhd" }, [
+					el("h3", { text: "Clocks " + (idx + 1), title: TIPS.clocksRow }),
+					delBtn
+				]),
+				el("div", { class: "row two" }, [
+					mkField("name", inputText(basePath.concat(["name"]), "UTC"), ""),
+					mkField("timezone", inputText(basePath.concat(["timezone"]), "UTC"), "", { tzListLink: true })
+				]),
+				el("div", { class: "row cdToggleRow" }, [el("div", { class: "inline" }, [cdToggleLab])]),
+				countdownOn ? el("div", { class: "row two cdFieldsRow" }, [
+					mkField("countdown", inputOptionalText(basePath.concat(["countdown"]), "Event D-%D %h:%m:%s"), "", { countdownVerbsLink: true }),
+					mkField("target", inputOptionalText(basePath.concat(["target"]), "2026-12-25"), "")
+				]) : null,
+				null
+			]);
+			rows.push(row);
+		}
+		const addBtn = el("button", {
+			type: "button",
+			class: "smallbtn",
+			text: "+clock",
+			onclick: () => {
+				state.cfg.clocks.push({ name: "New", timezone: "UTC" });
+				render();
+			}
+		});
+		return el("div", { class: "sect" }, [
+			...rows,
+			el("div", { class: "inline" }, [addBtn])
+		]);
+	};
+
+	const renderBasics = () => {
+		return el("div", { class: "sect" }, [
+			el("div", { class: "st" }, [el("h3", { text: "" })]),
+			el("div", { class: "row two" }, [
+				mkField("font", inputText(["font"], "Courier, monospace"), ""),
+				mkField("size", inputNumber(["size"], 1, 1), "")
+			]),
+			el("div", { class: "row two" }, [
+				mkField("color", inputText(["color"], "#fff"), ""),
+				mkField("margin", inputText(["margin"], "1.65em"), "")
+			]),
+			el("div", { class: "row two" }, [
+				mkField("format", inputText(["format"], "MM-DD ddd HH:mm"), "", { formatMomentLink: true }),
+				mkField("format2", inputNullableText(["format2"], "YYYY-MM-DD HH:mm:ss"), "")
+			]),
+			el("div", { class: "row three" }, [
+				mkField("locale", inputLocaleSelect(), ""),
+				mkField("timerIcon", inputText(["timerIcon"], "⧖ "), ""),
+				mkField("epochClockName", inputText(["epochClockName"], "Epoch"), "")
+			]),
+			el("div", { class: "row three" }, [
+				mkField("maxTimerClockNumber", inputNumber(["maxTimerClockNumber"], 0, 1), ""),
+				mkField("convtz", inputText(["convtz"], ""), "", { tzListLink: true }),
+				mkField("usetz", inputCheckbox(["usetz"]), "")
+			]),
+			el("div", { class: "row three" }, [
+				mkField("forefront", inputCheckbox(["forefront"]), ""),
+				mkField("withoutNotification", inputCheckbox(["withoutNotification"]), ""),
+				mkField("disableHover", inputCheckbox(["disableHover"]), "")
+			])
+		]);
+	};
+
+	const renderWeb = () => {
+		const hasWeb = Boolean(state.cfg.web && typeof state.cfg.web === "object");
+		const toggle = el("input", { type: "checkbox" });
+		toggle.checked = hasWeb;
+		toggle.addEventListener("change", () => {
+			if (toggle.checked) {
+				if (!state.cfg.web || typeof state.cfg.web !== "object") state.cfg.web = deepClone(DEFAULT_CONFIG.web);
+			} else {
+				delete state.cfg.web;
+			}
+			render();
+		});
+		const head = el("div", { class: "st" }, [
+			el("div", { class: "inline" }, [
+				el("h3", { text: "Web", title: TIPS.web }),
+				el("label", { class: "hint", title: TIPS.webEnable }, [toggle])
+			])
+		]);
+		if (!toggle.checked) {
+			return el("div", { class: "sect" }, [
+				head,
+				null
+			]);
+		}
+		const sect = el("div", { class: "sect" }, [
+			head,
+			el("div", { class: "row two" }, [
+				mkField("root", inputText(["web","root"], "/path/to/your/webroot"), ""),
+				mkField("port", inputText(["web","port"], "3030"), "")
+			]),
+			el("div", { class: "row three" }, [
+				mkField("openBrowserAtStart", inputCheckbox(["web","openBrowserAtStart"]), ""),
+				mkField("dump", inputCheckbox(["web","dump"]), ""),
+				mkField("slow", inputCheckbox(["web","slow"]), "")
+			]),
+			el("div", { class: "row two" }, [
+				mkField("status", inputCheckbox(["web","status"]), ""),
+				mkField("assets.port", inputText(["web","assets","port"], "0"), "")
+			]),
+			el("div", { class: "sect" }, [
+				el("div", { class: "st" }, [el("h3", { text: "content.markdown", title: TIPS.contentMarkdown })]),
+				el("div", { class: "row three" }, [
+					mkField("allowRawHTML", inputCheckbox(["web","content","markdown","allowRawHTML"]), ""),
+					mkField("openExternalLinkInNewTab", inputCheckbox(["web","content","markdown","openExternalLinkInNewTab"]), ""),
+					mkField("enablePreviewApi", inputCheckbox(["web","content","markdown","enablePreviewApi"]), "")
+				])
+			]),
+			el("div", { class: "sect" }, [
+				el("div", { class: "st" }, [el("h3", { text: "editor", title: TIPS.editor })]),
+				el("div", { class: "row two" }, [
+					mkField("reposDir", inputNullableText(["web","editor","reposDir"], "/path/to/repos"), ""),
+					mkField("includeHost", inputCheckbox(["web","editor","includeHost"]), "")
+				]),
+				el("div", { class: "row two" }, [
+					mkField("command", inputText(["web","editor","command"], "code"), ""),
+					mkField("args", inputText(["web","editor","args"], "-g,{file}:{line}"), "")
+				])
+			])
+		]);
+		return sect;
+	};
+
+	const normalizeForUI = () => {
+		if (!Array.isArray(state.cfg.clocks)) state.cfg.clocks = deepClone(DEFAULT_CONFIG.clocks);
+		const clocks = state.cfg.clocks;
+		const cdMap = state.ui.countdownClockByIndex;
+		const nextCd = {};
+		for (let i = 0; i < clocks.length; i++) {
+			if (cdMap[i] !== undefined) {
+				nextCd[i] = cdMap[i];
+			} else {
+				const row = clocks[i];
+				nextCd[i] = isPlainObject(row) && (hasOwn(row, "countdown") || hasOwn(row, "target"));
+			}
+		}
+		state.ui.countdownClockByIndex = nextCd;
+		if (!state.cfg.web || typeof state.cfg.web !== "object") return;
+		const args = getByPath(state.cfg, ["web","editor","args"]);
+		if (typeof args === "string") {
+			setByPath(state.cfg, ["web","editor","args"], args.split(",").map(s => s.trim()).filter(Boolean));
+		}
+	};
+
+	const render = () => {
+		normalizeForUI();
+		els.formRoot.innerHTML = "";
+		els.formRoot.appendChild(renderClocks());
+		els.formRoot.appendChild(renderBasics());
+		els.formRoot.appendChild(renderWeb());
+		generate();
+	};
+
+	const normalizeWebPortValue = (v) => {
+		if (v === null || v === undefined) return v;
+		if (typeof v === "number" && Number.isFinite(v)) return Math.trunc(v);
+		const s = String(v).trim();
+		if (s === "") return null;
+		if (/^\d+$/.test(s)) {
+			const n = Number(s);
+			if (n >= 0 && n <= 65535 && Number.isSafeInteger(n)) return n;
+		}
+		return v;
+	};
+
+	const processCfgForExport = (cfg, countdownByIndex) => {
+		const c = deepClone(cfg);
+		const cl = Array.isArray(c.clocks) ? c.clocks : [];
+		for (let i = 0; i < cl.length; i++) {
+			const row = cl[i];
+			if (!row || typeof row !== "object") continue;
+			if (!countdownByIndex[i]) {
+				delete row.countdown;
+				delete row.target;
+			} else {
+				if (row.countdown === "") row.countdown = null;
+				if (row.target === "") row.target = null;
+			}
+		}
+		if (c.web && isPlainObject(c.web)) {
+			if (hasOwn(c.web, "port")) c.web.port = normalizeWebPortValue(c.web.port);
+			const assets = c.web.assets;
+			if (assets && isPlainObject(assets) && hasOwn(assets, "port")) {
+				assets.port = normalizeWebPortValue(assets.port);
+			}
+			if (c.web.editor && isPlainObject(c.web.editor) && typeof c.web.editor.args === "string") {
+				c.web.editor.args = c.web.editor.args.split(",").map(s => s.trim()).filter(Boolean);
+			}
+		}
+		return c;
+	};
+
+	const readUI = () => {
+		return processCfgForExport(state.cfg, state.ui.countdownClockByIndex);
+	};
+
+	const escHtmlText = (s) => {
+		return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+	};
+
+	const BASELINE_EXPORT_LINES = toJSON(
+		processCfgForExport(deepClone(DEFAULT_CONFIG), {})
+	).split("\n");
+
+	let lastExportJson = "";
+
+	const generate = () => {
+		try {
+			const obj = readUI();
+			const json = toJSON(obj);
+			lastExportJson = json + "\n";
+			const lines = json.split("\n");
+			els.outText.innerHTML = lines
+				.map((line, i) => {
+					const changed = i >= BASELINE_EXPORT_LINES.length || line !== BASELINE_EXPORT_LINES[i];
+					const cls = changed ? "json-line json-line--changed" : "json-line";
+					return "<span class=\"" + cls + "\">" + escHtmlText(line) + "</span>";
+				})
+				.join("");
+			requestAnimationFrame(() => {
+				els.outText.style.minHeight = "0";
+				els.outText.style.height = "0px";
+				els.outText.style.height = els.outText.scrollHeight + "px";
+			});
+			return true;
+		} catch (e) {
+			return false;
+		}
+	};
+
+	const copyToClipboardText = (text) => {
+		const ta = document.createElement("textarea");
+		ta.value = text;
+		ta.setAttribute("readonly", "readonly");
+		ta.style.position = "absolute";
+		ta.style.left = "-9999px";
+		document.body.appendChild(ta);
+		ta.select();
+		const ok = document.execCommand("copy");
+		document.body.removeChild(ta);
+		return ok;
+	};
+
+	const copyOut = async () => {
+		const text = lastExportJson;
+		if (!text.trim()) {
+			return false;
+		}
+		try {
+			await navigator.clipboard.writeText(text);
+			return true;
+		} catch {
+			return copyToClipboardText(text);
+		}
+	};
+
+	const resetToDefaults = () => {
+		state.cfg = deepClone(DEFAULT_CONFIG);
+		state.ui.countdownClockByIndex = {};
+		lastExportJson = "";
+		els.outText.innerHTML = "";
+		render();
+	};
+
+	let copyTimer = null;
+	els.btnCopy.addEventListener("click", async () => {
+		generate();
+		const btn = els.btnCopy;
+		if (copyTimer) clearTimeout(copyTimer);
+		btn.classList.remove("copied");
+		btn.disabled = true;
+		const ok = await copyOut();
+		btn.disabled = false;
+		if (ok) btn.classList.add("copied");
+		copyTimer = setTimeout(() => {
+			btn.classList.remove("copied");
+		}, 900);
+	});
+	els.btnResetDefaults.addEventListener("click", () => {
+		if (!confirm("Reset the form to default values? Your current edits will be lost.")) return;
+		resetToDefaults();
+	});
+	window.addEventListener("beforeunload", (e) => {
+		e.preventDefault();
+		e.returnValue = "";
+	});
+	render();
+})();
+</script>
+</body>
+</html>
