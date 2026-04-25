@@ -340,17 +340,10 @@ label.hint[title]{
 	margin:0;
 	white-space:pre;
 }
-.json-line{
-	display:block;
-	white-space:pre;
-	tab-size:2;
-	border-left:3px solid transparent;
-	padding-left:6px;
-	box-sizing:border-box;
-}
-.json-line--changed{
-	background:rgba(68,209,154,.12);
-	border-left-color:var(--ok);
+.json-val-changed{
+	background:rgba(68,209,154,.14);
+	border-radius:4px;
+	padding:0 2px;
 }
 .out-actions{
 	display:flex;
@@ -976,9 +969,74 @@ label.hint[title]{
 		return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 	};
 
-	const BASELINE_EXPORT_LINES = toJSON(
-		processCfgForExport(deepClone(DEFAULT_CONFIG), {})
-	).split("\n");
+	const BASE_OBJ_EXPORT = processCfgForExport(deepClone(DEFAULT_CONFIG), {});
+
+	const valueTokensEqual = (cur, base) => {
+		if (cur === base) return true;
+		if (typeof cur === "number" && typeof base === "number" && Number.isNaN(cur) && Number.isNaN(base)) return true;
+		if (cur == null && base == null) return true;
+		return false;
+	};
+
+	const primitiveToken = (v) => {
+		if (v === null) return "null";
+		if (typeof v === "boolean") return v ? "true" : "false";
+		return JSON.stringify(v);
+	};
+
+	const wrapPrimitiveHtml = (cur, base) => {
+		const raw = primitiveToken(cur);
+		const esc = escHtmlText(raw);
+		const diff = base === undefined || !valueTokensEqual(cur, base);
+		return diff ? "<span class=\"json-val-changed\">" + esc + "</span>" : esc;
+	};
+
+	const renderJsonHighlightHtml = (cur, base, depth) => {
+		const pad = "\t".repeat(depth);
+		if (cur === null || typeof cur !== "object") {
+			return wrapPrimitiveHtml(cur, base);
+		}
+		if (Array.isArray(cur)) {
+			const b = Array.isArray(base) ? base : undefined;
+			if (cur.length === 0) {
+				return "[]";
+			}
+			let s = "[\n";
+			for (let i = 0; i < cur.length; i++) {
+				s += pad + "\t";
+				const bi = b && i < b.length ? b[i] : undefined;
+				const el = cur[i];
+				if (el !== null && typeof el === "object") {
+					s += renderJsonHighlightHtml(el, bi, depth + 1);
+				} else {
+					s += wrapPrimitiveHtml(el, bi);
+				}
+				s += (i < cur.length - 1 ? "," : "") + "\n";
+			}
+			s += pad + "]";
+			return s;
+		}
+		const b = base != null && typeof base === "object" && !Array.isArray(base) ? base : undefined;
+		const keys = Object.keys(cur);
+		if (keys.length === 0) {
+			return "{}";
+		}
+		let s = "{\n";
+		for (let kk = 0; kk < keys.length; kk++) {
+			const k = keys[kk];
+			s += pad + "\t" + JSON.stringify(k) + ": ";
+			const cv = cur[k];
+			const bv = b ? b[k] : undefined;
+			if (cv !== null && typeof cv === "object") {
+				s += renderJsonHighlightHtml(cv, bv, depth + 1);
+			} else {
+				s += wrapPrimitiveHtml(cv, bv);
+			}
+			s += (kk < keys.length - 1 ? "," : "") + "\n";
+		}
+		s += pad + "}";
+		return s;
+	};
 
 	let lastExportJson = "";
 
@@ -987,14 +1045,7 @@ label.hint[title]{
 			const obj = readUI();
 			const json = toJSON(obj);
 			lastExportJson = json + "\n";
-			const lines = json.split("\n");
-			els.outText.innerHTML = lines
-				.map((line, i) => {
-					const changed = i >= BASELINE_EXPORT_LINES.length || line !== BASELINE_EXPORT_LINES[i];
-					const cls = changed ? "json-line json-line--changed" : "json-line";
-					return "<span class=\"" + cls + "\">" + escHtmlText(line) + "</span>";
-				})
-				.join("");
+			els.outText.innerHTML = renderJsonHighlightHtml(obj, BASE_OBJ_EXPORT, 0);
 			requestAnimationFrame(() => {
 				els.outText.style.minHeight = "0";
 				els.outText.style.height = "0px";
