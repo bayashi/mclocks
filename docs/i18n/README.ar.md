@@ -56,6 +56,8 @@
 
 عند بدء `mclocks`، اضغط `Ctrl + o` لتحرير ملف `config.json` الخاص بك.
 
+مُنشئ `config.json` عبر الويب: https://bayashi.github.io/mclocks/mclocks-config-generator/
+
 ### مثال config.json للساعة
 
 يجب أن يكون ملف `config.json` بتنسيق JSON (متوافق مع JSONC)، كما هو موضح أدناه.

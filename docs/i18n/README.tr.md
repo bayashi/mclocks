@@ -56,6 +56,8 @@ macOS için yükleme amacıyla `.dmg` dosyasını edinebilirsiniz.
 
 `mclocks`'u başlattığınızda, `config.json` dosyanızı düzenlemek için `Ctrl + o` tuşlarına basın.
 
+Çevrimiçi `config.json` üreticisi: https://bayashi.github.io/mclocks/mclocks-config-generator/
+
 ### Saat için config.json örneği
 
 `config.json` dosyası aşağıda gösterildiği gibi JSON formatında olmalıdır (JSONC destekli).

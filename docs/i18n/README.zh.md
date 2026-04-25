@@ -56,6 +56,8 @@ macOS 用户可以获取 `.dmg` 文件进行安装。
 
 启动 `mclocks` 后，按 `Ctrl + o` 编辑您的 `config.json` 文件。
 
+在线 `config.json` 生成器：https://bayashi.github.io/mclocks/mclocks-config-generator/
+
 ### 时钟用 config.json 示例
 
 `config.json` 文件应按如下所示以 JSON 格式编写（支持 JSONC）。
