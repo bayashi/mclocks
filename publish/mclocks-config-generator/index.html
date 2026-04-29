@@ -124,6 +124,25 @@ code,pre,textarea{
 		grid-template-columns:1.3fr .7fr;
 		align-items:start;
 	}
+	.grid > .panel:last-child{
+		position:sticky;
+		top:16px;
+		align-self:start;
+		max-height:calc(100vh - 32px);
+	}
+	.grid > .panel:last-child .sect{
+		display:flex;
+		flex-direction:column;
+		gap:14px;
+		min-height:0;
+		max-height:calc(100vh - 32px);
+		box-sizing:border-box;
+	}
+	.grid > .panel:last-child #outText.out{
+		flex:1 1 auto;
+		min-height:0;
+		overflow:auto;
+	}
 }
 .panel{
 	background:transparent;
@@ -333,7 +352,7 @@ label.hint[title]{
 	border-radius:10px;
 	padding:10px;
 	outline:none;
-	overflow:hidden;
+	overflow:auto;
 	resize:none;
 }
 .out.out-json{
