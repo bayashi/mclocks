@@ -313,9 +313,11 @@ pre code{
 /* Mermaid wrapper: tame contrast, tighter frame */
 
 .mermaid-diagram{
+	--mermaid-font-size:10px;
+	line-height:1;
 	clear:both;
 	margin:22px 0 26px;
-	padding:14px 16px;
+	padding:7px 8px;
 	overflow-x:auto;
 	overflow-y:hidden;
 	background:#0b0c10;
@@ -330,6 +332,19 @@ pre code{
 	height:auto;
 	transform:none;
 	vertical-align:middle;
+}
+
+/* Mermaid inlines font-size on SVG text; themeVariables alone loses to element.style */
+.mermaid-diagram svg text,
+.mermaid-diagram svg tspan{
+	font-size:var(--mermaid-font-size) !important;
+	line-height:1 !important;
+}
+
+.mermaid-diagram svg foreignObject,
+.mermaid-diagram svg foreignObject *{
+	font-size:var(--mermaid-font-size) !important;
+	line-height:1 !important;
 }
 
 /* mode=source on .md — raw + highlight.js (md.css is linked for variables + pre chrome only) */

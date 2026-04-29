@@ -43,9 +43,11 @@
 				startOnLoad: false,
 				securityLevel: "strict",
 				theme: "base",
+				fontSize: 10,
 				themeVariables: {
 					fontFamily:
 						'"Segoe UI","Yu Gothic UI","Meiryo","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif',
+					fontSize: "10px",
 					darkMode: true,
 					background: "#0b0c10",
 					mainBkg: "#12131a",
@@ -77,7 +79,21 @@
 					activationBorderColor: "#4b4d60",
 				},
 				sequence: {
+					// row metrics; sync with md.css --mermaid-font-size (flat Ve.messageFontSize uses root fontSize in setConf)
 					useMaxWidth: true,
+					diagramMarginX: 25,
+					diagramMarginY: 5,
+					actorMargin: 25,
+					width: 75,
+					height: 33,
+					boxMargin: 5,
+					boxTextMargin: 3,
+					noteMargin: 5,
+					messageMargin: 17,
+					wrapPadding: 5,
+					actorFontSize: 10,
+					noteFontSize: 10,
+					messageFontSize: 10,
 				},
 			});
 		}
