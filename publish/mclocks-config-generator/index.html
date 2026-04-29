@@ -124,6 +124,56 @@ code,pre,textarea{
 		grid-template-columns:1.3fr .7fr;
 		align-items:start;
 	}
+	.grid > .panel:last-child{
+		position:sticky;
+		top:16px;
+		align-self:start;
+		justify-self:start;
+		max-width:100%;
+		height:var(--panel-available-h, calc(100vh - 32px));
+		max-height:var(--panel-available-h, calc(100vh - 32px));
+		width:fit-content;
+		align-items:flex-start;
+		display:flex;
+		flex-direction:column;
+		min-height:0;
+		overflow:hidden;
+	}
+	.grid > .panel:last-child .bd{
+		flex:1 1 auto;
+		min-height:0;
+		display:flex;
+		flex-direction:column;
+		align-items:flex-start;
+		overflow:hidden;
+		min-width:0;
+		max-width:100%;
+	}
+	.grid > .panel:last-child .sect{
+		flex:0 1 auto;
+		display:flex;
+		flex-direction:column;
+		gap:14px;
+		min-height:0;
+		min-width:0;
+		max-width:100%;
+		width:max-content;
+		overflow-x:hidden;
+		overflow-y:auto;
+		box-sizing:border-box;
+	}
+	.grid > .panel:last-child .sect > .out-actions{
+		flex-shrink:0;
+	}
+	.grid > .panel:last-child .sect > .note{
+		flex-shrink:0;
+	}
+	.grid > .panel:last-child #outText.out{
+		flex:0 1 auto;
+		min-height:150px;
+		overflow:auto;
+		align-self:stretch;
+	}
 }
 .panel{
 	background:transparent;
@@ -333,7 +383,7 @@ label.hint[title]{
 	border-radius:10px;
 	padding:10px;
 	outline:none;
-	overflow:hidden;
+	overflow:auto;
 	resize:none;
 }
 .out.out-json{
@@ -1040,17 +1090,61 @@ label.hint[title]{
 
 	let lastExportJson = "";
 
+	const rightPanelEl = document.querySelector(".grid > .panel:last-child");
+	const mqRightPanelWide = window.matchMedia("(min-width: 980px)");
+	const syncRightPanelHeight = () => {
+		if (!rightPanelEl || !mqRightPanelWide.matches) {
+			rightPanelEl?.style.removeProperty("--panel-available-h");
+			return;
+		}
+		const r = rightPanelEl.getBoundingClientRect();
+		const stickyTop = 16;
+		const bottomPad = 16;
+		const maxInViewport = window.innerHeight - stickyTop - bottomPad;
+		const fromRectTop = window.innerHeight - r.top - bottomPad;
+		const h = Math.max(0, Math.min(fromRectTop, maxInViewport));
+		rightPanelEl.style.setProperty("--panel-available-h", h + "px");
+	};
+	const syncPreMaxHeight = () => {
+		if (!rightPanelEl || !mqRightPanelWide.matches) {
+			els.outText.style.removeProperty("max-height");
+			return;
+		}
+		const sect = rightPanelEl.querySelector(".sect");
+		const pre = els.outText;
+		if (!sect || !pre) {
+			return;
+		}
+		const cs = getComputedStyle(sect);
+		const gapStr = cs.rowGap || cs.gap || "14px";
+		const gap = parseFloat(gapStr) || 14;
+		let fixed = 0;
+		for (const c of sect.children) {
+			if (c !== pre) {
+				fixed += c.offsetHeight;
+			}
+		}
+		const gapsTotal = Math.max(0, sect.children.length - 1) * gap;
+		const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+		const panelH = rightPanelEl.clientHeight;
+		const avail = panelH - pad - fixed - gapsTotal;
+		const cap = Math.max(0, avail);
+		pre.style.maxHeight = cap + "px";
+	};
+	const syncRightPanelLayout = () => {
+		syncRightPanelHeight();
+		requestAnimationFrame(() => {
+			syncPreMaxHeight();
+		});
+	};
+
 	const generate = () => {
 		try {
 			const obj = readUI();
 			const json = toJSON(obj);
 			lastExportJson = json + "\n";
 			els.outText.innerHTML = renderJsonHighlightHtml(obj, BASE_OBJ_EXPORT, 0);
-			requestAnimationFrame(() => {
-				els.outText.style.minHeight = "0";
-				els.outText.style.height = "0px";
-				els.outText.style.height = els.outText.scrollHeight + "px";
-			});
+			syncRightPanelLayout();
 			return true;
 		} catch (e) {
 			return false;
@@ -1089,6 +1183,7 @@ label.hint[title]{
 		lastExportJson = "";
 		els.outText.innerHTML = "";
 		render();
+		syncRightPanelLayout();
 	};
 
 	let copyTimer = null;
@@ -1113,7 +1208,11 @@ label.hint[title]{
 		e.preventDefault();
 		e.returnValue = "";
 	});
+	window.addEventListener("resize", syncRightPanelLayout, { passive: true });
+	window.addEventListener("scroll", syncRightPanelLayout, { passive: true });
+	mqRightPanelWide.addEventListener("change", syncRightPanelLayout);
 	render();
+	syncRightPanelLayout();
 })();
 </script>
 </body>
