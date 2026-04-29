@@ -15,8 +15,8 @@ const MARKDOWN_RENDER_TEMPLATE: &str = r##"<!doctype html>
 <meta charset="UTF-8" />
 <title>__PAGE_TITLE__</title>
 __MAIN_CSS_LINK__
-__STATIC_MD_CSS_LINK__
 __HIGHLIGHT_CSS_LINK__
+__STATIC_MD_CSS_LINK__
 </head>
 <body class="mclocks-md" data-open-external-link-in-new-tab="__OPEN_EXTERNAL_LINK_IN_NEW_TAB__">
 <nav id="toc">

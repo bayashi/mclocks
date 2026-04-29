@@ -39,7 +39,47 @@
 			return;
 		}
 		if (typeof window.mermaid.initialize === "function") {
-			window.mermaid.initialize({ startOnLoad: false, securityLevel: "strict" });
+			window.mermaid.initialize({
+				startOnLoad: false,
+				securityLevel: "strict",
+				theme: "base",
+				themeVariables: {
+					fontFamily:
+						'"Segoe UI","Yu Gothic UI","Meiryo","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif',
+					darkMode: true,
+					background: "#0b0c10",
+					mainBkg: "#12131a",
+					secondBkg: "#12131a",
+					primaryColor: "#1a1b24",
+					secondaryColor: "#12131a",
+					tertiaryColor: "#0b0c10",
+					primaryTextColor: "#e2e4ed",
+					secondaryTextColor: "#aeb0bf",
+					tertiaryTextColor: "#8c8e9c",
+					primaryBorderColor: "#343542",
+					secondaryBorderColor: "#2e2f3a",
+					lineColor: "#5f616e",
+					textColor: "#e2e4ed",
+					actorBkg: "#15161f",
+					actorBorder: "#393a46",
+					actorTextColor: "#eceef5",
+					actorLineColor: "#676973",
+					signalColor: "#9ca3af",
+					signalTextColor: "#e6e8f0",
+					labelBoxBkgColor: "#15161f",
+					labelBoxBorderColor: "#3b3c49",
+					labelTextColor: "#bfc2d4",
+					loopTextColor: "#8c8e9c",
+					noteBorderColor: "#3b3c49",
+					noteBkgColor: "#13141c",
+					noteTextColor: "#b4b8cc",
+					activationBkgColor: "#282a37",
+					activationBorderColor: "#4b4d60",
+				},
+				sequence: {
+					useMaxWidth: true,
+				},
+			});
 		}
 		for (let index = 0; index < codeBlocks.length; index += 1) {
 			const code = codeBlocks[index];
