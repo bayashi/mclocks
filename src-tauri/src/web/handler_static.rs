@@ -256,6 +256,7 @@ body{line-height:1.6;min-height:100vh;--source-sidebar-width:200px;--left-pane-w
 pre{margin:0;padding:12px;background:#111;border:1px solid #222;border-radius:4px;overflow-x:auto;overflow-y:hidden;overflow-wrap:normal;word-break:normal}
 code{font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;font-size:12px;line-height:1.5;white-space:pre;overflow-wrap:normal;word-break:normal}
 </style>
+__OPTIONAL_MD_CSS_LINK__
 </head>
 <body class="mclocks-source">
 <aside id="sidebar">
@@ -967,10 +968,26 @@ fn create_source_text_response(
                 "".to_string(),
             ),
         };
+    let is_markdown_like_ext = matches!(
+        file_path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|s| s.to_ascii_lowercase())
+            .as_deref(),
+        Some("md" | "markdown" | "mdown")
+    );
+    let optional_md_css_link = match (markdown_highlight, is_markdown_like_ext) {
+        (Some(cfg), true) => format!(
+            "<link rel=\"stylesheet\" href=\"{}\" />",
+            html_escape(&cfg.static_md_css_url)
+        ),
+        _ => String::new(),
+    };
     let html = SOURCE_VIEW_TEMPLATE
         .replace("__PAGE_TITLE__", &page_title)
         .replace("__MAIN_CSS_LINK__", &main_css_link)
         .replace("__HIGHLIGHT_CSS_LINK__", &highlight_css_link)
+        .replace("__OPTIONAL_MD_CSS_LINK__", &optional_md_css_link)
         .replace("__MAIN_JS_SCRIPT__", &main_js_script)
         .replace("__HIGHLIGHT_JS_SCRIPT__", &highlight_js_script)
         .replace(
