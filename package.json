@@ -23,12 +23,7 @@
     "@tauri-apps/plugin-opener": "2.5.3",
     "@tauri-apps/plugin-os": "2.3.2",
     "@tauri-apps/plugin-window-state": "2.4.1",
-    "basic-ftp": "5.3.0",
-    "cdate": "0.0.7",
-    "diff": "8.0.3",
-    "fast-xml-parser": "5.7.0",
-    "lodash": "4.18.1",
-    "undici": "6.24.0"
+    "cdate": "0.0.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -64,7 +59,12 @@
       "brace-expansion@2.0.2": "2.0.3",
       "brace-expansion@5.0.4": "5.0.5",
       "path-to-regexp@8.3.0": "8.4.0",
-      "postcss": "8.5.10"
+      "postcss": "8.5.10",
+      "basic-ftp": "5.3.0",
+      "diff": "8.0.3",
+      "fast-xml-parser": "5.7.0",
+      "lodash": "4.18.1",
+      "undici": "6.24.0"
     }
   }
 }

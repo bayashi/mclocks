@@ -1,5 +1,9 @@
 //! Short OS / WebView strings for About dialog and clipboard (support diagnostics).
 //!
+//! Build/runtime lines: packaged vs `tauri dev`, Rust debug/release profile (cargo),
+//! compile target triple (`TARGET`), short git revision from `build.rs`, and UTC build time
+//! (`SOURCE_DATE_EPOCH` when set for reproducible builds, else wall clock at compile).
+//!
 //! Linux webview line: best-effort `dpkg`/`rpm` on common package names, not the loaded
 //! `libwebkit2gtk` (Tauri/wry does not expose it). Flatpak/AppImage/snap may disagree.
 //!
@@ -12,14 +16,62 @@ use tauri_plugin_os::{arch, platform, version};
 /// Multi-line text: app version, then OS line, then webview runtime (no field labels).
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 pub fn format_about_clipboard_text(app_version: &str) -> String {
-    format!(
-        "mclocks v{}\n{} {} ({})\n{}",
+    let mut out = format!(
+        "mclocks v{}\n{} {} ({})\n{}\n{}\n{}\nBuild target: {}",
         app_version,
         platform(),
         version(),
         arch(),
-        webview_runtime_label()
-    )
+        webview_runtime_label(),
+        runtime_kind_label(),
+        rust_profile_label(),
+        build_target_triple(),
+    );
+    if let Some(rev) = git_revision_known() {
+        out.push_str("\nGit: ");
+        out.push_str(rev);
+    }
+    out.push_str("\nBuilt (UTC): ");
+    out.push_str(build_time_utc_label());
+    out
+}
+
+/// Compile-time target triple (from `build.rs` + Cargo `TARGET`).
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+fn build_target_triple() -> &'static str {
+    option_env!("MCLOCKS_BUILD_TARGET").unwrap_or("(unknown)")
+}
+
+/// `None` when git was unavailable at build time (`unknown` or unset).
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+fn git_revision_known() -> Option<&'static str> {
+    match option_env!("MCLOCKS_GIT") {
+        None | Some("unknown") | Some("") => None,
+        Some(g) => Some(g),
+    }
+}
+
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+fn build_time_utc_label() -> &'static str {
+    option_env!("MCLOCKS_BUILD_TIME_UTC").unwrap_or("unknown")
+}
+
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+fn runtime_kind_label() -> &'static str {
+    if tauri::is_dev() {
+        "Runtime: development (tauri dev)"
+    } else {
+        "Runtime: packaged"
+    }
+}
+
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+fn rust_profile_label() -> &'static str {
+    if cfg!(debug_assertions) {
+        "Rust profile: debug"
+    } else {
+        "Rust profile: release"
+    }
 }
 
 #[cfg(any(target_os = "windows", target_os = "macos"))]

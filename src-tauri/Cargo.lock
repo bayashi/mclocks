@@ -2297,6 +2297,7 @@ version = "0.2.46"
 dependencies = [
  "base64 0.22.1",
  "chardetng",
+ "chrono",
  "configparser",
  "directories",
  "encoding_rs",
