@@ -148,7 +148,7 @@ html.cbhist #cbhist-resize-handle {
 	overflow-y: scroll;
 	-webkit-overflow-scrolling: touch;
 	scrollbar-gutter: stable;
-	padding: 0 7px calc(10px * 1.25) 4px;
+	padding: 4px 7px calc(10px * 1.25) 4px;
 	-webkit-app-region: no-drag;
 	-webkit-user-select: text;
 	user-select: text;
@@ -197,7 +197,7 @@ html.cbhist .ch-list-scroll::-webkit-scrollbar-thumb:hover {
 
 .ch-card:hover {
 	background: rgb(26, 26, 26);
-	box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 42%, transparent);
+	box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 52%, transparent);
 }
 
 .ch-card.is-copy-flash {
@@ -207,15 +207,15 @@ html.cbhist .ch-list-scroll::-webkit-scrollbar-thumb:hover {
 @keyframes ch-copy-glow-pulse {
 	0% {
 		box-shadow:
-			0 0 0 1px color-mix(in srgb, currentColor 48%, transparent),
-			0 0 14px 2px color-mix(in srgb, currentColor 22%, transparent);
-		filter: brightness(1.08);
+			0 0 0 2px color-mix(in srgb, currentColor 56%, transparent),
+			0 0 12px 2px color-mix(in srgb, currentColor 30%, transparent);
+		filter: brightness(1.09);
 	}
 	50% {
 		box-shadow:
-			0 0 0 7px color-mix(in srgb, currentColor 9%, transparent),
-			0 0 26px 7px color-mix(in srgb, currentColor 20%, transparent);
-		filter: brightness(1.12);
+			0 0 0 5px color-mix(in srgb, currentColor 18%, transparent),
+			0 0 22px 5px color-mix(in srgb, currentColor 26%, transparent);
+		filter: brightness(1.14);
 	}
 	100% {
 		box-shadow:

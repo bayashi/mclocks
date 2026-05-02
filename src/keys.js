@@ -7,7 +7,7 @@ import {
   quoteAndAppendCommaClipboardHandler,
   markdownTableFromClipboardHandler,
   openMarkdownTableTemplateInEditor
-} from './clipboard.js';
+} from './shortcuts.js';
 import { createSticky } from './sticky/sticky_manager.js';
 
 // Win   ---> Ctrl

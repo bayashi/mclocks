@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
-import { isMacOS, openMessageDialog } from './util.js';
+import { isMacOS, openMessageDialog } from '../util.js';
 
 /** Same rules as sticky / clock `initClockStyles` size handling. */
 function sizeToCssPx(size) {
