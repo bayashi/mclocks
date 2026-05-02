@@ -417,6 +417,48 @@ mod tests {
         assert_eq!(config.convtz, "", "Default convtz should be empty");
         assert!(config.format2.is_none(), "Default format2 should be None");
         assert!(config.web.is_none(), "Default web should be None");
+
+        assert_eq!(config.clipboard.max_clip_number, 10);
+        assert_eq!(config.clipboard.window_width, 420);
+        assert_eq!(config.clipboard.window_height, 480);
+        assert!(!config.clipboard.close_on_copy);
+        assert!(!config.clipboard.disabled);
+    }
+
+    #[test]
+    fn test_clipboard_config_deserialize_camel_case() {
+        let json = r#"{
+            "clocks": [{"name": "UTC", "timezone": "UTC"}],
+            "clipboard": {
+                "maxClipNumber": 100,
+                "windowWidth": 512,
+                "windowHeight": 640,
+                "closeOnCopy": true,
+                "disabled": true
+            }
+        }"#;
+        let config: AppConfig = serde_json::from_str(json).expect("clipboard JSON");
+
+        assert_eq!(config.clipboard.max_clip_number, 100);
+        assert_eq!(config.clipboard.window_width, 512);
+        assert_eq!(config.clipboard.window_height, 640);
+        assert!(config.clipboard.close_on_copy);
+        assert!(config.clipboard.disabled);
+    }
+
+    #[test]
+    fn test_clipboard_config_partial_uses_field_defaults() {
+        let json = r#"{
+            "clocks": [{"name": "UTC", "timezone": "UTC"}],
+            "clipboard": {"closeOnCopy": true}
+        }"#;
+        let config: AppConfig = serde_json::from_str(json).expect("partial clipboard JSON");
+
+        assert!(config.clipboard.close_on_copy);
+        assert_eq!(config.clipboard.max_clip_number, 10);
+        assert_eq!(config.clipboard.window_width, 420);
+        assert_eq!(config.clipboard.window_height, 480);
+        assert!(!config.clipboard.disabled);
     }
 
     #[test]
