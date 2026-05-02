@@ -6,12 +6,17 @@ import { ClockCtx } from './clock_ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
 import { stickyEntry } from './sticky/sticky.js';
+import { cbhistPanelEntry } from './cbhist.js';
 
 // Application entry point
 window.addEventListener("DOMContentLoaded", async () => {
   const mainElement = document.querySelector("#mclocks");
 
   if (await handleStickyWindow(mainElement)) {
+    return;
+  }
+
+  if (await handleCbhistPanel(mainElement)) {
     return;
   }
 
@@ -28,6 +33,25 @@ window.addEventListener("DOMContentLoaded", async () => {
  * @param {HTMLElement} mainElement - Main application element
  * @returns {Promise<boolean>} true if this window is a sticky note window
  */
+const handleCbhistPanel = async (mainElement) => {
+  let windowLabel = null;
+  try {
+    windowLabel = getCurrentWindow().label;
+  } catch {
+    // windowLabel stays null
+  }
+
+  if (windowLabel !== 'cbhist') {
+    return false;
+  }
+
+  document.documentElement.classList.add('cbhist');
+
+  await cbhistPanelEntry(mainElement);
+
+  return true;
+};
+
 const handleStickyWindow = async (mainElement) => {
   let windowLabel = null;
   try {

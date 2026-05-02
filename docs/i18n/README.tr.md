@@ -14,6 +14,7 @@ Saatle ilgili özellikler:
 Zaman kimseyi beklemez:
 
 * 📝 Yapışkan not
+* 📋 Pano geçmişi
 
 Bir geliştirici asla saatsiz kalmaz:
 

@@ -10,6 +10,7 @@ html:not(.sticky) *::-webkit-scrollbar {
   background: transparent;
   font: 14px Courier, monospace;
   color: #fff;
+  --mclocks-panel-surface-bg: rgba(0, 0, 0, 0.75);
 }
 
 html:not(.sticky) {
@@ -77,7 +78,7 @@ html.sticky #sticky-root {
   flex-direction: column;
   border-radius: 6px;
   border: 0.5px solid currentColor;
-  background: rgba(0, 0, 0, 0.75);
+  background: var(--mclocks-panel-surface-bg);
   padding: 3px;
   overflow: hidden;
 }

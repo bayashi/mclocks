@@ -45,6 +45,45 @@ fn df_clocks() -> Vec<Clock> {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct ClipboardConfig {
+    #[serde(default)]
+    pub disabled: bool,
+    #[serde(default = "df_max_clip_number")]
+    pub max_clip_number: i32,
+    #[serde(default = "df_clipboard_window_width")]
+    pub window_width: i32,
+    #[serde(default = "df_clipboard_window_height")]
+    pub window_height: i32,
+    #[serde(default)]
+    pub close_on_copy: bool,
+}
+
+fn df_max_clip_number() -> i32 {
+    10
+}
+
+fn df_clipboard_window_width() -> i32 {
+    420
+}
+
+fn df_clipboard_window_height() -> i32 {
+    480
+}
+
+impl Default for ClipboardConfig {
+    fn default() -> Self {
+        Self {
+            disabled: false,
+            max_clip_number: df_max_clip_number(),
+            window_width: df_clipboard_window_width(),
+            window_height: df_clipboard_window_height(),
+            close_on_copy: false,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     #[serde(default = "df_clocks")]
     pub clocks: Vec<Clock>,
@@ -85,6 +124,8 @@ pub struct AppConfig {
     pub disable_hover: bool,
     #[serde(default)]
     pub web: Option<WebConfig>,
+    #[serde(default)]
+    pub clipboard: ClipboardConfig,
 }
 
 fn df_font() -> String {
@@ -174,12 +215,11 @@ pub fn parse_config_json_to_value(config_json: &str) -> Result<serde_json::Value
         .map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
 }
 
-#[tauri::command]
-pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
+pub fn load_app_config_for_identifier(app_identifier: &str) -> Result<AppConfig, String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
     let config_path = base_dir
         .config_dir()
-        .join(get_config_app_path(&state.app_identifier));
+        .join(get_config_app_path(&app_identifier.to_string()));
     let old_config_path = base_dir.config_dir().join(get_old_config_app_path());
     let config_json = read_config_file(&config_path, &old_config_path)?;
     if !config_path.exists() {
@@ -188,6 +228,44 @@ pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, St
 
     let config_value = parse_config_json_to_value(&config_json)?;
     serde_json::from_value(config_value).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
+}
+
+#[tauri::command]
+pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
+    load_app_config_for_identifier(&state.app_identifier)
+}
+
+pub fn save_clipboard_window_dimensions(
+    app_identifier: &str,
+    width: i32,
+    height: i32,
+) -> Result<(), String> {
+    let width = width.max(200).min(2000);
+    let height = height.max(200).min(2000);
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let config_path = base_dir
+        .config_dir()
+        .join(get_config_app_path(&app_identifier.to_string()));
+    let old_config_path = base_dir.config_dir().join(get_old_config_app_path());
+    let config_json = read_config_file(&config_path, &old_config_path)?;
+    if !config_path.exists() {
+        ensure_config_file_exists(&config_path, &config_json)?;
+    }
+    let mut root = parse_config_json_to_value(&config_json)?;
+    let obj = root
+        .as_object_mut()
+        .ok_or("Config root must be a JSON object")?;
+    let clip_val = obj
+        .entry("clipboard".to_string())
+        .or_insert_with(|| serde_json::json!({}));
+    let clip_obj = clip_val
+        .as_object_mut()
+        .ok_or("clipboard must be an object")?;
+    clip_obj.insert("windowWidth".to_string(), serde_json::json!(width));
+    clip_obj.insert("windowHeight".to_string(), serde_json::json!(height));
+    let out = serde_json::to_string_pretty(&root).map_err(|e| e.to_string())?;
+    fs::write(&config_path, out).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 pub struct ContextConfig {
@@ -372,6 +450,48 @@ mod tests {
         assert_eq!(config.convtz, "", "Default convtz should be empty");
         assert!(config.format2.is_none(), "Default format2 should be None");
         assert!(config.web.is_none(), "Default web should be None");
+
+        assert_eq!(config.clipboard.max_clip_number, 10);
+        assert_eq!(config.clipboard.window_width, 420);
+        assert_eq!(config.clipboard.window_height, 480);
+        assert!(!config.clipboard.close_on_copy);
+        assert!(!config.clipboard.disabled);
+    }
+
+    #[test]
+    fn test_clipboard_config_deserialize_camel_case() {
+        let json = r#"{
+            "clocks": [{"name": "UTC", "timezone": "UTC"}],
+            "clipboard": {
+                "maxClipNumber": 100,
+                "windowWidth": 512,
+                "windowHeight": 640,
+                "closeOnCopy": true,
+                "disabled": true
+            }
+        }"#;
+        let config: AppConfig = serde_json::from_str(json).expect("clipboard JSON");
+
+        assert_eq!(config.clipboard.max_clip_number, 100);
+        assert_eq!(config.clipboard.window_width, 512);
+        assert_eq!(config.clipboard.window_height, 640);
+        assert!(config.clipboard.close_on_copy);
+        assert!(config.clipboard.disabled);
+    }
+
+    #[test]
+    fn test_clipboard_config_partial_uses_field_defaults() {
+        let json = r#"{
+            "clocks": [{"name": "UTC", "timezone": "UTC"}],
+            "clipboard": {"closeOnCopy": true}
+        }"#;
+        let config: AppConfig = serde_json::from_str(json).expect("partial clipboard JSON");
+
+        assert!(config.clipboard.close_on_copy);
+        assert_eq!(config.clipboard.max_clip_number, 10);
+        assert_eq!(config.clipboard.window_width, 420);
+        assert_eq!(config.clipboard.window_height, 480);
+        assert!(!config.clipboard.disabled);
     }
 
     #[test]

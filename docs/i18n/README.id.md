@@ -14,6 +14,7 @@ Fitur terkait jam:
 Waktu tidak menunggu siapa pun:
 
 * 📝 Catatan tempel
+* 📋 Riwayat papan klip
 
 Seorang pengembang tidak pernah tanpa jam:
 

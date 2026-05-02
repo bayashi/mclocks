@@ -14,6 +14,7 @@ Funciones relacionadas con el reloj:
 El tiempo no espera a nadie:
 
 * 📝 Nota adhesiva
+* 📋 Historial del portapapeles
 
 Un desarrollador nunca está sin reloj:
 

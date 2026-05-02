@@ -33,6 +33,7 @@ Clock-related features:
 Time waits for no one:
 
 * 📝 Sticky note
+* 📋 Clipboard History
 
 A developer is never without a clock:
 

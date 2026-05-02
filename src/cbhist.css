@@ -1,0 +1,408 @@
+html.cbhist,
+html.cbhist body {
+	height: 100%;
+	width: 100%;
+	margin: 0;
+	overflow: hidden;
+	border-radius: 6px;
+	background: transparent;
+}
+
+html.cbhist body {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+html.cbhist {
+	--ch-clamp-lines: 6;
+	-webkit-app-region: no-drag;
+	background: transparent;
+	box-sizing: border-box;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	opacity: 1;
+	transition: opacity 220ms ease-out;
+}
+
+html.cbhist.cbhist-is-closing {
+	opacity: 0;
+	pointer-events: none;
+}
+
+html.cbhist *,
+html.cbhist *::before,
+html.cbhist *::after {
+	box-sizing: inherit;
+}
+
+#mclocks.ch-cbhist-root {
+	display: flex;
+	flex-direction: column;
+	white-space: normal;
+	box-sizing: border-box;
+	flex: 1 1 auto;
+	min-height: 0;
+	width: 100%;
+	height: 100%;
+	padding: 8px;
+	margin: 0;
+	border-radius: inherit;
+}
+
+.ch-shell {
+	position: relative;
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	width: 100%;
+	overflow: hidden;
+	box-sizing: border-box;
+	border-radius: 6px;
+	border: 0.5px solid currentColor;
+	background: var(--mclocks-panel-surface-bg);
+	padding: 3px;
+	transform: translateZ(0);
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
+}
+
+html.cbhist #cbhist-resize-handle {
+	display: block;
+	position: absolute;
+	right: 4px;
+	bottom: 4px;
+	width: 14px;
+	height: 14px;
+	z-index: 6;
+	cursor: nwse-resize;
+	-webkit-app-region: no-drag;
+	background:
+		linear-gradient(135deg, transparent 0 50%, rgba(255, 255, 255, 0.35) 50% 55%, transparent 55% 100%),
+		linear-gradient(135deg, transparent 0 65%, rgba(255, 255, 255, 0.35) 65% 70%, transparent 70% 100%),
+		linear-gradient(135deg, transparent 0 80%, rgba(255, 255, 255, 0.35) 80% 85%, transparent 85% 100%);
+	opacity: 0.8;
+}
+
+.ch-top-drag {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 22px;
+	z-index: 1;
+	border-top-left-radius: 6px;
+	border-top-right-radius: 6px;
+	overflow: hidden;
+	-webkit-app-region: drag;
+	cursor: grab;
+}
+
+.ch-top-drag:active {
+	cursor: grabbing;
+}
+
+.ch-close-x {
+	position: absolute;
+	top: 3px;
+	right: 3px;
+	z-index: 4;
+	padding: 1px 5px;
+	line-height: 1;
+	min-width: 0;
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transform: translateY(2px);
+	transition: opacity 120ms ease;
+	cursor: pointer;
+	-webkit-app-region: no-drag;
+}
+
+.ch-close-x:active {
+	opacity: 0.75;
+}
+
+.ch-main {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	padding: 22px 3px 8px 2px;
+	overflow: hidden;
+}
+
+.ch-list-scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+	width: 100%;
+	overflow-x: hidden;
+	overflow-y: scroll;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-gutter: stable;
+	padding: 0 7px calc(10px * 1.25) 4px;
+	-webkit-app-region: no-drag;
+	-webkit-user-select: text;
+	user-select: text;
+	scrollbar-width: auto;
+	scrollbar-color: rgba(255, 255, 255, 0.35) rgba(0, 0, 0, 0.25);
+}
+
+html.cbhist .ch-list-scroll::-webkit-scrollbar {
+	display: block;
+	width: 12px;
+}
+
+html.cbhist .ch-list-scroll::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.25);
+	border-radius: 10px;
+}
+
+html.cbhist .ch-list-scroll::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.35);
+	border-radius: 10px;
+	border: 2px solid rgba(0, 0, 0, 0.25);
+}
+
+html.cbhist .ch-list-scroll::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.5);
+}
+
+.ch-list {
+	display: flex;
+	flex-direction: column;
+	gap: calc(14px * 1.25 * 1.25);
+}
+
+.ch-card {
+	flex: 0 0 auto;
+	border-radius: 6px;
+	border: none;
+	background: rgba(48, 48, 50, 0.75);
+	overflow: visible;
+	cursor: pointer;
+	box-shadow: 0 0 0 2px transparent;
+	transition:
+		background 160ms ease,
+		box-shadow 160ms ease;
+}
+
+.ch-card:hover {
+	background: rgb(26, 26, 26);
+	box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 42%, transparent);
+}
+
+.ch-card.is-copy-flash {
+	animation: ch-copy-glow-pulse 0.3s ease-out;
+}
+
+@keyframes ch-copy-glow-pulse {
+	0% {
+		box-shadow:
+			0 0 0 1px color-mix(in srgb, currentColor 48%, transparent),
+			0 0 14px 2px color-mix(in srgb, currentColor 22%, transparent);
+		filter: brightness(1.08);
+	}
+	50% {
+		box-shadow:
+			0 0 0 7px color-mix(in srgb, currentColor 9%, transparent),
+			0 0 26px 7px color-mix(in srgb, currentColor 20%, transparent);
+		filter: brightness(1.12);
+	}
+	100% {
+		box-shadow:
+			0 0 0 0 transparent,
+			0 0 0 0 transparent;
+		filter: brightness(1);
+	}
+}
+
+.ch-card-zone {
+	position: relative;
+	padding: 4px 9px 3px 5px;
+}
+
+.ch-card-text-mount {
+	position: relative;
+	min-width: 0;
+	padding: 2px 2px 4px;
+}
+
+.ch-card-text {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	word-break: break-word;
+	line-height: 1.45;
+	font: inherit;
+	font-size: inherit;
+	min-height: calc(1.45em);
+	padding: 2px 2px 0;
+	color: inherit;
+}
+
+.ch-card-text.is-preview-clamped {
+	overflow: hidden;
+	max-height: calc(var(--ch-clamp-lines) * 1.45em);
+	max-height: calc(var(--ch-clamp-lines) * 1lh);
+}
+
+.ch-empty-msg {
+	padding: 16px 9px 16px 5px;
+	opacity: 0.75;
+	line-height: 1.45;
+	font: inherit;
+	font-size: inherit;
+	color: inherit;
+}
+
+.ch-empty-inner {
+	opacity: inherit;
+}
+
+.ch-expand-toggle.ch-expand-reveal {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	margin: 0;
+	padding: 2px 4px 4px;
+	flex-shrink: 0;
+	align-self: center;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: color-mix(in srgb, currentColor 58%, transparent);
+	font: inherit;
+	font-size: inherit;
+	cursor: pointer;
+	opacity: 1;
+	-webkit-app-region: no-drag;
+	-webkit-user-select: none;
+	user-select: none;
+	filter: drop-shadow(0 0 0 transparent);
+	transition:
+		color 160ms ease,
+		filter 220ms ease,
+		opacity 90ms ease;
+}
+
+html.cbhist .ch-expand-toggle.ch-expand-reveal.ch-expand-off {
+	display: none !important;
+}
+
+.ch-expand-reveal:active {
+	opacity: 0.75;
+}
+
+.ch-expand-reveal:focus-visible {
+	outline: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+	outline-offset: 3px;
+}
+
+.ch-expand-reveal:hover {
+	color: color-mix(in srgb, currentColor 94%, transparent);
+	filter: drop-shadow(0 0 6px color-mix(in srgb, currentColor 35%, transparent));
+}
+
+.ch-expand-reveal-chevron {
+	display: block;
+	width: 0;
+	height: 0;
+	border-left: 5px solid transparent;
+	border-right: 5px solid transparent;
+	border-top: 6px solid currentColor;
+	transform-origin: 50% 35%;
+	transition: transform 165ms cubic-bezier(0.2, 0.85, 0.2, 1);
+	opacity: 0.75;
+}
+
+.ch-expand-toggle.ch-expand-reveal[aria-expanded="true"] .ch-expand-reveal-chevron {
+	transform: rotate(180deg);
+}
+
+.ch-expand-reveal-bar {
+	display: block;
+	width: 18px;
+	height: 2px;
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-radius: 1px;
+	background: color-mix(in srgb, currentColor 48%, transparent);
+}
+
+.ch-expand-toggle.ch-expand-reveal[aria-expanded="true"] .ch-expand-reveal-bar {
+	background: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+.ch-entry-footer {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	justify-content: flex-end;
+	border-top: none;
+	margin-top: 0;
+	padding: 3px 7px 3px 4px;
+	-webkit-user-select: text;
+	user-select: text;
+	color: inherit;
+}
+
+.ch-entry-footer-main {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 12px;
+	min-width: 0;
+	width: 100%;
+	flex: 1 1 auto;
+}
+
+.ch-entry-footer-main:has(.ch-expand-off) .ch-entry-footer-lead {
+	padding-inline-end: 6px;
+}
+
+.ch-entry-footer-lead {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px 12px;
+}
+
+.ch-footer-meta {
+	display: inline-block;
+	max-width: 100%;
+	font-size: 12px;
+	line-height: 1.35;
+	opacity: 0.85;
+	min-width: 0;
+	color: inherit;
+	text-align: end;
+	vertical-align: middle;
+}
+
+.ch-badge {
+	font-size: 9px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	opacity: 0.8;
+	border: 0.5px solid color-mix(in srgb, currentColor 35%, transparent);
+	padding: 2px 5px;
+	border-radius: 4px;
+	white-space: nowrap;
+	color: inherit;
+}

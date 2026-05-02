@@ -14,6 +14,7 @@ Recursos relacionados ao relógio:
 O tempo não espera por ninguém:
 
 * 📝 Nota adesiva
+* 📋 Histórico da área de transferência
 
 Um desenvolvedor nunca fica sem relógio:
 
