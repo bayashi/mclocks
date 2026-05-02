@@ -71,13 +71,8 @@ pub fn setup_tray_menu<R: Runtime>(
         MenuItem::with_id(app, MENU_ID_TRAY_ABOUT, "About mclocks", true, None::<&str>)?;
     #[cfg(any(target_os = "windows", target_os = "macos"))]
     let tray_menu = if clipboard_history_enabled {
-        let cbhist_item = MenuItem::with_id(
-            app,
-            MENU_ID_CBHIST,
-            "Clipboard History",
-            true,
-            None::<&str>,
-        )?;
+        let cbhist_item =
+            MenuItem::with_id(app, MENU_ID_CBHIST, "Clipboard History", true, None::<&str>)?;
         Menu::with_items(
             app,
             &[
@@ -101,13 +96,8 @@ pub fn setup_tray_menu<R: Runtime>(
     };
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     let tray_menu = if clipboard_history_enabled {
-        let cbhist_item = MenuItem::with_id(
-            app,
-            MENU_ID_CBHIST,
-            "Clipboard History",
-            true,
-            None::<&str>,
-        )?;
+        let cbhist_item =
+            MenuItem::with_id(app, MENU_ID_CBHIST, "Clipboard History", true, None::<&str>)?;
         Menu::with_items(
             app,
             &[
@@ -120,11 +110,7 @@ pub fn setup_tray_menu<R: Runtime>(
     } else {
         Menu::with_items(
             app,
-            &[
-                &toggle_main_item,
-                &reset_temp_session_item,
-                &quit_item,
-            ],
+            &[&toggle_main_item, &reset_temp_session_item, &quit_item],
         )?
     };
     let mut tray_builder = TrayIconBuilder::with_id("main").menu(&tray_menu);

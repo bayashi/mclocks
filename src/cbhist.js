@@ -144,7 +144,6 @@ function syncVisualClamp(card) {
 	const meta = previewBudgetMetrics(textEl);
 
 	let overflows;
-	let naturalHUnclamped = null;
 	const hadClamp = textEl.classList.contains('is-preview-clamped');
 	if (hadClamp) {
 		void textEl.offsetHeight;
@@ -156,7 +155,7 @@ function syncVisualClamp(card) {
 	} else {
 		textEl.classList.remove('is-preview-clamped');
 		void textEl.offsetHeight;
-		naturalHUnclamped = textEl.offsetHeight;
+		const naturalHUnclamped = textEl.offsetHeight;
 		overflows = naturalHUnclamped > meta.budget + gapPx;
 		if (overflows) {
 			card.dataset.chExpandLatch = '1';
