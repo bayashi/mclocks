@@ -14,6 +14,7 @@ Fonctionnalités liées à l'horloge :
 Le temps n'attend personne :
 
 * 📝 Note adhésive
+* 📋 Historique du presse-papiers
 
 Un développeur n'est jamais sans horloge :
 

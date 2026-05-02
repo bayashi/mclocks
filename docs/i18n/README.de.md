@@ -14,6 +14,7 @@ Uhrenbezogene Funktionen:
 Die Zeit wartet auf niemanden:
 
 * 📝 Haftnotiz
+* 📋 Zwischenablageverlauf
 
 Ein Entwickler ist nie ohne Uhr:
 
