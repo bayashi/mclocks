@@ -6,7 +6,7 @@ import { ClockCtx } from './clock_ctx.js';
 import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
 import { stickyEntry } from './sticky/sticky.js';
-import { cbhistPanelEntry } from './cbhist.js';
+import { cbhistPanelEntry } from './cbhist/cbhist.js';
 
 // Application entry point
 window.addEventListener("DOMContentLoaded", async () => {

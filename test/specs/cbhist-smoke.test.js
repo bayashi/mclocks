@@ -71,7 +71,7 @@ describe('Clipboard history panel (cbhist) smoke', () => {
 		const error = await browser.executeAsync((done) => {
 			(async () => {
 				try {
-					const mod = await import('/src/cbhist.js');
+					const mod = await import('/src/cbhist/cbhist.js');
 					const mainElement = document.querySelector('#mclocks');
 					await mod.cbhistPanelEntry(mainElement);
 					done(null);
