@@ -6,7 +6,11 @@ use std::thread;
 use std::time::Duration;
 
 use serde::Serialize;
-use tauri::{AppHandle, LogicalSize, Manager, PhysicalPosition, Position, Runtime, Size, WebviewUrl};
+use tauri::{
+	AppHandle, LogicalSize, Manager, PhysicalPosition, Position, Runtime, Size, State, WebviewUrl,
+};
+
+use crate::config::{save_clipboard_window_dimensions, ContextConfig};
 use tauri::webview::Url;
 use tauri::WebviewWindowBuilder;
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -41,8 +45,7 @@ pub struct CbhistStore {
 	last_raw_clipboard: Mutex<Option<String>>,
 	pub max_entries: usize,
 	pub disabled: bool,
-	pub panel_width: f64,
-	pub panel_height: f64,
+	panel_dims: Mutex<(f64, f64)>,
 }
 
 impl CbhistStore {
@@ -52,9 +55,25 @@ impl CbhistStore {
 			last_raw_clipboard: Mutex::new(None),
 			max_entries,
 			disabled,
-			panel_width,
-			panel_height,
+			panel_dims: Mutex::new((panel_width, panel_height)),
 		}
+	}
+
+	pub fn panel_size(&self) -> Result<(f64, f64), String> {
+		let g = self
+			.panel_dims
+			.lock()
+			.map_err(|_| "cbhist panel lock failed".to_string())?;
+		Ok(*g)
+	}
+
+	pub fn set_panel_size(&self, w: f64, h: f64) -> Result<(), String> {
+		let mut g = self
+			.panel_dims
+			.lock()
+			.map_err(|_| "cbhist panel lock failed".to_string())?;
+		*g = (w, h);
+		Ok(())
 	}
 }
 
@@ -248,8 +267,9 @@ pub fn show_cbhist_panel<R: Runtime>(app: &AppHandle<R>) {
 	if store.disabled {
 		return;
 	}
-	let lw = store.panel_width;
-	let lh = store.panel_height;
+	let (lw, lh) = store
+		.panel_size()
+		.unwrap_or((420.0, 480.0));
 	let tray_rect = app
 		.tray_by_id("main")
 		.and_then(|t| t.rect().ok().flatten());
@@ -271,7 +291,9 @@ pub fn show_cbhist_panel<R: Runtime>(app: &AppHandle<R>) {
 			.decorations(false)
 			.shadow(false)
 			.transparent(true)
-			.resizable(false)
+			.resizable(true)
+			.min_inner_size(200.0, 200.0)
+			.max_inner_size(2000.0, 2000.0)
 			.minimizable(false)
 			.maximizable(false)
 			.skip_taskbar(true)
@@ -346,5 +368,17 @@ pub fn cbhist_close_panel(app: AppHandle) -> Result<(), String> {
 	if let Some(w) = app.get_webview_window(WINDOW_LABEL) {
 		w.hide().map_err(|e| e.to_string())?;
 	}
+	Ok(())
+}
+
+#[tauri::command]
+pub fn save_clipboard_panel_size(
+	ctx: State<'_, Arc<ContextConfig>>,
+	store: State<'_, Arc<CbhistStore>>,
+	width: i32,
+	height: i32,
+) -> Result<(), String> {
+	save_clipboard_window_dimensions(&ctx.app_identifier, width, height)?;
+	store.set_panel_size(width as f64, height as f64)?;
 	Ok(())
 }

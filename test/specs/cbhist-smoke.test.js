@@ -58,6 +58,9 @@ describe('Clipboard history panel (cbhist) smoke', () => {
 					if (cmd === 'cbhist_close_panel') {
 						return;
 					}
+					if (cmd === 'save_clipboard_panel_size') {
+						return;
+					}
 					return null;
 				};
 			},

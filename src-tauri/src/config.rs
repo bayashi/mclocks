@@ -235,6 +235,39 @@ pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, St
     load_app_config_for_identifier(&state.app_identifier)
 }
 
+pub fn save_clipboard_window_dimensions(
+    app_identifier: &str,
+    width: i32,
+    height: i32,
+) -> Result<(), String> {
+    let width = width.max(200).min(2000);
+    let height = height.max(200).min(2000);
+    let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
+    let config_path = base_dir
+        .config_dir()
+        .join(get_config_app_path(&app_identifier.to_string()));
+    let old_config_path = base_dir.config_dir().join(get_old_config_app_path());
+    let config_json = read_config_file(&config_path, &old_config_path)?;
+    if !config_path.exists() {
+        ensure_config_file_exists(&config_path, &config_json)?;
+    }
+    let mut root = parse_config_json_to_value(&config_json)?;
+    let obj = root
+        .as_object_mut()
+        .ok_or("Config root must be a JSON object")?;
+    let clip_val = obj
+        .entry("clipboard".to_string())
+        .or_insert_with(|| serde_json::json!({}));
+    let clip_obj = clip_val
+        .as_object_mut()
+        .ok_or("clipboard must be an object")?;
+    clip_obj.insert("windowWidth".to_string(), serde_json::json!(width));
+    clip_obj.insert("windowHeight".to_string(), serde_json::json!(height));
+    let out = serde_json::to_string_pretty(&root).map_err(|e| e.to_string())?;
+    fs::write(&config_path, out).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 pub struct ContextConfig {
     pub app_identifier: String,
 }

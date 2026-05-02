@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { isMacOS } from './util.js';
+import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
+import { isMacOS, openMessageDialog } from './util.js';
 
 /** Same rules as sticky / clock `initClockStyles` size handling. */
 function sizeToCssPx(size) {
@@ -14,6 +14,26 @@ function sizeToCssPx(size) {
 		return size;
 	}
 	return '14px';
+}
+
+async function setWindowSize(currentWindow, w, h) {
+	await currentWindow.setSize(new LogicalSize(w, h));
+}
+
+async function getInnerSize(currentWindow) {
+	try {
+		const [inner, scaleFactor] = await Promise.all([
+			currentWindow.innerSize(),
+			currentWindow.scaleFactor(),
+		]);
+		const factor = scaleFactor || 1;
+		return {
+			width: Math.round(inner.width / factor),
+			height: Math.round(inner.height / factor),
+		};
+	} catch {
+		return null;
+	}
 }
 
 const CBHIST_CLOSE_FADE_MS = 220;
@@ -228,8 +248,17 @@ export async function cbhistPanelEntry(mainElement) {
 	<div class="ch-main">
 		<div class="ch-list-scroll" id="ch-list-scroll"></div>
 	</div>
+	<div id="cbhist-resize-handle" aria-hidden="true"></div>
 </div>
 `;
+
+	let currentWindow = null;
+	try {
+		currentWindow = getCurrentWindow();
+	} catch {
+		currentWindow = null;
+	}
+	const resizeHandle = mainElement.querySelector('#cbhist-resize-handle');
 
 	const listScroll = mainElement.querySelector('#ch-list-scroll');
 	const closeBtn = mainElement.querySelector('#ch-close');
@@ -388,17 +417,95 @@ export async function cbhistPanelEntry(mainElement) {
 
 	closeBtn?.addEventListener('click', () => closePanel());
 
-	if (isMacOS()) {
+	if (isMacOS() && currentWindow) {
 		topDrag?.addEventListener('mousedown', async (event) => {
 			if (event.target.closest('button')) {
 				return;
 			}
 			try {
-				await getCurrentWindow().startDragging();
+				await currentWindow.startDragging();
 			} catch {
 				// ignore
 			}
 		});
+	}
+
+	if (resizeHandle && currentWindow) {
+		resizeHandle.addEventListener('mousedown', async (event) => {
+			event.preventDefault();
+			if (isMacOS()) {
+				const startX = event.screenX;
+				const startY = event.screenY;
+				const startSize = await getInnerSize(currentWindow);
+				if (!startSize) {
+					return;
+				}
+				let rafPending = false;
+				let lastX = startX;
+				let lastY = startY;
+				const onMouseMove = () => {
+					if (rafPending) {
+						return;
+					}
+					rafPending = true;
+					requestAnimationFrame(() => {
+						rafPending = false;
+						const dx = lastX - startX;
+						const dy = lastY - startY;
+						void setWindowSize(
+							currentWindow,
+							Math.max(200, startSize.width + dx),
+							Math.max(200, startSize.height + dy),
+						);
+					});
+				};
+				const cleanup = () => {
+					window.removeEventListener('mousemove', onMouseMoveCapture, true);
+					window.removeEventListener('mouseup', cleanup, true);
+				};
+				const onMouseMoveCapture = (e) => {
+					lastX = e.screenX;
+					lastY = e.screenY;
+					onMouseMove();
+				};
+				window.addEventListener('mousemove', onMouseMoveCapture, true);
+				window.addEventListener('mouseup', cleanup, true);
+			} else {
+				try {
+					await currentWindow.startResizeDragging('SouthEast');
+				} catch (error) {
+					await openMessageDialog(`Failed to start resize: ${error}`, 'mclocks Error', 'error');
+				}
+			}
+		});
+	}
+
+	let resizeSaveTimer = null;
+	if (currentWindow) {
+		try {
+			await currentWindow.onResized(async () => {
+				const inner = await getInnerSize(currentWindow);
+				if (!inner) {
+					return;
+				}
+				if (resizeSaveTimer != null) {
+					clearTimeout(resizeSaveTimer);
+				}
+				resizeSaveTimer = setTimeout(async () => {
+					resizeSaveTimer = null;
+					try {
+						await invoke('save_clipboard_panel_size', {
+							width: inner.width,
+							height: inner.height,
+						});
+					} catch {
+						// ignore
+					}
+				}, 400);
+			});
+		} catch {
+			// ignore (API unavailable)
+		}
 	}
 
 	async function reload(opts = {}) {
