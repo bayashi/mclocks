@@ -4,7 +4,8 @@
   "description": "Capability for main and sticky windows",
   "windows": [
     "main",
-    "sticky-*"
+    "sticky-*",
+    "chist"
   ],
   "permissions": [
     "core:default",

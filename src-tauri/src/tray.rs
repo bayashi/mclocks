@@ -1,12 +1,15 @@
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Runtime};
+
+use crate::chist;
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 use tauri_plugin_clipboard_manager::ClipboardExt;
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 use tauri_plugin_dialog::MessageDialogResult;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
+const MENU_ID_CHIST: &str = "menu.tray.chist";
 const MENU_ID_TRAY_TOGGLE_MAIN: &str = "menu.tray.toggle_main";
 const MENU_ID_RESET_TEMP_DND_SESSION: &str = "menu.web.reset_temp_dnd_session";
 const MENU_ID_TRAY_QUIT: &str = "menu.tray.quit";
@@ -46,6 +49,7 @@ pub fn setup_tray_menu<R: Runtime>(
     app: &AppHandle<R>,
     window_name: &str,
     reset_temp_web_session: fn() -> Result<String, String>,
+    clipboard_history_enabled: bool,
 ) -> tauri::Result<()> {
     let toggle_main_item = MenuItem::with_id(
         app,
@@ -66,20 +70,63 @@ pub fn setup_tray_menu<R: Runtime>(
     let about_item =
         MenuItem::with_id(app, MENU_ID_TRAY_ABOUT, "About mclocks", true, None::<&str>)?;
     #[cfg(any(target_os = "windows", target_os = "macos"))]
-    let tray_menu = Menu::with_items(
-        app,
-        &[
-            &toggle_main_item,
-            &reset_temp_session_item,
-            &about_item,
-            &quit_item,
-        ],
-    )?;
+    let tray_menu = if clipboard_history_enabled {
+        let chist_item = MenuItem::with_id(
+            app,
+            MENU_ID_CHIST,
+            "Clipboard History",
+            true,
+            None::<&str>,
+        )?;
+        Menu::with_items(
+            app,
+            &[
+                &toggle_main_item,
+                &reset_temp_session_item,
+                &chist_item,
+                &about_item,
+                &quit_item,
+            ],
+        )?
+    } else {
+        Menu::with_items(
+            app,
+            &[
+                &toggle_main_item,
+                &reset_temp_session_item,
+                &about_item,
+                &quit_item,
+            ],
+        )?
+    };
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-    let tray_menu = Menu::with_items(
-        app,
-        &[&toggle_main_item, &reset_temp_session_item, &quit_item],
-    )?;
+    let tray_menu = if clipboard_history_enabled {
+        let chist_item = MenuItem::with_id(
+            app,
+            MENU_ID_CHIST,
+            "Clipboard History",
+            true,
+            None::<&str>,
+        )?;
+        Menu::with_items(
+            app,
+            &[
+                &toggle_main_item,
+                &reset_temp_session_item,
+                &chist_item,
+                &quit_item,
+            ],
+        )?
+    } else {
+        Menu::with_items(
+            app,
+            &[
+                &toggle_main_item,
+                &reset_temp_session_item,
+                &quit_item,
+            ],
+        )?
+    };
     let mut tray_builder = TrayIconBuilder::with_id("main").menu(&tray_menu);
     if let Some(icon) = app.default_window_icon() {
         tray_builder = tray_builder.icon(icon.clone());
@@ -99,6 +146,10 @@ pub fn setup_tray_menu<R: Runtime>(
     tray_builder
         .on_menu_event(move |app, event| {
             let menu_id = event.id().as_ref();
+            if clipboard_history_enabled && menu_id == MENU_ID_CHIST {
+                chist::show_chist_panel(&app);
+                return;
+            }
             #[cfg(any(target_os = "windows", target_os = "macos"))]
             if menu_id == MENU_ID_TRAY_ABOUT {
                 let app_handle = app.clone();

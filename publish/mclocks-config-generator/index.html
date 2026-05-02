@@ -467,6 +467,12 @@ label.hint[title]{
 		usetz: false,
 		convtz: "",
 		disableHover: true,
+		clipboard: {
+			maxClipNumber: 10,
+			windowWidth: 420,
+			windowHeight: 480,
+			closeOnCopy: false
+		},
 		web: {
 			root: "/path/to/your/webroot",
 			port: 3030,
@@ -491,6 +497,26 @@ label.hint[title]{
 				args: ["-g", "{file}:{line}"]
 			}
 		}
+	};
+
+	const TOP_LEVEL_CONFIG_KEY_ORDER = Object.keys(DEFAULT_CONFIG);
+
+	const orderTopLevelKeys = (obj) => {
+		if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+			return obj;
+		}
+		const out = {};
+		for (const k of TOP_LEVEL_CONFIG_KEY_ORDER) {
+			if (hasOwn(obj, k)) {
+				out[k] = obj[k];
+			}
+		}
+		for (const k of Object.keys(obj)) {
+			if (!hasOwn(out, k)) {
+				out[k] = obj[k];
+			}
+		}
+		return out;
 	};
 
 	const TIPS = {
@@ -532,7 +558,13 @@ label.hint[title]{
 		reposDir: "Local directory of cloned repos for the `/editor` endpoint. Path can use `~` for HOME directory. If unset or missing, `/editor` is not enabled. This directory must exist.",
 		includeHost: "If true, local path includes the original host as a directory segment: `{reposDir}/{host}/owner/...`; if false, `{reposDir}/owner/...`.",
 		command: "Editor command or path to launch from `/editor`.",
-		args: "Arguments template list for the editor. Use `{file}` and `{line}` placeholders. This form accepts a comma-separated string and outputs a JSON array (e.g. `-g,{file}:{line}`)."
+		args: "Arguments template list for the editor. Use `{file}` and `{line}` placeholders. This form accepts a comma-separated string and outputs a JSON array (e.g. `-g,{file}:{line}`).",
+		clipboard: "Clipboard history",
+		clipboardEnable: "Unchecked, the clipboard feature is off.",
+		maxClipNumber: "Maximum number of clips to keep in clipboard history (1-1000; mclocks clamps on startup).",
+		windowWidth: "Clipboard history panel width in logical pixels (200-2000; mclocks clamps on startup).",
+		windowHeight: "Clipboard history panel height in logical pixels (200-2000; mclocks clamps on startup).",
+		closeOnCopy: "If true, the history panel closes automatically after you copy an entry from clipboard history."
 	};
 
 	const $ = (id) => {
@@ -880,6 +912,45 @@ label.hint[title]{
 		]);
 	};
 
+	const renderClipboardHistory = () => {
+		const hasClipboard = Boolean(state.cfg.clipboard && typeof state.cfg.clipboard === "object");
+		const toggle = el("input", { type: "checkbox" });
+		toggle.checked = hasClipboard;
+		toggle.addEventListener("change", () => {
+			if (toggle.checked) {
+				if (!state.cfg.clipboard || typeof state.cfg.clipboard !== "object") {
+					state.cfg.clipboard = { maxClipNumber: 10, windowWidth: 420, windowHeight: 480, closeOnCopy: false };
+				}
+			} else {
+				delete state.cfg.clipboard;
+			}
+			render();
+		});
+		const head = el("div", { class: "st" }, [
+			el("div", { class: "inline" }, [
+				el("h3", { text: "Clipboard History", title: TIPS.clipboard }),
+				el("label", { class: "hint", title: TIPS.clipboardEnable }, [toggle])
+			])
+		]);
+		if (!toggle.checked) {
+			return el("div", { class: "sect" }, [
+				head,
+				null
+			]);
+		}
+		return el("div", { class: "sect" }, [
+			head,
+			el("div", { class: "row three" }, [
+				mkField("maxClipNumber", inputNumber(["clipboard", "maxClipNumber"], 1, 1), ""),
+				mkField("windowWidth", inputNumber(["clipboard", "windowWidth"], 200, 1), ""),
+				mkField("windowHeight", inputNumber(["clipboard", "windowHeight"], 200, 1), "")
+			]),
+			el("div", { class: "row" }, [
+				mkField("closeOnCopy", inputCheckbox(["clipboard", "closeOnCopy"]), "")
+			])
+		]);
+	};
+
 	const renderWeb = () => {
 		const hasWeb = Boolean(state.cfg.web && typeof state.cfg.web === "object");
 		const toggle = el("input", { type: "checkbox" });
@@ -968,6 +1039,7 @@ label.hint[title]{
 		els.formRoot.innerHTML = "";
 		els.formRoot.appendChild(renderClocks());
 		els.formRoot.appendChild(renderBasics());
+		els.formRoot.appendChild(renderClipboardHistory());
 		els.formRoot.appendChild(renderWeb());
 		generate();
 	};
@@ -1008,7 +1080,27 @@ label.hint[title]{
 				c.web.editor.args = c.web.editor.args.split(",").map(s => s.trim()).filter(Boolean);
 			}
 		}
-		return c;
+		if (c.clipboard && isPlainObject(c.clipboard)) {
+			let n = c.clipboard.maxClipNumber;
+			if (n == null || !Number.isFinite(n)) {
+				n = 10;
+			}
+			c.clipboard.maxClipNumber = Math.trunc(Math.min(1000, Math.max(1, n)));
+			let ww = c.clipboard.windowWidth;
+			let wh = c.clipboard.windowHeight;
+			if (ww == null || !Number.isFinite(ww)) {
+				ww = 420;
+			}
+			if (wh == null || !Number.isFinite(wh)) {
+				wh = 480;
+			}
+			c.clipboard.windowWidth = Math.trunc(Math.min(2000, Math.max(200, ww)));
+			c.clipboard.windowHeight = Math.trunc(Math.min(2000, Math.max(200, wh)));
+			if (hasOwn(c.clipboard, "closeOnCopy")) {
+				c.clipboard.closeOnCopy = Boolean(c.clipboard.closeOnCopy);
+			}
+		}
+		return orderTopLevelKeys(c);
 	};
 
 	const readUI = () => {

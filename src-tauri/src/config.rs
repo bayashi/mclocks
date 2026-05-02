@@ -45,6 +45,45 @@ fn df_clocks() -> Vec<Clock> {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct ClipboardConfig {
+    #[serde(default)]
+    pub disabled: bool,
+    #[serde(default = "df_max_clip_number")]
+    pub max_clip_number: i32,
+    #[serde(default = "df_clipboard_window_width")]
+    pub window_width: i32,
+    #[serde(default = "df_clipboard_window_height")]
+    pub window_height: i32,
+    #[serde(default)]
+    pub close_on_copy: bool,
+}
+
+fn df_max_clip_number() -> i32 {
+    10
+}
+
+fn df_clipboard_window_width() -> i32 {
+    420
+}
+
+fn df_clipboard_window_height() -> i32 {
+    480
+}
+
+impl Default for ClipboardConfig {
+    fn default() -> Self {
+        Self {
+            disabled: false,
+            max_clip_number: df_max_clip_number(),
+            window_width: df_clipboard_window_width(),
+            window_height: df_clipboard_window_height(),
+            close_on_copy: false,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     #[serde(default = "df_clocks")]
     pub clocks: Vec<Clock>,
@@ -85,6 +124,8 @@ pub struct AppConfig {
     pub disable_hover: bool,
     #[serde(default)]
     pub web: Option<WebConfig>,
+    #[serde(default)]
+    pub clipboard: ClipboardConfig,
 }
 
 fn df_font() -> String {
@@ -174,12 +215,11 @@ pub fn parse_config_json_to_value(config_json: &str) -> Result<serde_json::Value
         .map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
 }
 
-#[tauri::command]
-pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
+pub fn load_app_config_for_identifier(app_identifier: &str) -> Result<AppConfig, String> {
     let base_dir = BaseDirs::new().ok_or("Failed to get base dir")?;
     let config_path = base_dir
         .config_dir()
-        .join(get_config_app_path(&state.app_identifier));
+        .join(get_config_app_path(&app_identifier.to_string()));
     let old_config_path = base_dir.config_dir().join(get_old_config_app_path());
     let config_json = read_config_file(&config_path, &old_config_path)?;
     if !config_path.exists() {
@@ -188,6 +228,11 @@ pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, St
 
     let config_value = parse_config_json_to_value(&config_json)?;
     serde_json::from_value(config_value).map_err(|e| vec!["JSON config: ", &e.to_string()].join(""))
+}
+
+#[tauri::command]
+pub fn load_config(state: State<'_, Arc<ContextConfig>>) -> Result<AppConfig, String> {
+    load_app_config_for_identifier(&state.app_identifier)
 }
 
 pub struct ContextConfig {
