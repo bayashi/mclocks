@@ -107,8 +107,8 @@ html.cbhist #cbhist-resize-handle {
 
 .ch-close-x {
 	position: absolute;
-	top: 8px;
-	right: 4px;
+	top: 3px;
+	right: 3px;
 	z-index: 4;
 	padding: 1px 5px;
 	line-height: 1;
@@ -118,17 +118,13 @@ html.cbhist #cbhist-resize-handle {
 	background: transparent;
 	color: inherit;
 	font: inherit;
-	font-size: 11px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	transform: translateY(2px);
+	transition: opacity 120ms ease;
 	cursor: pointer;
 	-webkit-app-region: no-drag;
-	transition: opacity 120ms ease;
-}
-
-.ch-close-x:hover {
-	opacity: 0.92;
 }
 
 .ch-close-x:active {
@@ -140,7 +136,7 @@ html.cbhist #cbhist-resize-handle {
 	min-height: 0;
 	display: flex;
 	flex-direction: column;
-	padding: 23px 3px 8px 2px;
+	padding: 22px 3px 8px 2px;
 	overflow: hidden;
 }
 
@@ -152,33 +148,32 @@ html.cbhist #cbhist-resize-handle {
 	overflow-y: scroll;
 	-webkit-overflow-scrolling: touch;
 	scrollbar-gutter: stable;
-	padding: calc(6px * 1.25) 7px calc(10px * 1.25) 4px;
+	padding: 0 7px calc(10px * 1.25) 4px;
 	-webkit-app-region: no-drag;
 	-webkit-user-select: text;
 	user-select: text;
 	scrollbar-width: auto;
-	scrollbar-color: color-mix(in srgb, currentColor 35%, transparent) rgba(0, 0, 0, 0.25);
+	scrollbar-color: rgba(255, 255, 255, 0.35) rgba(0, 0, 0, 0.25);
 }
 
-.ch-list-scroll::-webkit-scrollbar {
+html.cbhist .ch-list-scroll::-webkit-scrollbar {
+	display: block;
 	width: 12px;
 }
 
-.ch-list-scroll::-webkit-scrollbar-track {
+html.cbhist .ch-list-scroll::-webkit-scrollbar-track {
 	background: rgba(0, 0, 0, 0.25);
 	border-radius: 10px;
 }
 
-.ch-list-scroll::-webkit-scrollbar-thumb {
-	background: color-mix(in srgb, currentColor 35%, transparent);
+html.cbhist .ch-list-scroll::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.35);
 	border-radius: 10px;
 	border: 2px solid rgba(0, 0, 0, 0.25);
-	box-sizing: border-box;
-	min-height: 36px;
 }
 
-.ch-list-scroll::-webkit-scrollbar-thumb:hover {
-	background: color-mix(in srgb, currentColor 50%, transparent);
+html.cbhist .ch-list-scroll::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.5);
 }
 
 .ch-list {

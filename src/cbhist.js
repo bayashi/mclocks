@@ -537,7 +537,7 @@ export async function cbhistPanelEntry(mainElement) {
 			if (listScroll) {
 				listScroll.scrollTop = 0;
 			}
-			renderEmpty('<span class="ch-empty-inner">No clipboard text yet.<br>Copy something elsewhere, then reopen this panel.</span>');
+			renderEmpty('<span class="ch-empty-inner">No clipboard text yet.</span>');
 			return;
 		}
 		if (historyPayloadUnchanged(rows, data)) {
