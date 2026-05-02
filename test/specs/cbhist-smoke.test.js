@@ -1,4 +1,4 @@
-describe('Clipboard history panel (chist) smoke', () => {
+describe('Clipboard history panel (cbhist) smoke', () => {
 	beforeEach(async () => {
 		await browser.url('/');
 		await browser.waitUntil(
@@ -21,7 +21,7 @@ describe('Clipboard history panel (chist) smoke', () => {
 		}
 	});
 
-	const CHIST_LOAD_CONFIG = {
+	const CBHIST_LOAD_CONFIG = {
 		font: 'Courier, monospace',
 		size: '14px',
 		color: '#fff',
@@ -34,13 +34,13 @@ describe('Clipboard history panel (chist) smoke', () => {
 	};
 
 	/**
-	 * Mock Tauri invoke and boot chist UI into #mclocks (same pattern as sticky tests).
-	 * @param {unknown[]} listRows - payload returned by chist_list (camelCase DTO fields).
+	 * Mock Tauri invoke and boot cbhist UI into #mclocks (same pattern as sticky tests).
+	 * @param {unknown[]} listRows - payload returned by cbhist_list (camelCase DTO fields).
 	 */
-	const setupChistPanel = async (listRows) => {
+	const setupCbhistPanel = async (listRows) => {
 		await browser.execute(
 			(configPayload, rows) => {
-				document.documentElement.classList.add('chist');
+				document.documentElement.classList.add('cbhist');
 				window.__TAURI_INTERNALS__ = window.__TAURI_INTERNALS__ || {};
 				window.__TAURI_INTERNALS__.transformCallback = function () {
 					return Date.now() + Math.random();
@@ -49,28 +49,28 @@ describe('Clipboard history panel (chist) smoke', () => {
 					if (cmd === 'load_config') {
 						return configPayload;
 					}
-					if (cmd === 'chist_list') {
+					if (cmd === 'cbhist_list') {
 						return rows;
 					}
-					if (cmd === 'chist_apply') {
+					if (cmd === 'cbhist_apply') {
 						return;
 					}
-					if (cmd === 'chist_close_panel') {
+					if (cmd === 'cbhist_close_panel') {
 						return;
 					}
 					return null;
 				};
 			},
-			CHIST_LOAD_CONFIG,
+			CBHIST_LOAD_CONFIG,
 			listRows
 		);
 
 		const error = await browser.executeAsync((done) => {
 			(async () => {
 				try {
-					const mod = await import('/src/chist.js');
+					const mod = await import('/src/cbhist.js');
 					const mainElement = document.querySelector('#mclocks');
-					await mod.chistPanelEntry(mainElement);
+					await mod.cbhistPanelEntry(mainElement);
 					done(null);
 				} catch (e) {
 					done(e.message);
@@ -84,7 +84,7 @@ describe('Clipboard history panel (chist) smoke', () => {
 	};
 
 	it('shows panel shell and empty state when history is empty', async () => {
-		await setupChistPanel([]);
+		await setupCbhistPanel([]);
 
 		const shellOk = await browser.execute(() => !!document.querySelector('.ch-shell'));
 		expect(shellOk).toBe(true);
@@ -96,8 +96,8 @@ describe('Clipboard history panel (chist) smoke', () => {
 		expect(emptyText).toContain('No clipboard text yet');
 	});
 
-	it('renders history cards when chist_list returns entries', async () => {
-		const sampleText = 'e2e chist sample line';
+	it('renders history cards when cbhist_list returns entries', async () => {
+		const sampleText = 'e2e cbhist sample line';
 		const utf8ByteLen = new TextEncoder().encode(sampleText).length;
 		const unicodeScalarCount = [...sampleText].length;
 		const lineCount = sampleText.split(/\r?\n/).length;
@@ -112,7 +112,7 @@ describe('Clipboard history panel (chist) smoke', () => {
 			},
 		];
 
-		await setupChistPanel(rows);
+		await setupCbhistPanel(rows);
 
 		const cardInfo = await browser.execute(() => {
 			const card = document.querySelector('.ch-card');

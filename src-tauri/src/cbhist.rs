@@ -1,4 +1,4 @@
-//! In-memory copy-history panel (tray-triggered); internal codename chist.
+//! In-memory copy-history panel (tray-triggered); internal codename cbhist.
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
@@ -13,7 +13,7 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::WINDOW_NAME;
 
-pub const WINDOW_LABEL: &str = "chist";
+pub const WINDOW_LABEL: &str = "cbhist";
 
 const MAX_CLIPBOARD_UTF8_BYTES: usize = 1_048_576;
 const POLL_INTERVAL: Duration = Duration::from_millis(140);
@@ -28,7 +28,7 @@ struct HistoryEntry {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ChistItemDto {
+pub struct CbhistItemDto {
 	pub text: String,
 	pub utf8_byte_len: usize,
 	pub unicode_scalar_count: usize,
@@ -36,7 +36,7 @@ pub struct ChistItemDto {
 	pub truncated_from_clipboard: bool,
 }
 
-pub struct ChistStore {
+pub struct CbhistStore {
 	deque: Mutex<VecDeque<HistoryEntry>>,
 	last_raw_clipboard: Mutex<Option<String>>,
 	pub max_entries: usize,
@@ -45,7 +45,7 @@ pub struct ChistStore {
 	pub panel_height: f64,
 }
 
-impl ChistStore {
+impl CbhistStore {
 	pub fn new(max_entries: usize, disabled: bool, panel_width: f64, panel_height: f64) -> Self {
 		Self {
 			deque: Mutex::new(VecDeque::new()),
@@ -77,10 +77,10 @@ fn line_count_metric(s: &str) -> usize {
 	n + 1
 }
 
-fn dto_from_entry(entry: &HistoryEntry) -> ChistItemDto {
+fn dto_from_entry(entry: &HistoryEntry) -> CbhistItemDto {
 	let text_len = entry.text.len();
 	let scalar_n = entry.text.chars().count();
-	ChistItemDto {
+	CbhistItemDto {
 		text: entry.text.clone(),
 		utf8_byte_len: text_len,
 		unicode_scalar_count: scalar_n,
@@ -180,7 +180,7 @@ fn panel_position_for_tray<R: Runtime>(
 	PhysicalPosition { x: 100, y: 100 }
 }
 
-fn maybe_record_clipboard_update<R: Runtime>(handle: &AppHandle<R>, store: &ChistStore) {
+fn maybe_record_clipboard_update<R: Runtime>(handle: &AppHandle<R>, store: &CbhistStore) {
 	if store.disabled {
 		return;
 	}
@@ -220,7 +220,7 @@ fn maybe_record_clipboard_update<R: Runtime>(handle: &AppHandle<R>, store: &Chis
 	}
 }
 
-pub fn spawn_chist_watcher<R: Runtime>(app: AppHandle<R>, store: Arc<ChistStore>) {
+pub fn spawn_cbhist_watcher<R: Runtime>(app: AppHandle<R>, store: Arc<CbhistStore>) {
 	thread::spawn(move || loop {
 		thread::sleep(POLL_INTERVAL);
 		let scheduler = app.clone();
@@ -241,8 +241,8 @@ fn build_panel_url() -> WebviewUrl {
 	WebviewUrl::App("index.html".into())
 }
 
-pub fn show_chist_panel<R: Runtime>(app: &AppHandle<R>) {
-	let Some(store) = app.try_state::<Arc<ChistStore>>() else {
+pub fn show_cbhist_panel<R: Runtime>(app: &AppHandle<R>) {
+	let Some(store) = app.try_state::<Arc<CbhistStore>>() else {
 		return;
 	};
 	if store.disabled {
@@ -282,7 +282,7 @@ pub fn show_chist_panel<R: Runtime>(app: &AppHandle<R>) {
 		{
 			Ok(w) => w,
 			Err(e) => {
-				eprintln!("[chist] failed to build window: {}", e);
+				eprintln!("[cbhist] failed to build window: {}", e);
 				return;
 			}
 		};
@@ -294,14 +294,14 @@ pub fn show_chist_panel<R: Runtime>(app: &AppHandle<R>) {
 }
 
 #[tauri::command]
-pub fn chist_list(store: tauri::State<'_, Arc<ChistStore>>) -> Result<Vec<ChistItemDto>, String> {
+pub fn cbhist_list(store: tauri::State<'_, Arc<CbhistStore>>) -> Result<Vec<CbhistItemDto>, String> {
 	if store.disabled {
 		return Ok(Vec::new());
 	}
 	let dq = store
 		.deque
 		.lock()
-		.map_err(|_| "chist lock failed".to_string())?;
+		.map_err(|_| "cbhist lock failed".to_string())?;
 	let mut out = Vec::with_capacity(dq.len());
 	for e in dq.iter() {
 		out.push(dto_from_entry(e));
@@ -310,9 +310,9 @@ pub fn chist_list(store: tauri::State<'_, Arc<ChistStore>>) -> Result<Vec<ChistI
 }
 
 #[tauri::command]
-pub fn chist_apply(
+pub fn cbhist_apply(
 	app: AppHandle,
-	store: tauri::State<'_, Arc<ChistStore>>,
+	store: tauri::State<'_, Arc<CbhistStore>>,
 	index: usize,
 ) -> Result<(), String> {
 	if store.disabled {
@@ -322,10 +322,10 @@ pub fn chist_apply(
 		let dq = store
 			.deque
 			.lock()
-			.map_err(|_| "chist lock failed".to_string())?;
+			.map_err(|_| "cbhist lock failed".to_string())?;
 		dq.get(index)
 			.cloned()
-			.ok_or_else(|| "invalid chist index".to_string())?
+			.ok_or_else(|| "invalid cbhist index".to_string())?
 	};
 	app
 		.clipboard()
@@ -335,14 +335,14 @@ pub fn chist_apply(
 		let mut last = store
 			.last_raw_clipboard
 			.lock()
-			.map_err(|_| "chist lock failed".to_string())?;
+			.map_err(|_| "cbhist lock failed".to_string())?;
 		*last = Some(entry.text.clone());
 	}
 	Ok(())
 }
 
 #[tauri::command]
-pub fn chist_close_panel(app: AppHandle) -> Result<(), String> {
+pub fn cbhist_close_panel(app: AppHandle) -> Result<(), String> {
 	if let Some(w) = app.get_webview_window(WINDOW_LABEL) {
 		w.hide().map_err(|e| e.to_string())?;
 	}

@@ -1,5 +1,5 @@
-html.chist,
-html.chist body {
+html.cbhist,
+html.cbhist body {
 	height: 100%;
 	margin: 0;
 	overflow: hidden;
@@ -7,14 +7,14 @@ html.chist body {
 	background: transparent;
 }
 
-html.chist body {
+html.cbhist body {
 	display: flex;
 	flex-direction: column;
 	flex: 1 1 auto;
 	min-height: 0;
 }
 
-html.chist {
+html.cbhist {
 	--ch-clamp-lines: 6;
 	-webkit-app-region: no-drag;
 	background: transparent;
@@ -26,18 +26,18 @@ html.chist {
 	transition: opacity 220ms ease-out;
 }
 
-html.chist.chist-is-closing {
+html.cbhist.cbhist-is-closing {
 	opacity: 0;
 	pointer-events: none;
 }
 
-html.chist *,
-html.chist *::before,
-html.chist *::after {
+html.cbhist *,
+html.cbhist *::before,
+html.cbhist *::after {
 	box-sizing: inherit;
 }
 
-#mclocks.ch-chist-root {
+#mclocks.ch-cbhist-root {
 	display: flex;
 	flex-direction: column;
 	white-space: normal;
@@ -280,7 +280,7 @@ html.chist *::after {
 		opacity 90ms ease;
 }
 
-html.chist .ch-expand-toggle.ch-expand-reveal.ch-expand-off {
+html.cbhist .ch-expand-toggle.ch-expand-reveal.ch-expand-off {
 	display: none !important;
 }
 

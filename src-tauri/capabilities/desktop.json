@@ -9,7 +9,7 @@
   "windows": [
     "main",
     "sticky-*",
-    "chist"
+    "cbhist"
   ],
   "permissions": [
     "core:default",

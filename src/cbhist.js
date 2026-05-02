@@ -16,9 +16,9 @@ function sizeToCssPx(size) {
 	return '14px';
 }
 
-const CHIST_CLOSE_FADE_MS = 220;
+const CBHIST_CLOSE_FADE_MS = 220;
 
-let chistPanelClosing = false;
+let cbhistPanelClosing = false;
 
 const BADGE_CLIP_TRUNC = 'Copied text truncated';
 
@@ -183,25 +183,25 @@ function historyPayloadUnchanged(prev, data) {
 }
 
 async function closePanel() {
-	if (chistPanelClosing) {
+	if (cbhistPanelClosing) {
 		return;
 	}
-	chistPanelClosing = true;
-	document.documentElement.classList.add('chist-is-closing');
+	cbhistPanelClosing = true;
+	document.documentElement.classList.add('cbhist-is-closing');
 	window.setTimeout(async () => {
 		try {
-			await invoke('chist_close_panel');
+			await invoke('cbhist_close_panel');
 		} finally {
-			document.documentElement.classList.remove('chist-is-closing');
-			chistPanelClosing = false;
+			document.documentElement.classList.remove('cbhist-is-closing');
+			cbhistPanelClosing = false;
 		}
-	}, CHIST_CLOSE_FADE_MS);
+	}, CBHIST_CLOSE_FADE_MS);
 }
 
-/** @typedef {{ text: string, utf8ByteLen: number, unicodeScalarCount: number, lineCount: number, truncatedFromClipboard: boolean }} ChistRow */
+/** @typedef {{ text: string, utf8ByteLen: number, unicodeScalarCount: number, lineCount: number, truncatedFromClipboard: boolean }} CbhistRow */
 
-export async function chistPanelEntry(mainElement) {
-	/** @type {ChistRow[]} */
+export async function cbhistPanelEntry(mainElement) {
+	/** @type {CbhistRow[]} */
 	let rows = [];
 	const copyFlashTimers = new Map();
 
@@ -212,7 +212,7 @@ export async function chistPanelEntry(mainElement) {
 		// cfg remains null
 	}
 	let closeAfterCopyTimer = null;
-	document.documentElement.classList.remove('chist-is-closing');
+	document.documentElement.classList.remove('cbhist-is-closing');
 	if (cfg) {
 		document.documentElement.style.fontFamily = cfg.font;
 		document.documentElement.style.fontSize = sizeToCssPx(cfg.size);
@@ -220,7 +220,7 @@ export async function chistPanelEntry(mainElement) {
 	}
 
 	mainElement.innerHTML = '';
-	mainElement.classList.add('ch-chist-root');
+	mainElement.classList.add('ch-cbhist-root');
 	mainElement.innerHTML = `
 <div class="ch-shell">
 	<div class="ch-top-drag" data-tauri-drag-region></div>
@@ -354,7 +354,7 @@ export async function chistPanelEntry(mainElement) {
 					return;
 				}
 				try {
-					await invoke('chist_apply', { index: ix });
+					await invoke('cbhist_apply', { index: ix });
 					flashCopyFeedback(card, ix);
 					if (cfg?.clipboard?.closeOnCopy === true) {
 						if (closeAfterCopyTimer != null) {
@@ -366,7 +366,7 @@ export async function chistPanelEntry(mainElement) {
 						}, 600);
 					}
 				} catch (err) {
-					console.warn('[chist] copy failed', err);
+					console.warn('[cbhist] copy failed', err);
 				}
 			});
 		});
@@ -405,7 +405,7 @@ export async function chistPanelEntry(mainElement) {
 		const resetScroll = opts.resetScroll !== false;
 		let data;
 		try {
-			data = await invoke('chist_list');
+			data = await invoke('cbhist_list');
 		} catch {
 			if (!resetScroll) {
 				return;
@@ -451,7 +451,7 @@ export async function chistPanelEntry(mainElement) {
 	});
 
 	window.addEventListener('focus', () => {
-		document.documentElement.classList.remove('chist-is-closing');
+		document.documentElement.classList.remove('cbhist-is-closing');
 		void reload({ resetScroll: true });
 	});
 

@@ -1,5 +1,5 @@
 mod about_env;
-mod chist;
+mod cbhist;
 mod config;
 mod sticky;
 mod tray;
@@ -82,11 +82,11 @@ const IS_DEV: bool = tauri::is_dev();
 
 const WINDOW_NAME: &str = "main";
 
-fn clamp_chist_max_entries(n: i32) -> usize {
+fn clamp_cbhist_max_entries(n: i32) -> usize {
     (n.max(1).min(1000)) as usize
 }
 
-fn clamp_chist_window_px(n: i32) -> f64 {
+fn clamp_cbhist_window_px(n: i32) -> f64 {
     (n.max(200).min(2000)) as f64
 }
 
@@ -114,9 +114,9 @@ pub fn run() {
         serde_json::from_str("{}").expect("default AppConfig")
     });
     let clipboard_disabled = app_config.clipboard.disabled;
-    let chist_max_entries = clamp_chist_max_entries(app_config.clipboard.max_clip_number);
-    let chist_panel_w = clamp_chist_window_px(app_config.clipboard.window_width);
-    let chist_panel_h = clamp_chist_window_px(app_config.clipboard.window_height);
+    let cbhist_max_entries = clamp_cbhist_max_entries(app_config.clipboard.max_clip_number);
+    let cbhist_panel_w = clamp_cbhist_window_px(app_config.clipboard.window_width);
+    let cbhist_panel_h = clamp_cbhist_window_px(app_config.clipboard.window_height);
     let clipboard_history_enabled = !clipboard_disabled;
     let context_config_clone = Arc::new(config::ContextConfig {
         app_identifier: identifier.clone(),
@@ -199,9 +199,9 @@ pub fn run() {
     let error_msg = web_error.clone();
     let web_main_port_at_startup = web_config_for_startup.as_ref().map(|c| c.port);
     let clipboard_disabled_setup = clipboard_disabled;
-    let chist_max_entries_setup = chist_max_entries;
-    let chist_panel_w_setup = chist_panel_w;
-    let chist_panel_h_setup = chist_panel_h;
+    let cbhist_max_entries_setup = cbhist_max_entries;
+    let cbhist_panel_w_setup = cbhist_panel_w;
+    let cbhist_panel_h_setup = cbhist_panel_h;
     let clipboard_history_enabled_setup = clipboard_history_enabled;
     tbr = tbr.setup(move |app| {
         #[cfg(target_os = "macos")]
@@ -211,16 +211,16 @@ pub fn run() {
             tauri::WebviewWindowBuilder::from_config(app.handle(), window_config)?.build()?;
         }
 
-        let chist_store = Arc::new(chist::ChistStore::new(
-            chist_max_entries_setup,
+        let cbhist_store = Arc::new(cbhist::CbhistStore::new(
+            cbhist_max_entries_setup,
             clipboard_disabled_setup,
-            chist_panel_w_setup,
-            chist_panel_h_setup,
+            cbhist_panel_w_setup,
+            cbhist_panel_h_setup,
         ));
         if !clipboard_disabled_setup {
-            chist::spawn_chist_watcher(app.handle().clone(), chist_store.clone());
+            cbhist::spawn_cbhist_watcher(app.handle().clone(), cbhist_store.clone());
         }
-        app.manage(chist_store);
+        app.manage(cbhist_store);
 
         #[cfg(desktop)]
         {
@@ -276,7 +276,7 @@ pub fn run() {
     }
 
     let mut ws = tauri_plugin_window_state::Builder::new()
-        .with_denylist(&[chist::WINDOW_LABEL]);
+        .with_denylist(&[cbhist::WINDOW_LABEL]);
     if IS_DEV {
         let filename = format!("{}{}", ".dev", tauri_plugin_window_state::DEFAULT_FILENAME);
         ws = tauri_plugin_window_state::Builder::with_filename(ws, filename);
@@ -306,9 +306,9 @@ pub fn run() {
         sticky::load_sticky_state,
         sticky::load_sticky_image,
         sticky::restore_stickies,
-        chist::chist_list,
-        chist::chist_apply,
-        chist::chist_close_panel,
+        cbhist::cbhist_list,
+        cbhist::cbhist_apply,
+        cbhist::cbhist_close_panel,
     ])
     .run(context)
     .expect("error while running tauri application");
