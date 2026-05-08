@@ -13,9 +13,21 @@ on:
       - 'src-mcp/**'
       - 'web-assets/**/*.css'
       - '**/*.html'
+  pull_request:
+    branches:
+      - '*'
+    paths-ignore:
+      - '**/*.md'
+      - '**/.gitignore'
+      - '**/dependabot.yml'
+      - 'src-mcp/**'
+      - 'web-assets/**/*.css'
+      - '**/*.html'
 
 jobs:
   setup:
+    # On pull_request events, run jobs only for head branches starting with 'dependabot/' (push events run as usual).
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'dependabot/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,6 +52,8 @@ jobs:
           pnpm install
 
   tauri-build:
+    # On pull_request events, run jobs only for head branches starting with 'dependabot/' (push events run as usual).
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'dependabot/')
     needs: setup
     runs-on: ubuntu-latest
     steps:
@@ -70,6 +84,8 @@ jobs:
   # Frontend changes are expected to have been manually verified in a running app.
   # E2E tests run only on pull requests that have the required label, and on pushes to main after merge.
   lint-front:
+    # On pull_request events, run jobs only for head branches starting with 'dependabot/' (push events run as usual).
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'dependabot/')
     needs: setup
     runs-on: ubuntu-latest
     steps:
@@ -89,6 +105,8 @@ jobs:
           git diff --exit-code
 
   lint-and-test-server:
+    # On pull_request events, run jobs only for head branches starting with 'dependabot/' (push events run as usual).
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'dependabot/')
     needs: setup
     runs-on: ubuntu-latest
     steps:
