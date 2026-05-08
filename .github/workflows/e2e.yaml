@@ -50,6 +50,9 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Pin npm version
+        run: npm install -g npm@11.6.2
+
       - name: Install dependencies
         run: pnpm install
 
