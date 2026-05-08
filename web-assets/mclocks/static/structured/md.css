@@ -286,11 +286,8 @@ body.mclocks-md{
 	white-space:pre;
 }
 
-#content .code-block-wrap .copy-btn{
-	position:absolute;
-	z-index:2;
-	top:7px;
-	right:7px;
+#content .code-block-wrap .copy-btn,
+#content .mermaid-block-head .copy-btn{
 	display:inline-flex;
 	align-items:center;
 	justify-content:center;
@@ -312,27 +309,62 @@ body.mclocks-md{
 	transition:color .14s ease,background-color .14s ease,opacity .14s ease;
 }
 
-#content .code-block-wrap .copy-btn-svg{
+#content .code-block-wrap .copy-btn{
+	position:absolute;
+	z-index:2;
+	top:7px;
+	right:7px;
+}
+
+#content .mermaid-block-head .copy-btn{
+	position:relative;
+	z-index:auto;
+	top:auto;
+	right:auto;
+	flex-shrink:0;
+	padding:5px;
+}
+
+#content .mermaid-block-head .copy-btn:disabled{
+	cursor:not-allowed;
+	opacity:.4;
+	color:rgba(229,231,239,.38);
+	background-color:transparent;
+}
+
+#content .mermaid-block-head .copy-btn:disabled:hover,
+#content .mermaid-block-head .copy-btn:disabled:active{
+	color:rgba(229,231,239,.38);
+	background-color:transparent;
+	opacity:.4;
+}
+
+#content .code-block-wrap .copy-btn-svg,
+#content .mermaid-block-head .copy-btn .copy-btn-svg{
 	flex-shrink:0;
 	display:block;
 }
 
-#content .code-block-wrap .copy-btn::-moz-focus-inner{
+#content .code-block-wrap .copy-btn::-moz-focus-inner,
+#content .mermaid-block-head .copy-btn::-moz-focus-inner{
 	border:0;
 	padding:0;
 }
 
-#content .code-block-wrap .copy-btn:hover{
+#content .code-block-wrap .copy-btn:hover,
+#content .mermaid-block-head .copy-btn:hover:not(:disabled){
 	color:rgba(248,249,253,.93);
 	background-color:rgba(255,255,255,.06);
 }
 
-#content .code-block-wrap .copy-btn:active{
+#content .code-block-wrap .copy-btn:active,
+#content .mermaid-block-head .copy-btn:active:not(:disabled){
 	opacity:.86;
 	background-color:rgba(255,255,255,.03);
 }
 
-#content .code-block-wrap .copy-btn:focus-visible{
+#content .code-block-wrap .copy-btn:focus-visible,
+#content .mermaid-block-head .copy-btn:focus-visible:not(:disabled){
 	outline:1px solid rgba(142,180,240,.45);
 	outline-offset:2px;
 }
@@ -343,16 +375,19 @@ body.mclocks-md{
 	100%{transform:scale(1);}
 }
 
-#content .code-block-wrap .copy-btn.is-copy-reacted{
+#content .code-block-wrap .copy-btn.is-copy-reacted,
+#content .mermaid-block-head .copy-btn.is-copy-reacted{
 	animation:mclocks-copy-btn-react .38s cubic-bezier(.25,.82,.36,1) both;
 }
 
-#content .code-block-wrap .copy-btn.is-copy-done{
+#content .code-block-wrap .copy-btn.is-copy-done,
+#content .mermaid-block-head .copy-btn.is-copy-done{
 	color:rgba(154,229,169,.94);
 	transition:color .14s ease;
 }
 
-#content .code-block-wrap .copy-btn.is-copy-done:hover{
+#content .code-block-wrap .copy-btn.is-copy-done:hover,
+#content .mermaid-block-head .copy-btn.is-copy-done:hover{
 	color:rgba(174,243,188,.96);
 	background-color:rgba(255,255,255,.04);
 }
@@ -418,13 +453,167 @@ pre code{
 	word-break:normal;
 }
 
-/* Mermaid wrapper: tame contrast, tighter frame */
+/* Mermaid: same outer chrome as fenced blocks; tabs + copy inside */
+
+#content .mermaid-block{
+	clear:both;
+	position:relative;
+	box-sizing:border-box;
+	margin-top:1.1em;
+	margin-bottom:0;
+	display:flex;
+	flex-direction:column;
+	gap:8px;
+	padding:10px 14px 12px;
+	overflow:visible;
+	background:#09090f;
+	border:1px solid var(--tone-line-soft);
+	border-radius:8px;
+}
+
+#content .mermaid-block-head{
+	position:relative;
+	z-index:2;
+	display:flex;
+	flex-direction:row;
+	flex-wrap:wrap;
+	align-items:center;
+	justify-content:flex-end;
+	column-gap:6px;
+	row-gap:4px;
+	flex-shrink:0;
+}
+
+#content .mermaid-tabstrip{
+	display:flex;
+	flex-wrap:wrap;
+	gap:4px;
+	align-items:center;
+	justify-content:flex-end;
+}
+
+#content .mermaid-mode-btn{
+	margin:0;
+	padding:4px 9px;
+	font:inherit;
+	font-size:9px;
+	line-height:1.2;
+	letter-spacing:0.02em;
+	cursor:pointer;
+	color:rgba(232,234,242,.88);
+	background:transparent;
+	border:1px solid rgba(218,221,238,.16);
+	border-radius:6px;
+	-webkit-appearance:none;
+	appearance:none;
+	transition:color .14s ease,background-color .14s ease,border-color .14s ease,opacity .14s ease;
+}
+
+#content .mermaid-mode-btn:hover:not(.is-active){
+	color:rgba(249,250,252,.95);
+	background-color:rgba(255,255,255,.06);
+	border-color:rgba(218,221,238,.22);
+}
+
+#content .mermaid-mode-btn:active:not(.is-active){
+	opacity:.86;
+	background-color:rgba(255,255,255,.03);
+}
+
+#content .mermaid-mode-btn:focus-visible{
+	outline:1px solid rgba(142,180,240,.45);
+	outline-offset:2px;
+}
+
+#content .mermaid-mode-btn.is-active{
+	color:#f7f9fc;
+	background:rgba(64,67,82,.94);
+	border:1px solid rgba(218,221,238,.45);
+	box-shadow:none;
+}
+
+#content .mermaid-mode-btn.is-active:hover{
+	color:#f9fafc;
+	background:rgba(72,75,93,.94);
+	border-color:rgba(226,229,246,.52);
+}
+
+#content .mermaid-mode-btn.is-active:active{
+	opacity:.93;
+}
+
+#content .mermaid-mode-btn--diagram{
+	font-size:12px;
+	line-height:1;
+	min-width:2.6em;
+	padding:5px 7px;
+	letter-spacing:0.04em;
+}
+
+#content .mermaid-mode-btn--source{
+	padding:5px 8px;
+	font-size:11px;
+	line-height:1;
+	font-family:"Consolas","Cascadia Code","SFMono-Regular","Menlo","Monaco","Courier New",monospace;
+	letter-spacing:0;
+}
+
+#content .mermaid-block-body{
+	position:relative;
+	z-index:1;
+	clear:both;
+	flex:1 1 auto;
+	min-width:0;
+	min-height:0;
+}
+
+#content .mermaid-panel--source[hidden],
+#content .mermaid-panel--render[hidden]{
+	display:none !important;
+}
+
+#content .mermaid-panel--render .mermaid-diagram,
+#content .mermaid-panel--source{
+	margin:0;
+}
+
+#content .mermaid-panel--source pre{
+	box-sizing:border-box;
+	min-height:auto;
+	min-width:0;
+	margin:0;
+	padding:11px 0 12px;
+	overflow-x:auto;
+	overflow-y:hidden;
+	border:none;
+	border-radius:0;
+	background:transparent;
+	color:#eaeaf0;
+	font-size:0.82rem;
+	line-height:1.55;
+	white-space:pre;
+}
+
+/* Diagram area: no extra frame (shell is .mermaid-block) */
+
+#content .mermaid-block .mermaid-diagram{
+	--mermaid-font-size:10px;
+	line-height:1;
+	clear:both;
+	margin:0;
+	padding:4px 0 0;
+	overflow-x:auto;
+	overflow-y:hidden;
+	background:transparent;
+	border:none;
+	border-radius:0;
+	box-shadow:none;
+}
 
 .mermaid-diagram{
 	--mermaid-font-size:10px;
 	line-height:1;
 	clear:both;
-	margin:22px 0 26px;
 	padding:7px 8px;
 	overflow-x:auto;
 	overflow-y:hidden;

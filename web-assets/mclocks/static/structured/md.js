@@ -33,6 +33,84 @@
 		window.mclocksSetupResizer("mclocks-md-toc-width", "toc-resizer", 200, 400, "--toc-width");
 	}
 
+	const copyIconHtml =
+		'<svg class="copy-btn-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+		'<rect x="10" y="10" width="10" height="10" rx="1.85" ry="1.85" stroke="currentColor" stroke-width="1.65"/>' +
+		'<rect x="4" y="4" width="10" height="10" rx="1.85" ry="1.85" stroke="currentColor" stroke-width="1.65"/>' +
+		"</svg>";
+
+	const copiedIconHtml =
+		'<svg class="copy-btn-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+		'<path d="M7.05 13.42L10.2 16.62L17.92 8.92" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>' +
+		"</svg>";
+
+	const copyPlainTextViaExecCommand = (text) => {
+		if (!text || typeof document.execCommand !== "function") {
+			return false;
+		}
+		let ta = null;
+		try {
+			ta = document.createElement("textarea");
+			ta.value = text;
+			ta.setAttribute("aria-hidden", "true");
+			ta.style.position = "fixed";
+			ta.style.top = "-1000px";
+			ta.style.left = "0";
+			ta.style.opacity = "0";
+			ta.style.pointerEvents = "none";
+			document.body.appendChild(ta);
+			ta.focus();
+			ta.select();
+			ta.setSelectionRange(0, text.length);
+			return document.execCommand("copy") === true;
+		} catch (_) {
+			return false;
+		} finally {
+			if (ta && ta.parentNode) {
+				ta.parentNode.removeChild(ta);
+			}
+		}
+	};
+
+	const attachCodeBlockCopyUi = (pre, code) => {
+		if (!pre || !pre.parentNode || pre.parentElement?.classList.contains("code-block-wrap")) {
+			return;
+		}
+		const wrap = document.createElement("div");
+		wrap.className = "code-block-wrap";
+		pre.parentNode.insertBefore(wrap, pre);
+		wrap.appendChild(pre);
+		const btn = document.createElement("button");
+		btn.type = "button";
+		btn.className = "copy-btn";
+		btn.innerHTML = copyIconHtml;
+		btn.setAttribute("aria-label", "Copy");
+		btn.title = "Copy";
+		let revertTimerId = null;
+		btn.onclick = () => {
+			navigator.clipboard.writeText(code.textContent || "");
+			btn.innerHTML = copiedIconHtml;
+			btn.classList.remove("is-copy-reacted");
+			btn.classList.remove("is-copy-done");
+			window.requestAnimationFrame(() => {
+				void btn.offsetWidth;
+				btn.classList.add("is-copy-reacted");
+				btn.classList.add("is-copy-done");
+			});
+			if (revertTimerId !== null) {
+				window.clearTimeout(revertTimerId);
+			}
+			revertTimerId = window.setTimeout(() => {
+				revertTimerId = null;
+				btn.innerHTML = copyIconHtml;
+				btn.classList.remove("is-copy-reacted");
+				btn.classList.remove("is-copy-done");
+				btn.blur();
+			}, 1200);
+		};
+		wrap.appendChild(btn);
+	};
+
 	const renderMermaidBlocks = async () => {
 		const codeBlocks = Array.from(document.querySelectorAll("pre code.language-mermaid"));
 		if (!codeBlocks.length || !window.mermaid || typeof window.mermaid.render !== "function") {
@@ -104,13 +182,144 @@
 				continue;
 			}
 			const source = code.textContent || "";
-			const container = document.createElement("div");
-			container.className = "mermaid-diagram";
+			const tabRId = `mclocks-mermaid-tab-r-${index}`;
+			const tabSId = `mclocks-mermaid-tab-s-${index}`;
+			const panelRId = `mclocks-mermaid-render-${index}`;
+			const panelSId = `mclocks-mermaid-source-${index}`;
+			const wrapper = document.createElement("div");
+			wrapper.className = "mermaid-block";
+			const tabstrip = document.createElement("div");
+			tabstrip.className = "mermaid-tabstrip";
+			tabstrip.setAttribute("role", "tablist");
+			tabstrip.setAttribute("aria-label", "Mermaid view");
+			const btnDiagram = document.createElement("button");
+			btnDiagram.type = "button";
+			btnDiagram.className = "mermaid-mode-btn mermaid-mode-btn--diagram is-active";
+			btnDiagram.setAttribute("data-mermaid-mode", "diagram");
+			btnDiagram.setAttribute("role", "tab");
+			btnDiagram.setAttribute("id", tabRId);
+			btnDiagram.setAttribute("aria-selected", "true");
+			btnDiagram.setAttribute("aria-controls", panelRId);
+			btnDiagram.setAttribute("aria-label", "Diagram");
+			btnDiagram.title = "Diagram";
+			btnDiagram.textContent = "\u21C4\u25B0";
+			const btnSource = document.createElement("button");
+			btnSource.type = "button";
+			btnSource.className = "mermaid-mode-btn mermaid-mode-btn--source";
+			btnSource.setAttribute("data-mermaid-mode", "source");
+			btnSource.setAttribute("role", "tab");
+			btnSource.setAttribute("id", tabSId);
+			btnSource.setAttribute("aria-selected", "false");
+			btnSource.setAttribute("aria-controls", panelSId);
+			btnSource.setAttribute("aria-label", "Source");
+			btnSource.title = "Source";
+			btnSource.textContent = "</>";
+			tabstrip.appendChild(btnDiagram);
+			tabstrip.appendChild(btnSource);
+			const btnCopy = document.createElement("button");
+			btnCopy.type = "button";
+			btnCopy.className = "copy-btn";
+			btnCopy.innerHTML = copyIconHtml;
+			const head = document.createElement("div");
+			head.className = "mermaid-block-head";
+			head.appendChild(tabstrip);
+			head.appendChild(btnCopy);
+			const body = document.createElement("div");
+			body.className = "mermaid-block-body";
+			const panelRender = document.createElement("div");
+			panelRender.className = "mermaid-panel mermaid-panel--render";
+			panelRender.id = panelRId;
+			panelRender.setAttribute("role", "tabpanel");
+			panelRender.setAttribute("aria-labelledby", tabRId);
+			const panelSource = document.createElement("div");
+			panelSource.className = "mermaid-panel mermaid-panel--source";
+			panelSource.id = panelSId;
+			panelSource.setAttribute("role", "tabpanel");
+			panelSource.setAttribute("aria-labelledby", tabSId);
+			panelSource.hidden = true;
+			const preSource = document.createElement("pre");
+			const codeSource = document.createElement("code");
+			codeSource.className = (code.getAttribute("class") || "").trim() || "language-mermaid";
+			codeSource.textContent = source;
+			preSource.appendChild(codeSource);
+			panelSource.appendChild(preSource);
+			body.appendChild(panelRender);
+			body.appendChild(panelSource);
+			wrapper.appendChild(head);
+			wrapper.appendChild(body);
+			const diagramMount = document.createElement("div");
+			diagramMount.className = "mermaid-diagram";
 			try {
 				const id = `mclocks-mermaid-${index}`;
 				const rendered = await window.mermaid.render(id, source);
-				container.innerHTML = rendered.svg;
-				pre.replaceWith(container);
+				diagramMount.innerHTML = rendered.svg;
+				panelRender.appendChild(diagramMount);
+				pre.replaceWith(wrapper);
+				let mermaidCopyRevertTimerId = null;
+				const updateMermaidCopyChrome = () => {
+					const diagramOn = !panelRender.hidden;
+					btnCopy.disabled = diagramOn;
+					if (diagramOn) {
+						btnCopy.setAttribute("aria-label", "Copy unavailable — use Source tab");
+						btnCopy.title = "Switch to Source tab to copy";
+						return;
+					}
+					btnCopy.setAttribute("aria-label", "Copy");
+					btnCopy.title = "Copy";
+				};
+				const flashMermaidCopyOk = () => {
+					btnCopy.innerHTML = copiedIconHtml;
+					btnCopy.classList.remove("is-copy-reacted");
+					btnCopy.classList.remove("is-copy-done");
+					window.requestAnimationFrame(() => {
+						void btnCopy.offsetWidth;
+						btnCopy.classList.add("is-copy-reacted");
+						btnCopy.classList.add("is-copy-done");
+					});
+					if (mermaidCopyRevertTimerId !== null) {
+						window.clearTimeout(mermaidCopyRevertTimerId);
+					}
+					mermaidCopyRevertTimerId = window.setTimeout(() => {
+						mermaidCopyRevertTimerId = null;
+						btnCopy.innerHTML = copyIconHtml;
+						btnCopy.classList.remove("is-copy-reacted");
+						btnCopy.classList.remove("is-copy-done");
+						btnCopy.blur();
+						updateMermaidCopyChrome();
+					}, 1400);
+				};
+				btnCopy.addEventListener("click", async () => {
+					if (!panelSource.hidden) {
+						const text = codeSource.textContent || "";
+						if (copyPlainTextViaExecCommand(text)) {
+							btnCopy.title = "Copied";
+							flashMermaidCopyOk();
+							return;
+						}
+						try {
+							await navigator.clipboard.writeText(text);
+						} catch (_) {
+							btnCopy.title = "Copy failed";
+							window.setTimeout(updateMermaidCopyChrome, 2200);
+							return;
+						}
+						btnCopy.title = "Copied";
+						flashMermaidCopyOk();
+					}
+				});
+				const setMode = (mode) => {
+					const isDiagram = mode === "diagram";
+					btnDiagram.classList.toggle("is-active", isDiagram);
+					btnSource.classList.toggle("is-active", !isDiagram);
+					btnDiagram.setAttribute("aria-selected", String(isDiagram));
+					btnSource.setAttribute("aria-selected", String(!isDiagram));
+					panelRender.hidden = !isDiagram;
+					panelSource.hidden = isDiagram;
+					updateMermaidCopyChrome();
+				};
+				updateMermaidCopyChrome();
+				btnDiagram.addEventListener("click", () => setMode("diagram"));
+				btnSource.addEventListener("click", () => setMode("source"));
 			} catch (_) {
 				// Keep the original code block if rendering fails.
 			}
@@ -128,59 +337,11 @@
 		});
 	}
 
-	const copyIconHtml =
-		'<svg class="copy-btn-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
-		'<rect x="10" y="10" width="10" height="10" rx="1.85" ry="1.85" stroke="currentColor" stroke-width="1.65"/>' +
-		'<rect x="4" y="4" width="10" height="10" rx="1.85" ry="1.85" stroke="currentColor" stroke-width="1.65"/>' +
-		"</svg>";
-
-	const copiedIconHtml =
-		'<svg class="copy-btn-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
-		'<path d="M7.05 13.42L10.2 16.62L17.92 8.92" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>' +
-		"</svg>";
-
 	document.querySelectorAll("pre code").forEach((code) => {
-		const pre = code.parentElement;
-		if (!pre || !pre.parentNode || pre.parentElement?.classList.contains("code-block-wrap")) {
+		if (code.closest(".mermaid-block")) {
 			return;
 		}
-
-		const wrap = document.createElement("div");
-		wrap.className = "code-block-wrap";
-		pre.parentNode.insertBefore(wrap, pre);
-		wrap.appendChild(pre);
-
-		const btn = document.createElement("button");
-		btn.type = "button";
-		btn.className = "copy-btn";
-		btn.innerHTML = copyIconHtml;
-		btn.setAttribute("aria-label", "Copy");
-		btn.title = "Copy";
-
-		let revertTimerId = null;
-		btn.onclick = () => {
-			navigator.clipboard.writeText(code.textContent || "");
-			btn.innerHTML = copiedIconHtml;
-			btn.classList.remove("is-copy-reacted");
-			btn.classList.remove("is-copy-done");
-			window.requestAnimationFrame(() => {
-				void btn.offsetWidth;
-				btn.classList.add("is-copy-reacted");
-				btn.classList.add("is-copy-done");
-			});
-			if (revertTimerId !== null) {
-				window.clearTimeout(revertTimerId);
-			}
-			revertTimerId = window.setTimeout(() => {
-				revertTimerId = null;
-				btn.innerHTML = copyIconHtml;
-				btn.classList.remove("is-copy-reacted");
-				btn.classList.remove("is-copy-done");
-				btn.blur();
-			}, 1200);
-		};
-
-		wrap.appendChild(btn);
+		attachCodeBlockCopyUi(code.parentElement, code);
 	});
 
 	const pathCopyBtn = document.getElementById("path-copy-btn");
