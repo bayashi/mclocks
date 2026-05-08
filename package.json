@@ -16,7 +16,7 @@
     "test:mcp": "npm test --prefix src-mcp"
   },
   "dependencies": {
-    "@tauri-apps/api": "2.10.1",
+    "@tauri-apps/api": "2.11.0",
     "@tauri-apps/plugin-clipboard-manager": "2.3.2",
     "@tauri-apps/plugin-dialog": "2.6.0",
     "@tauri-apps/plugin-notification": "2.3.3",
@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@tauri-apps/cli": "2.10.1",
+    "@tauri-apps/cli": "2.11.1",
     "@wdio/cli": "^9.21.1",
     "@wdio/local-runner": "^9.21.0",
     "@wdio/mocha-framework": "^9.21.0",
