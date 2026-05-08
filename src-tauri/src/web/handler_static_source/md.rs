@@ -1,6 +1,7 @@
 use super::template_common;
 use crate::web::common::format_display_path;
 use crate::web_server::WebMarkdownHighlightConfig;
+use chrono::{DateTime, Local};
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
 use std::collections::HashMap;
 use std::fs;
@@ -184,6 +185,62 @@ fn render_markdown_html(markdown_source: &str, allow_html_in_md: bool) -> String
     rendered_html
 }
 
+fn replace_code_placeholder_tokens(fragment: &str, now: DateTime<Local>) -> String {
+    let mut s = fragment.to_string();
+    let pairs: &[(&str, &str)] = &[
+        ("{{YYYYMMDDHHmmss}}", "%Y%m%d%H%M%S"),
+        ("{{YYYYMMDD HH:mm:ss}}", "%Y%m%d %H:%M:%S"),
+        ("{{YYYYMMDD}}", "%Y%m%d"),
+        ("{{YYYY-MM-DD}}", "%Y-%m-%d"),
+        ("{{HH:mm:ss}}", "%H:%M:%S"),
+        ("{{HHmmss}}", "%H%M%S"),
+        ("{{YYYY}}", "%Y"),
+        ("{{MM}}", "%m"),
+        ("{{DD}}", "%d"),
+        ("{{HH}}", "%H"),
+        ("{{mm}}", "%M"),
+        ("{{ss}}", "%S"),
+    ];
+    for (pat, fmt) in pairs {
+        if s.contains(pat) {
+            let rep = now.format(fmt).to_string();
+            s = s.replace(pat, &rep);
+        }
+    }
+    s
+}
+
+fn inject_code_block_datetime_placeholders(html: &str, now: DateTime<Local>) -> String {
+    let mut out = String::with_capacity(html.len());
+    let mut cursor = 0usize;
+    while cursor < html.len() {
+        let search_slice = &html[cursor..];
+        let Some(rel_pre) = search_slice.find("<pre") else {
+            out.push_str(search_slice);
+            break;
+        };
+        let pre_start = cursor + rel_pre;
+        out.push_str(&html[cursor..pre_start]);
+        let after_pre = &html[pre_start..];
+        let Some(gt_rel) = after_pre.find('>') else {
+            out.push_str(after_pre);
+            break;
+        };
+        let content_start_idx = pre_start + gt_rel + 1;
+        out.push_str(&html[pre_start..content_start_idx]);
+        let after_gt = &html[content_start_idx..];
+        let Some(close_rel) = after_gt.find("</pre>") else {
+            out.push_str(after_gt);
+            break;
+        };
+        let inner = &after_gt[..close_rel];
+        out.push_str(&replace_code_placeholder_tokens(inner, now));
+        out.push_str("</pre>");
+        cursor = content_start_idx + close_rel + 6;
+    }
+    out
+}
+
 fn human_bytes(size: usize) -> String {
     if size < 1024 {
         return format!("{}B", size);
@@ -261,6 +318,7 @@ pub fn create_markdown_response(
     let headings = extract_markdown_headings(markdown_source);
     let rendered_html = render_markdown_html(markdown_source, allow_html_in_md);
     let rendered_html = inject_heading_ids(&rendered_html, &headings);
+    let rendered_html = inject_code_block_datetime_placeholders(&rendered_html, Local::now());
     let toc_items_html = build_toc_items_html(&headings);
     let summary_items = render_summary_items(
         raw_size_bytes,
