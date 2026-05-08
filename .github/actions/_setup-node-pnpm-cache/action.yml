@@ -13,7 +13,8 @@ runs:
       shell: bash
       run: |
         npm --version
-        npm install -g pnpm
+        corepack enable
+        corepack prepare pnpm@10.26.0 --activate
         pnpm --version
 
     - name: pnpm dependencies cache

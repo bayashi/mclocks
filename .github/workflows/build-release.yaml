@@ -61,7 +61,8 @@ jobs:
 
       - name: install frontend libs
         run: |
-          npm install -g pnpm
+          corepack enable
+          corepack prepare pnpm@10.26.0 --activate
           pnpm install
 
       - name: display version info
