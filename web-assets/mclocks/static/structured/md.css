@@ -249,6 +249,114 @@ body.mclocks-md{
 	overflow-y:hidden;
 }
 
+#content pre code.hljs{
+	display:block;
+	margin:0;
+	padding:0 !important;
+	background:transparent !important;
+	box-shadow:none !important;
+	border:none !important;
+}
+
+#content .code-block-wrap{
+	position:relative;
+	box-sizing:border-box;
+	margin-top:1.1em;
+	margin-bottom:0;
+	overflow:hidden;
+	background:#09090f;
+	border:1px solid var(--tone-line-soft);
+	border-radius:8px;
+}
+
+#content .code-block-wrap pre{
+	box-sizing:border-box;
+	min-height:auto;
+	min-width:0;
+	margin:0;
+	padding:11px 40px 12px 14px;
+	overflow-x:auto;
+	overflow-y:hidden;
+	border:none;
+	border-radius:0;
+	background:transparent;
+	color:#eaeaf0;
+	font-size:0.82rem;
+	line-height:1.55;
+	white-space:pre;
+}
+
+#content .code-block-wrap .copy-btn{
+	position:absolute;
+	z-index:2;
+	top:7px;
+	right:7px;
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	margin:0;
+	padding:6px;
+	width:auto;
+	box-sizing:border-box;
+	font-size:0;
+	line-height:0;
+	cursor:pointer;
+	color:rgba(229,231,239,.76);
+	background-color:transparent;
+	border-width:0;
+	border-style:solid;
+	border-color:transparent;
+	border-radius:6px;
+	-webkit-appearance:none;
+	appearance:none;
+	transition:color .14s ease,background-color .14s ease,opacity .14s ease;
+}
+
+#content .code-block-wrap .copy-btn-svg{
+	flex-shrink:0;
+	display:block;
+}
+
+#content .code-block-wrap .copy-btn::-moz-focus-inner{
+	border:0;
+	padding:0;
+}
+
+#content .code-block-wrap .copy-btn:hover{
+	color:rgba(248,249,253,.93);
+	background-color:rgba(255,255,255,.06);
+}
+
+#content .code-block-wrap .copy-btn:active{
+	opacity:.86;
+	background-color:rgba(255,255,255,.03);
+}
+
+#content .code-block-wrap .copy-btn:focus-visible{
+	outline:1px solid rgba(142,180,240,.45);
+	outline-offset:2px;
+}
+
+@keyframes mclocks-copy-btn-react{
+	0%{transform:scale(1);}
+	38%{transform:scale(1.12);}
+	100%{transform:scale(1);}
+}
+
+#content .code-block-wrap .copy-btn.is-copy-reacted{
+	animation:mclocks-copy-btn-react .38s cubic-bezier(.25,.82,.36,1) both;
+}
+
+#content .code-block-wrap .copy-btn.is-copy-done{
+	color:rgba(154,229,169,.94);
+	transition:color .14s ease;
+}
+
+#content .code-block-wrap .copy-btn.is-copy-done:hover{
+	color:rgba(174,243,188,.96);
+	background-color:rgba(255,255,255,.04);
+}
+
 #content table{
 	width:100%;
 	border-collapse:collapse;

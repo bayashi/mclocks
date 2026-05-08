@@ -128,23 +128,59 @@
 		});
 	}
 
+	const copyIconHtml =
+		'<svg class="copy-btn-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+		'<rect x="10" y="10" width="10" height="10" rx="1.85" ry="1.85" stroke="currentColor" stroke-width="1.65"/>' +
+		'<rect x="4" y="4" width="10" height="10" rx="1.85" ry="1.85" stroke="currentColor" stroke-width="1.65"/>' +
+		"</svg>";
+
+	const copiedIconHtml =
+		'<svg class="copy-btn-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+		'<path d="M7.05 13.42L10.2 16.62L17.92 8.92" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>' +
+		"</svg>";
+
 	document.querySelectorAll("pre code").forEach((code) => {
 		const pre = code.parentElement;
-		if (pre.nextElementSibling?.classList.contains("copy-btn")) {
+		if (!pre || !pre.parentNode || pre.parentElement?.classList.contains("code-block-wrap")) {
 			return;
 		}
 
+		const wrap = document.createElement("div");
+		wrap.className = "code-block-wrap";
+		pre.parentNode.insertBefore(wrap, pre);
+		wrap.appendChild(pre);
+
 		const btn = document.createElement("button");
-		btn.textContent = "Copy";
+		btn.type = "button";
 		btn.className = "copy-btn";
+		btn.innerHTML = copyIconHtml;
+		btn.setAttribute("aria-label", "Copy");
+		btn.title = "Copy";
+
+		let revertTimerId = null;
 		btn.onclick = () => {
 			navigator.clipboard.writeText(code.textContent || "");
-			btn.textContent = "Copied!";
-			setTimeout(() => {
-				btn.textContent = "Copy";
-			}, 2000);
+			btn.innerHTML = copiedIconHtml;
+			btn.classList.remove("is-copy-reacted");
+			btn.classList.remove("is-copy-done");
+			window.requestAnimationFrame(() => {
+				void btn.offsetWidth;
+				btn.classList.add("is-copy-reacted");
+				btn.classList.add("is-copy-done");
+			});
+			if (revertTimerId !== null) {
+				window.clearTimeout(revertTimerId);
+			}
+			revertTimerId = window.setTimeout(() => {
+				revertTimerId = null;
+				btn.innerHTML = copyIconHtml;
+				btn.classList.remove("is-copy-reacted");
+				btn.classList.remove("is-copy-done");
+				btn.blur();
+			}, 1200);
 		};
-		pre.parentNode.insertBefore(btn, pre.nextSibling);
+
+		wrap.appendChild(btn);
 	});
 
 	const pathCopyBtn = document.getElementById("path-copy-btn");
