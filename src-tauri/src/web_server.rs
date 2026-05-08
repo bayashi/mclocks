@@ -245,7 +245,7 @@ const MCLOCKS_STATIC_INI_JS_REL_PATH: &str = "mclocks/static/structured/ini.js";
 const MCLOCKS_STATIC_INI_CSS_REL_PATH: &str = "mclocks/static/structured/ini.css";
 const MCLOCKS_STATIC_XML_JS_REL_PATH: &str = "mclocks/static/structured/xml.js";
 const MCLOCKS_STATIC_XML_CSS_REL_PATH: &str = "mclocks/static/structured/xml.css";
-const MCLOCKS_ASSETS_VERSION: &str = "20260508-14";
+const MCLOCKS_ASSETS_VERSION: &str = "20260508-19";
 
 #[derive(Clone, Copy, Debug)]
 pub enum WebServerListenKind {

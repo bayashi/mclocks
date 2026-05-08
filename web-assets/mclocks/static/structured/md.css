@@ -377,18 +377,21 @@ body.mclocks-md{
 }
 
 #content .code-block-wrap .copy-btn.is-copy-reacted,
-#content .mermaid-block-head .copy-btn.is-copy-reacted{
+#content .mermaid-block-head .copy-btn.is-copy-reacted,
+#content .md-table-format-btn.is-copy-reacted{
 	animation:mclocks-copy-btn-react .38s cubic-bezier(.25,.82,.36,1) both;
 }
 
 #content .code-block-wrap .copy-btn.is-copy-done,
-#content .mermaid-block-head .copy-btn.is-copy-done{
+#content .mermaid-block-head .copy-btn.is-copy-done,
+#content .md-table-format-btn.is-copy-done{
 	color:rgba(154,229,169,.94);
 	transition:color .14s ease;
 }
 
 #content .code-block-wrap .copy-btn.is-copy-done:hover,
-#content .mermaid-block-head .copy-btn.is-copy-done:hover{
+#content .mermaid-block-head .copy-btn.is-copy-done:hover,
+#content .md-table-format-btn.is-copy-done:hover{
 	color:rgba(174,243,188,.96);
 	background-color:rgba(255,255,255,.04);
 }
@@ -400,6 +403,100 @@ body.mclocks-md{
 	font-size:0.9rem;
 	line-height:1.5;
 	margin:1rem 0 1.35rem;
+}
+
+#content .md-table-wrap{
+	position:relative;
+	clear:both;
+	box-sizing:border-box;
+	margin:1rem 0 1.35rem;
+}
+
+#content .md-table-wrap table{
+	margin:0;
+}
+
+#content .md-table-scroll{
+	overflow-x:auto;
+	overflow-y:hidden;
+	padding:0;
+	box-sizing:border-box;
+}
+
+#content .md-table-toolbar{
+	display:flex;
+	flex-direction:row;
+	flex-wrap:wrap;
+	align-items:center;
+	justify-content:flex-end;
+	gap:6px;
+	margin:0 0 2px;
+	padding:0;
+	box-sizing:border-box;
+}
+
+#content .md-table-format-btn{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	margin:0;
+	min-width:2.75em;
+	min-height:30px;
+	padding:5px 10px;
+	box-sizing:border-box;
+	font:inherit;
+	font-size:10px;
+	font-weight:600;
+	line-height:1.2;
+	letter-spacing:0.06em;
+	cursor:pointer;
+	color:rgba(232,234,242,.88);
+	background:transparent;
+	border:1px solid rgba(218,221,238,.16);
+	border-radius:6px;
+	-webkit-appearance:none;
+	appearance:none;
+	transition:color .14s ease,background-color .14s ease,border-color .14s ease,opacity .14s ease;
+}
+
+#content .md-table-format-btn:hover{
+	color:rgba(249,250,252,.95);
+	background-color:rgba(255,255,255,.06);
+	border-color:rgba(218,221,238,.22);
+}
+
+#content .md-table-format-btn:active{
+	opacity:.86;
+	background-color:rgba(255,255,255,.03);
+}
+
+#content .md-table-format-btn:focus-visible{
+	outline:1px solid rgba(142,180,240,.45);
+	outline-offset:2px;
+}
+
+#content .md-table-format-btn .copy-btn-svg{
+	flex-shrink:0;
+	display:block;
+}
+
+#content .md-table-format-btn.md-table-format-btn--icon{
+	font-size:0;
+	line-height:0;
+	min-width:32px;
+	padding:6px;
+	border-color:transparent;
+	background-color:transparent;
+}
+
+#content .md-table-format-btn.is-copy-done{
+	border-color:rgba(154,229,169,.35);
+	background-color:rgba(154,229,169,.08);
+}
+
+#content .md-table-format-btn.md-table-format-btn--icon.is-copy-done{
+	border-color:transparent;
+	background-color:transparent;
 }
 
 #content thead th{

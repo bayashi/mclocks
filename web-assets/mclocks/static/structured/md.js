@@ -111,6 +111,200 @@
 		wrap.appendChild(btn);
 	};
 
+	const getCellTextForCopy = (cell) => {
+		if (!cell) {
+			return "";
+		}
+		const blockAppendNewline = new Set([
+			"P",
+			"DIV",
+			"LI",
+			"H1",
+			"H2",
+			"H3",
+			"H4",
+			"H5",
+			"H6",
+			"PRE",
+		]);
+		const out = [];
+		const walk = (node) => {
+			if (node.nodeType === Node.TEXT_NODE) {
+				out.push(node.nodeValue || "");
+				return;
+			}
+			if (node.nodeType !== Node.ELEMENT_NODE) {
+				return;
+			}
+			const tag = node.tagName;
+			if (tag === "BR") {
+				out.push("\n");
+				return;
+			}
+			for (const c of node.childNodes) {
+				walk(c);
+			}
+			if (blockAppendNewline.has(tag)) {
+				out.push("\n");
+			}
+		};
+		for (const c of cell.childNodes) {
+			walk(c);
+		}
+		return out
+			.join("")
+			.replace(/\r\n/g, "\n")
+			.replace(/\r/g, "\n")
+			.trim();
+	};
+
+	const tableToMatrix = (table) => {
+		const rows = [];
+		let maxCols = 0;
+		const sections = Array.from(table.querySelectorAll(":scope > thead, :scope > tbody, :scope > tfoot"));
+		const pushRow = (tr) => {
+			const cells = Array.from(tr.querySelectorAll(":scope > th, :scope > td")).map((cell) => getCellTextForCopy(cell));
+			maxCols = Math.max(maxCols, cells.length);
+			rows.push(cells);
+		};
+		if (sections.length > 0) {
+			for (const sec of sections) {
+				for (const tr of sec.querySelectorAll(":scope > tr")) {
+					pushRow(tr);
+				}
+			}
+		} else {
+			for (const tr of table.querySelectorAll(":scope > tr")) {
+				pushRow(tr);
+			}
+		}
+		rows.forEach((r) => {
+			while (r.length < maxCols) {
+				r.push("");
+			}
+		});
+		return rows;
+	};
+
+	const escapeCsvCell = (value) => {
+		const s = String(value);
+		if (/[",\r\n]/.test(s)) {
+			return '"' + s.replace(/"/g, '""') + '"';
+		}
+		return s;
+	};
+
+	const matrixToCsv = (matrix) => matrix.map((row) => row.map(escapeCsvCell).join(",")).join("\n");
+
+	const escapeTsvCell = (value) => {
+		const s = String(value);
+		if (/[\t\r\n"]/.test(s)) {
+			return '"' + s.replace(/"/g, '""') + '"';
+		}
+		return s;
+	};
+
+	const matrixToTsv = (matrix) => matrix.map((row) => row.map(escapeTsvCell).join("\t")).join("\n");
+
+	const attachTableCopyUi = (table) => {
+		if (!table || !table.parentNode || table.parentElement?.classList.contains("md-table-scroll")) {
+			return;
+		}
+		const wrap = document.createElement("div");
+		wrap.className = "md-table-wrap";
+		const toolbar = document.createElement("div");
+		toolbar.className = "md-table-toolbar";
+		toolbar.setAttribute("role", "toolbar");
+		toolbar.setAttribute("aria-label", "Copy table");
+		const scroll = document.createElement("div");
+		scroll.className = "md-table-scroll";
+		const mkBtn = (format, ariaLabel, displayLabel) => {
+			const b = document.createElement("button");
+			b.type = "button";
+			b.className = "md-table-format-btn";
+			b.textContent = displayLabel;
+			b.dataset.copyLabel = displayLabel;
+			b.setAttribute("data-format", format);
+			b.setAttribute("aria-label", ariaLabel);
+			b.title = ariaLabel;
+			return b;
+		};
+		const btnCsv = mkBtn("csv", "Copy as CSV", "CSV");
+		const btnTsv = mkBtn("tsv", "Copy as TSV", "TSV");
+		toolbar.appendChild(btnCsv);
+		toolbar.appendChild(btnTsv);
+		table.parentNode.insertBefore(wrap, table);
+		wrap.appendChild(toolbar);
+		scroll.appendChild(table);
+		wrap.appendChild(scroll);
+		const flashFormatBtn = (btn, timerRef) => {
+			const restoreLabel = btn.dataset.copyLabel || "";
+			btn.innerHTML = copiedIconHtml;
+			btn.classList.add("md-table-format-btn--icon");
+			btn.classList.remove("is-copy-reacted");
+			btn.classList.remove("is-copy-done");
+			window.requestAnimationFrame(() => {
+				void btn.offsetWidth;
+				btn.classList.add("is-copy-reacted");
+				btn.classList.add("is-copy-done");
+			});
+			if (timerRef.v !== null) {
+				window.clearTimeout(timerRef.v);
+			}
+			timerRef.v = window.setTimeout(() => {
+				timerRef.v = null;
+				btn.classList.remove("md-table-format-btn--icon");
+				btn.textContent = restoreLabel;
+				btn.classList.remove("is-copy-reacted");
+				btn.classList.remove("is-copy-done");
+				btn.blur();
+			}, 1200);
+		};
+		const copyMatrix = async (text, btn, timerRef, titleOk) => {
+			const restoreTitle = btn.title;
+			const okExec = copyPlainTextViaExecCommand(text);
+			if (okExec) {
+				btn.title = titleOk;
+				flashFormatBtn(btn, timerRef);
+				window.setTimeout(() => {
+					btn.title = restoreTitle;
+				}, 1200);
+				return;
+			}
+			try {
+				if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+					await navigator.clipboard.writeText(text);
+				} else {
+					btn.title = "Copy failed";
+					window.setTimeout(() => {
+						btn.title = restoreTitle;
+					}, 2200);
+					return;
+				}
+				btn.title = titleOk;
+				flashFormatBtn(btn, timerRef);
+				window.setTimeout(() => {
+					btn.title = restoreTitle;
+				}, 1200);
+			} catch (_) {
+				btn.title = "Copy failed";
+				window.setTimeout(() => {
+					btn.title = restoreTitle;
+				}, 2200);
+			}
+		};
+		const timerCsv = { v: null };
+		const timerTsv = { v: null };
+		btnCsv.addEventListener("click", () => {
+			const text = matrixToCsv(tableToMatrix(table));
+			void copyMatrix(text, btnCsv, timerCsv, "Copied CSV");
+		});
+		btnTsv.addEventListener("click", () => {
+			const text = matrixToTsv(tableToMatrix(table));
+			void copyMatrix(text, btnTsv, timerTsv, "Copied TSV");
+		});
+	};
+
 	const renderMermaidBlocks = async () => {
 		const codeBlocks = Array.from(document.querySelectorAll("pre code.language-mermaid"));
 		if (!codeBlocks.length || !window.mermaid || typeof window.mermaid.render !== "function") {
@@ -342,6 +536,13 @@
 			return;
 		}
 		attachCodeBlockCopyUi(code.parentElement, code);
+	});
+
+	document.querySelectorAll("#content table").forEach((table) => {
+		if (table.closest("td, th")) {
+			return;
+		}
+		attachTableCopyUi(table);
 	});
 
 	const pathCopyBtn = document.getElementById("path-copy-btn");
