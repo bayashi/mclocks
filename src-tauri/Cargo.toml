@@ -47,6 +47,7 @@ rand = "=0.9.3"
 uuid = { version = "1", features = ["v4"] }
 base64 = "0.22"
 tempfile = "3"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 pulldown-cmark = "0.13.1"
 configparser = "3.1.0"
 mime_guess = "2.0.5"
