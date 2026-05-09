@@ -1,5 +1,5 @@
-//! POST /preview — body is UTF-8 (Markdown). Uses main web `127.0.0.1:port` (default 3030).
-//! Body: line 1 = path to `.md` / `.markdown`. Optional line 2 = working directory used to resolve a **relative** line 1 (shell `PWD`); absolute line 1 ignores line 2.
+//! POST /preview — opens a file in the content viewer. Uses main web `127.0.0.1:port` (default 3030).
+//! Body: line 1 = path to a previewable file (Markdown, JSON, YAML, TOML, INI, XML, …). Optional line 2 = `PWD` for a **relative** line 1; absolute line 1 ignores line 2.
 //! Success: `200` and `text/plain` body is `OK` (preview URL is not returned).
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -48,7 +48,7 @@ pub(crate) fn is_preview_route_request(request: &Request) -> bool {
     is_preview_request_path(path_only)
 }
 
-/// Resolves the Markdown file path. Relative paths use `cwd_line` when set, otherwise the mclocks process current directory.
+/// Resolves the file path. Relative paths use `cwd_line` when set, otherwise the mclocks process current directory.
 fn resolve_preview_file_path(path_line: &str, cwd_line: Option<&str>) -> Result<PathBuf, String> {
     let p = Path::new(path_line);
     if p.is_absolute() {
@@ -73,18 +73,30 @@ fn resolve_preview_file_path(path_line: &str, cwd_line: Option<&str>) -> Result<
         .map_err(|_| "Path could not be resolved".to_string())
 }
 
-fn is_allowed_markdown_path(path: &Path) -> bool {
+/// Extensions the web viewer can open in “source” preview (see `handler_static` markdown + structured data).
+fn is_allowed_preview_path(path: &Path) -> bool {
     path.extension()
         .and_then(|s| s.to_str())
         .map(|e| {
             let e = e.to_ascii_lowercase();
-            e == "md" || e == "markdown"
+            matches!(
+                e.as_str(),
+                "md" | "markdown"
+                    | "json"
+                    | "yaml"
+                    | "yml"
+                    | "toml"
+                    | "xml"
+                    | "ini"
+                    | "config"
+                    | "cfg"
+            )
         })
         .unwrap_or(false)
 }
 
 /// Handles `POST /preview` when local preview API is wired for this server instance.
-/// Request body: plain text — line 1: path to a `.md` / `.markdown` file; optional line 2: cwd for resolving a relative line 1 (newline between the two).
+/// Request body: plain text — line 1: path to a supported preview file; optional line 2: cwd for a relative line 1.
 /// On success, response body is plain text: `OK` only (no preview URL in the body).
 /// Returns `None` if the request path is not `/preview`.
 pub fn try_handle_local_preview_request(
@@ -151,10 +163,10 @@ pub fn try_handle_local_preview_request(
     let cwd_line = lines.next().map(str::trim).filter(|s| !s.is_empty());
 
     let p = Path::new(path_line);
-    if !is_allowed_markdown_path(p) {
+    if !is_allowed_preview_path(p) {
         return Some(create_error_response(
             StatusCode(400),
-            "Only .md and .markdown files are allowed",
+            "File type not supported for preview (use .md, .json, .yaml, .yml, .toml, .xml, .ini, .config, .cfg, …)",
         ));
     }
 

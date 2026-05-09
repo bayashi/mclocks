@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-# Open a Markdown file in mclocks via POST /preview
+# Open a supported source file in mclocks via POST /preview
 
 set -euo pipefail
 
 usage() {
-	echo "usage: mc-preview PATH/TO/markdown.md" >&2
+	echo "usage: mc-preview PATH/TO/file.(md|json|yaml|…)" >&2
 	exit 1
 }
 
@@ -13,10 +13,13 @@ usage() {
 
 FILE="$*"
 lc=$(printf '%s' "$FILE" | tr '[:upper:]' '[:lower:]')
-if [[ "$lc" != *.md && "$lc" != *.markdown ]]; then
-	echo "mc-preview: path must end in .md or .markdown" >&2
+case "$lc" in
+*.md|*.markdown|*.json|*.yaml|*.yml|*.toml|*.xml|*.ini|*.config|*.cfg) ;;
+*)
+	echo "mc-preview: unsupported extension (need .md, .json, .yaml, .yml, .toml, .xml, .ini, .config, .cfg, …)" >&2
 	exit 1
-fi
+	;;
+esac
 
 HOST="${MCLOCKS_WEB_HOST:-127.0.0.1}"
 PORT="${MCLOCKS_WEB_PORT:-3030}"

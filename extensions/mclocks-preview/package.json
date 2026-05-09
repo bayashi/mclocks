@@ -1,0 +1,120 @@
+{
+	"name": "mclocks-preview",
+	"displayName": "mclocks preview (Explorer)",
+	"description": "Open Markdown, JSON, YAML, TOML, XML, INI, and similar files in mclocks via scripts/mc-preview from Explorer or editor context menus.",
+	"version": "0.1.0",
+	"publisher": "mclocks",
+	"extensionKind": ["workspace"],
+	"engines": {
+		"vscode": "^1.80.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"main": "./extension.js",
+	"activationEvents": ["onStartupFinished"],
+	"contributes": {
+		"commands": [
+			{
+				"command": "mclocks.mcPreview",
+				"title": "Open in mclocks preview",
+				"icon": "$(open-preview)"
+			}
+		],
+		"menus": {
+			"explorer/context": [
+				{
+					"command": "mclocks.mcPreview",
+					"when": "!explorerResourceIsFolder && (resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .json || resourceExtname == .yaml || resourceExtname == .yml || resourceExtname == .toml || resourceExtname == .xml || resourceExtname == .ini || resourceExtname == .config || resourceExtname == .cfg || resourceLangId == markdown || resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == xml || resourceLangId == toml || resourceLangId == ini)",
+					"group": "navigation@-100"
+				}
+			],
+			"editor/context": [
+				{
+					"command": "mclocks.mcPreview",
+					"when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .json || resourceExtname == .yaml || resourceExtname == .yml || resourceExtname == .toml || resourceExtname == .xml || resourceExtname == .ini || resourceExtname == .config || resourceExtname == .cfg || resourceLangId == markdown || resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == xml || resourceLangId == toml || resourceLangId == ini",
+					"group": "navigation@-100"
+				}
+			],
+			"editor/title/context": [
+				{
+					"command": "mclocks.mcPreview",
+					"when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .json || resourceExtname == .yaml || resourceExtname == .yml || resourceExtname == .toml || resourceExtname == .xml || resourceExtname == .ini || resourceExtname == .config || resourceExtname == .cfg || resourceLangId == markdown || resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == xml || resourceLangId == toml || resourceLangId == ini",
+					"group": "navigation@-100"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "mclocks.mcPreview"
+				}
+			]
+		},
+		"configuration": {
+			"title": "mclocks preview",
+			"properties": {
+				"mclocks.mcPreview.debug": {
+					"type": "boolean",
+					"default": false,
+					"description": "Append verbose traces to Output → mclocks Preview (POST URL, path line, curl exit code and body)."
+				},
+				"mclocks.mcPreview.transport": {
+					"type": "string",
+					"enum": [
+						"auto",
+						"curl",
+						"bash"
+					],
+					"default": "auto",
+					"markdownDescription": "- **auto**: always `curl` / `curl.exe` (single-line absolute path POST). Matches `curl -X POST …/preview --data-binary <path>`.\n- **curl**: Same as auto.\n- **bash**: use `scripts/mc-preview` (MCLOCKS_* env, optional cwd line)."
+				},
+				"mclocks.mcPreview.wslMapMntCToWindowsDrive": {
+					"type": "boolean",
+					"default": true,
+					"description": "WSL/Linux: if the file path is under /mnt/<drive>/..., POST a Windows drive path (e.g. C:/...) so a Windows-hosted mclocks can open the file. Set false if mclocks runs inside WSL and expects /mnt/ paths."
+				},
+				"mclocks.mcPreview.wslMapLocalhostToWindowsHost": {
+					"type": "boolean",
+					"default": true,
+					"description": "WSL guest: when webHost is 127.0.0.1 or localhost, use the Windows host IPv4 from /etc/resolv.conf (first nameserver) so POST reaches mclocks on Windows. Set false if mclocks runs inside this WSL distro."
+				},
+				"mclocks.mcPreview.wslMapLinuxFsToWindowsPath": {
+					"type": "boolean",
+					"default": true,
+					"description": "WSL: for Linux FS paths (e.g. /home/...), run wslpath -w so Windows mclocks receives a UNC path. Disable if mclocks runs inside the same WSL distro."
+				},
+				"mclocks.mcPreview.wslInvokeWindowsCurl": {
+					"type": "boolean",
+					"default": true,
+					"description": "WSL: before Linux curl, run /mnt/c/Windows/System32/curl.exe against http://127.0.0.1:<port>/preview so the TCP client is Windows (reaches mclocks bound to 127.0.0.1). Disable to only use Linux curl + host IP."
+				},
+				"mclocks.mcPreview.wslWindowsCurlPath": {
+					"type": "string",
+					"default": "",
+					"description": "WSL: full path to Windows curl.exe if not at System32 (e.g. /mnt/c/Windows/System32/curl.exe)."
+				},
+				"mclocks.mcPreview.bashExecutable": {
+					"type": "string",
+					"default": "",
+					"description": "Bash interpreter (transport bash only). Empty: bash.exe / bash on PATH."
+				},
+				"mclocks.mcPreview.scriptPath": {
+					"type": "string",
+					"default": "",
+					"description": "Absolute path to mc-preview (transport bash only). Empty: <workspace>/scripts/mc-preview."
+				},
+				"mclocks.mcPreview.webHost": {
+					"type": "string",
+					"default": "127.0.0.1",
+					"description": "Logical HTTP host you want (typically 127.0.0.1). Under WSL, localhost may be rewritten — see wslMapLocalhostToWindowsHost. MCLOCKS_WEB_HOST when transport is bash."
+				},
+				"mclocks.mcPreview.webPort": {
+					"type": "number",
+					"default": 3030,
+					"minimum": 1,
+					"maximum": 65535,
+					"description": "Main HTTP port used for POST /preview (default 3030). MCLOCKS_WEB_PORT when transport is bash."
+				}
+			}
+		}
+	}
+}

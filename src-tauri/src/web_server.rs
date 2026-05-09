@@ -170,6 +170,31 @@ fn is_local_port_available(port: u16) -> bool {
     TcpListener::bind(("127.0.0.1", port)).is_ok()
 }
 
+/// When `MCLOCKS_MAIN_HTTP_BIND_ALL=1`/`true`, the Main server listens on `0.0.0.0`
+/// so callers from WSL/virtual NIC (not the loopback iface) can reach `POST /preview`.
+fn main_http_bind_addr() -> &'static str {
+    let Ok(v) = std::env::var("MCLOCKS_MAIN_HTTP_BIND_ALL") else {
+        return "127.0.0.1";
+    };
+    let v = v.trim();
+    if v == "1"
+        || v.eq_ignore_ascii_case("true")
+        || v.eq_ignore_ascii_case("yes")
+        || v.eq_ignore_ascii_case("on")
+    {
+        "0.0.0.0"
+    } else {
+        "127.0.0.1"
+    }
+}
+
+fn tcp_bind_ip_for_listen_kind(listen_kind: WebServerListenKind) -> &'static str {
+    match listen_kind {
+        WebServerListenKind::Main => main_http_bind_addr(),
+        WebServerListenKind::Assets => "127.0.0.1",
+    }
+}
+
 fn find_available_port_downward(start_port: u16, min_port: u16, role: &str) -> Result<u16, String> {
     if start_port < min_port {
         return Err(format!(
@@ -296,7 +321,8 @@ pub fn start_web_server(
     listen_kind: WebServerListenKind,
 ) {
     thread::spawn(move || {
-        let server = match Server::http(format!("127.0.0.1:{}", port)) {
+        let bind_ip = tcp_bind_ip_for_listen_kind(listen_kind);
+        let server = match Server::http(format!("{}:{}", bind_ip, port)) {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("Failed to start web server on port {}: {}", port, e);
@@ -306,6 +332,12 @@ pub fn start_web_server(
 
         let root_path = PathBuf::from(root);
         let label = listen_kind.log_label();
+        if bind_ip != "127.0.0.1" && matches!(listen_kind, WebServerListenKind::Main) {
+            eprintln!(
+                "Main Server listens on {}:{} (reachable from WSL when loopback forwarding is unavailable). Firewall may apply.",
+                bind_ip, port
+            );
+        }
         if root_path.exists() && root_path.is_dir() {
             println!(
                 "{}: http://localhost:{} ({}) {}",
