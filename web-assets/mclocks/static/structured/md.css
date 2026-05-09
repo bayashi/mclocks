@@ -286,6 +286,54 @@ body.mclocks-md{
 	white-space:pre;
 }
 
+#content .code-block-wrap .md-code-placeholder-fields{
+	box-sizing:border-box;
+	padding:10px 12px 12px;
+	border-top:1px solid var(--tone-line-soft);
+	background:rgba(0,0,0,.18);
+}
+
+#content .code-block-wrap .md-code-placeholder-row{
+	display:block;
+	margin-top:0;
+}
+
+#content .code-block-wrap .md-code-placeholder-row + .md-code-placeholder-row{
+	margin-top:8px;
+}
+
+#content .code-block-wrap .md-code-placeholder-input{
+	display:block;
+	width:100%;
+	min-width:0;
+	box-sizing:border-box;
+	padding:5px 8px;
+	border:1px solid var(--tone-line-soft);
+	border-radius:5px;
+	background:rgba(255,255,255,.045);
+	color:var(--tone-fg);
+	font-size:0.8125rem;
+	line-height:1.4;
+	transition:border-color .12s ease,background .12s ease;
+}
+
+#content .code-block-wrap .md-code-placeholder-input::placeholder{
+	color:rgba(174,176,191,.52);
+	font-size:0.78rem;
+}
+
+#content .code-block-wrap .md-code-placeholder-input:hover{
+	border-color:rgba(148,149,162,.42);
+	background:rgba(255,255,255,.06);
+}
+
+#content .code-block-wrap .md-code-placeholder-input:focus-visible{
+	outline:none;
+	border-color:rgba(142,180,240,.52);
+	box-shadow:0 0 0 1px rgba(142,180,240,.2);
+	background:rgba(255,255,255,.065);
+}
+
 #content .code-block-wrap .copy-btn,
 #content .mermaid-block-head .copy-btn{
 	display:inline-flex;

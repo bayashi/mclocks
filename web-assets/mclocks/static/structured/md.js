@@ -44,6 +44,48 @@
 		'<path d="M7.05 13.42L10.2 16.62L17.92 8.92" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>' +
 		"</svg>";
 
+	const USER_PLACEHOLDER_TOKEN_RE = /\{\{_([A-Za-z0-9_]+)_\}\}/g;
+
+	const normalizeNewlines = (s) => s.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+	const tryHljsHighlightNonMermaid = (codeEl) => {
+		if (!window.hljs || typeof window.hljs.highlightElement !== "function") {
+			return;
+		}
+		if ((codeEl.className || "").split(/\s+/).includes("language-mermaid")) {
+			return;
+		}
+		window.hljs.highlightElement(codeEl);
+	};
+
+	const extractUserPlaceholderTokensOrdered = (text) => {
+		USER_PLACEHOLDER_TOKEN_RE.lastIndex = 0;
+		const map = new Map();
+		let m;
+		while ((m = USER_PLACEHOLDER_TOKEN_RE.exec(text)) !== null) {
+			const full = m[0];
+			if (!map.has(full)) {
+				map.set(full, m[1]);
+			}
+		}
+		return map;
+	};
+
+	const applyUserPlaceholdersFromFields = (original, fieldsRoot) => {
+		let out = original;
+		const inputs = fieldsRoot.querySelectorAll("input[data-placeholder-literal]");
+		for (const input of inputs) {
+			const literal = input.getAttribute("data-placeholder-literal");
+			if (!literal) {
+				continue;
+			}
+			const v = String(input.value || "").trim();
+			const rep = v !== "" ? v : literal;
+			out = out.split(literal).join(rep);
+		}
+		return out;
+	};
+
 	const copyPlainTextViaExecCommand = (text) => {
 		if (!text || typeof document.execCommand !== "function") {
 			return false;
@@ -76,10 +118,45 @@
 		if (!pre || !pre.parentNode || pre.parentElement?.classList.contains("code-block-wrap")) {
 			return;
 		}
+		const originalForCopy = normalizeNewlines(code.textContent || "");
+		const userPlaceholders = extractUserPlaceholderTokensOrdered(originalForCopy);
+		let fieldsEl = null;
 		const wrap = document.createElement("div");
 		wrap.className = "code-block-wrap";
 		pre.parentNode.insertBefore(wrap, pre);
 		wrap.appendChild(pre);
+		if (userPlaceholders.size > 0) {
+			fieldsEl = document.createElement("div");
+			fieldsEl.className = "md-code-placeholder-fields";
+			let codeDisplayRaf = null;
+			const refreshCodeDisplayFromFields = () => {
+				code.textContent = applyUserPlaceholdersFromFields(originalForCopy, fieldsEl);
+				tryHljsHighlightNonMermaid(code);
+			};
+			const scheduleRefreshCodeDisplay = () => {
+				if (codeDisplayRaf !== null) {
+					window.cancelAnimationFrame(codeDisplayRaf);
+				}
+				codeDisplayRaf = window.requestAnimationFrame(() => {
+					codeDisplayRaf = null;
+					refreshCodeDisplayFromFields();
+				});
+			};
+			for (const [literal, shortId] of userPlaceholders) {
+				const row = document.createElement("div");
+				row.className = "md-code-placeholder-row";
+				const input = document.createElement("input");
+				input.type = "text";
+				input.className = "md-code-placeholder-input";
+				input.placeholder = shortId;
+				input.setAttribute("data-placeholder-literal", literal);
+				input.setAttribute("aria-label", shortId);
+				input.addEventListener("input", scheduleRefreshCodeDisplay);
+				row.appendChild(input);
+				fieldsEl.appendChild(row);
+			}
+			wrap.appendChild(fieldsEl);
+		}
 		const btn = document.createElement("button");
 		btn.type = "button";
 		btn.className = "copy-btn";
@@ -87,8 +164,7 @@
 		btn.setAttribute("aria-label", "Copy");
 		btn.title = "Copy";
 		let revertTimerId = null;
-		btn.onclick = () => {
-			navigator.clipboard.writeText(code.textContent || "");
+		const flashCopyOk = () => {
 			btn.innerHTML = copiedIconHtml;
 			btn.classList.remove("is-copy-reacted");
 			btn.classList.remove("is-copy-done");
@@ -107,6 +183,40 @@
 				btn.classList.remove("is-copy-done");
 				btn.blur();
 			}, 1200);
+		};
+		const copyBlockText = async () => {
+			let text =
+				fieldsEl !== null
+					? applyUserPlaceholdersFromFields(originalForCopy, fieldsEl)
+					: normalizeNewlines(code.textContent || "");
+			const titleDefault = "Copy";
+			const onCopied = () => {
+				btn.title = "Copied";
+				flashCopyOk();
+				window.setTimeout(() => {
+					btn.title = titleDefault;
+				}, 1200);
+			};
+			try {
+				if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+					await navigator.clipboard.writeText(text);
+					onCopied();
+					return;
+				}
+			} catch (_) {
+				/* fall through to execCommand */
+			}
+			if (copyPlainTextViaExecCommand(text)) {
+				onCopied();
+				return;
+			}
+			btn.title = "Copy failed";
+			window.setTimeout(() => {
+				btn.title = titleDefault;
+			}, 2200);
+		};
+		btn.onclick = () => {
+			void copyBlockText();
 		};
 		wrap.appendChild(btn);
 	};
@@ -522,14 +632,9 @@
 
 	await renderMermaidBlocks();
 
-	if (window.hljs && typeof window.hljs.highlightElement === "function") {
-		document.querySelectorAll("pre code").forEach((code) => {
-			if ((code.className || "").split(/\s+/).includes("language-mermaid")) {
-				return;
-			}
-			window.hljs.highlightElement(code);
-		});
-	}
+	document.querySelectorAll("pre code").forEach((code) => {
+		tryHljsHighlightNonMermaid(code);
+	});
 
 	document.querySelectorAll("pre code").forEach((code) => {
 		if (code.closest(".mermaid-block")) {
