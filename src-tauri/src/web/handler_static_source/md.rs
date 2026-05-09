@@ -332,10 +332,7 @@ mod tests {
     #[test]
     fn datetime_placeholder_offsets_all_bases() {
         let now = Local.with_ymd_and_hms(2024, 5, 9, 10, 11, 12).unwrap();
-        assert_eq!(
-            replace_code_placeholder_tokens("{{YYYY+1Y}}", now),
-            "2025"
-        );
+        assert_eq!(replace_code_placeholder_tokens("{{YYYY+1Y}}", now), "2025");
         assert_eq!(
             replace_code_placeholder_tokens("{{YYYY-MM-DD+1D}}", now),
             "2024-05-10"
