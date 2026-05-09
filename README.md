@@ -47,7 +47,7 @@ A developer is never without a clock:
     * dump request and response server
     * slow endpoints for debugging
     * open files in your editor from GitHub URLs
-    * preview Markdown file from CLI
+    * preview Markdown / JSON / YAML / etc. from CLI
 
 🔔 NOTE: `mclocks` doesn't need an internet connection — everything runs 100% locally.
 
@@ -296,7 +296,7 @@ The maximum text size per sticky note is 128 KB.
 * `status`: If set to `true`, enables the `/status/{code}` endpoint that returns arbitrary HTTP status codes (default: `false`)
 * `content.markdown.allowRawHTML`: If set to `true`, allows raw HTML inside Markdown rendering; if `false`, raw HTML in Markdown is escaped as text (default: `false`)
 * `content.markdown.openExternalLinkInNewTab`: External Markdown links open in a new tab while internal links open in the same tab; if `false`, all Markdown links open in the same tab (default: `true`)
-* `content.markdown.enablePreviewApi`: If set to `true`, enables `POST /preview` so you can open Markdown in the browser from the CLI (default: `false`)
+* `content.markdown.enablePreviewApi`: If set to `true`, enables `POST /preview` so you can open supported viewer files (Markdown, JSON, YAML, TOML, XML, INI, …) in the browser from the CLI (default: `false`)
 * `editor`: If set and contains `reposDir`, enables the `/editor` endpoint that opens local files in your editor from browser's GitHub URLs (default: not set)
 
 ### drag-and-drop based content viewer
@@ -441,7 +441,7 @@ You can specify a line number using the hash fragment in the URL:
 
 ### POST /preview
 
-**POST /preview** is for **opening Markdown from the CLI**. **`curl`** (or any client that can POST) sends **a local `.md` / `.markdown` path** to **`/preview`**; mclocks **opens your browser** on a rendered preview.
+**POST /preview** is for **opening a supported file from the CLI** (same extensions as the structured / Markdown viewer: **`.md`**, **`.markdown`**, **`.json`**, **`.yaml`**, **`.yml`**, **`.toml`**, **`.xml`**, **`.ini`**, **`.config`**, **`.cfg`**).
 
 ```json
 "web": {
@@ -467,7 +467,7 @@ printf '%s\n%s' './notes.md' "$PWD" | curl -sS -X POST http://127.0.0.1:3030/pre
 
 #### `mc-preview` helper (Bash)
 
-The repo includes [`scripts/mc-preview`](scripts/mc-preview): It's a wrapper for curl requests. All you need to do is pass markdown file path.
+The repo includes [`scripts/mc-preview`](scripts/mc-preview): It's a wrapper for curl requests.
 
 Install:
 
@@ -485,9 +485,43 @@ Examples:
 mc-preview relative/path/example.md
 mc-preview /absolute/path/to/notes.md
 mc-preview "./My Notes.md"
+mc-preview ./config/app.toml
 ```
 
-On success, your browser shows the Markdown rendered for viewing.
+On success, your browser opens the file in the web browser.
+
+## mclocks-preview extension (Cursor / VS Code)
+
+There is an extension for VS Code and Cursor that you can use from the file menu (the menu that appears when you right‑click a file). It is called `mclocks-preview`, and it is especially useful for previewing Markdown files. The installation procedure is described below.
+
+1. Clone this repository if you do not have it yet, then change to the repository root:
+
+    ```bash
+    git clone https://github.com/bayashi/mclocks.git
+    cd mclocks
+    ```
+
+2. Open the repository folder in Cursor or Visual Studio Code:
+
+    ```bash
+    cursor .
+    ```
+
+    or
+
+    ```bash
+    code .
+    ```
+
+3. Open the Command Palette (`Ctrl+Shift+P` on Windows/Linux, `Cmd+Shift+P` on macOS).
+
+4. Run **Developer: Install Extension from Location...**.
+
+5. Select the folder `extensions/mclocks-preview` inside this repository.
+
+6. Reload the window when prompted, or run **Developer: Reload Window** from the Command Palette.
+
+After installation, you can choose `Open in mclocks preview` from the menu that appears when you right‑click a file.
 
 ----------
 

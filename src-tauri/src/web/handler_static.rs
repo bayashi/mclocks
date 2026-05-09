@@ -546,10 +546,11 @@ fn parse_content_mode(url: &str) -> ContentMode {
         let mut kv = pair.splitn(2, '=');
         let key = kv.next().unwrap_or("");
         let value = kv.next().unwrap_or("");
-        if key != "mode" {
+        if !key.eq_ignore_ascii_case("mode") {
             continue;
         }
-        return match value {
+        let v = value.to_ascii_lowercase();
+        return match v.as_str() {
             "raw" => ContentMode::Raw,
             "source" => ContentMode::Source,
             "content" => ContentMode::Content,
@@ -559,11 +560,23 @@ fn parse_content_mode(url: &str) -> ContentMode {
     ContentMode::Content
 }
 
+/// `tiny_http::Request::url()` may be origin-form (`/path?…`) or absolute-form (`http://host:port/path?…`).
+fn request_target_path_only(path_or_absolute: &str) -> &str {
+    if let Some(rest) = path_or_absolute.strip_prefix("http://") {
+        return rest.find('/').map(|i| &rest[i..]).unwrap_or("/");
+    }
+    if let Some(rest) = path_or_absolute.strip_prefix("https://") {
+        return rest.find('/').map(|i| &rest[i..]).unwrap_or("/");
+    }
+    path_or_absolute
+}
+
 fn split_url_path_and_query(url: &str) -> (&str, &str) {
     let no_fragment = url.split('#').next().unwrap_or(url);
     let mut parts = no_fragment.splitn(2, '?');
-    let path = parts.next().unwrap_or("/");
+    let before_query = parts.next().unwrap_or("/");
     let query = parts.next().unwrap_or("");
+    let path = request_target_path_only(before_query);
     (path, query)
 }
 
