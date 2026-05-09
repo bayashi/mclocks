@@ -1,7 +1,7 @@
 use super::template_common;
 use crate::web::common::format_display_path;
 use crate::web_server::WebMarkdownHighlightConfig;
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Duration, Local, Months};
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
 use std::collections::HashMap;
 use std::fs;
@@ -185,29 +185,112 @@ fn render_markdown_html(markdown_source: &str, allow_html_in_md: bool) -> String
     rendered_html
 }
 
-fn replace_code_placeholder_tokens(fragment: &str, now: DateTime<Local>) -> String {
-    let mut s = fragment.to_string();
-    let pairs: &[(&str, &str)] = &[
-        ("{{YYYYMMDDHHmmss}}", "%Y%m%d%H%M%S"),
-        ("{{YYYYMMDD HH:mm:ss}}", "%Y%m%d %H:%M:%S"),
-        ("{{YYYYMMDD}}", "%Y%m%d"),
-        ("{{YYYY-MM-DD}}", "%Y-%m-%d"),
-        ("{{HH:mm:ss}}", "%H:%M:%S"),
-        ("{{HHmmss}}", "%H%M%S"),
-        ("{{YYYY}}", "%Y"),
-        ("{{MM}}", "%m"),
-        ("{{DD}}", "%d"),
-        ("{{HH}}", "%H"),
-        ("{{mm}}", "%M"),
-        ("{{ss}}", "%S"),
-    ];
-    for (pat, fmt) in pairs {
-        if s.contains(pat) {
-            let rep = now.format(fmt).to_string();
-            s = s.replace(pat, &rep);
-        }
+const CODE_DATETIME_PLACEHOLDER_BASES: &[(&str, &str)] = &[
+    ("YYYYMMDD HH:mm:ss", "%Y%m%d %H:%M:%S"),
+    ("YYYYMMDDHHmmss", "%Y%m%d%H%M%S"),
+    ("YYYY-MM-DD", "%Y-%m-%d"),
+    ("YYYYMMDD", "%Y%m%d"),
+    ("HH:mm:ss", "%H:%M:%S"),
+    ("HHmmss", "%H%M%S"),
+    ("YYYY", "%Y"),
+    ("MM", "%m"),
+    ("DD", "%d"),
+    ("HH", "%H"),
+    ("mm", "%M"),
+    ("ss", "%S"),
+];
+
+fn shift_datetime_by_offset(rest: &str, now: DateTime<Local>) -> Option<DateTime<Local>> {
+    let bytes = rest.as_bytes();
+    if bytes.len() < 3 {
+        return None;
     }
-    s
+    let sign = bytes[0] as char;
+    if sign != '+' && sign != '-' {
+        return None;
+    }
+    let unit = *bytes.last()? as char;
+    if unit != 'Y' && unit != 'M' && unit != 'D' && unit != 'H' && unit != 'm' && unit != 's' {
+        return None;
+    }
+    let num_part = &rest[1..rest.len() - 1];
+    let value = num_part.parse::<i64>().ok()?;
+    if value <= 0 {
+        return None;
+    }
+    let signed_value = if sign == '-' { -value } else { value };
+    match unit {
+        'Y' => {
+            let months = i32::try_from(signed_value.saturating_mul(12)).ok()?;
+            if signed_value >= 0 {
+                now.checked_add_months(Months::new(months as u32))
+            } else {
+                now.checked_sub_months(Months::new((-months) as u32))
+            }
+        }
+        'M' => {
+            let months_u = u32::try_from(signed_value.unsigned_abs()).ok()?;
+            if signed_value >= 0 {
+                now.checked_add_months(Months::new(months_u))
+            } else {
+                now.checked_sub_months(Months::new(months_u))
+            }
+        }
+        'D' => now.checked_add_signed(Duration::days(signed_value)),
+        'H' => now.checked_add_signed(Duration::hours(signed_value)),
+        'm' => now.checked_add_signed(Duration::minutes(signed_value)),
+        's' => now.checked_add_signed(Duration::seconds(signed_value)),
+        _ => None,
+    }
+}
+
+fn try_expand_placeholder_inner(inner: &str, now: DateTime<Local>) -> Option<String> {
+    for (base, fmt) in CODE_DATETIME_PLACEHOLDER_BASES {
+        if !inner.starts_with(*base) {
+            continue;
+        }
+        let rest = &inner[base.len()..];
+        let shifted = if rest.is_empty() {
+            now
+        } else {
+            shift_datetime_by_offset(rest, now)?
+        };
+        return Some(shifted.format(fmt).to_string());
+    }
+    None
+}
+
+fn replace_code_placeholder_token(token: &str, now: DateTime<Local>) -> Option<String> {
+    let inner = token.strip_prefix("{{")?.strip_suffix("}}")?;
+    try_expand_placeholder_inner(inner, now)
+}
+
+fn replace_code_placeholder_tokens(fragment: &str, now: DateTime<Local>) -> String {
+    let mut out = String::with_capacity(fragment.len());
+    let mut cursor = 0usize;
+    while cursor < fragment.len() {
+        let search_slice = &fragment[cursor..];
+        let Some(rel_start) = search_slice.find("{{") else {
+            out.push_str(search_slice);
+            break;
+        };
+        let start = cursor + rel_start;
+        out.push_str(&fragment[cursor..start]);
+        let after_start = &fragment[start..];
+        let Some(rel_end) = after_start.find("}}") else {
+            out.push_str(after_start);
+            break;
+        };
+        let end_exclusive = start + rel_end + 2;
+        let token = &fragment[start..end_exclusive];
+        if let Some(rep) = replace_code_placeholder_token(token, now) {
+            out.push_str(&rep);
+        } else {
+            out.push_str(token);
+        }
+        cursor = end_exclusive;
+    }
+    out
 }
 
 fn inject_code_block_datetime_placeholders(html: &str, now: DateTime<Local>) -> String {
@@ -239,6 +322,65 @@ fn inject_code_block_datetime_placeholders(html: &str, now: DateTime<Local>) -> 
         cursor = content_start_idx + close_rel + 6;
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::TimeZone;
+
+    #[test]
+    fn datetime_placeholder_offsets_all_bases() {
+        let now = Local.with_ymd_and_hms(2024, 5, 9, 10, 11, 12).unwrap();
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYY+1Y}}", now),
+            "2025"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYY-MM-DD+1D}}", now),
+            "2024-05-10"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYYMMDDHHmmss+1Y}}", now),
+            "20250509101112"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYYMMDD+1Y}}", now),
+            "20250509"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYYMMDD+2D}}", now),
+            "20240511"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYYMMDD+1M}}", now),
+            "20240609"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYYMMDD-1M}}", now),
+            "20240409"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYYMMDD+1D}}", now),
+            "20240510"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYYMMDD-1D}}", now),
+            "20240508"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYYMMDD+1H}}", now),
+            "20240509"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYYMMDD+90m}}", now),
+            "20240509"
+        );
+        assert_eq!(
+            replace_code_placeholder_tokens("{{YYYYMMDD+86400s}}", now),
+            "20240510"
+        );
+    }
 }
 
 fn human_bytes(size: usize) -> String {
