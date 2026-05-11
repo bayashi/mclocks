@@ -28,7 +28,11 @@ fn main() {
         println!("cargo:rerun-if-changed={}", git_head.display());
     }
     // include_str! in web_server.rs; explicit rerun so `tauri dev` reliably rebuilds when only these change.
-    let md_static = repo_root.join("web-assets").join("mclocks").join("static").join("structured");
+    let md_static = repo_root
+        .join("web-assets")
+        .join("mclocks")
+        .join("static")
+        .join("structured");
     for name in ["md.js", "md.css"] {
         let p = md_static.join(name);
         if p.is_file() {
