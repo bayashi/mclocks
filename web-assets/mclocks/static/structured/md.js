@@ -44,9 +44,155 @@
 		'<path d="M7.05 13.42L10.2 16.62L17.92 8.92" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>' +
 		"</svg>";
 
-	const USER_PLACEHOLDER_TOKEN_RE = /\{\{_([A-Za-z0-9_]+)_\}\}/g;
-
 	const normalizeNewlines = (s) => s.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+	const DATETIME_OFFSET_UNITS = new Set(["Y", "M", "D", "H", "m", "s"]);
+
+	const CODE_DATETIME_PLACEHOLDER_BASES = [
+		["YYYYMMDD HH:mm:ss", "%Y%m%d %H:%M:%S"],
+		["YYYYMMDDHHmmss", "%Y%m%d%H%M%S"],
+		["YYYY-MM-DD", "%Y-%m-%d"],
+		["YYYYMMDD", "%Y%m%d"],
+		["HH:mm:ss", "%H:%M:%S"],
+		["HHmmss", "%H%M%S"],
+		["YYYY", "%Y"],
+		["MM", "%m"],
+		["DD", "%d"],
+		["HH", "%H"],
+		["mm", "%M"],
+		["ss", "%S"],
+	];
+
+	const pad2 = (n) => String(n).padStart(2, "0");
+
+	const formatLocalDateTime = (dt, fmt) => {
+		const Y = dt.getFullYear();
+		const m = dt.getMonth() + 1;
+		const d = dt.getDate();
+		const H = dt.getHours();
+		const M = dt.getMinutes();
+		const S = dt.getSeconds();
+		return fmt
+			.replace(/%Y/g, String(Y))
+			.replace(/%m/g, pad2(m))
+			.replace(/%d/g, pad2(d))
+			.replace(/%H/g, pad2(H))
+			.replace(/%M/g, pad2(M))
+			.replace(/%S/g, pad2(S));
+	};
+
+	const addCalendarMonths = (d0, deltaMonths) => {
+		const d = new Date(d0.getTime());
+		const day = d.getDate();
+		d.setMonth(d.getMonth() + deltaMonths);
+		if (d.getDate() !== day) {
+			d.setDate(0);
+		}
+		return d;
+	};
+
+	const shiftDateTimeByOffset = (rest, d0) => {
+		if (rest.length < 3) {
+			return null;
+		}
+		const sign = rest[0];
+		if (sign !== "+" && sign !== "-") {
+			return null;
+		}
+		const unit = rest[rest.length - 1];
+		if (!DATETIME_OFFSET_UNITS.has(unit)) {
+			return null;
+		}
+		const numPart = rest.slice(1, -1);
+		if (!/^\d+$/.test(numPart)) {
+			return null;
+		}
+		const value = parseInt(numPart, 10);
+		if (value <= 0) {
+			return null;
+		}
+		const signed = sign === "-" ? -value : value;
+		const d = new Date(d0.getTime());
+		if (unit === "Y") {
+			return addCalendarMonths(d, signed * 12);
+		}
+		if (unit === "M") {
+			return addCalendarMonths(d, signed);
+		}
+		if (unit === "D") {
+			d.setDate(d.getDate() + signed);
+			return d;
+		}
+		if (unit === "H") {
+			d.setHours(d.getHours() + signed);
+			return d;
+		}
+		if (unit === "m") {
+			d.setMinutes(d.getMinutes() + signed);
+			return d;
+		}
+		if (unit === "s") {
+			d.setSeconds(d.getSeconds() + signed);
+			return d;
+		}
+		return null;
+	};
+
+	const tryExpandDatetimePlaceholderInner = (inner, now) => {
+		const d0 = new Date(now.getTime());
+		for (const [base, fmt] of CODE_DATETIME_PLACEHOLDER_BASES) {
+			if (!inner.startsWith(base)) {
+				continue;
+			}
+			const tail = inner.slice(base.length);
+			let shifted;
+			if (tail === "") {
+				shifted = d0;
+			} else {
+				const s = shiftDateTimeByOffset(tail, d0);
+				if (!s) {
+					return null;
+				}
+				shifted = s;
+			}
+			return formatLocalDateTime(shifted, fmt);
+		}
+		return null;
+	};
+
+	const extractAllPlaceholderFieldsInOrder = (text) => {
+		const now = new Date();
+		const rows = [];
+		const seen = new Set();
+		let i = 0;
+		while (i < text.length) {
+			const a = text.indexOf("{{", i);
+			if (a < 0) {
+				break;
+			}
+			const b = text.indexOf("}}", a + 2);
+			if (b < 0) {
+				break;
+			}
+			const full = text.slice(a, b + 2);
+			const inner = text.slice(a + 2, b);
+			if (!seen.has(full)) {
+				const um = full.match(/^\{\{_([A-Za-z0-9_]+)_\}\}$/);
+				if (um) {
+					seen.add(full);
+					rows.push({ kind: "user", full, shortId: um[1] });
+				} else {
+					const def = tryExpandDatetimePlaceholderInner(inner, now);
+					if (def !== null) {
+						seen.add(full);
+						rows.push({ kind: "datetime", full, inner, defaultVal: def });
+					}
+				}
+			}
+			i = b + 2;
+		}
+		return rows;
+	};
 
 	const tryHljsHighlightNonMermaid = (codeEl) => {
 		if (!window.hljs || typeof window.hljs.highlightElement !== "function") {
@@ -58,29 +204,23 @@
 		window.hljs.highlightElement(codeEl);
 	};
 
-	const extractUserPlaceholderTokensOrdered = (text) => {
-		USER_PLACEHOLDER_TOKEN_RE.lastIndex = 0;
-		const map = new Map();
-		let m;
-		while ((m = USER_PLACEHOLDER_TOKEN_RE.exec(text)) !== null) {
-			const full = m[0];
-			if (!map.has(full)) {
-				map.set(full, m[1]);
-			}
-		}
-		return map;
-	};
-
-	const applyUserPlaceholdersFromFields = (original, fieldsRoot) => {
+	const applyPlaceholdersFromFields = (original, fieldsRoot) => {
 		let out = original;
-		const inputs = fieldsRoot.querySelectorAll("input[data-placeholder-literal]");
-		for (const input of inputs) {
+		for (const input of fieldsRoot.querySelectorAll("input[data-placeholder-literal]")) {
 			const literal = input.getAttribute("data-placeholder-literal");
 			if (!literal) {
 				continue;
 			}
-			const v = String(input.value || "").trim();
-			const rep = v !== "" ? v : literal;
+			const kind = input.getAttribute("data-placeholder-kind");
+			let rep;
+			if (kind === "datetime") {
+				const v = String(input.value || "").trim();
+				const def = input.getAttribute("data-default-replacement") || "";
+				rep = v !== "" ? v : def !== "" ? def : literal;
+			} else {
+				const v = String(input.value || "").trim();
+				rep = v !== "" ? v : literal;
+			}
 			out = out.split(literal).join(rep);
 		}
 		return out;
@@ -119,18 +259,18 @@
 			return;
 		}
 		const originalForCopy = normalizeNewlines(code.textContent || "");
-		const userPlaceholders = extractUserPlaceholderTokensOrdered(originalForCopy);
+		const placeholderRows = extractAllPlaceholderFieldsInOrder(originalForCopy);
 		let fieldsEl = null;
 		const wrap = document.createElement("div");
 		wrap.className = "code-block-wrap";
 		pre.parentNode.insertBefore(wrap, pre);
 		wrap.appendChild(pre);
-		if (userPlaceholders.size > 0) {
+		if (placeholderRows.length > 0) {
 			fieldsEl = document.createElement("div");
 			fieldsEl.className = "md-code-placeholder-fields";
 			let codeDisplayRaf = null;
 			const refreshCodeDisplayFromFields = () => {
-				code.textContent = applyUserPlaceholdersFromFields(originalForCopy, fieldsEl);
+				code.textContent = applyPlaceholdersFromFields(originalForCopy, fieldsEl);
 				tryHljsHighlightNonMermaid(code);
 			};
 			const scheduleRefreshCodeDisplay = () => {
@@ -142,20 +282,66 @@
 					refreshCodeDisplayFromFields();
 				});
 			};
-			for (const [literal, shortId] of userPlaceholders) {
-				const row = document.createElement("div");
-				row.className = "md-code-placeholder-row";
+			for (const row of placeholderRows) {
+				const wrapRow = document.createElement("div");
+				wrapRow.className = "md-code-placeholder-row";
 				const input = document.createElement("input");
 				input.type = "text";
 				input.className = "md-code-placeholder-input";
-				input.placeholder = shortId;
-				input.setAttribute("data-placeholder-literal", literal);
-				input.setAttribute("aria-label", shortId);
+				input.setAttribute("data-placeholder-literal", row.full);
+				if (row.kind === "user") {
+					input.placeholder = row.shortId;
+					input.setAttribute("aria-label", row.shortId);
+				} else {
+					wrapRow.classList.add("md-code-placeholder-row--datetime");
+					input.setAttribute("data-placeholder-kind", "datetime");
+					input.setAttribute("data-default-replacement", row.defaultVal);
+					input.setAttribute("data-initial-replacement", row.defaultVal);
+					input.setAttribute("data-datetime-inner", row.inner);
+					input.value = row.defaultVal;
+					input.placeholder = row.inner;
+					input.setAttribute("aria-label", row.inner);
+				}
 				input.addEventListener("input", scheduleRefreshCodeDisplay);
-				row.appendChild(input);
-				fieldsEl.appendChild(row);
+				wrapRow.appendChild(input);
+				if (row.kind === "datetime") {
+					const actions = document.createElement("div");
+					actions.className = "md-code-placeholder-datetime-actions";
+					const mkDtBtn = (label, ariaLabel, onClick) => {
+						const b = document.createElement("button");
+						b.type = "button";
+						b.className = "md-code-placeholder-datetime-btn";
+						b.textContent = label;
+						b.setAttribute("aria-label", ariaLabel);
+						b.addEventListener("click", () => {
+							onClick();
+							scheduleRefreshCodeDisplay();
+						});
+						return b;
+					};
+					actions.appendChild(
+						mkDtBtn("Reset", "Reset to value when page was loaded", () => {
+							const initial = input.getAttribute("data-initial-replacement") || "";
+							input.value = initial;
+							input.setAttribute("data-default-replacement", initial);
+						})
+					);
+					actions.appendChild(
+						mkDtBtn("Now", "Replace with current date and time", () => {
+							const inner = input.getAttribute("data-datetime-inner") || "";
+							const nv = tryExpandDatetimePlaceholderInner(inner, new Date());
+							if (nv !== null) {
+								input.value = nv;
+								input.setAttribute("data-default-replacement", nv);
+							}
+						})
+					);
+					wrapRow.appendChild(actions);
+				}
+				fieldsEl.appendChild(wrapRow);
 			}
 			wrap.appendChild(fieldsEl);
+			refreshCodeDisplayFromFields();
 		}
 		const btn = document.createElement("button");
 		btn.type = "button";
@@ -187,7 +373,7 @@
 		const copyBlockText = async () => {
 			let text =
 				fieldsEl !== null
-					? applyUserPlaceholdersFromFields(originalForCopy, fieldsEl)
+					? applyPlaceholdersFromFields(originalForCopy, fieldsEl)
 					: normalizeNewlines(code.textContent || "");
 			const titleDefault = "Copy";
 			const onCopied = () => {

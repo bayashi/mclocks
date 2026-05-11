@@ -298,8 +298,57 @@ body.mclocks-md{
 	margin-top:0;
 }
 
+#content .code-block-wrap .md-code-placeholder-row--datetime{
+	display:flex;
+	align-items:center;
+	gap:8px;
+	flex-wrap:nowrap;
+	min-width:0;
+}
+
 #content .code-block-wrap .md-code-placeholder-row + .md-code-placeholder-row{
 	margin-top:8px;
+}
+
+#content .code-block-wrap .md-code-placeholder-row--datetime .md-code-placeholder-input{
+	flex:1 1 120px;
+	width:auto;
+}
+
+#content .code-block-wrap .md-code-placeholder-datetime-actions{
+	flex:0 0 auto;
+	display:flex;
+	align-items:center;
+	gap:6px;
+	margin-left:auto;
+}
+
+#content .code-block-wrap .md-code-placeholder-datetime-btn{
+	margin:0;
+	padding:5px 10px;
+	box-sizing:border-box;
+	font-size:0.75rem;
+	line-height:1.25;
+	font-weight:500;
+	cursor:pointer;
+	color:rgba(229,231,239,.88);
+	background:rgba(255,255,255,.06);
+	border:1px solid var(--tone-line-soft);
+	border-radius:5px;
+	transition:color .12s ease,background .12s ease,border-color .12s ease;
+	-webkit-appearance:none;
+	appearance:none;
+}
+
+#content .code-block-wrap .md-code-placeholder-datetime-btn:hover{
+	color:#f2f3f8;
+	background:rgba(255,255,255,.09);
+	border-color:rgba(148,149,162,.38);
+}
+
+#content .code-block-wrap .md-code-placeholder-datetime-btn:focus-visible{
+	outline:1px solid rgba(142,180,240,.45);
+	outline-offset:2px;
 }
 
 #content .code-block-wrap .md-code-placeholder-input{
