@@ -293,14 +293,51 @@
 					input.placeholder = row.shortId;
 					input.setAttribute("aria-label", row.shortId);
 				} else {
+					wrapRow.classList.add("md-code-placeholder-row--datetime");
 					input.setAttribute("data-placeholder-kind", "datetime");
 					input.setAttribute("data-default-replacement", row.defaultVal);
+					input.setAttribute("data-initial-replacement", row.defaultVal);
+					input.setAttribute("data-datetime-inner", row.inner);
 					input.value = row.defaultVal;
 					input.placeholder = row.inner;
 					input.setAttribute("aria-label", row.inner);
 				}
 				input.addEventListener("input", scheduleRefreshCodeDisplay);
 				wrapRow.appendChild(input);
+				if (row.kind === "datetime") {
+					const actions = document.createElement("div");
+					actions.className = "md-code-placeholder-datetime-actions";
+					const mkDtBtn = (label, ariaLabel, onClick) => {
+						const b = document.createElement("button");
+						b.type = "button";
+						b.className = "md-code-placeholder-datetime-btn";
+						b.textContent = label;
+						b.setAttribute("aria-label", ariaLabel);
+						b.addEventListener("click", () => {
+							onClick();
+							scheduleRefreshCodeDisplay();
+						});
+						return b;
+					};
+					actions.appendChild(
+						mkDtBtn("Reset", "Reset to value when page was loaded", () => {
+							const initial = input.getAttribute("data-initial-replacement") || "";
+							input.value = initial;
+							input.setAttribute("data-default-replacement", initial);
+						})
+					);
+					actions.appendChild(
+						mkDtBtn("Now", "Replace with current date and time", () => {
+							const inner = input.getAttribute("data-datetime-inner") || "";
+							const nv = tryExpandDatetimePlaceholderInner(inner, new Date());
+							if (nv !== null) {
+								input.value = nv;
+								input.setAttribute("data-default-replacement", nv);
+							}
+						})
+					);
+					wrapRow.appendChild(actions);
+				}
 				fieldsEl.appendChild(wrapRow);
 			}
 			wrap.appendChild(fieldsEl);
