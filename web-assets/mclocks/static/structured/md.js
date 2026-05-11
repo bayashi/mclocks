@@ -195,13 +195,18 @@
 	};
 
 	const tryHljsHighlightNonMermaid = (codeEl) => {
-		if (!window.hljs || typeof window.hljs.highlightElement !== "function") {
+		const hljs = window.hljs;
+		if (!hljs || typeof hljs.highlightElement !== "function") {
 			return;
 		}
 		if ((codeEl.className || "").split(/\s+/).includes("language-mermaid")) {
 			return;
 		}
-		window.hljs.highlightElement(codeEl);
+		// hljs v11+ sets data-highlighted; replacing textContent alone leaves it set and
+		// highlightElement skips re-highlighting. Do not assign highlight().value to
+		// innerHTML here — SQL like `>` next to strings can confuse HTML parsing and strip spans.
+		codeEl.removeAttribute("data-highlighted");
+		hljs.highlightElement(codeEl);
 	};
 
 	const applyPlaceholdersFromFields = (original, fieldsRoot) => {
