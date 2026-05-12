@@ -52,17 +52,21 @@ __MAIN_CSS_LINK__
 <style>
 * { box-sizing: border-box; }
 body { color: #aaa; background: #000; margin: 0; font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif; line-height: 1.6; --sidebar-width: 200px; --left-pane-width: var(--sidebar-width); --left-pane-padding: 16px 12px; --left-pane-h2-margin: 0 0 8px 4px; }
-#main { margin-left: var(--sidebar-width); width: calc(100vw - var(--sidebar-width)); padding: 16px 24px; overflow-wrap: anywhere; word-break: break-word; }
+#main { margin-left: var(--sidebar-width); width: calc(100vw - var(--sidebar-width)); padding: 14px 21px; overflow-wrap: anywhere; word-break: break-word; }
 #header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 10px; }
 #path-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
 #directory-link { display: inline-flex; align-items: center; justify-content: center; color: #bbb; text-decoration: none; font-size: 14px; line-height: 1; }
 #directory-link:hover { color: #fff; }
 #main-header-path { flex: 0 1 auto; min-width: 0; line-height: 1.2; color: #777; font-size: 12px; font-family: "Consolas", "Cascadia Code", "SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace; overflow-wrap: anywhere; word-break: break-word; }
-#main-separator { height: 1px; background: #222; margin: 0 0 12px; }
-#main > ul { list-style: none; margin: 0; padding: 0; border-top: none; }
-#main > ul > li { border-bottom: 1px solid #161616; }
-#main > ul > li > a { display: block; color: #ccc; text-decoration: none; padding: 8px 4px; border-radius: 2px; }
-#main > ul > li > a:hover { color: #fff; background: #1a1a1a; }
+#listing-filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
+#listing-ext-filter { flex: 0 0 auto; min-width: 9.5rem; max-width: 40%; padding: 6px 8px; font-size: 13px; line-height: 1.3; color: #ddd; background: #141414; border: 1px solid #333; border-radius: 4px; font-family: inherit; }
+#listing-keyword { flex: 1 1 140px; min-width: 0; padding: 6px 10px; font-size: 13px; line-height: 1.3; color: #ddd; background: #141414; border: 1px solid #333; border-radius: 4px; font-family: inherit; }
+#listing-ext-filter:focus-visible, #listing-keyword:focus-visible { outline: 1px solid #666; outline-offset: 1px; }
+.listing-filter-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+#directory-listing { list-style: none; margin: 0; padding: 0; border-top: none; }
+#directory-listing > li { border-bottom: 1px solid #161616; }
+#directory-listing > li > a { display: block; color: #ccc; text-decoration: none; padding: 7px 4px; border-radius: 2px; }
+#directory-listing > li > a:hover { color: #fff; background: #1a1a1a; }
 .entry-label { display: inline-block; min-width: calc(1.7em - 2px); color: #666; }
 .dir .entry-label { color: #777; }
 .back .entry-label { color: #555; }
@@ -95,8 +99,15 @@ __DIRECTORY_LINK_HTML__
 <button id="path-copy-btn" class="mode-btn" type="button">Copy</button>
 </div>
 </div>
-<div id="main-separator"></div>
-<ul>
+<div id="listing-filter-bar" role="search" aria-label="Filter listing">
+<label class="listing-filter-sr" for="listing-ext-filter">Extension</label>
+<select id="listing-ext-filter" aria-label="Filter by extension">
+<option value="">ALL</option>
+</select>
+<label class="listing-filter-sr" for="listing-keyword">Keyword</label>
+<input type="search" id="listing-keyword" placeholder="Keyword" autocomplete="off" spellcheck="false" aria-label="Filter by keyword" />
+</div>
+<ul id="directory-listing">
 __LIST_ITEMS__
 </ul>
 </div>
@@ -154,6 +165,56 @@ if (summaryList) {
 		value.textContent = toLocalTime(value.textContent?.trim() || "-");
 	});
 }
+(() => {
+	const ul = document.getElementById("directory-listing");
+	const extSel = document.getElementById("listing-ext-filter");
+	const kwIn = document.getElementById("listing-keyword");
+	if (!ul || !extSel || !kwIn) {
+		return;
+	}
+	const entryRows = () => Array.from(ul.querySelectorAll(":scope > li.dir, :scope > li.file"));
+	const exts = new Set();
+	for (const li of entryRows()) {
+		if (li.classList.contains("file")) {
+			exts.add(li.getAttribute("data-entry-ext") ?? "");
+		}
+	}
+	const sorted = Array.from(exts).sort((a, b) => {
+		if (a === "" && b !== "") {
+			return 1;
+		}
+		if (a !== "" && b === "") {
+			return -1;
+		}
+		return a.localeCompare(b, undefined, { sensitivity: "base" });
+	});
+	for (const ext of sorted) {
+		const opt = document.createElement("option");
+		opt.value = ext;
+		opt.textContent = ext === "" ? "(no extension)" : ext;
+		extSel.appendChild(opt);
+	}
+	const applyListingFilter = () => {
+		const ext = extSel.value;
+		const kw = (kwIn.value || "").trim().toLowerCase();
+		for (const li of entryRows()) {
+			const a = li.querySelector("a[data-meta-path]");
+			const name = (a?.getAttribute("data-meta-path") || "").toLowerCase();
+			const kwOk = kw === "" || name.includes(kw);
+			let extOk = true;
+			if (ext !== "") {
+				if (li.classList.contains("dir")) {
+					extOk = false;
+				} else {
+					extOk = (li.getAttribute("data-entry-ext") || "") === ext;
+				}
+			}
+			li.hidden = !(kwOk && extOk);
+		}
+	};
+	extSel.addEventListener("change", applyListingFilter);
+	kwIn.addEventListener("input", applyListingFilter);
+})();
 const renderTooltip = (meta) => {
 	const size = meta?.size_hr ?? "-";
 	const preview = meta?.preview ?? "-";
@@ -507,11 +568,18 @@ if (summaryList) {
 </html>
 "##;
 
+fn file_extension_suffix_for_filter(file_name: &str) -> String {
+    match file_name.rfind('.') {
+        Some(i) if i > 0 && i + 1 < file_name.len() => file_name[i..].to_string(),
+        _ => String::new(),
+    }
+}
+
 fn append_directory_entry(list_items: &mut String, dir_url: &str, dir_name: &str) {
     let source_href = template_common::build_mode_href(dir_url, "", ContentMode::Source);
     let _ = write!(
         list_items,
-        "<li class=\"dir\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📁</span>{}/</a></li>\n",
+        "<li class=\"dir\" data-entry-ext=\"\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📁</span>{}/</a></li>\n",
         html_escape(&source_href),
         html_escape(dir_name),
         html_escape(dir_name)
@@ -520,9 +588,11 @@ fn append_directory_entry(list_items: &mut String, dir_url: &str, dir_name: &str
 
 fn append_file_entry(list_items: &mut String, file_url: &str, file_name: &str) {
     let source_href = template_common::build_mode_href(file_url, "", ContentMode::Source);
+    let ext = file_extension_suffix_for_filter(file_name);
     let _ = write!(
         list_items,
-        "<li class=\"file\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📄</span>{}</a></li>\n",
+        "<li class=\"file\" data-entry-ext=\"{}\"><a href=\"{}\" data-meta-path=\"{}\"><span class=\"entry-label\">📄</span>{}</a></li>\n",
+        html_escape(&ext),
         html_escape(&source_href),
         html_escape(file_name),
         html_escape(file_name)

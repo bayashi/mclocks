@@ -874,7 +874,10 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(body.contains("<ul>"), "Should show directory listing");
+        assert!(
+            body.contains("id=\"directory-listing\""),
+            "Should show directory listing"
+        );
         assert!(
             body.contains("index.html"),
             "Should include index.html as a regular file entry"
@@ -903,7 +906,10 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(body.contains("<ul>"), "Should show directory listing");
+        assert!(
+            body.contains("id=\"directory-listing\""),
+            "Should show directory listing"
+        );
         assert!(body.contains("file1.txt"), "Should list file1.txt");
         assert!(body.contains("file2.html"), "Should list file2.html");
         assert!(body.contains("subdir/"), "Should list subdir");
@@ -936,7 +942,10 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(body.contains("<ul>"), "Should show directory listing");
+        assert!(
+            body.contains("id=\"directory-listing\""),
+            "Should show directory listing"
+        );
         assert!(
             body.contains("index.html"),
             "Should include index.html as a regular file entry"
@@ -963,7 +972,10 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(body.contains("<ul>"), "Should show directory listing");
+        assert!(
+            body.contains("id=\"directory-listing\""),
+            "Should show directory listing"
+        );
         assert!(body.contains("file.txt"), "Should list file.txt");
         assert!(
             body.contains("id=\"directory-link\""),
@@ -3031,7 +3043,10 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(body.contains("<ul>"), "Should show directory listing");
+        assert!(
+            body.contains("id=\"directory-listing\""),
+            "Should show directory listing"
+        );
         assert!(
             body.contains("美乳雀のソーダ"),
             "Should show decoded directory name in title"
@@ -3061,7 +3076,10 @@ mod tests {
 
         assert_eq!(response.status(), 200);
         let body = response.text().unwrap();
-        assert!(body.contains("<ul>"), "Should show directory listing");
+        assert!(
+            body.contains("id=\"directory-listing\""),
+            "Should show directory listing"
+        );
         // Check that multibyte characters are displayed correctly (not URL encoded)
         assert!(
             body.contains("日本語ファイル.txt"),
