@@ -57,6 +57,7 @@
 		["HH:mm:ss", "%H:%M:%S"],
 		["HHmmss", "%H%M%S"],
 		["YYYY", "%Y"],
+		["MMDD", "%m%d"],
 		["MM", "%m"],
 		["DD", "%d"],
 		["HH", "%H"],
