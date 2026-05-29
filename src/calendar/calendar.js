@@ -308,8 +308,10 @@ function monthHtml(fn, year, month, locale, timezone, weeks, weekdayLabels) {
 	return `
 <section class="cal-month cal-month-copy" lang="${locale}" data-copy-b64="${copyB64}" role="button" tabindex="0" aria-label="Copy calendar text">
 	<div class="cal-month-title">${title}</div>
-	<div class="cal-weekdays">${weekdayRow}</div>
-	<div class="cal-weeks">${weekRows}</div>
+	<div class="cal-grid">
+		<div class="cal-weekdays">${weekdayRow}</div>
+		<div class="cal-weeks">${weekRows}</div>
+	</div>
 </section>`;
 }
 
