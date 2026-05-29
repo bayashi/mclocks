@@ -28,7 +28,8 @@ html.calendar {
 	transition: opacity 220ms ease-out;
 }
 
-html.calendar.calendar-is-closing {
+html.calendar.calendar-is-closing,
+html.calendar.calendar-is-preparing {
 	opacity: 0;
 	pointer-events: none;
 }

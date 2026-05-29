@@ -473,6 +473,22 @@ async function applyCalendarWindowSize(mainElement, currentWindow, size) {
 	}
 }
 
+async function showCalendarPanelWindow(currentWindow) {
+	if (!currentWindow) {
+		return;
+	}
+	try {
+		await currentWindow.show();
+	} catch {
+		// ignore
+	}
+	try {
+		await currentWindow.setFocus();
+	} catch {
+		// ignore
+	}
+}
+
 async function closePanel() {
 	if (calendarPanelClosing) {
 		return;
@@ -545,6 +561,9 @@ export async function calendarPanelEntry(mainElement) {
 
 	let centerMonthOffset = 0;
 	let lastRenderSignature = '';
+	let panelPreparePromise = null;
+	let panelBootstrapComplete = false;
+
 	const refreshCalendar = async (force = false) => {
 		const clockTodays = buildClockTodayMarkers(locale, cfg?.clocks);
 		const signature = `${clockTodaySignature(clockTodays)}|m${centerMonthOffset}`;
@@ -643,15 +662,40 @@ export async function calendarPanelEntry(mainElement) {
 		}
 	});
 
-	const onPanelShown = () => {
-		document.documentElement.classList.remove('calendar-is-closing');
-		void refreshCalendar(true);
+	const prepareAndShowPanel = async () => {
+		if (panelPreparePromise) {
+			return panelPreparePromise;
+		}
+		panelPreparePromise = (async () => {
+			document.documentElement.classList.remove('calendar-is-closing');
+			document.documentElement.classList.add('calendar-is-preparing');
+			try {
+				await refreshCalendar(true);
+			} finally {
+				document.documentElement.classList.remove('calendar-is-preparing');
+			}
+			await showCalendarPanelWindow(currentWindow);
+			panelBootstrapComplete = true;
+		})().finally(() => {
+			panelPreparePromise = null;
+		});
+		return panelPreparePromise;
 	};
 
-	window.addEventListener('focus', onPanelShown);
+	const onPanelShown = () => {
+		void prepareAndShowPanel();
+	};
+
+	window.addEventListener('focus', () => {
+		if (!panelBootstrapComplete) {
+			return;
+		}
+		document.documentElement.classList.remove('calendar-is-closing');
+		void refreshCalendar(true);
+	});
 	window.addEventListener('mclocks-calendar-show', onPanelShown);
 
-	void refreshCalendar(true);
+	await prepareAndShowPanel();
 	window.setInterval(() => {
 		void refreshCalendar(false);
 	}, DAY_ROLLOVER_MS);
