@@ -163,6 +163,7 @@ html.calendar .cal-close-x:active {
 	flex: 0 0 auto;
 	display: flex;
 	flex-direction: column;
+	font-family: system-ui, -apple-system, "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
 }
 
 .cal-month-copy {
@@ -196,34 +197,29 @@ html.calendar .cal-close-x:active {
 	flex: 0 0 auto;
 }
 
-.cal-weekdays,
-.cal-week {
+.cal-grid {
 	display: grid;
-	grid-template-columns: repeat(7, 2em);
-	column-gap: 6px;
-	row-gap: 1px;
+	grid-template-columns: repeat(7, minmax(1.35rem, max-content));
+	column-gap: 4px;
+	row-gap: 0.12em;
+	justify-items: center;
 }
 
-.cal-weekdays {
-	flex: 0 0 auto;
-	margin-bottom: 0.45em;
-	opacity: 0.72;
-	font-size: 0.68em;
-	font-family: system-ui, -apple-system, "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
+.cal-weekdays,
+.cal-weeks,
+.cal-week {
+	display: contents;
 }
 
-.cal-weekday {
+html.calendar .cal-weekday {
+	opacity: 0.69;
+	font-size: calc(0.68em * 0.9);
+	margin-bottom: 0.33em;
 	text-align: center;
-	overflow: hidden;
-	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
-.cal-weeks {
-	flex: 0 0 auto;
-	display: flex;
-	flex-direction: column;
-	gap: 0.12em;
+html.calendar .cal-grid .cal-day {
 	font-size: 0.72em;
 }
 
@@ -237,6 +233,7 @@ html.calendar .cal-close-x:active {
 	border-radius: 3px;
 	padding: 1px;
 	box-sizing: border-box;
+	font-variant-numeric: tabular-nums;
 }
 
 .cal-day-outside {
