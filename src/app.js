@@ -7,6 +7,7 @@ import { Clocks } from './clocks.js';
 import { operationKeysHandler } from './keys.js';
 import { stickyEntry } from './sticky/sticky.js';
 import { cbhistPanelEntry } from './cbhist/cbhist.js';
+import { calendarPanelEntry } from './calendar/calendar.js';
 
 // Application entry point
 window.addEventListener("DOMContentLoaded", async () => {
@@ -17,6 +18,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (await handleCbhistPanel(mainElement)) {
+    return;
+  }
+
+  if (await handleCalendarPanel(mainElement)) {
     return;
   }
 
@@ -48,6 +53,25 @@ const handleCbhistPanel = async (mainElement) => {
   document.documentElement.classList.add('cbhist');
 
   await cbhistPanelEntry(mainElement);
+
+  return true;
+};
+
+const handleCalendarPanel = async (mainElement) => {
+  let windowLabel = null;
+  try {
+    windowLabel = getCurrentWindow().label;
+  } catch {
+    // windowLabel stays null
+  }
+
+  if (windowLabel !== 'calendar') {
+    return false;
+  }
+
+  document.documentElement.classList.add('calendar');
+
+  await calendarPanelEntry(mainElement);
 
   return true;
 };
