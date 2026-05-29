@@ -1,0 +1,253 @@
+html.calendar,
+html.calendar body {
+	width: max-content;
+	height: auto;
+	min-height: 0;
+	min-width: min-content;
+	margin: 0;
+	overflow: visible;
+	border-radius: 6px;
+	background: transparent;
+}
+
+html.calendar body {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+html.calendar {
+	-webkit-app-region: no-drag;
+	background: transparent;
+	box-sizing: border-box;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	opacity: 1;
+	transition: opacity 220ms ease-out;
+}
+
+html.calendar.calendar-is-closing {
+	opacity: 0;
+	pointer-events: none;
+}
+
+html.calendar *,
+html.calendar *::before,
+html.calendar *::after {
+	box-sizing: inherit;
+}
+
+html.calendar #mclocks.cal-root {
+	display: flex;
+	flex-direction: column;
+	white-space: normal;
+	box-sizing: border-box;
+	flex: 0 0 auto;
+	width: max-content;
+	height: auto;
+	padding: 8px;
+	margin: 0;
+	border-radius: inherit;
+}
+
+.cal-shell {
+	position: relative;
+	flex: 0 0 auto;
+	display: flex;
+	flex-direction: column;
+	width: max-content;
+	overflow: visible;
+	border-radius: 6px;
+	border: 0.5px solid currentColor;
+	background: var(--mclocks-panel-surface-bg);
+	padding: 3px 3px 12px 3px;
+}
+
+.cal-header-bar {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	flex: 0 0 auto;
+	-webkit-app-region: drag;
+	cursor: grab;
+}
+
+.cal-header-bar:active {
+	cursor: grabbing;
+}
+
+.cal-header-spacer {
+	flex: 1;
+}
+
+html.calendar .cal-close-x {
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+	padding: 1px 5px;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transform: translateY(2px);
+	transition: opacity 120ms ease;
+	cursor: pointer;
+	-webkit-app-region: no-drag;
+}
+
+html.calendar .cal-close-x:active {
+	opacity: 0.75;
+}
+
+.cal-body {
+	flex: 0 0 auto;
+	display: flex;
+	flex-direction: column;
+	padding: 0;
+	overflow: visible;
+}
+
+.cal-nav-row {
+	display: flex;
+	flex: 0 0 auto;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 2px;
+	width: max-content;
+	min-width: min-content;
+	padding: 4px 0 0 0;
+}
+
+.cal-nav-btn {
+	flex: 0 0 1.15em;
+	width: 1.15em;
+	min-width: 1.15em;
+	align-self: center;
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 1.5em;
+	line-height: 1;
+	padding: 2px 0;
+	text-align: center;
+	cursor: pointer;
+	opacity: 0.72;
+	-webkit-app-region: no-drag;
+	transition: opacity 120ms ease, background 120ms ease;
+}
+
+.cal-nav-btn:hover {
+	opacity: 1;
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.cal-nav-btn:active {
+	opacity: 0.85;
+}
+
+.cal-months {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 22.5px;
+	padding: 0;
+	overflow: visible;
+}
+
+.cal-month {
+	flex: 0 0 auto;
+	display: flex;
+	flex-direction: column;
+}
+
+.cal-month-copy {
+	cursor: pointer;
+	border-radius: 4px;
+	-webkit-app-region: no-drag;
+	transition: background 120ms ease;
+}
+
+.cal-month-copy:hover {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.cal-month-copy:focus-visible {
+	outline: 1px solid currentColor;
+	outline-offset: 2px;
+}
+
+.cal-month-copy.is-copy-flash {
+	background: rgba(255, 255, 255, 0.2);
+}
+
+.cal-month-title {
+	text-align: center;
+	font-family: system-ui, -apple-system, "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
+	font-size: 0.82em;
+	font-weight: 600;
+	font-synthesis: none;
+	line-height: 1.2;
+	margin: 0 0 0.5em;
+	flex: 0 0 auto;
+}
+
+.cal-weekdays,
+.cal-week {
+	display: grid;
+	grid-template-columns: repeat(7, 2em);
+	column-gap: 6px;
+	row-gap: 1px;
+}
+
+.cal-weekdays {
+	flex: 0 0 auto;
+	margin-bottom: 0.45em;
+	opacity: 0.72;
+	font-size: 0.68em;
+	font-family: system-ui, -apple-system, "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
+}
+
+.cal-weekday {
+	text-align: center;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.cal-weeks {
+	flex: 0 0 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 0.12em;
+	font-size: 0.72em;
+}
+
+.cal-day {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	line-height: 1;
+	min-height: 1.2em;
+	border-radius: 3px;
+	padding: 1px;
+	box-sizing: border-box;
+}
+
+.cal-day-outside {
+	opacity: 0.38;
+}
+
+.cal-day-pad {
+	visibility: hidden;
+	pointer-events: none;
+}
+
+.cal-day-today {
+	border: 1px solid currentColor;
+	font-weight: 700;
+}

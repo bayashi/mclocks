@@ -9,7 +9,8 @@
   "windows": [
     "main",
     "sticky-*",
-    "cbhist"
+    "cbhist",
+    "calendar"
   ],
   "permissions": [
     "core:default",

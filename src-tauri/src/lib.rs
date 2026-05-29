@@ -1,4 +1,5 @@
 mod about_env;
+mod calendar;
 mod cbhist;
 mod config;
 mod sticky;
@@ -275,7 +276,8 @@ pub fn run() {
         }))
     }
 
-    let mut ws = tauri_plugin_window_state::Builder::new().with_denylist(&[cbhist::WINDOW_LABEL]);
+    let mut ws = tauri_plugin_window_state::Builder::new()
+        .with_denylist(&[cbhist::WINDOW_LABEL, calendar::WINDOW_LABEL]);
     if IS_DEV {
         let filename = format!("{}{}", ".dev", tauri_plugin_window_state::DEFAULT_FILENAME);
         ws = tauri_plugin_window_state::Builder::with_filename(ws, filename);
@@ -309,6 +311,7 @@ pub fn run() {
         cbhist::cbhist_apply,
         cbhist::cbhist_close_panel,
         cbhist::save_clipboard_panel_size,
+        calendar::calendar_close_panel,
     ])
     .run(context)
     .expect("error while running tauri application");

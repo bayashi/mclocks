@@ -2,6 +2,7 @@ use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Runtime};
 
+use crate::calendar;
 use crate::cbhist;
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -10,6 +11,7 @@ use tauri_plugin_dialog::MessageDialogResult;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 const MENU_ID_CBHIST: &str = "menu.tray.cbhist";
+const MENU_ID_CALENDAR: &str = "menu.tray.calendar";
 const MENU_ID_TRAY_TOGGLE_MAIN: &str = "menu.tray.toggle_main";
 const MENU_ID_RESET_TEMP_DND_SESSION: &str = "menu.web.reset_temp_dnd_session";
 const MENU_ID_TRAY_QUIT: &str = "menu.tray.quit";
@@ -66,6 +68,8 @@ pub fn setup_tray_menu<R: Runtime>(
         None::<&str>,
     )?;
     let quit_item = MenuItem::with_id(app, MENU_ID_TRAY_QUIT, TRAY_LABEL_QUIT, true, None::<&str>)?;
+    let calendar_item =
+        MenuItem::with_id(app, MENU_ID_CALENDAR, "Show calendar", true, None::<&str>)?;
     #[cfg(any(target_os = "windows", target_os = "macos"))]
     let about_item =
         MenuItem::with_id(app, MENU_ID_TRAY_ABOUT, "About mclocks", true, None::<&str>)?;
@@ -79,6 +83,7 @@ pub fn setup_tray_menu<R: Runtime>(
                 &toggle_main_item,
                 &reset_temp_session_item,
                 &cbhist_item,
+                &calendar_item,
                 &about_item,
                 &quit_item,
             ],
@@ -89,6 +94,7 @@ pub fn setup_tray_menu<R: Runtime>(
             &[
                 &toggle_main_item,
                 &reset_temp_session_item,
+                &calendar_item,
                 &about_item,
                 &quit_item,
             ],
@@ -104,13 +110,19 @@ pub fn setup_tray_menu<R: Runtime>(
                 &toggle_main_item,
                 &reset_temp_session_item,
                 &cbhist_item,
+                &calendar_item,
                 &quit_item,
             ],
         )?
     } else {
         Menu::with_items(
             app,
-            &[&toggle_main_item, &reset_temp_session_item, &quit_item],
+            &[
+                &toggle_main_item,
+                &reset_temp_session_item,
+                &calendar_item,
+                &quit_item,
+            ],
         )?
     };
     let mut tray_builder = TrayIconBuilder::with_id("main").menu(&tray_menu);
@@ -134,6 +146,10 @@ pub fn setup_tray_menu<R: Runtime>(
             let menu_id = event.id().as_ref();
             if clipboard_history_enabled && menu_id == MENU_ID_CBHIST {
                 cbhist::show_cbhist_panel(&app);
+                return;
+            }
+            if menu_id == MENU_ID_CALENDAR {
+                calendar::show_calendar_panel(&app);
                 return;
             }
             #[cfg(any(target_os = "windows", target_os = "macos"))]
