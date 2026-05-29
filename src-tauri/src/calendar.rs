@@ -36,15 +36,13 @@ pub fn show_calendar_panel<R: Runtime>(app: &AppHandle<R>) {
     let url = build_panel_url();
 
     if let Some(w) = app.get_webview_window(WINDOW_LABEL) {
-        let _ = w.show();
-        let _ = w.set_focus();
         let _ = w.eval("window.dispatchEvent(new Event('mclocks-calendar-show'));");
         return;
     }
 
     let app_h = app.clone();
     let _ = app.run_on_main_thread(move || {
-        let win = match WebviewWindowBuilder::new(&app_h, WINDOW_LABEL, url)
+        if let Err(e) = WebviewWindowBuilder::new(&app_h, WINDOW_LABEL, url)
             .title("mclocks")
             .decorations(false)
             .shadow(false)
@@ -55,17 +53,12 @@ pub fn show_calendar_panel<R: Runtime>(app: &AppHandle<R>) {
             .skip_taskbar(true)
             .always_on_top(forefront)
             .inner_size(DEFAULT_WIDTH, DEFAULT_HEIGHT)
+            .visible(false)
             .center()
             .build()
         {
-            Ok(w) => w,
-            Err(e) => {
-                eprintln!("[calendar] failed to build window: {}", e);
-                return;
-            }
-        };
-        let _ = win.show();
-        let _ = win.set_focus();
+            eprintln!("[calendar] failed to build window: {}", e);
+        }
     });
 }
 
