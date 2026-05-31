@@ -37,10 +37,14 @@ async function getInnerSize(currentWindow) {
 }
 
 const CBHIST_CLOSE_FADE_MS = 220;
+const MAX_TEXT_BYTES = 128 * 1024;
 
 let cbhistPanelClosing = false;
 
 const BADGE_CLIP_TRUNC = 'Copied text truncated';
+
+/** Simple sticky note with a wide peeled corner (cbhist "create sticky" action). */
+const STICKY_NOTE_ICON_SVG = `<svg class="ch-sticky-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false" shape-rendering="geometricPrecision"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="4"><path d="M6.5 6.5H17.5V14L14 18.5H6.5V6.5z"/><path d="M14 18.5H18.5V14"/></g></svg>`;
 
 const EXPAND_A11Y_MORE = 'Show full text';
 const EXPAND_A11Y_LESS = 'Show less';
@@ -309,6 +313,7 @@ export async function cbhistPanelEntry(mainElement) {
 		<div class="ch-entry-footer-main">
 			<div class="ch-entry-footer-lead">
 				<span class="ch-footer-meta">${escapeHtml(meta)}</span>
+				<button type="button" class="ch-sticky-btn" data-index="${index}" aria-label="Create sticky note" title="Create sticky note">${STICKY_NOTE_ICON_SVG}</button>
 				${truncationBadge(row.truncatedFromClipboard)}
 			</div>
 			<button type="button" class="ch-expand-toggle ch-expand-reveal ch-expand-off" data-index="${index}" aria-expanded="false" aria-hidden="true" aria-label="${escapeHtml(EXPAND_A11Y_MORE)}" title="${escapeHtml(EXPAND_A11Y_MORE)}" tabindex="-1">
@@ -361,6 +366,30 @@ export async function cbhistPanelEntry(mainElement) {
 		if (!listScroll) {
 			return;
 		}
+		listScroll.querySelectorAll('.ch-sticky-btn').forEach((btn) => {
+			btn.addEventListener('click', async (e) => {
+				e.stopPropagation();
+				const ix = Number(btn.dataset.index);
+				if (Number.isNaN(ix)) {
+					return;
+				}
+				const row = rows[ix];
+				if (!row?.text) {
+					return;
+				}
+				const textBytes = new TextEncoder().encode(row.text).length;
+				if (textBytes >= MAX_TEXT_BYTES) {
+					const sizeKB = (textBytes / 1024).toFixed(1);
+					await openMessageDialog(`Text is too large (${sizeKB} KB). Maximum size is 128 KB.`, 'mclocks Error', 'error');
+					return;
+				}
+				try {
+					await invoke('create_sticky', { text: row.text });
+				} catch (error) {
+					await openMessageDialog(`Failed to create sticky: ${error}`, 'mclocks Error', 'error');
+				}
+			});
+		});
 		listScroll.querySelectorAll('.ch-expand-toggle').forEach((btn) => {
 			btn.addEventListener('click', (e) => {
 				e.stopPropagation();
