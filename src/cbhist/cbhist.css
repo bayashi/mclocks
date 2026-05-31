@@ -380,7 +380,7 @@ html.cbhist .ch-expand-toggle.ch-expand-reveal.ch-expand-off {
 	flex-wrap: wrap;
 	align-items: center;
 	justify-content: flex-end;
-	gap: 8px 12px;
+	gap: 4px 10px;
 }
 
 .ch-footer-meta {
@@ -393,6 +393,45 @@ html.cbhist .ch-expand-toggle.ch-expand-reveal.ch-expand-off {
 	color: inherit;
 	text-align: end;
 	vertical-align: middle;
+}
+
+.ch-sticky-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	margin: -4px 0 0 -3px;
+	padding: 0 1px;
+	flex-shrink: 0;
+	align-self: center;
+	border: none;
+	border-radius: 4px;
+	background: transparent;
+	color: color-mix(in srgb, currentColor 45%, transparent);
+	font: inherit;
+	font-size: inherit;
+	cursor: pointer;
+	-webkit-app-region: no-drag;
+	-webkit-user-select: none;
+	user-select: none;
+	transition:
+		color 160ms ease,
+		opacity 90ms ease;
+}
+
+.ch-sticky-btn:hover {
+	color: color-mix(in srgb, currentColor 94%, transparent);
+}
+
+.ch-sticky-btn:active {
+	opacity: 0.75;
+}
+
+.ch-sticky-btn-icon {
+	display: block;
+	width: calc(1.05em * 1.5);
+	height: calc(1.05em * 1.5);
+	flex-shrink: 0;
+	shape-rendering: geometricPrecision;
 }
 
 .ch-badge {
