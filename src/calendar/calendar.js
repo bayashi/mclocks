@@ -480,6 +480,11 @@ async function showCalendarPanelWindow(currentWindow) {
 		return;
 	}
 	try {
+		await currentWindow.setAlwaysOnTop(true);
+	} catch {
+		// ignore
+	}
+	try {
 		await currentWindow.show();
 	} catch {
 		// ignore

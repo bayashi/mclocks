@@ -1,12 +1,8 @@
 //! Three-month calendar panel (tray menu).
 
-use std::sync::Arc;
-
 use tauri::WebviewWindowBuilder;
 use tauri::webview::Url;
 use tauri::{AppHandle, Manager, Runtime, WebviewUrl};
-
-use crate::config::{ContextConfig, load_app_config_for_identifier};
 
 pub const WINDOW_LABEL: &str = "calendar";
 
@@ -24,18 +20,11 @@ fn build_panel_url() -> WebviewUrl {
     WebviewUrl::App("index.html".into())
 }
 
-fn load_forefront<R: Runtime>(app: &AppHandle<R>) -> bool {
-    app.try_state::<Arc<ContextConfig>>()
-        .and_then(|ctx| load_app_config_for_identifier(&ctx.app_identifier).ok())
-        .map(|c| c.forefront)
-        .unwrap_or(false)
-}
-
 pub fn show_calendar_panel<R: Runtime>(app: &AppHandle<R>) {
-    let forefront = load_forefront(app);
     let url = build_panel_url();
 
     if let Some(w) = app.get_webview_window(WINDOW_LABEL) {
+        let _ = w.set_always_on_top(true);
         let _ = w.eval("window.dispatchEvent(new Event('mclocks-calendar-show'));");
         return;
     }
@@ -51,7 +40,7 @@ pub fn show_calendar_panel<R: Runtime>(app: &AppHandle<R>) {
             .minimizable(false)
             .maximizable(false)
             .skip_taskbar(true)
-            .always_on_top(forefront)
+            .always_on_top(true)
             .inner_size(DEFAULT_WIDTH, DEFAULT_HEIGHT)
             .visible(false)
             .center()
