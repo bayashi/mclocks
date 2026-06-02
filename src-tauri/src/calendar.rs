@@ -20,11 +20,30 @@ fn build_panel_url() -> WebviewUrl {
     WebviewUrl::App("index.html".into())
 }
 
+#[tauri::command]
+pub fn calendar_show_panel(app: AppHandle) -> Result<(), String> {
+    let Some(w) = app.get_webview_window(WINDOW_LABEL) else {
+        return Ok(());
+    };
+    let _ = w.set_always_on_top(true);
+    w.show().map_err(|e| e.to_string())?;
+    let _ = w.set_focus();
+    Ok(())
+}
+
 pub fn show_calendar_panel<R: Runtime>(app: &AppHandle<R>) {
     let url = build_panel_url();
 
     if let Some(w) = app.get_webview_window(WINDOW_LABEL) {
         let _ = w.set_always_on_top(true);
+        #[cfg(target_os = "macos")]
+        {
+            let _ = w.eval(
+                r#"document.documentElement.classList.remove('calendar-is-closing');
+document.documentElement.classList.add('calendar-is-preparing');"#,
+            );
+            let _ = w.show();
+        }
         let _ = w.eval("window.dispatchEvent(new Event('mclocks-calendar-show'));");
         return;
     }

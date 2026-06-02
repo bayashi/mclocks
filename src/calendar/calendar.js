@@ -475,22 +475,9 @@ async function applyCalendarWindowSize(mainElement, currentWindow, size) {
 	}
 }
 
-async function showCalendarPanelWindow(currentWindow) {
-	if (!currentWindow) {
-		return;
-	}
+async function showCalendarPanelWindow() {
 	try {
-		await currentWindow.setAlwaysOnTop(true);
-	} catch {
-		// ignore
-	}
-	try {
-		await currentWindow.show();
-	} catch {
-		// ignore
-	}
-	try {
-		await currentWindow.setFocus();
+		await invoke('calendar_show_panel');
 	} catch {
 		// ignore
 	}
@@ -681,7 +668,7 @@ export async function calendarPanelEntry(mainElement) {
 			} finally {
 				document.documentElement.classList.remove('calendar-is-preparing');
 			}
-			await showCalendarPanelWindow(currentWindow);
+			await showCalendarPanelWindow();
 			panelBootstrapComplete = true;
 		})().finally(() => {
 			panelPreparePromise = null;

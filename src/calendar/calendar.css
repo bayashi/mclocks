@@ -31,7 +31,13 @@ html.calendar {
 html.calendar.calendar-is-closing,
 html.calendar.calendar-is-preparing {
 	opacity: 0;
+	visibility: hidden;
 	pointer-events: none;
+	transition: none;
+}
+
+html.calendar.calendar-is-preparing .cal-shell {
+	visibility: hidden;
 }
 
 html.calendar *,
