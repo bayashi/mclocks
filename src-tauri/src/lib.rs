@@ -312,6 +312,7 @@ pub fn run() {
         cbhist::cbhist_close_panel,
         cbhist::save_clipboard_panel_size,
         calendar::calendar_close_panel,
+        calendar::calendar_show_panel,
     ])
     .run(context)
     .expect("error while running tauri application");
