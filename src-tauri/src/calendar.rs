@@ -20,37 +20,33 @@ fn build_panel_url() -> WebviewUrl {
     WebviewUrl::App("index.html".into())
 }
 
-#[tauri::command]
-pub fn calendar_show_panel(app: AppHandle) -> Result<(), String> {
+fn reveal_calendar_panel<R: Runtime>(app: &AppHandle<R>) {
     let Some(w) = app.get_webview_window(WINDOW_LABEL) else {
-        return Ok(());
+        return;
     };
     let _ = w.set_always_on_top(true);
-    w.show().map_err(|e| e.to_string())?;
+    let _ = w.show();
     let _ = w.set_focus();
+    let _ = w.eval("window.dispatchEvent(new Event('mclocks-calendar-show'));");
+}
+
+#[tauri::command]
+pub fn calendar_show_panel(app: AppHandle) -> Result<(), String> {
+    reveal_calendar_panel(&app);
     Ok(())
 }
 
 pub fn show_calendar_panel<R: Runtime>(app: &AppHandle<R>) {
     let url = build_panel_url();
 
-    if let Some(w) = app.get_webview_window(WINDOW_LABEL) {
-        let _ = w.set_always_on_top(true);
-        #[cfg(target_os = "macos")]
-        {
-            let _ = w.eval(
-                r#"document.documentElement.classList.remove('calendar-is-closing');
-document.documentElement.classList.add('calendar-is-preparing');"#,
-            );
-            let _ = w.show();
-        }
-        let _ = w.eval("window.dispatchEvent(new Event('mclocks-calendar-show'));");
+    if app.get_webview_window(WINDOW_LABEL).is_some() {
+        reveal_calendar_panel(app);
         return;
     }
 
     let app_h = app.clone();
     let _ = app.run_on_main_thread(move || {
-        if let Err(e) = WebviewWindowBuilder::new(&app_h, WINDOW_LABEL, url)
+        let win = match WebviewWindowBuilder::new(&app_h, WINDOW_LABEL, url)
             .title("mclocks")
             .decorations(false)
             .shadow(false)
@@ -65,8 +61,15 @@ document.documentElement.classList.add('calendar-is-preparing');"#,
             .center()
             .build()
         {
-            eprintln!("[calendar] failed to build window: {}", e);
-        }
+            Ok(w) => w,
+            Err(e) => {
+                eprintln!("[calendar] failed to build window: {}", e);
+                return;
+            }
+        };
+        let _ = win.set_always_on_top(true);
+        let _ = win.show();
+        let _ = win.set_focus();
     });
 }
 

@@ -70,6 +70,7 @@ const handleCalendarPanel = async (mainElement) => {
   }
 
   document.documentElement.classList.add('calendar');
+  document.documentElement.classList.add('calendar-is-preparing');
 
   await calendarPanelEntry(mainElement);
 
