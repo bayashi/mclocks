@@ -500,14 +500,14 @@ async function closePanel() {
 }
 
 export async function calendarPanelEntry(mainElement) {
+	document.documentElement.classList.remove('calendar-is-closing');
+
 	let cfg = null;
 	try {
 		cfg = await invoke('load_config', {});
 	} catch {
 		// cfg remains null
 	}
-
-	document.documentElement.classList.remove('calendar-is-closing');
 
 	const locale = cfg?.locale ?? 'en';
 	const centerTz = cfg?.clocks?.[0]?.timezone?.trim() || 'UTC';
