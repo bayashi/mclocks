@@ -558,6 +558,11 @@ export async function calendarPanelEntry(mainElement) {
 	let panelPreparePromise = null;
 	let panelBootstrapComplete = false;
 
+	const resetCalendarView = () => {
+		centerMonthOffset = 0;
+		lastRenderSignature = '';
+	};
+
 	const refreshCalendar = async (force = false) => {
 		const clockTodays = buildClockTodayMarkers(locale, cfg?.clocks);
 		const signature = `${clockTodaySignature(clockTodays)}|m${centerMonthOffset}`;
@@ -661,6 +666,7 @@ export async function calendarPanelEntry(mainElement) {
 			return panelPreparePromise;
 		}
 		panelPreparePromise = (async () => {
+			resetCalendarView();
 			document.documentElement.classList.remove('calendar-is-closing');
 			document.documentElement.classList.add('calendar-is-preparing');
 			try {
