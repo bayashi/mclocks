@@ -29,6 +29,7 @@ Clock-related features:
 * ⏱️ Timer
 * ⏳ Countdown timer
 * 🔄 Epoch time and date-time convertor
+* 🗓️ Three-month calendar
 
 Time waits for no one:
 
