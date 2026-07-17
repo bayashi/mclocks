@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
@@ -23,9 +23,10 @@ fn main() {
     let built_utc = build_time_utc_rfc3339();
     println!("cargo:rustc-env=MCLOCKS_BUILD_TIME_UTC={built_utc}");
 
-    let git_head = repo_root.join(".git").join("HEAD");
-    if git_head.is_file() {
-        println!("cargo:rerun-if-changed={}", git_head.display());
+    for p in git_rerun_watch_paths(&repo_root) {
+        if p.is_file() {
+            println!("cargo:rerun-if-changed={}", p.display());
+        }
     }
     // include_str! in web_server.rs; explicit rerun so `tauri dev` reliably rebuilds when only these change.
     let md_static = repo_root
@@ -40,6 +41,24 @@ fn main() {
         }
     }
     println!("cargo:rerun-if-changed=build.rs");
+}
+
+/// `.git/HEAD` plus resolved branch ref (A) and `.git/logs/HEAD` (B) so `git pull` on the
+/// same branch re-runs this script and refreshes `MCLOCKS_GIT`.
+fn git_rerun_watch_paths(repo: &Path) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    let git_head = repo.join(".git").join("HEAD");
+    paths.push(git_head.clone());
+
+    if let Ok(contents) = std::fs::read_to_string(&git_head) {
+        let trimmed = contents.trim();
+        if let Some(ref_name) = trimmed.strip_prefix("ref: ") {
+            paths.push(repo.join(".git").join(ref_name));
+        }
+    }
+
+    paths.push(repo.join(".git").join("logs").join("HEAD"));
+    paths
 }
 
 fn run_git(repo: &Path, args: &[&str]) -> Option<String> {
