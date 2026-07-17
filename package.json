@@ -47,8 +47,9 @@
       "minimatch@9.0.5": "9.0.7",
       "ajv@^6": "6.14.0",
       "ajv@^8": "8.18.0",
-      "hono@^4": "4.12.21",
+      "hono@^4": "4.12.25",
       "@hono/node-server": "1.19.13",
+      "esbuild": "0.28.1",
       "flatted": "3.4.2",
       "express-rate-limit": "8.2.2",
       "yauzl": "3.2.1",
@@ -66,9 +67,11 @@
       "fast-xml-builder": "1.1.7",
       "lodash": "4.18.1",
       "ip-address": "10.1.1",
-      "undici": "6.24.0",
+      "undici": "6.27.0",
       "fast-uri": "3.1.2",
-      "qs": "6.15.2"
+      "qs": "6.15.2",
+      "ws": "8.21.0",
+      "js-yaml": "4.2.0"
     }
   }
 }
