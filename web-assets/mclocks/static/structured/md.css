@@ -298,7 +298,7 @@ body.mclocks-md{
 	margin-top:0;
 }
 
-#content .code-block-wrap .md-code-placeholder-row--datetime{
+#content .code-block-wrap .md-code-placeholder-row--with-actions{
 	display:flex;
 	align-items:center;
 	gap:8px;
@@ -310,12 +310,12 @@ body.mclocks-md{
 	margin-top:8px;
 }
 
-#content .code-block-wrap .md-code-placeholder-row--datetime .md-code-placeholder-input{
+#content .code-block-wrap .md-code-placeholder-row--with-actions .md-code-placeholder-input{
 	flex:1 1 120px;
 	width:auto;
 }
 
-#content .code-block-wrap .md-code-placeholder-datetime-actions{
+#content .code-block-wrap .md-code-placeholder-actions{
 	flex:0 0 auto;
 	display:flex;
 	align-items:center;
@@ -323,7 +323,7 @@ body.mclocks-md{
 	margin-left:auto;
 }
 
-#content .code-block-wrap .md-code-placeholder-datetime-btn{
+#content .code-block-wrap .md-code-placeholder-btn{
 	margin:0;
 	padding:5px 10px;
 	box-sizing:border-box;
@@ -340,13 +340,13 @@ body.mclocks-md{
 	appearance:none;
 }
 
-#content .code-block-wrap .md-code-placeholder-datetime-btn:hover{
+#content .code-block-wrap .md-code-placeholder-btn:hover{
 	color:#f2f3f8;
 	background:rgba(255,255,255,.09);
 	border-color:rgba(148,149,162,.38);
 }
 
-#content .code-block-wrap .md-code-placeholder-datetime-btn:focus-visible{
+#content .code-block-wrap .md-code-placeholder-btn:focus-visible{
 	outline:1px solid rgba(142,180,240,.45);
 	outline-offset:2px;
 }
