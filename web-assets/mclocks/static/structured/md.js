@@ -291,9 +291,31 @@
 					refreshCodeDisplayFromFields();
 				});
 			};
+			const quoteCsvLikeValues = (raw) => {
+				const s = String(raw ?? "");
+				if (s.includes(",")) {
+					return s
+						.split(",")
+						.map((part) => `"${part.trim()}"`)
+						.join(",");
+				}
+				return `"${s.trim()}"`;
+			};
+			const mkPlaceholderBtn = (label, ariaLabel, onClick) => {
+				const b = document.createElement("button");
+				b.type = "button";
+				b.className = "md-code-placeholder-btn";
+				b.textContent = label;
+				b.setAttribute("aria-label", ariaLabel);
+				b.addEventListener("click", () => {
+					onClick();
+					scheduleRefreshCodeDisplay();
+				});
+				return b;
+			};
 			for (const row of placeholderRows) {
 				const wrapRow = document.createElement("div");
-				wrapRow.className = "md-code-placeholder-row";
+				wrapRow.className = "md-code-placeholder-row md-code-placeholder-row--with-actions";
 				const input = document.createElement("input");
 				input.type = "text";
 				input.className = "md-code-placeholder-input";
@@ -302,7 +324,6 @@
 					input.placeholder = row.shortId;
 					input.setAttribute("aria-label", row.shortId);
 				} else {
-					wrapRow.classList.add("md-code-placeholder-row--datetime");
 					input.setAttribute("data-placeholder-kind", "datetime");
 					input.setAttribute("data-default-replacement", row.defaultVal);
 					input.setAttribute("data-initial-replacement", row.defaultVal);
@@ -313,30 +334,29 @@
 				}
 				input.addEventListener("input", scheduleRefreshCodeDisplay);
 				wrapRow.appendChild(input);
-				if (row.kind === "datetime") {
-					const actions = document.createElement("div");
-					actions.className = "md-code-placeholder-datetime-actions";
-					const mkDtBtn = (label, ariaLabel, onClick) => {
-						const b = document.createElement("button");
-						b.type = "button";
-						b.className = "md-code-placeholder-datetime-btn";
-						b.textContent = label;
-						b.setAttribute("aria-label", ariaLabel);
-						b.addEventListener("click", () => {
-							onClick();
-							scheduleRefreshCodeDisplay();
-						});
-						return b;
-					};
+				const actions = document.createElement("div");
+				actions.className = "md-code-placeholder-actions";
+				if (row.kind === "user") {
 					actions.appendChild(
-						mkDtBtn("Reset", "Reset to value when page was loaded", () => {
+						mkPlaceholderBtn("Clear", "Clear input", () => {
+							input.value = "";
+						})
+					);
+					actions.appendChild(
+						mkPlaceholderBtn("Quote", "Wrap values in double quotes", () => {
+							input.value = quoteCsvLikeValues(input.value);
+						})
+					);
+				} else {
+					actions.appendChild(
+						mkPlaceholderBtn("Reset", "Reset to value when page was loaded", () => {
 							const initial = input.getAttribute("data-initial-replacement") || "";
 							input.value = initial;
 							input.setAttribute("data-default-replacement", initial);
 						})
 					);
 					actions.appendChild(
-						mkDtBtn("Now", "Replace with current date and time", () => {
+						mkPlaceholderBtn("Now", "Replace with current date and time", () => {
 							const inner = input.getAttribute("data-datetime-inner") || "";
 							const nv = tryExpandDatetimePlaceholderInner(inner, new Date());
 							if (nv !== null) {
@@ -345,8 +365,8 @@
 							}
 						})
 					);
-					wrapRow.appendChild(actions);
 				}
+				wrapRow.appendChild(actions);
 				fieldsEl.appendChild(wrapRow);
 			}
 			wrap.appendChild(fieldsEl);
