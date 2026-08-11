@@ -17,7 +17,7 @@
 ----------
 
 <p align="center">The desktop text clock application for multiple time zones<br>
-with Sticky note, Text convertor, Local debug web server, Markdown viewer and etc.</p>
+with Sticky note, TODO list, Text convertor, Local debug web server, Markdown viewer and etc.</p>
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/bayashi/mclocks/main/screenshot/mclocks-screenshot-0.1.8-custom.png" alt="screenshot" />
@@ -34,6 +34,7 @@ Clock-related features:
 Time waits for no one:
 
 * 📝 Sticky note
+* ✅ TODO list
 * 📋 Clipboard History
 
 A developer is never without a clock:
@@ -265,6 +266,24 @@ Each sticky note has:
 Sticky notes inherit `font`, `size`, `color`, and `forefront` settings from `config.json`. The forefront setting can be overridden per sticky note using the forefront button; if not overridden, the value from `config.json` is used. Their position, size, open/close state, and forefront override are persisted, and all notes are automatically restored when `mclocks` restarts.
 
 The maximum text size per sticky note is 128 KB.
+
+## ✅ TODO List
+
+Click `mclocks` app window, then push `Ctrl + Shift + s` to open the TODO list panel (also available from the tray menu: **Show TODO**). Closing the panel hides it; opening again restores the same window.
+
+Each TODO row has:
+
+* **Handle** (`☰`): Drag to reorder. Click to expand/collapse the memo.
+* **Status button**: Cycle status labels (default: `WILL` → `DOING` → `BLOCKED` → `DONE`).
+* **Text field**: Edit the TODO title. Changes are auto-saved.
+* **Delete button** (trash, shown when the memo is open): Remove the item (asks for confirmation when the item has content).
+* **`+TODO`**: Add a new item at the bottom of the list.
+* **Forefront button** (`⊤` / `⊥`): Toggle whether the panel stays on top of other windows.
+* **Resize handle**: Drag the bottom-right corner to resize the panel.
+
+Optional `config.json` field:
+
+* `todoStatuses`: Status labels cycled in order (default: `["WILL", "DOING", "BLOCKED", "DONE"]`)
 
 ## 🌐 Web Server
 
