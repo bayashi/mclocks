@@ -3,6 +3,7 @@ mod calendar;
 mod cbhist;
 mod config;
 mod sticky;
+mod todo;
 mod tray;
 mod util;
 mod web;
@@ -125,6 +126,7 @@ pub fn run() {
     tbr = tbr.manage(context_config_clone);
     tbr = tbr.manage(sticky::StickyInitStore::default());
     tbr = tbr.manage(sticky::StickyPersistStore::new(&identifier));
+    tbr = tbr.manage(todo::TodoPersistStore::new(&identifier));
     tbr = tbr.manage(WindowStateSaveLock::default());
     tbr = tbr.manage(WebMainPortStore::default());
 
@@ -313,6 +315,10 @@ pub fn run() {
         cbhist::save_clipboard_panel_size,
         calendar::calendar_close_panel,
         calendar::calendar_show_panel,
+        todo::todo_show_panel,
+        todo::todo_close_panel,
+        todo::todo_load,
+        todo::todo_save,
     ])
     .run(context)
     .expect("error while running tauri application");

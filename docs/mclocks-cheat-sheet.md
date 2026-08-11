@@ -35,6 +35,7 @@ Quick reference for keyboard shortcuts, the full `config.json` shape (with defau
 | Shortcut | Description |
 |----------|-------------|
 | `Ctrl + s` | Create a new sticky note from clipboard text |
+| `Ctrl + Shift + s` | Show the TODO list panel |
 
 ### Clipboard datetime Operations
 
@@ -108,6 +109,8 @@ Full config keys and default values.
   "convtz": "",
   // If true, disable hover tooltips
   "disableHover": true,
+  // Status labels for the TODO panel (cycled in this order). Default: WILL / DOING / BLOCKED / DONE
+  "todoStatuses": ["WILL", "DOING", "BLOCKED", "DONE"],
 
   // Optional web configuration for static hosting and related features
   "web": {
