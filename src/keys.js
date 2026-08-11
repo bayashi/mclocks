@@ -1,4 +1,5 @@
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { invoke } from '@tauri-apps/api/core';
 
 import { adjustWindowSize, switchFormat, openToEditConfigFile, toggleEpochTime, addTimerClock } from './clock_matter.js';
 import { writeClipboardText, isMacOS, isWindowsOS, openMessageDialog } from './util.js';
@@ -71,10 +72,25 @@ async function withBaseKey(e, pressedKeys, clockCtx, cfg, clocks) {
     return;
   }
 
+  // Ctrl + Shift + s: Show TODO list panel
   // Ctrl + s: Create a sticky note from clipboard text
-  if (e.key === "s" || e.key === "S") {
+  // Use only e.shiftKey (not pressedKeys): a stuck Shift in the set would
+  // mis-route plain Ctrl+S to TODO after IME / focus loss.
+  if (e.code === "KeyS") {
     e.preventDefault();
-    await createSticky();
+    if (e.shiftKey) {
+      try {
+        await invoke('todo_show_panel');
+      } catch (error) {
+        await openMessageDialog(`Failed to open TODO: ${error}`, "mclocks Error", "error");
+      }
+      return;
+    }
+    try {
+      await createSticky();
+    } catch (error) {
+      await openMessageDialog(`Failed to create sticky: ${error}`, "mclocks Error", "error");
+    }
     return;
   }
 

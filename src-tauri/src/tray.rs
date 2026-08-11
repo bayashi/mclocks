@@ -4,6 +4,7 @@ use tauri::{AppHandle, Manager, Runtime};
 
 use crate::calendar;
 use crate::cbhist;
+use crate::todo;
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 use tauri_plugin_clipboard_manager::ClipboardExt;
 #[cfg(any(target_os = "windows", target_os = "macos"))]
@@ -12,6 +13,7 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 const MENU_ID_CBHIST: &str = "menu.tray.cbhist";
 const MENU_ID_CALENDAR: &str = "menu.tray.calendar";
+const MENU_ID_TODO: &str = "menu.tray.todo";
 const MENU_ID_TRAY_TOGGLE_MAIN: &str = "menu.tray.toggle_main";
 const MENU_ID_RESET_TEMP_DND_SESSION: &str = "menu.web.reset_temp_dnd_session";
 const MENU_ID_TRAY_QUIT: &str = "menu.tray.quit";
@@ -70,6 +72,7 @@ pub fn setup_tray_menu<R: Runtime>(
     let quit_item = MenuItem::with_id(app, MENU_ID_TRAY_QUIT, TRAY_LABEL_QUIT, true, None::<&str>)?;
     let calendar_item =
         MenuItem::with_id(app, MENU_ID_CALENDAR, "Show calendar", true, None::<&str>)?;
+    let todo_item = MenuItem::with_id(app, MENU_ID_TODO, "Show TODO", true, None::<&str>)?;
     #[cfg(any(target_os = "windows", target_os = "macos"))]
     let about_item =
         MenuItem::with_id(app, MENU_ID_TRAY_ABOUT, "About mclocks", true, None::<&str>)?;
@@ -84,6 +87,7 @@ pub fn setup_tray_menu<R: Runtime>(
                 &reset_temp_session_item,
                 &cbhist_item,
                 &calendar_item,
+                &todo_item,
                 &about_item,
                 &quit_item,
             ],
@@ -95,6 +99,7 @@ pub fn setup_tray_menu<R: Runtime>(
                 &toggle_main_item,
                 &reset_temp_session_item,
                 &calendar_item,
+                &todo_item,
                 &about_item,
                 &quit_item,
             ],
@@ -111,6 +116,7 @@ pub fn setup_tray_menu<R: Runtime>(
                 &reset_temp_session_item,
                 &cbhist_item,
                 &calendar_item,
+                &todo_item,
                 &quit_item,
             ],
         )?
@@ -121,6 +127,7 @@ pub fn setup_tray_menu<R: Runtime>(
                 &toggle_main_item,
                 &reset_temp_session_item,
                 &calendar_item,
+                &todo_item,
                 &quit_item,
             ],
         )?
@@ -150,6 +157,10 @@ pub fn setup_tray_menu<R: Runtime>(
             }
             if menu_id == MENU_ID_CALENDAR {
                 calendar::show_calendar_panel(&app);
+                return;
+            }
+            if menu_id == MENU_ID_TODO {
+                todo::show_todo_panel(&app);
                 return;
             }
             #[cfg(any(target_os = "windows", target_os = "macos"))]

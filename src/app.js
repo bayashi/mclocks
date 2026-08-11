@@ -8,6 +8,7 @@ import { operationKeysHandler } from './keys.js';
 import { stickyEntry } from './sticky/sticky.js';
 import { cbhistPanelEntry } from './cbhist/cbhist.js';
 import { calendarPanelEntry } from './calendar/calendar.js';
+import { todoPanelEntry } from './todo/todo.js';
 
 // Application entry point
 window.addEventListener("DOMContentLoaded", async () => {
@@ -22,6 +23,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (await handleCalendarPanel(mainElement)) {
+    return;
+  }
+
+  if (await handleTodoPanel(mainElement)) {
     return;
   }
 
@@ -73,6 +78,23 @@ const handleCalendarPanel = async (mainElement) => {
   document.documentElement.classList.add('calendar-is-preparing');
 
   await calendarPanelEntry(mainElement);
+
+  return true;
+};
+
+const handleTodoPanel = async (mainElement) => {
+  let windowLabel = null;
+  try {
+    windowLabel = getCurrentWindow().label;
+  } catch {
+    // windowLabel stays null
+  }
+
+  if (windowLabel !== 'todo') {
+    return false;
+  }
+
+  await todoPanelEntry(mainElement);
 
   return true;
 };

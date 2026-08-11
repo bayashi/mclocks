@@ -126,6 +126,9 @@ pub struct AppConfig {
     pub web: Option<WebConfig>,
     #[serde(default)]
     pub clipboard: ClipboardConfig,
+    /// Status labels for the TODO panel. Order is cycle order in the UI.
+    #[serde(default = "df_todo_statuses")]
+    pub todo_statuses: Vec<String>,
 }
 
 fn df_font() -> String {
@@ -157,6 +160,14 @@ fn df_epoch_clock_name() -> String {
 }
 fn df_disable_hover() -> bool {
     true
+}
+fn df_todo_statuses() -> Vec<String> {
+    vec![
+        "WILL".to_string(),
+        "DOING".to_string(),
+        "BLOCKED".to_string(),
+        "DONE".to_string(),
+    ]
 }
 
 fn get_config_file() -> String {
@@ -456,6 +467,16 @@ mod tests {
         assert_eq!(config.clipboard.window_height, 480);
         assert!(!config.clipboard.close_on_copy);
         assert!(!config.clipboard.disabled);
+        assert_eq!(
+            config.todo_statuses,
+            vec![
+                "WILL".to_string(),
+                "DOING".to_string(),
+                "BLOCKED".to_string(),
+                "DONE".to_string()
+            ],
+            "Default todo statuses should be WILL / DOING / BLOCKED / DONE"
+        );
     }
 
     #[test]

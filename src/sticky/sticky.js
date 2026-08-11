@@ -618,11 +618,20 @@ export async function stickyEntry(mainElement) {
 	// Ctrl+L (Cmd+L on macOS): Toggle lock state
 	window.addEventListener('keydown', async (e) => {
 		const baseKey = isMacOS() ? e.metaKey : e.ctrlKey;
-		if (baseKey && (e.key === 's' || e.key === 'S')) {
+		if (baseKey && e.code === 'KeyS') {
 			e.preventDefault();
+			if (e.shiftKey) {
+				try {
+					await invoke('todo_show_panel');
+				} catch (error) {
+					await openMessageDialog(`Failed to open TODO: ${error}`, "mclocks Error", "error");
+				}
+				return;
+			}
 			await createSticky();
+			return;
 		}
-		if (baseKey && (e.key === 'l' || e.key === 'L')) {
+		if (baseKey && e.code === 'KeyL') {
 			e.preventDefault();
 			locked = !locked;
 			updateLockedUI();

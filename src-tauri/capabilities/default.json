@@ -6,7 +6,8 @@
     "main",
     "sticky-*",
     "cbhist",
-    "calendar"
+    "calendar",
+    "todo"
   ],
   "permissions": [
     "core:default",
