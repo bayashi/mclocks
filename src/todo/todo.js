@@ -297,7 +297,7 @@ export async function todoPanelEntry(mainElement) {
 					lines.push(memo);
 				}
 				const label = lines.join('\n');
-				let confirmed = false;
+				let confirmed;
 				try {
 					confirmed = await ask(`Delete this TODO?\n\n${label}`, {
 						title: 'mclocks',

@@ -46,11 +46,7 @@ pub struct TodoPersistStore {
 
 impl TodoPersistStore {
     pub fn new(identifier: &str) -> Self {
-        let file_name = if IS_DEV {
-            "dev.todo.json"
-        } else {
-            "todo.json"
-        };
+        let file_name = if IS_DEV { "dev.todo.json" } else { "todo.json" };
         let base = BaseDirs::new()
             .map(|bd| bd.config_dir().join(identifier))
             .unwrap_or_else(|| PathBuf::from("."));
@@ -118,10 +114,7 @@ fn reveal_todo_panel<R: Runtime>(app: &AppHandle<R>, forefront: bool) {
 }
 
 #[tauri::command]
-pub fn todo_show_panel(
-    app: AppHandle,
-    store: State<'_, TodoPersistStore>,
-) -> Result<(), String> {
+pub fn todo_show_panel(app: AppHandle, store: State<'_, TodoPersistStore>) -> Result<(), String> {
     let forefront = resolve_forefront_for_app(&app, &store);
     show_todo_panel_with_forefront(&app, forefront)
 }
@@ -192,11 +185,7 @@ pub fn todo_close_panel(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub fn todo_load(store: State<'_, TodoPersistStore>) -> Result<TodoPersistData, String> {
-    let data = store
-        .data
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
+    let data = store.data.lock().map_err(|e| e.to_string())?.clone();
     Ok(data)
 }
 
