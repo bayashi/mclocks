@@ -99,25 +99,6 @@ importers:
         specifier: ^9.21.0
         version: 9.21.0
 
-  src-mcp:
-    dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.26.0
-        version: 1.26.0(zod@4.3.6)
-      cdate:
-        specifier: 0.0.7
-        version: 0.0.7
-      jsonc-parser:
-        specifier: ^3.3.1
-        version: 3.3.1
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
-    devDependencies:
-      mocha:
-        specifier: ^11.0.0
-        version: 11.7.5
-
 packages:
 
   '@babel/code-frame@7.27.1':

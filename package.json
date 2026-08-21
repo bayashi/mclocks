@@ -8,12 +8,10 @@
     "dev:e2e": "vite --mode e2e",
     "build": "vite build",
     "preview": "vite preview",
-    "fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml && pnpm exec eslint --fix \"src/**/*.js\" \"*.config.js\" \"src-mcp/**/*.js\"",
+    "fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml && pnpm exec eslint --fix \"src/**/*.js\" \"*.config.js\"",
     "tauri": "tauri",
     "test": "wdio run wdio.conf.js",
-    "test:headless": "wdio run wdio.conf.js --headless",
-    "mcp": "node src-mcp/server.js",
-    "test:mcp": "npm test --prefix src-mcp"
+    "test:headless": "wdio run wdio.conf.js --headless"
   },
   "dependencies": {
     "@tauri-apps/api": "2.11.0",

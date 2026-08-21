@@ -547,9 +547,9 @@ After installation, you can choose `Open in mclocks preview` from the menu that 
 
 ## 🧠 mclocks MCP Server
 
-The **`mclocks-datetime-util`** [MCP](https://modelcontextprotocol.io/) server lets assistants such as [Cursor](https://www.cursor.com/) and [Claude Desktop](https://claude.ai/download) answer time and date questions across timezones, convert between datetimes and epoch values, and more.
+The **`mclocks-datetime-util`** [MCP](https://modelcontextprotocol.io/) server lets assistants such as [Cursor](https://www.cursor.com/) and [Claude Desktop](https://claude.ai/download) answer time and date questions across timezones, convert between datetimes and epoch values, and more. It can read your mclocks `config.json` so configured clocks show up in AI answers.
 
-Prerequisites, MCP client setup, tools, optional **`config.json`** integration, environment variables, and examples: **[`src-mcp/README.md`](src-mcp/README.md)**.
+Setup, tools, and development live in a separate repository: **[bayashi/mclocks-datetime-util](https://github.com/bayashi/mclocks-datetime-util)** (also on [npm](https://www.npmjs.com/package/mclocks-datetime-util)).
 
 ----------
 

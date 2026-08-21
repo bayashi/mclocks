@@ -29,25 +29,6 @@ export default [
     rules: {},
   },
   {
-    files: ['src-mcp/**/*.js'],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: {
-        ...globals.node,
-      },
-    },
-    rules: {},
-  },
-  {
-    files: ['src-mcp/test/**/*.js'],
-    languageOptions: {
-      globals: {
-        ...globals.mocha,
-      },
-    },
-  },
-  {
     files: ['extensions/**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
