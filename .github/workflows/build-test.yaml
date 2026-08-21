@@ -10,7 +10,6 @@ on:
       - '**/*.md'
       - '**/.gitignore'
       - '**/dependabot.yml'
-      - 'src-mcp/**'
       - 'web-assets/**/*.css'
       - '**/*.html'
   pull_request:
@@ -20,7 +19,6 @@ on:
       - '**/*.md'
       - '**/.gitignore'
       - '**/dependabot.yml'
-      - 'src-mcp/**'
       - 'web-assets/**/*.css'
       - '**/*.html'
 
@@ -101,7 +99,7 @@ jobs:
 
       - name: verify JS formatting (eslint --fix produces no diff)
         run: |
-          pnpm exec eslint --fix "src/**/*.js" "*.config.js" "src-mcp/**/*.js"
+          pnpm exec eslint --fix "src/**/*.js" "*.config.js"
           git diff --exit-code
 
   lint-and-test-server:
