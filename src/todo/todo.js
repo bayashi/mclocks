@@ -5,11 +5,29 @@ import { ask } from '@tauri-apps/plugin-dialog';
 import { escapeHTML, isMacOS, openMessageDialog } from '../util.js';
 
 const DEFAULT_STATUSES = ['WILL', 'DOING', 'BLOCKED', 'DONE'];
+const TODO_TINTS = ['red', 'yellow', 'green', 'blue'];
 const SAVE_DEBOUNCE_MS = 400;
 const MIN_WIDTH = 280;
 const MIN_HEIGHT = 200;
 const DRAG_THRESHOLD_PX = 5;
 const TRASH_ICON_SVG = `<svg class="todo-trash-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M8 7l.7 12.2A1.5 1.5 0 0 0 10.2 20.5h3.6a1.5 1.5 0 0 0 1.5-1.3L16 7"/><path d="M10 11v6"/><path d="M14 11v6"/></g></svg>`;
+
+function normalizeTint(raw) {
+	const s = String(raw ?? '').trim().toLowerCase();
+	return TODO_TINTS.includes(s) ? s : '';
+}
+
+function tintPaletteHtml(currentTint) {
+	const noneOn = currentTint === '' ? ' is-selected' : '';
+	const swatches = TODO_TINTS.map((tint) => {
+		const selected = tint === currentTint ? ' is-selected' : '';
+		return `<button type="button" class="todo-tint-swatch todo-tint-${tint}${selected}" data-tint="${tint}" title="${tint}" aria-label="${tint}" aria-pressed="${tint === currentTint ? 'true' : 'false'}"></button>`;
+	}).join('');
+	return `<div class="todo-color-palette" role="listbox" aria-label="Row color">
+<button type="button" class="todo-tint-swatch todo-tint-none${noneOn}" data-tint="" title="None" aria-label="None" aria-pressed="${currentTint === '' ? 'true' : 'false'}"></button>
+${swatches}
+</div>`;
+}
 
 function sizeToCssPx(size) {
 	if (typeof size === 'number') {
@@ -124,7 +142,7 @@ export async function todoPanelEntry(mainElement) {
 	const statuses = normalizeStatuses(cfg?.todoStatuses);
 	const defaultStatus = statuses[0];
 
-	/** @type {{ id: string, text: string, status: string, memo: string }[]} */
+	/** @type {{ id: string, text: string, status: string, memo: string, tint: string }[]} */
 	let items = [];
 	let forefront = cfg?.forefront ?? false;
 	let saveDebouncerId = null;
@@ -132,6 +150,8 @@ export async function todoPanelEntry(mainElement) {
 	let todoWindowLocationLockId = null;
 	/** @type {Set<string>} */
 	const openMemoIds = new Set();
+	/** @type {Set<string>} */
+	const openPaletteIds = new Set();
 
 	try {
 		const loaded = await invoke('todo_load');
@@ -141,6 +161,7 @@ export async function todoPanelEntry(mainElement) {
 				text: String(it.text ?? ''),
 				status: String(it.status ?? defaultStatus),
 				memo: String(it.memo ?? ''),
+				tint: normalizeTint(it.tint),
 			}));
 		}
 		if (loaded?.forefront != null) {
@@ -222,6 +243,7 @@ export async function todoPanelEntry(mainElement) {
 				text: textInput?.value ?? '',
 				status: statusBtn?.dataset.status ?? defaultStatus,
 				memo: memoInput?.value ?? '',
+				tint: normalizeTint(row.dataset.tint),
 			});
 		});
 		items = next;
@@ -236,15 +258,23 @@ export async function todoPanelEntry(mainElement) {
 		listEl.innerHTML = items
 			.map((it) => {
 				const memoOpen = openMemoIds.has(it.id);
+				const paletteOpen = memoOpen && openPaletteIds.has(it.id);
+				const tint = normalizeTint(it.tint);
 				const memoClass = memoOpen ? ' is-memo-open' : '';
+				const tintClass = tint ? ` is-tinted todo-tint-${tint}` : '';
 				const memoBtnClass = memoOpen ? ' is-on' : '';
-				return `<div class="todo-item${memoClass}" data-id="${escapeHTML(it.id)}">
+				const colorBtnClass = paletteOpen ? ' is-on' : '';
+				const tintAttr = tint ? ` data-tint="${escapeHTML(tint)}"` : ' data-tint=""';
+				const palette = paletteOpen ? tintPaletteHtml(tint) : '';
+				return `<div class="todo-item${memoClass}${tintClass}" data-id="${escapeHTML(it.id)}"${tintAttr}>
 <div class="todo-item-row">
-<button type="button" class="todo-item-btn todo-memo-toggle${memoBtnClass}" aria-label="Reorder or toggle memo" title="Drag to reorder · click for memo">☰</button>
+<button type="button" class="todo-item-btn todo-delete" aria-label="Delete" title="Delete">${TRASH_ICON_SVG}</button>
 <button type="button" class="todo-status" data-status="${escapeHTML(it.status)}" title="Cycle status">${escapeHTML(it.status)}</button>
 <input class="todo-text" type="text" spellcheck="false" value="${escapeHTML(it.text)}" placeholder="TODO" />
-<button type="button" class="todo-item-btn todo-delete" aria-label="Delete" title="Delete">${TRASH_ICON_SVG}</button>
+<button type="button" class="todo-item-btn todo-color-toggle${colorBtnClass}" aria-label="Row color" title="Row color"><span class="todo-color-dot" aria-hidden="true"></span></button>
+<button type="button" class="todo-item-btn todo-memo-toggle${memoBtnClass}" aria-label="Reorder or toggle memo" title="Drag to reorder · click for memo">☰</button>
 </div>
+${palette}
 <textarea class="todo-memo" spellcheck="false" rows="3" placeholder="Memo">${escapeHTML(it.memo)}</textarea>
 </div>`;
 			})
@@ -272,6 +302,29 @@ export async function todoPanelEntry(mainElement) {
 			return;
 		}
 
+		const tintSwatch = target.closest('.todo-tint-swatch');
+		if (tintSwatch instanceof HTMLElement) {
+			const nextTint = normalizeTint(tintSwatch.dataset.tint);
+			readItemsFromDom();
+			items = items.map((it) => (it.id === id ? { ...it, tint: nextTint } : it));
+			render();
+			scheduleSave();
+			return;
+		}
+
+		const colorToggle = target.closest('.todo-color-toggle');
+		if (colorToggle) {
+			if (openPaletteIds.has(id)) {
+				openPaletteIds.delete(id);
+			} else {
+				openPaletteIds.clear();
+				openPaletteIds.add(id);
+			}
+			readItemsFromDom();
+			render();
+			return;
+		}
+
 		const statusBtn = target.closest('.todo-status');
 		if (statusBtn) {
 			const current = statusBtn.dataset.status ?? defaultStatus;
@@ -290,7 +343,8 @@ export async function todoPanelEntry(mainElement) {
 			const text = (textInput instanceof HTMLInputElement ? textInput.value : '').trim();
 			const memo = (memoInput instanceof HTMLTextAreaElement ? memoInput.value : '').trim();
 			const status = statusEl?.dataset.status ?? defaultStatus;
-			const needsConfirm = text.length > 0 || memo.length > 0 || status !== defaultStatus;
+			const tint = normalizeTint(itemEl.dataset.tint);
+			const needsConfirm = text.length > 0 || memo.length > 0 || status !== defaultStatus || tint !== '';
 			if (needsConfirm) {
 				const lines = [`[${status}] ${text || '(empty)'}`];
 				if (memo.length > 0) {
@@ -312,6 +366,7 @@ export async function todoPanelEntry(mainElement) {
 				}
 			}
 			openMemoIds.delete(id);
+			openPaletteIds.delete(id);
 			readItemsFromDom();
 			items = items.filter((it) => it.id !== id);
 			render();
@@ -325,6 +380,7 @@ export async function todoPanelEntry(mainElement) {
 	const toggleMemoForId = (id) => {
 		if (openMemoIds.has(id)) {
 			openMemoIds.delete(id);
+			openPaletteIds.delete(id);
 		} else {
 			openMemoIds.add(id);
 		}
@@ -453,6 +509,7 @@ export async function todoPanelEntry(mainElement) {
 			text: '',
 			status: defaultStatus,
 			memo: '',
+			tint: '',
 		});
 		render();
 		scheduleSave();
