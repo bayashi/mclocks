@@ -78,10 +78,10 @@ html.todo #todo-spacer {
 html.todo #todo-add {
 	-webkit-app-region: no-drag;
 	flex: 0 0 auto;
+	align-self: stretch;
 	display: block;
-	width: 100%;
 	box-sizing: border-box;
-	margin: 4px 0 0;
+	margin: 9px 4px 0;
 	border: 0.5px solid currentColor;
 	border-radius: 3px;
 	background: transparent;
@@ -108,7 +108,7 @@ html.todo #todo-body {
 	min-height: 0;
 	overflow-x: hidden;
 	overflow-y: auto;
-	margin-top: 8px;
+	margin-top: 6px;
 	padding: 0 2px 16px 1px;
 	scrollbar-width: auto;
 	scrollbar-color: rgba(255, 255, 255, 0.35) rgba(0, 0, 0, 0.25);
