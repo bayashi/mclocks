@@ -213,8 +213,8 @@ html.todo .todo-item-btn.is-on {
 
 html.todo .todo-memo-toggle {
 	cursor: grab;
-	padding-left: 1px;
-	padding-right: 2px;
+	padding-left: 2px;
+	padding-right: 1px;
 }
 
 html.todo.todo-reordering,

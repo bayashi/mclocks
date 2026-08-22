@@ -240,10 +240,10 @@ export async function todoPanelEntry(mainElement) {
 				const memoBtnClass = memoOpen ? ' is-on' : '';
 				return `<div class="todo-item${memoClass}" data-id="${escapeHTML(it.id)}">
 <div class="todo-item-row">
-<button type="button" class="todo-item-btn todo-memo-toggle${memoBtnClass}" aria-label="Reorder or toggle memo" title="Drag to reorder · click for memo">☰</button>
 <button type="button" class="todo-status" data-status="${escapeHTML(it.status)}" title="Cycle status">${escapeHTML(it.status)}</button>
 <input class="todo-text" type="text" spellcheck="false" value="${escapeHTML(it.text)}" placeholder="TODO" />
 <button type="button" class="todo-item-btn todo-delete" aria-label="Delete" title="Delete">${TRASH_ICON_SVG}</button>
+<button type="button" class="todo-item-btn todo-memo-toggle${memoBtnClass}" aria-label="Reorder or toggle memo" title="Drag to reorder · click for memo">☰</button>
 </div>
 <textarea class="todo-memo" spellcheck="false" rows="3" placeholder="Memo">${escapeHTML(it.memo)}</textarea>
 </div>`;
