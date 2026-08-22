@@ -27,6 +27,9 @@ pub struct TodoItem {
     pub status: String,
     #[serde(default)]
     pub memo: String,
+    /// Row tint family: "", "blue", "red", "yellow", or "green".
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub tint: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
