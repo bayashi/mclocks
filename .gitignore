@@ -25,3 +25,6 @@ dist-ssr
 
 package-lock.json
 .pnpm-store
+
+# CI / local checkout of the E2E runner repo
+/mclocks-e2e/
