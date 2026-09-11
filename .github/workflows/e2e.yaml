@@ -11,6 +11,7 @@ on:
       - "package.json"
       - "vite.config.js"
       - "wdio.conf.js"
+      - "scripts/run-e2e.mjs"
   push:
     branches:
       - main
@@ -22,6 +23,7 @@ on:
       - "package.json"
       - "vite.config.js"
       - "wdio.conf.js"
+      - "scripts/run-e2e.mjs"
 
 jobs:
   test:
@@ -36,7 +38,14 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout mclocks
+        uses: actions/checkout@v4
+
+      - name: Checkout mclocks-e2e
+        uses: actions/checkout@v4
+        with:
+          repository: bayashi/mclocks-e2e
+          path: mclocks-e2e
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -48,13 +57,19 @@ jobs:
         with:
           node-version: lts/*
           cache: "pnpm"
-          cache-dependency-path: pnpm-lock.yaml
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mclocks-e2e/pnpm-lock.yaml
 
       - name: Pin npm version
         run: npm install -g npm@11.6.2
 
-      - name: Install dependencies
+      - name: Install mclocks dependencies
         run: pnpm install
+
+      - name: Install mclocks-e2e dependencies
+        run: pnpm install
+        working-directory: mclocks-e2e
 
       - name: Start Vite (e2e mode) and run E2E tests (Windows)
         if: runner.os == 'Windows'

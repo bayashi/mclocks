@@ -42,27 +42,41 @@ cd ..
 
 ### Test Framework
 
-This project uses **WebdriverIO** to run E2E tests.
+E2E tests use **WebdriverIO**. Specs and `wdio.conf.js` stay in this repository; the WDIO npm toolchain lives in a separate repo: [bayashi/mclocks-e2e](https://github.com/bayashi/mclocks-e2e).
 
 ### Prerequisites for Running Tests
 
-**You need to start the application** before running JavaScript tests.
+1. Clone `mclocks-e2e` next to `mclocks` (or under `./mclocks-e2e`), then install it:
 
-1. Start the dev server in a separate terminal (pick one):
+   ```bash
+   # sibling layout (recommended)
+   cd ..
+   git clone git@github.com:bayashi/mclocks-e2e.git
+   cd mclocks-e2e
+   pnpm install
+   cd ../mclocks
+   ```
+
+   Or set `MCLOCKS_E2E_ROOT` to the e2e checkout path.
+
+2. **Start the application** before running tests (separate terminal):
+
    ```bash
    # WebdriverIO hits Vite in Chrome; clipboard uses a test-only mock (vite --mode e2e)
    pnpm dev:e2e
    ```
+
    Alternatively, run the full desktop app (real Tauri clipboard):
+
    ```bash
    pnpm tauri dev
    ```
 
-2. Verify that the application is running at `http://localhost:1420`.
+3. Verify that the application is running at `http://localhost:1420`.
 
 ### Running Tests
 
-With the application running, execute the following command from another terminal:
+With the application running, execute the following command from another terminal (mclocks root):
 
 ```bash
 # Run tests in normal mode
@@ -72,11 +86,19 @@ pnpm test
 pnpm test:headless
 ```
 
+You can also run from the e2e repo (`MCLOCKS_ROOT` defaults to `../mclocks`):
+
+```bash
+cd ../mclocks-e2e
+pnpm test
+```
+
 ### Test File Locations
 
-- Test files: `test/specs/mclocks.test.js`
+- Test files: `test/specs/`
 - Test configuration: `wdio.conf.js`
-- Helpers: `test/helpers/app-launcher.js`
+- Helpers: `test/helpers/`
+- WDIO runner package: [mclocks-e2e](https://github.com/bayashi/mclocks-e2e)
 
 ### Test Contents
 
