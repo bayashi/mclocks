@@ -18,7 +18,7 @@ export default [
     rules: {},
   },
   {
-    files: ['*.config.js', 'vite.config.js'],
+    files: ['*.config.js', 'vite.config.js', 'scripts/**/*.{js,mjs}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
