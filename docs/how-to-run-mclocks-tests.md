@@ -44,6 +44,14 @@ cd ..
 
 E2E tests use **WebdriverIO**. Specs and `wdio.conf.js` stay in this repository; the WDIO npm toolchain lives in a separate repo: [bayashi/mclocks-e2e](https://github.com/bayashi/mclocks-e2e).
 
+### CI and mclocks-e2e pin
+
+GitHub Actions (`.github/workflows/e2e.yaml`) checks out **mclocks-e2e at a pinned commit SHA**, not the floating `main` tip. That keeps E2E reproducible when mclocks-e2e moves independently.
+
+When you intentionally adopt a newer mclocks-e2e revision, bump the `ref` under the "Checkout mclocks-e2e" step in `e2e.yaml` (and open a mclocks PR for that bump).
+
+Local runs still use your local mclocks-e2e checkout (sibling / `./mclocks-e2e` / `MCLOCKS_E2E_ROOT`); they are not tied to the CI pin.
+
 ### Prerequisites for Running Tests
 
 1. Clone `mclocks-e2e` next to `mclocks` (or under `./mclocks-e2e`), then install it:
