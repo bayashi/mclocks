@@ -45,7 +45,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: bayashi/mclocks-e2e
-          ref: main
+          # Pin to a commit so mclocks E2E does not float with mclocks-e2e main tip.
+          # Bump this SHA when intentionally adopting a newer mclocks-e2e revision.
+          ref: 23528389415985f3f6e439d6057b49e8b6bcf407
           path: mclocks-e2e
 
       - name: Setup pnpm
