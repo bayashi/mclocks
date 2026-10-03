@@ -37,11 +37,6 @@ html.sticky #sticky-header {
   display: flex;
   align-items: center;
   gap: 3px;
-  -webkit-app-region: drag;
-}
-
-html.sticky #sticky-header button {
-  -webkit-app-region: no-drag;
 }
 
 html.sticky #sticky-spacer {

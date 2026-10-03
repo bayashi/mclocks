@@ -58,12 +58,10 @@ html.todo #todo-header {
 	display: flex;
 	align-items: center;
 	gap: 3px;
-	-webkit-app-region: drag;
 	flex: 0 0 auto;
 }
 
 html.todo #todo-header button {
-	-webkit-app-region: no-drag;
 	border: none;
 	border-radius: 4px;
 	background: transparent;

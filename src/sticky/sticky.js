@@ -4,6 +4,7 @@ import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 import { writeImage } from '@tauri-apps/plugin-clipboard-manager';
 
 import { writeClipboardText, openMessageDialog, isMacOS } from '../util.js';
+import { bindHeaderWindowDrag } from '../window_drag.js';
 import { createSticky } from './sticky_manager.js';
 
 const MAX_OPEN_LINES = 12;
@@ -564,19 +565,7 @@ export async function stickyEntry(mainElement) {
 		}
 	});
 
-	// Enable window dragging on macOS (CSS -webkit-app-region: drag is unreliable)
-	if (isMacOS()) {
-		stickyHeader.addEventListener('mousedown', async (event) => {
-			if (event.target.closest('button')) {
-				return;
-			}
-			try {
-				await currentWindow.startDragging();
-			} catch {
-				// ignore
-			}
-		});
-	}
+	bindHeaderWindowDrag(stickyHeader, currentWindow);
 
 	try {
 		await currentWindow.onResized(async () => {
