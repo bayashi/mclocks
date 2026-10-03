@@ -46,6 +46,7 @@ export async function setupMainAppWithTauriMocks() {
 					}
 
 					if (cmd === 'restore_stickies') return;
+					if (cmd === 'restore_todo') return;
 					if (cmd === 'save_window_state_exclusive') return;
 					if (cmd === 'plugin:window|set_always_on_top') return;
 					if (cmd === 'plugin:window|start_dragging') return;
