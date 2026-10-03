@@ -3,6 +3,7 @@ import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
 import { ask } from '@tauri-apps/plugin-dialog';
 
 import { escapeHTML, isMacOS, openMessageDialog } from '../util.js';
+import { bindHeaderWindowDrag } from '../window_drag.js';
 
 const DEFAULT_STATUSES = ['WILL', 'DOING', 'BLOCKED', 'DONE'];
 const TODO_TINTS = ['red', 'yellow', 'green', 'blue'];
@@ -558,18 +559,7 @@ ${palette}
 		closePanel();
 	});
 
-	if (isMacOS() && todoHeader) {
-		todoHeader.addEventListener('mousedown', async (event) => {
-			if (event.target.closest('button')) {
-				return;
-			}
-			try {
-				await currentWindow.startDragging();
-			} catch {
-				// ignore
-			}
-		});
-	}
+	bindHeaderWindowDrag(todoHeader, currentWindow);
 
 	if (resizeHandle) {
 		resizeHandle.addEventListener('mousedown', async (event) => {
