@@ -319,6 +319,7 @@ pub fn run() {
         todo::todo_close_panel,
         todo::todo_load,
         todo::todo_save,
+        todo::restore_todo,
     ])
     .run(context)
     .expect("error while running tauri application");
