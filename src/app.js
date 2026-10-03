@@ -36,6 +36,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   await clockMain(clockCtx);
 
   await restoreStickies();
+  await restoreTodo();
 });
 
 /**
@@ -123,6 +124,14 @@ const restoreStickies = async () => {
     await invoke('restore_stickies');
   } catch (error) {
     console.warn('[sticky] Failed to restore stickies:', error);
+  }
+};
+
+const restoreTodo = async () => {
+  try {
+    await invoke('restore_todo');
+  } catch (error) {
+    console.warn('[todo] Failed to restore TODO panel:', error);
   }
 };
 

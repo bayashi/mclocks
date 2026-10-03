@@ -40,6 +40,9 @@ pub struct TodoPersistData {
     /// Per-panel forefront override. None means inherit from main clock config.
     #[serde(default)]
     pub forefront: Option<bool>,
+    /// Whether the panel was open last time (restored on app startup).
+    #[serde(default)]
+    pub is_open: bool,
 }
 
 pub struct TodoPersistStore {
@@ -116,6 +119,15 @@ fn reveal_todo_panel<R: Runtime>(app: &AppHandle<R>, forefront: bool) {
     }
 }
 
+fn set_todo_is_open(store: &TodoPersistStore, open: bool) -> Result<(), String> {
+    let mut data = store.data.lock().map_err(|e| e.to_string())?;
+    if data.is_open == open {
+        return Ok(());
+    }
+    data.is_open = open;
+    store.write_file(&data)
+}
+
 #[tauri::command]
 pub fn todo_show_panel(app: AppHandle, store: State<'_, TodoPersistStore>) -> Result<(), String> {
     let forefront = resolve_forefront_for_app(&app, &store);
@@ -137,6 +149,10 @@ fn show_todo_panel_with_forefront<R: Runtime>(
     app: &AppHandle<R>,
     forefront: bool,
 ) -> Result<(), String> {
+    if let Some(store) = app.try_state::<TodoPersistStore>() {
+        set_todo_is_open(&store, true)?;
+    }
+
     if app.get_webview_window(WINDOW_LABEL).is_some() {
         reveal_todo_panel(app, forefront);
         return Ok(());
@@ -179,11 +195,22 @@ fn show_todo_panel_with_forefront<R: Runtime>(
 }
 
 #[tauri::command]
-pub fn todo_close_panel(app: AppHandle) -> Result<(), String> {
+pub fn todo_close_panel(app: AppHandle, store: State<'_, TodoPersistStore>) -> Result<(), String> {
     if let Some(w) = app.get_webview_window(WINDOW_LABEL) {
         w.hide().map_err(|e| e.to_string())?;
     }
+    set_todo_is_open(&store, false)?;
     Ok(())
+}
+
+#[tauri::command]
+pub fn restore_todo(app: AppHandle, store: State<'_, TodoPersistStore>) -> Result<(), String> {
+    let open = store.data.lock().map_err(|e| e.to_string())?.is_open;
+    if !open {
+        return Ok(());
+    }
+    let forefront = resolve_forefront_for_app(&app, &store);
+    show_todo_panel_with_forefront(&app, forefront)
 }
 
 #[tauri::command]
