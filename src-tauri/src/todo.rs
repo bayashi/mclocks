@@ -195,10 +195,7 @@ fn show_todo_panel_with_forefront<R: Runtime>(
 }
 
 #[tauri::command]
-pub fn todo_close_panel(
-    app: AppHandle,
-    store: State<'_, TodoPersistStore>,
-) -> Result<(), String> {
+pub fn todo_close_panel(app: AppHandle, store: State<'_, TodoPersistStore>) -> Result<(), String> {
     if let Some(w) = app.get_webview_window(WINDOW_LABEL) {
         w.hide().map_err(|e| e.to_string())?;
     }
@@ -208,11 +205,7 @@ pub fn todo_close_panel(
 
 #[tauri::command]
 pub fn restore_todo(app: AppHandle, store: State<'_, TodoPersistStore>) -> Result<(), String> {
-    let open = store
-        .data
-        .lock()
-        .map_err(|e| e.to_string())?
-        .is_open;
+    let open = store.data.lock().map_err(|e| e.to_string())?.is_open;
     if !open {
         return Ok(());
     }
