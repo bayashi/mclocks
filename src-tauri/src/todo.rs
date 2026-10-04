@@ -30,6 +30,9 @@ pub struct TodoItem {
     /// Row tint family: "", "blue", "red", "yellow", or "green".
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub tint: String,
+    /// Creation time as RFC3339 / ISO-8601. Empty for legacy items.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub created_at: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

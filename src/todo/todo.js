@@ -18,6 +18,63 @@ function normalizeTint(raw) {
 	return TODO_TINTS.includes(s) ? s : '';
 }
 
+function normalizeCreatedAt(raw) {
+	const s = String(raw ?? '').trim();
+	if (!s) {
+		return '';
+	}
+	const t = Date.parse(s);
+	return Number.isNaN(t) ? '' : new Date(t).toISOString();
+}
+
+function startOfLocalDay(date) {
+	return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function parseCreatedDate(iso) {
+	const created = new Date(iso);
+	return Number.isNaN(created.getTime()) ? null : created;
+}
+
+function createCreatedAtFormatters(locale) {
+	const requested = typeof locale === 'string' && locale.trim() ? locale.trim() : 'en';
+	const absoluteOpts = {
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false,
+	};
+	let relativeFmt;
+	let absoluteFmt;
+	try {
+		relativeFmt = new Intl.RelativeTimeFormat(requested, { numeric: 'auto' });
+		absoluteFmt = new Intl.DateTimeFormat(requested, absoluteOpts);
+	} catch {
+		relativeFmt = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+		absoluteFmt = new Intl.DateTimeFormat('en', absoluteOpts);
+	}
+	return {
+		/** Day-granularity relative label via Intl (e.g. 今日 / yesterday / 3日前). */
+		relative(iso) {
+			const created = parseCreatedDate(iso);
+			if (!created) {
+				return '';
+			}
+			const diffDays = Math.round(
+				(startOfLocalDay(new Date()).getTime() - startOfLocalDay(created).getTime()) /
+					86_400_000,
+			);
+			return relativeFmt.format(-Math.max(0, diffDays), 'day');
+		},
+		absolute(iso) {
+			const created = parseCreatedDate(iso);
+			return created ? absoluteFmt.format(created) : '';
+		},
+	};
+}
+
 function tintPaletteHtml(currentTint) {
 	const noneOn = currentTint === '' ? ' is-selected' : '';
 	const swatches = TODO_TINTS.map((tint) => {
@@ -142,8 +199,9 @@ export async function todoPanelEntry(mainElement) {
 
 	const statuses = normalizeStatuses(cfg?.todoStatuses);
 	const defaultStatus = statuses[0];
+	const createdAtFmt = createCreatedAtFormatters(cfg?.locale);
 
-	/** @type {{ id: string, text: string, status: string, memo: string, tint: string }[]} */
+	/** @type {{ id: string, text: string, status: string, memo: string, tint: string, createdAt: string }[]} */
 	let items = [];
 	let forefront = cfg?.forefront ?? false;
 	let saveDebouncerId = null;
@@ -163,6 +221,7 @@ export async function todoPanelEntry(mainElement) {
 				status: String(it.status ?? defaultStatus),
 				memo: String(it.memo ?? ''),
 				tint: normalizeTint(it.tint),
+				createdAt: normalizeCreatedAt(it.createdAt),
 			}));
 		}
 		if (loaded?.forefront != null) {
@@ -245,6 +304,7 @@ export async function todoPanelEntry(mainElement) {
 				status: statusBtn?.dataset.status ?? defaultStatus,
 				memo: memoInput?.value ?? '',
 				tint: normalizeTint(row.dataset.tint),
+				createdAt: normalizeCreatedAt(row.dataset.createdAt),
 			});
 		});
 		items = next;
@@ -261,13 +321,21 @@ export async function todoPanelEntry(mainElement) {
 				const memoOpen = openMemoIds.has(it.id);
 				const paletteOpen = memoOpen && openPaletteIds.has(it.id);
 				const tint = normalizeTint(it.tint);
+				const createdAt = normalizeCreatedAt(it.createdAt);
 				const memoClass = memoOpen ? ' is-memo-open' : '';
 				const tintClass = tint ? ` is-tinted todo-tint-${tint}` : '';
 				const memoBtnClass = memoOpen ? ' is-on' : '';
 				const colorBtnClass = paletteOpen ? ' is-on' : '';
 				const tintAttr = tint ? ` data-tint="${escapeHTML(tint)}"` : ' data-tint=""';
+				const createdAttr = createdAt ? ` data-created-at="${escapeHTML(createdAt)}"` : '';
 				const palette = paletteOpen ? tintPaletteHtml(tint) : '';
-				return `<div class="todo-item${memoClass}${tintClass}" data-id="${escapeHTML(it.id)}"${tintAttr}>
+				const relative = createdAt ? createdAtFmt.relative(createdAt) : '';
+				const absolute = createdAt ? createdAtFmt.absolute(createdAt) : '';
+				const createdMeta =
+					memoOpen && relative
+						? `<div class="todo-created" title="${escapeHTML(absolute)}">${escapeHTML(relative)}</div>`
+						: '';
+				return `<div class="todo-item${memoClass}${tintClass}" data-id="${escapeHTML(it.id)}"${tintAttr}${createdAttr}>
 <div class="todo-item-row">
 <button type="button" class="todo-item-btn todo-delete" aria-label="Delete" title="Delete">${TRASH_ICON_SVG}</button>
 <button type="button" class="todo-status" data-status="${escapeHTML(it.status)}" title="Cycle status">${escapeHTML(it.status)}</button>
@@ -277,6 +345,7 @@ export async function todoPanelEntry(mainElement) {
 </div>
 ${palette}
 <textarea class="todo-memo" spellcheck="false" rows="3" placeholder="Memo">${escapeHTML(it.memo)}</textarea>
+${createdMeta}
 </div>`;
 			})
 			.join('');
@@ -511,6 +580,7 @@ ${palette}
 			status: defaultStatus,
 			memo: '',
 			tint: '',
+			createdAt: new Date().toISOString(),
 		});
 		render();
 		scheduleSave();
