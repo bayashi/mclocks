@@ -374,6 +374,20 @@ html.todo .todo-item.is-memo-open .todo-memo {
 	display: block;
 }
 
+html.todo .todo-created {
+	-webkit-app-region: no-drag;
+	flex: 0 0 auto;
+	align-self: flex-end;
+	margin: 0 2px 1px 0;
+	padding: 0;
+	font-size: 0.72em;
+	line-height: 1.2;
+	letter-spacing: 0.04em;
+	opacity: 0.55;
+	cursor: default;
+	user-select: none;
+}
+
 html.todo #todo-resize-handle {
 	display: block;
 	position: absolute;
